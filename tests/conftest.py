@@ -1,16 +1,9 @@
-"""
-Playwright async testlar uchun fixture'lar.
-page – har bir test uchun yangi browser sahifa (async).
+import os
 
-NIMA UCHUN O'Z FIXTURE'IMIZ?
-pytest-playwright plugin o'zining sync "page" fixture'ini beradi va ichida event loop
-ishg'a tushiradi. test_login esa async (pytest-asyncio). Ikki loop bir-biriga
-kirib ketadi → "Runner.run() cannot be called from a running event loop".
-Bu yerda o'zimiz async_playwright + pytest_asyncio.fixture ishlatamiz – hammasi
-BITTA asyncio loop'da ishlaydi, conflict bo'lmaydi.
-"""
 import pytest_asyncio
 from playwright.async_api import async_playwright, Browser, Page
+
+TRACE_DIR = "test-results/traces"
 
 
 @pytest_asyncio.fixture
@@ -27,9 +20,14 @@ async def browser():
 
 @pytest_asyncio.fixture
 async def page(browser: Browser) -> Page:
-    """Har bir test uchun yangi sahifa, to'liq ekran (no_viewport + --start-maximized)."""
+    """Har bir test uchun yangi sahifa, to'liq ekran (no_viewport + --start-maximized). Trace yoziladi."""
     context = await browser.new_context(no_viewport=True)  # viewport cheklovini olib tashlaydi
+    await context.tracing.start(screenshots=True, snapshots=True, sources=True)
     page_obj = await context.new_page()
+    # page.set_default_timeout(30_000)  # barcha operatsiyalar uchun 60s
+
     yield page_obj
+    os.makedirs(TRACE_DIR, exist_ok=True)
+    await context.tracing.stop(path=os.path.join(TRACE_DIR, "trace.zip"))
     await page_obj.close()
     await context.close()
