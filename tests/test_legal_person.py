@@ -2,8 +2,9 @@ import time
 from playwright.sync_api import Page, expect
 from flows.flow_navigate import navigate_to, switch_filial
 
+# ----------------------------------------------------------------------------------------------------------------------
 
-def test_legal_person(page: Page, i: int = None) -> None:
+def test_legal_person(page: Page, i) -> None:
     switch_filial(page)
     navigate_to(page, tab="Справочники", name="Юридические лица")
 
@@ -21,3 +22,5 @@ def test_legal_person(page: Page, i: int = None) -> None:
     expect(page.get_by_text(f"cod_lg_pw{i}")).to_be_visible()
     expect(page.get_by_text(f"legal_person-pw{i}").first).to_be_visible()
     time.sleep(1)
+
+# ----------------------------------------------------------------------------------------------------------------------

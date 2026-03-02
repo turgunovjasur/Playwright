@@ -1,8 +1,9 @@
 from playwright.sync_api import Page, expect
 from flows.flow_navigate import navigate_to, switch_filial
 
+# ----------------------------------------------------------------------------------------------------------------------
 
-def test_filial(page: Page, i: int = None) -> None:
+def test_filial(page: Page, i) -> None:
     switch_filial(page)
     navigate_to(page, tab="Главное", name="Организации")
 
@@ -24,3 +25,5 @@ def test_filial(page: Page, i: int = None) -> None:
 
     expect(page.get_by_text(f"cod_lg_pw{i}")).to_be_visible()
     expect(page.get_by_text(f"filial-pw{i}")).to_be_visible()
+
+# ----------------------------------------------------------------------------------------------------------------------

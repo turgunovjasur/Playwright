@@ -30,12 +30,3 @@ class BasePage:
     def wait_for(self, locator: Locator):
         locator.wait_for(timeout=30_000, state="visible")
     # ------------------------------------------------------------------------------------------------------------------
-
-    def is_page_loaded(self) -> bool:
-        """Sahifa toliq ochilganligini tekshiradi"""
-        try:
-            self.page.wait_for_load_state("networkidle", timeout=30_000)
-            return True
-        except Exception:
-            return False
-    # ------------------------------------------------------------------------------------------------------------------
