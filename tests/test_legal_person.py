@@ -1,16 +1,11 @@
-import random
 import time
 from playwright.sync_api import Page, expect
-from tests.flow_navigate import navigate_to, switch_filial
-from tests.flow_authorization import authorization
+from flows.flow_navigate import navigate_to, switch_filial
 
 
-def test_legal_person(page: Page) -> None:
-    authorization(page)
+def test_legal_person(page: Page, i: int = None) -> None:
     switch_filial(page)
     navigate_to(page, tab="Справочники", name="Юридические лица")
-
-    i = random.randint(1000, 9999)
 
     page.get_by_role("button", name="Создать").click()
     page.get_by_role("textbox").nth(4).fill(f"legal_person-pw{i}")

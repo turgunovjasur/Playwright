@@ -33,5 +33,3 @@ def page(browser: Browser) -> Generator[Page, Any, None]:
     context.tracing.stop(path=os.path.join(TRACE_DIR, "trace.zip"))
     page_obj.close()
     context.close()
-
-# ----------------------------------------------------------------------------------------------------------------------
