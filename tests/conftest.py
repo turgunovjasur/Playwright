@@ -4,6 +4,7 @@ import random
 import pytest
 from typing import Any, Generator
 from playwright.sync_api import sync_playwright, Browser, Page
+from utils.logger import write_failure_log, get_logger, TestLogger
 
 TRACE_DIR = "test-results/traces"
 DATA_DIR = "test-results/data"
@@ -82,5 +83,26 @@ def load_data():
         return None
 
     return _load
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+@pytest.fixture
+def logger(request) -> TestLogger:
+    """Har bir test funksiyasi uchun alohida logger fixture."""
+    test_logger = get_logger(request.node.nodeid)
+    yield test_logger
+    test_logger.close()
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+def pytest_runtest_logreport(report: pytest.TestReport) -> None:
+    """
+    Har bir test fazasi (setup / call / teardown) tugaganda chaqiriladi.
+    Agar test muvaffaqiyatsiz bo'lsa, test-results/logs/ ichiga log yozadi.
+    """
+    if report.failed:
+        longrepr_str = str(report.longrepr) if report.longrepr else "Xabar yo'q"
+        log_path = write_failure_log(report.nodeid, report.when, longrepr_str)
+        print(f"\n[LOG] Xato logi saqlandi: {log_path}")
 
 # ----------------------------------------------------------------------------------------------------------------------
