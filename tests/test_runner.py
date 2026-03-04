@@ -11,23 +11,32 @@ from tests.test_user import test_user, test_user_attach_form
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def test_for_test(page: Page, random_code, save_data) -> None:
+def test_for_test(page: Page, random_code, save_data, logger) -> None:
     save_data("random_code", random_code)
 
-    authorization(page)
+    authorization(page, logger)
+    logger.step("authorization")
 
     test_legal_person(page, random_code)
+    logger.step("test_legal_person")
 
     test_filial(page, random_code)
+    logger.step("test_filial")
 
     test_room(page, random_code)
+    logger.step("test_room")
 
     test_robot(page, random_code)
+    logger.step("test_robot")
 
     test_natural_person(page, random_code)
+    logger.step("test_natural_person")
 
     test_user(page, random_code)
+    logger.step("test_user")
+
     test_user_attach_form(page, random_code)
+    logger.step("test_user_attach_form")
 
     time.sleep(2)
 

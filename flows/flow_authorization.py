@@ -18,11 +18,14 @@ def dashboard(page):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def authorization(page):
+def authorization(page, logger):
     email = "admin@autotest"
     password= "greenwhite"
 
     login(page, email, password)
+    logger.step("login")
+
     dashboard(page)
+    logger.step("dashboard")
 
 # ----------------------------------------------------------------------------------------------------------------------

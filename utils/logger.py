@@ -22,7 +22,7 @@ class TestLogger:
     def _setup_log_file(self) -> str:
         os.makedirs(LOG_DIR, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        safe_name = self.test_name.replace("::", "__").replace(" ", "_")
+        safe_name = self.test_name.replace("::", "__").replace(" ", "_").replace("/", "_")
         filename = f"{safe_name}_{timestamp}.log"
         return os.path.join(LOG_DIR, filename)
 
@@ -32,13 +32,21 @@ class TestLogger:
         logger.handlers.clear()
         logger.propagate = False
 
-        fh = logging.FileHandler(self.log_path, encoding="utf-8")
-        fh.setLevel(logging.DEBUG)
-        fh.setFormatter(logging.Formatter(
+        formatter = logging.Formatter(
             "%(asctime)s | %(levelname)-8s | %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S"
-        ))
+        )
+
+        fh = logging.FileHandler(self.log_path, encoding="utf-8")
+        fh.setLevel(logging.DEBUG)
+        fh.setFormatter(formatter)
         logger.addHandler(fh)
+
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.DEBUG)
+        ch.setFormatter(formatter)
+        logger.addHandler(ch)
+
         return logger
 
     # ------------------------------------------------------------------------------------------------------------------

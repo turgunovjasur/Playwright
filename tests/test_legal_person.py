@@ -1,11 +1,10 @@
 import time
 from playwright.sync_api import Page, expect
-from flows.flow_navigate import navigate_to, switch_filial
+from flows.flow_navigate import navigate_to
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 def test_legal_person(page: Page, i) -> None:
-    switch_filial(page)
     navigate_to(page, tab="Справочники", name="Юридические лица")
 
     page.get_by_role("button", name="Создать").click()
