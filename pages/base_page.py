@@ -15,8 +15,13 @@ class BasePage:
         self.page.goto(url)
     # ------------------------------------------------------------------------------------------------------------------
 
-    def click(self, locator: Locator):
-        locator.click()
+    def click(self, locator=None, click_js=False):
+        if click_js:
+            self.page.wait_for_load_state("networkidle")
+            checkbox = self.page.locator(".checkbox").first
+            checkbox.evaluate("el => el.click()")
+        else:
+            locator.click()
     # ------------------------------------------------------------------------------------------------------------------
 
     def fill(self, locator: Locator, text: str):
