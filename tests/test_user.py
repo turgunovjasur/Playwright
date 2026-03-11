@@ -1,8 +1,6 @@
 from playwright.sync_api import Page, expect
-
-from flows.flow_authorization import authorization
 from flows.flow_navigate import navigate_to, switch_filial
-from pages.base_page import BasePage
+from utils.base_page import BasePage
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -44,7 +42,7 @@ def test_user_attach_form(page: Page, i) -> None:
     page.get_by_role("button", name=" 50 /").click()
     page.get_by_role("link", name="1000").click()
     expand_list(page, limit="167/167")
-    base_page.click(click_js=True)
+    base_page.click_js()
     attach_and_check_list(page, check_text="нет данных")
 
     # Отчеты
@@ -52,19 +50,19 @@ def test_user_attach_form(page: Page, i) -> None:
     page.get_by_role("button", name=" 50 /").click()
     page.get_by_role("link", name="1000").click()
     expand_list(page, limit="120/120")
-    base_page.click(click_js=True)
+    base_page.click_js()
     attach_and_check_list(page, check_text="нет данных")
 
     # Накладные
     switch_to_tab(page, name="Накладные")
     expand_list(page, limit="43/43")
-    base_page.click(click_js=True)
+    base_page.click_js()
     attach_and_check_list(page, check_text="нет данных")
 
     # Внешние системы
     switch_to_tab(page, name="Внешние системы")
     expand_list(page, limit="75/75")
-    base_page.click(click_js=True)
+    base_page.click_js()
     attach_and_check_list(page, check_text="нет данных")
 
     page.get_by_role("button", name="Закрыть").click()
@@ -84,13 +82,7 @@ def expand_list(page, limit):
     expect(page.locator("b-page")).to_contain_text(cleaned_limit)
 # ----------------------------------------------------------------------------------------------------------------------
 
-def test_role(page: Page, logger) -> None:
-    i = 4059
-    authorization(page, logger)
-
-    switch_filial(page, name=f"filial-pw{i}")
-    navigate_to(page, tab="Главное", name="Пользователи")
-
+def test_role(page: Page) -> None:
     expect(page.get_by_role("heading")).to_contain_text("Пользователи")
 
     page.get_by_role("link", name="Роли").click()
@@ -113,12 +105,29 @@ def test_role(page: Page, logger) -> None:
         page.wait_for_timeout(150)
         clicked += 1
 
-    logger.info(f"Jami {clicked} ta switch yoqildi")
-
     page.get_by_role("button", name="Сохранить").click()
 
-    page.get_by_text("Админ", exact=True).wait_for(timeout=120_000)
-    page.get_by_text("Админ", exact=True).click()
+    base_page = BasePage(page)
+    base_page.wait_for_loader()
 
+    expect(page.get_by_role("heading")).to_contain_text("Роли")
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+def test_role_attach_form(page: Page) -> None:
+    page.get_by_text("Админ", exact=True).click()
+    page.get_by_role("button", name="Просмотреть").click()
+    page.get_by_role("link", name=" Формы").click()
+    page.get_by_role("button", name="Доступ ко всем формам").click()
+    page.get_by_role("link", name="Разрешить").click()
+    page.get_by_role("button", name="да").click()
+
+    base_page = BasePage(page)
+    base_page.wait_for_loader()
+
+    page.get_by_role("button", name="Доступные").click()
+    expect(page.locator("b-page")).to_contain_text("нет данных")
+    page.get_by_role("button", name="Закрыть").click()
+    expect(page.get_by_role("heading")).to_contain_text("Роли")
 
 # ----------------------------------------------------------------------------------------------------------------------

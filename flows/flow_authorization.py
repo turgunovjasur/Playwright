@@ -1,20 +1,17 @@
-from pages.login_page import LoginPage
-from pages.dashboard_page import DashboardPage
+from playwright.sync_api import Page, expect
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def login(page, email, password):
-    login_page = LoginPage(page)
-    login_page.open()
-    login_page.element_visible()
-    login_page.fill_form(email, password)
-    login_page.click_button()
+def login(page: Page, email, password) -> None:
+    page.goto("https://smartup.online/login.html")
+    page.get_by_placeholder("Логин@компания").fill(email)
+    page.get_by_role("textbox", name="Пароль").fill(password)
+    page.get_by_role("button", name="Войти").click()
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def dashboard(page):
-    dashboard_page = DashboardPage(page)
-    dashboard_page.element_visible()
+def dashboard(page: Page) -> None:
+    expect(page.get_by_role("heading", name="Trade")).to_be_visible(timeout=120_000)
 
 # ----------------------------------------------------------------------------------------------------------------------
 
