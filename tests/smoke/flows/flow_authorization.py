@@ -1,9 +1,12 @@
 import os
+from dotenv import load_dotenv
 from playwright.sync_api import Page, expect
 
-BASE_URL       = os.getenv("BASE_URL",       "https://smartup.online")
-DEFAULT_EMAIL  = os.getenv("TEST_EMAIL",     "admin@autotest")
-DEFAULT_PASS   = os.getenv("TEST_PASSWORD",  "greenwhite")
+load_dotenv()
+
+BASE_URL      = os.environ["BASE_URL"]
+DEFAULT_EMAIL = os.environ["TEST_EMAIL"]
+DEFAULT_PASS  = os.environ["TEST_PASSWORD"]
 
 # Dashboard to'liq yuklanishini kutish uchun alohida timeout (sekin server hisobi)
 DASHBOARD_TIMEOUT = 120_000
