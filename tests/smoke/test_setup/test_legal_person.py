@@ -1,4 +1,3 @@
-import time
 import allure
 from playwright.sync_api import Page, expect
 from tests.smoke.flows.flow_navigate import navigate_to
@@ -23,6 +22,5 @@ def test_legal_person(page: Page, code) -> None:
 
     expect(page.get_by_text(f"cod_lg_pw{code}")).to_be_visible()
     expect(page.get_by_text(f"legal_person-pw{code}").first).to_be_visible()
-    time.sleep(1)
 
 # ----------------------------------------------------------------------------------------------------------------------

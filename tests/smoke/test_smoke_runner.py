@@ -1,6 +1,5 @@
 import allure
 from playwright.sync_api import Page
-
 from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.test_setup.test_payment_type import test_payment_type as run_payment_type
 from tests.smoke.test_setup.test_product import test_product as run_product
@@ -8,9 +7,10 @@ from tests.smoke.test_setup.test_robot import test_robot as run_robot
 from tests.smoke.test_setup.test_filial import test_filial as run_filial
 from tests.smoke.test_setup.test_legal_person import test_legal_person as run_legal_person
 from tests.smoke.test_setup.test_license import test_attach_license as run_attach_license, test_buy_license as run_buy_license
-from tests.smoke.test_setup.test_natural_person import test_natural_person as run_natural_person
+from tests.smoke.test_setup.test_natural_person import test_natural_person as run_natural_person, \
+    test_natural_person_for_client_1 as run_natural_person_for_client_1
 from tests.smoke.test_setup.test_price_type import test_price_type_uzb as run_price_type_uzb
-from tests.smoke.test_setup.test_room import test_room as run_room
+from tests.smoke.test_setup.test_room import test_room as run_room, test_room_attachment as run_room_attachment
 from tests.smoke.test_setup.test_sector import test_sector as run_sector
 from tests.smoke.test_setup.test_user import (
     test_user as run_user,
@@ -92,5 +92,13 @@ def test_16_sector(session_page: Page, code):
 @allure.title("17 - Product")
 def test_17_product(session_page: Page, code):
     run_product(session_page, code)
+
+@allure.title("18 - Natural Person For Client_1")
+def test_18_natural_person_for_client_1(session_page: Page, code):
+    run_natural_person_for_client_1(session_page, code)
+
+@allure.title("19 - Room Attachment")
+def test_19_room_attachment(session_page: Page, code):
+    run_room_attachment(session_page, code)
 
 # ----------------------------------------------------------------------------------------------------------------------

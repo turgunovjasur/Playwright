@@ -175,6 +175,31 @@ playwright show-trace test-results/traces/smoke_trace.zip
 
 ---
 
+## Codegen — locator yozishda yordam
+
+Playwright Codegen brauzerda harakatlarni yozib, avtomatik test kodi generatsiya qiladi. Yangi locator topishda ishlatiladi.
+
+### Ishga tushirish
+
+```bash
+# BASE_URL ga o'tib codegen ochish
+playwright codegen https://smartup.online
+
+# Login sahifasidan boshlash
+playwright codegen https://smartup.online/login.html
+```
+
+### Foydalanish tartibi
+
+1. `playwright codegen <url>` buyrug'ini terminalda ishga tushiring
+2. Brauzerda kerakli sahifaga o'ting va amallarni bajaring
+3. Hosil bo'lgan kodni o'ng oynadan nusxa olib test fayliga qo'ying
+4. Kerak bo'lmagan qatorlarni olib tashlang
+
+> Codegen yozgan locatorlarni to'g'ridan-to'g'ri ishlatmasdan, mavjud `flow_navigate.py`, `flow_authorization.py` patterlariga mos tarzda adaptatsiya qiling.
+
+---
+
 ## Foydali buyruqlar
 
 ```bash
