@@ -132,9 +132,27 @@ def page(browser: Browser, request) -> Generator[Page, Any, None]:
 # ----------------------------------------------------------------------------------------------------------------------
 
 @pytest.fixture(scope="session")
-def code():
-    """Test sessiyasi uchun yagona cod qiymati"""
-    return str(random.randint(1000, 9999))
+def code(request):
+    """
+    test_smoke_runner orqali ishlaganda: yangi random code yaratadi.
+    Yakka test ishlaganda: data_store.json fayldan o'qiydi.
+    """
+    is_full_run = any("test_smoke_runner" in item.nodeid for item in request.session.items)
+
+    if is_full_run:
+        return str(random.randint(1000, 9999))
+
+    path = os.path.join(DATA_DIR, "data_store.json")
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            try:
+                saved = json.load(f).get("code")
+                if saved:
+                    return saved
+            except json.JSONDecodeError:
+                pass
+
+    pytest.exit("Yakka test uchun saqlangan 'code' topilmadi. Avval test_smoke_runner ni ishga tushiring.")
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -221,7 +239,6 @@ def pytest_runtest_makereport(item, call):
                 name="screenshot",
                 attachment_type=allure.attachment_type.PNG,
             )
-
 
 # ----------------------------------------------------------------------------------------------------------------------
 

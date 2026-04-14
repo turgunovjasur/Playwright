@@ -1,6 +1,8 @@
 import allure
 from playwright.sync_api import Page
 from tests.smoke.flows.flow_authorization import authorization
+from tests.smoke.test_life_cycle.balance import test_balance as run_balance
+from tests.smoke.test_life_cycle.init_balance import test_init_balance as run_init_balance
 from tests.smoke.test_setup.test_payment_type import test_payment_type as run_payment_type
 from tests.smoke.test_setup.test_product import test_product as run_product
 from tests.smoke.test_setup.test_robot import test_robot as run_robot
@@ -100,5 +102,13 @@ def test_18_natural_person_for_client_1(session_page: Page, code):
 @allure.title("19 - Room Attachment")
 def test_19_room_attachment(session_page: Page, code):
     run_room_attachment(session_page, code)
+
+@allure.title("20 - Init Balance")
+def test_20_init_balance(session_page: Page, code):
+    run_init_balance(session_page, code)
+
+@allure.title("21 - Balance")
+def test_21_balance(session_page: Page, code):
+    run_balance(session_page, code)
 
 # ----------------------------------------------------------------------------------------------------------------------

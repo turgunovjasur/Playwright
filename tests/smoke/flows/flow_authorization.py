@@ -4,12 +4,12 @@ from playwright.sync_api import Page, expect
 
 load_dotenv()
 
-BASE_URL      = os.environ["BASE_URL"]
-DEFAULT_EMAIL = os.environ["TEST_EMAIL"]
-DEFAULT_PASS  = os.environ["TEST_PASSWORD"]
+COMPANY_URL = os.environ["COMPANY_URL"]
+COMPANY_CODE = os.environ["COMPANY_CODE"]
+COMPANY_PASS = os.environ["COMPANY_PASSWORD"]
+USER_PASS = os.environ["USER_PASSWORD"]
 
-# Dashboard to'liq yuklanishini kutish uchun alohida timeout (sekin server hisobi)
-DASHBOARD_TIMEOUT = 120_000
+ADMIN_EMAIL = f"admin{COMPANY_CODE}"
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -22,8 +22,8 @@ def logout(page: Page) -> None:
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def login(page: Page, email: str = DEFAULT_EMAIL, password: str = DEFAULT_PASS) -> None:
-    page.goto(f"{BASE_URL}/login.html")
+def login(page: Page, email: str = ADMIN_EMAIL, password: str = COMPANY_PASS) -> None:
+    page.goto(f"{COMPANY_URL}/login.html")
     page.get_by_placeholder("Логин@компания").fill(email)
     page.get_by_role("textbox", name="Пароль").fill(password)
     page.get_by_role("button", name="Войти").click()
@@ -31,12 +31,19 @@ def login(page: Page, email: str = DEFAULT_EMAIL, password: str = DEFAULT_PASS) 
 # ----------------------------------------------------------------------------------------------------------------------
 
 def dashboard(page: Page) -> None:
-    expect(page.get_by_role("heading", name="Trade")).to_be_visible(timeout=DASHBOARD_TIMEOUT)
+    expect(page.get_by_role("heading", name="Trade")).to_be_visible(timeout=120_000)
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def authorization(page: Page, email: str = DEFAULT_EMAIL, password: str = DEFAULT_PASS) -> None:
-    login(page, email, password)
+def authorization(page: Page, email: str = ADMIN_EMAIL, password: str = COMPANY_PASS) -> None:
+    login(page, email=email, password=password)
+    dashboard(page)
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+def authorization_user(page: Page, code: str) -> None:
+    user_email = f"user-pw{code}{COMPANY_CODE}"
+    login(page, email=user_email, password=USER_PASS)
     dashboard(page)
 
 # ----------------------------------------------------------------------------------------------------------------------
