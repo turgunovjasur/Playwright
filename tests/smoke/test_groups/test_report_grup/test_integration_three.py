@@ -3,7 +3,6 @@ from datetime import datetime
 
 from playwright.sync_api import expect
 from tests.smoke.flows.flow_authorization import authorization
-from tests.smoke.flows.flow_navigate import switch_filial
 from utils.base_page import BasePage
 
 pytestmark = [allure.epic("Report Group"), allure.feature("Integration Report"), allure.story("Integration Three")]
@@ -34,9 +33,10 @@ def run_report_integration_three_check(page, code, login=True):
       4. Сформировать (HTML) -> loader tugagach hisobot iframe'i render bo'ladi
       5. Hisobot iframe'ida 3 ta sheet (tab 1->#sheet1, 2->#sheet2, 3->#sheet3) ko'rinishini tekshirish
     """
+    base = BasePage(page)
     if login:
         authorization(page)  # ADMIN login (checklist preconditioniga ko'ra)
-        switch_filial(page, name=f"filial-pw{code}")
+        base.switch_filial(name=f"filial-pw{code}")
 
     with allure.step("1 - Integration №3 report sahifasini ochish"):
         base, _, rest = page.url.partition("#/")
@@ -60,7 +60,7 @@ def run_report_integration_three_check(page, code, login=True):
 
     with allure.step("4 - Сформировать (HTML hisobot) va loaderlar tugashini kutish"):
         page.locator("button.btn-primary[ng-click=\"run('html', true)\"]").click()
-        BasePage(page).wait_for_loader()
+        base.wait_for_loader()
 
     with allure.step("5 - Hisobot iframe'ida 3 ta sheet tekshiriladi"):
         report = page.frame_locator('iframe[src*="integration_three"]')

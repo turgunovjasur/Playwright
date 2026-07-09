@@ -7,7 +7,6 @@ from playwright.sync_api import expect
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 from tests.smoke.flows.flow_authorization import authorization
-from tests.smoke.flows.flow_navigate import navigate_to, expect_page
 from utils.base_page import BasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Company")]
@@ -53,6 +52,7 @@ def company_code_for(code):
 
 
 def run_company(page, code, save_data=None, company_code=None):
+    base = BasePage(page)
     company_code = company_code or company_code_for(code)
     company_code_pattern = re.compile(re.escape(company_code), re.IGNORECASE)
     split_code_match = re.match(r"^([a-z]+)(\d+)$", company_code, re.IGNORECASE)
@@ -66,15 +66,15 @@ def run_company(page, code, save_data=None, company_code=None):
         authorization(page, email=head_admin_email(), password=head_admin_password())
 
     with allure.step("2 - Company ro'yxatiga o'tish"):
-        navigate_to(page, tab="Главное", name="Компании")
-        expect_page(page, heading=re.compile(r"Комп|Comp"))
+        base.navigate_to(tab="Главное", name="Компании")
+        base.expect_page(heading=re.compile(r"Комп|Comp"))
 
     with allure.step("3 - Company mavjudligini tekshirish"):
         search = page.get_by_role("searchbox", name="Поиск")
         expect(search).to_be_visible()
         search.fill(company_code)
         search.press("Enter")
-        BasePage(page).wait_for_loader()
+        base.wait_for_loader()
 
         company_exists = True
         try:
@@ -85,7 +85,7 @@ def run_company(page, code, save_data=None, company_code=None):
     if not company_exists:
         with allure.step("4 - Yangi company formasini ochish"):
             page.get_by_role("button", name="Создать").click()
-            BasePage(page).wait_for_loader()
+            base.wait_for_loader()
             expect(page.locator("h1").first).to_contain_text(re.compile(r"создание|Creation", re.IGNORECASE))
             form = page.locator("#companyForm").first
             expect(form).to_be_visible(timeout=COMPANY_FORM_TIMEOUT)
@@ -148,7 +148,7 @@ def run_company(page, code, save_data=None, company_code=None):
                 expect(option).to_be_visible()
                 option.click()
                 expect(control.get_by_role("textbox").first).to_have_value(re.compile(re.escape(option_text)))
-                BasePage(page).wait_for_loader()
+                base.wait_for_loader()
 
         with allure.step("7 - Trade va modullarni yoqish"):
             products_title = page.get_by_role("heading", name=re.compile(r"^products$", re.IGNORECASE)).first
@@ -165,7 +165,7 @@ def run_company(page, code, save_data=None, company_code=None):
             if trade_switch.get_attribute("aria-checked") != "true":
                 trade_switch.click()
             expect(trade_switch).to_have_attribute("aria-checked", "true")
-            BasePage(page).wait_for_loader()
+            base.wait_for_loader()
             expect(products_card).to_contain_text("Warehouse - Advanced", timeout=30_000)
 
             clicked_modules = []
@@ -198,7 +198,7 @@ def run_company(page, code, save_data=None, company_code=None):
             )
             if module_result["moduleCount"] != len(TRADE_MODULES):
                 raise AssertionError("Trade modullari to'liq yoqilmadi")
-            BasePage(page).wait_for_loader()
+            base.wait_for_loader()
 
         with allure.step("8 - Company saqlash va list ochilishini kutish"):
             page.get_by_role("button", name="Сохранить").click()
@@ -218,7 +218,7 @@ def run_company(page, code, save_data=None, company_code=None):
                 confirm.get_by_role("button", name="да", exact=True).first.click()
                 confirm.wait_for(state="hidden", timeout=30_000)
                 break
-            BasePage(page).wait_for_loader(timeout=600_000)
+            base.wait_for_loader(timeout=600_000)
             expect(page.locator("h1").first).to_contain_text(
                 re.compile(r"^\s*(Компании|Companies)\s*$", re.IGNORECASE),
                 timeout=600_000,
@@ -229,7 +229,7 @@ def run_company(page, code, save_data=None, company_code=None):
             expect(search).to_be_visible()
             search.fill(company_code)
             search.press("Enter")
-            BasePage(page).wait_for_loader()
+            base.wait_for_loader()
             try:
                 expect(page.locator("body")).to_contain_text(company_code_pattern, timeout=10_000)
             except (AssertionError, PlaywrightTimeoutError) as exc:
@@ -255,7 +255,7 @@ def run_company(page, code, save_data=None, company_code=None):
                 break
         if not view_opened:
             raise AssertionError("Company listda 'Просмотреть' button topilmadi")
-        BasePage(page).wait_for_loader()
+        base.wait_for_loader()
         expect(page.locator("h1").first).to_contain_text(re.compile(r"просмотр|View", re.IGNORECASE))
 
     with allure.step("11 - Company viewda security sozlamalarini qo'llash"):
@@ -265,7 +265,7 @@ def run_company(page, code, save_data=None, company_code=None):
                 continue
             expect(tab).to_be_visible()
             tab.click()
-            BasePage(page).wait_for_loader()
+            base.wait_for_loader()
             expect(page.locator("body")).to_contain_text("Политика лицензирования")
             break
         else:
@@ -305,7 +305,7 @@ def run_company(page, code, save_data=None, company_code=None):
                 expect(off_option).to_be_visible()
                 off_option.click()
 
-        BasePage(page).wait_for_loader(timeout=600_000)
+        base.wait_for_loader(timeout=600_000)
         save_button = page.get_by_role("button", name="Сохранить", exact=True).first
         if save_button.count() > 0 and save_button.is_visible():
             save_button.click()
@@ -317,7 +317,7 @@ def run_company(page, code, save_data=None, company_code=None):
                 confirm.wait_for(state="hidden", timeout=30_000)
             except (AssertionError, PlaywrightTimeoutError):
                 pass
-            BasePage(page).wait_for_loader(timeout=600_000)
+            base.wait_for_loader(timeout=600_000)
 
     with allure.step("12 - Company code ni data storega saqlash"):
         if save_data is not None:

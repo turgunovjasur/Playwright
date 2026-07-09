@@ -3,7 +3,6 @@ import re
 import allure
 from playwright.sync_api import expect
 from tests.smoke.flows.flow_authorization import authorization
-from tests.smoke.flows.flow_navigate import navigate_to, expect_page
 from tests.smoke.flows.flow_order.flow_order_add import (
     auto_filled_order_dates,
     flow_order_final_page,
@@ -28,14 +27,15 @@ def run_c_group_create_action(page, code, login=True):
       5. Завершить -> "Сохранить?" tasdiqlash
       6. Ro'yxatda yaratilgan aksiya va "Активный" statusi tekshiriladi
     """
+    base = BasePage(page)
     action_name = f"Скидка 10% на 10 товаров pw{code}"
 
     if login:
         authorization(page, who="user", code=code)
 
     with allure.step("1 - Aksiyalar ro'yxatiga o'tish"):
-        navigate_to(page, tab="Справочники", name="Акции")
-        expect_page(page, heading="Акции")
+        base.navigate_to(tab="Справочники", name="Акции")
+        base.expect_page(heading="Акции")
 
     with allure.step("2 - Yangi aksiya formasi: asosiy maydonlar"):
         page.get_by_role("button", name="Создать").click()
@@ -82,9 +82,9 @@ def run_c_group_create_action(page, code, login=True):
 
     with allure.step("5 - Saqlash va ro'yxatda tekshirish"):
         page.get_by_role("button", name="Завершить", exact=True).first.click()
-        BasePage(page).confirm_biruni("Сохранить?")
-        BasePage(page).wait_for_loader()
-        expect_page(page, heading="Акции")
+        base.confirm_biruni("Сохранить?")
+        base.wait_for_loader()
+        base.expect_page(heading="Акции")
         page.get_by_role("searchbox", name="Поиск").fill(action_name)
         page.get_by_role("searchbox", name="Поиск").press("Enter")
         row = page.locator("b-grid .tbl-row").filter(has_text=action_name).first
@@ -108,6 +108,7 @@ def run_c_group_order_action_discount(page, code, login=True):
       5. Final sahifada chegirma va ИТОГО 63 000 ni tekshirib, status Новый bilan saqlash.
       6. View oynasida client, product, chegirma (-7 000) va 63 000 ni tekshirish.
     """
+    base = BasePage(page)
     product = f"product-pw{code}"
     action_name = f"Скидка 10% на 10 товаров pw{code}"
     discount = re.compile(r"-\s*7\s*000")
@@ -152,7 +153,7 @@ def run_c_group_order_action_discount(page, code, login=True):
             }"""
         )
         expect(get_toggle).to_be_checked()
-        BasePage(page).wait_for_loader()
+        base.wait_for_loader()
 
     with allure.step("4 - 'Товар' tabida chegirma qo'llanganini tekshirish"):
         page.locator("#kt_content").get_by_role("link", name="Товар", exact=True).click()
@@ -175,7 +176,7 @@ def run_c_group_order_action_discount(page, code, login=True):
         # Order view tugmasi UI versiyasiga qarab "Просмотр" yoki "Просмотреть" bo'lishi mumkin.
         row.get_by_role("button", name=re.compile(r"Просмотр")).first.click()
         expect(page).to_have_url(re.compile(r".*/order_view"))
-        BasePage(page).wait_for_loader()
+        base.wait_for_loader()
         expect(page.locator("#kt_content")).to_contain_text(f"natural_client-pw{code}")
         expect(page.locator("#kt_content")).to_contain_text(product)
         expect(page.locator("#kt_content")).to_contain_text(discount)

@@ -1,7 +1,6 @@
 import allure
 from playwright.sync_api import expect
 from tests.smoke.flows.flow_authorization import authorization
-from tests.smoke.flows.flow_navigate import switch_filial
 from utils.base_page import BasePage
 from tests.smoke.test_groups.test_report_grup.report_helpers import generate_and_verify_download, select_b_input_option
 
@@ -35,11 +34,12 @@ def run_report_optimum_check(page, code, login=True):
     1-generate'dan keyin sahifada turg'un `.block-ui-overlay` qolib, "Все филиалы"
     checkboxini toggle qilish bloklanadi (alohida tekshirish kerak bo'lgan gap).
     """
+    base = BasePage(page)
     filial_name = f"filial-pw{code}"
 
     if login:
         authorization(page)
-        switch_filial(page, name=filial_name)
+        base.switch_filial(name=filial_name)
 
     with allure.step("1 - Optimum sahifasini ochish"):
         base, _, rest = page.url.partition("#/")
@@ -51,7 +51,7 @@ def run_report_optimum_check(page, code, login=True):
         page.locator('button[ng-click="q.show_setting = true"]').click()
         select_b_input_option(page, "product_groups", "Группа")
         for key, value in PREFIXES:
-            BasePage(page).input(ng_model=f"d.prefix_{key}", value=value)
+            base.input(ng_model=f"d.prefix_{key}", value=value)
         save_btn = page.locator('button[ng-click="save()"]')
         save_btn.click()
         expect(save_btn).to_be_hidden()

@@ -57,7 +57,7 @@
   - `.hint-item` ni bosish to'g'ridan-to'g'ri qatorni tanlaydi (name cell ichiga emas).
 
 ## Step 3 — Final page
-- Payment type b-input: `d.payment_type_name`, label "Тип оплаты" → `b_input_by_label("Тип оплаты", value=...)` (label orqali, id'da typo bor).
+- Payment type b-input: `d.payment_type_name`, label "Тип оплаты" → `b_input("Тип оплаты", value=...)` (label orqali, id'da typo bor).
 - Status ui-select: `#anor279-ui_select-status` (div), ichida "Select box activate" (`.ui-select-toggle`),
   optionlar `.ui-select-choices-row-inner`. Default "Новый".
 - Save: `#anor279-button-next_step` matni "СОХРАНИТЬ" (`nextStep()`), `save_and_expect_heading(..., exact_button=False)`.

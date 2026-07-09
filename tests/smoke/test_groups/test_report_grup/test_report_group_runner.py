@@ -2,7 +2,6 @@ import allure
 import pytest
 
 from tests.smoke.flows.flow_authorization import authorization
-from tests.smoke.flows.flow_navigate import switch_filial
 from tests.smoke.progress import progress_step
 from tests.smoke.test_groups.test_report_grup.test_cislink import run_report_cislink_check
 from tests.smoke.test_groups.test_report_grup.test_integration_three import run_report_integration_three_check
@@ -10,6 +9,7 @@ from tests.smoke.test_groups.test_report_grup.test_saleswork import run_report_s
 from tests.smoke.test_groups.test_report_grup.test_optimum import run_report_optimum_check
 from tests.smoke.test_groups.test_report_grup.test_spot import run_report_spot_check
 from tests.smoke.test_groups.test_report_grup.test_integration_two import run_report_integration_two_check
+from utils.base_page import BasePage
 
 pytestmark = [
     pytest.mark.smoke_group("Report", independent=True),
@@ -45,6 +45,7 @@ CISLINK_SKIP_REASON = (
 
 def run_report_group_chain(group_page, code, save_data, load_data):
     """Report group chainni pytest test funksiyalarini chaqirmasdan bajaradi."""
+    base = BasePage(group_page)
     allure.dynamic.description(REPORT_GROUP_TEST_SCENARIO)
     with progress_step(
         group="Report group",
@@ -54,7 +55,7 @@ def run_report_group_chain(group_page, code, save_data, load_data):
         display="Report Group login",
     ):
         authorization(group_page)  # ADMIN
-        switch_filial(group_page, name=f"filial-pw{code}")
+        base.switch_filial(name=f"filial-pw{code}")
     # Report-01 (CisLink) SKIP — qarang: CISLINK_SKIP_REASON. Sahifa deploymentlar
     # bo'ylab o'zgargani uchun chain'da ishga tushirilmaydi (barcha serverda).
     with progress_step(

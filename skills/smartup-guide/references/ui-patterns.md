@@ -11,20 +11,27 @@ Tags: locator, angular
 - Kontekst: hozircha Angular migratsiyaga o'tgan UI faqat `company` formasi; qolgan formalar eski Biruni/AngularJS tuzilmasida va ularda mavjud `ng-model`/`b-input` helperlari ishlatiladi.
 - Afzal locatorlar:
   - `BasePage.input(label="Код", value=...)` (universal: `label=`/`ng_model=`/`placeholder=`/`locator=`)
-  - `BasePage.b_input_by_label(label, value=...)`
+  - `BasePage.b_input(label, value=...)`
   - label/text asosidagi local yoki umumiy helper
   - `page.get_by_role(...)`
 - Sabab: UI Angular migratsiya/yangilanishlarida semantik locatorlar barqarorroq.
+
+### MCP bilan Smartup'ni Haydash — locator manbasi, snapshot iqtisodi
+Tags: mcp, playwright, locator, snapshot, workflow
+- Qoida: MCP (`mcp__playwright__*`) bilan Smartup'ni jonli haydashda har qadamda `browser_snapshot` OLMA. Avval locatorni shu guide'dan va flow fayllaridan ol: `flow_navigate.py` (login/filial/menu — `.pt-3.px-2`, `a.menu-link.menu-toggle`, `a.menu-link.menu-link-title`), `flow_authorization.py`, `forms/<slug>.md` dossierlari, hamda yuqoridagi afzal helper/role locatorlar. Ular bilan to'g'ridan-to'g'ri CSS/role selector orqali `browser_click`/`browser_type` qil.
+- `browser_snapshot` faqat: (a) locator hujjatlanmagan/noma'lum bo'lsa (yangi forma), (b) kutilmagan holatni aniqlash uchun. Olsang ham `target`/`depth` bilan cheklab ol, butun sahifani emas.
+- Grid/natija tekshirish uchun butun snapshot o'rniga `browser_evaluate` bilan aniq elementni target qilib olish yengilroq (masalan `b-grid .tbl-row` matnlarini `innerText` orqali). 2026-07-02 da user grid login ustunini shu yo'l bilan tekshirdim.
+- Sabab: har `browser_snapshot` yuzlab qator YAML qaytaradi va kontekstni behuda to'ldiradi; locator allaqachon guide/flow'da bo'lsa snapshot ortiqcha.
 
 ### Heading / Sahifa Tekshirish — `expect_page` helper
 Tags: locator, heading, get_by_role, navigation, url
 - **DOM fakti** (2026-06-29 live tekshirilgan): sahifa sarlavhasi yagona `<h6 class="text-dark font-weight-bolder ...">` (Angular `ng-binding`). `<h1>` mavjud, lekin **bo'sh** — sarlavha uchun `h1` ISHLATMA, `get_by_role("heading")` ishlat.
 - Oddiy list/create sahifada `role=heading` aniq **1 ta**. Sahifa o'zgarsa shu elementning matni **almashadi** (yangi heading element qo'shilmaydi). `navigate_to` transition o'rtasida heading matni qisqa vaqt **bo'sh `''`** bo'ladi — shuning uchun tekshiruv doim **auto-retry qiluvchi `expect(...)`** bilan bo'lsin, bir martalik `inner_text()` emas.
 - **Ko'p heading muammosi:** wizard yoki ko'p bo'limli formalarda bir vaqtda bir nechta ko'rinadigan heading bo'ladi (masalan Акция create: `Акция (создание)`, `Главное`, `Условия`). Bunda `expect(page.get_by_role("heading")).to_contain_text(X)` — kerakli matn ulardan birida bo'lsa ham — **FAIL bo'ladi** (2026-06-29 sintetik isbotlangan: locator 2+ elementga to'g'ri kelsa, scalar `to_contain_text` to'g'ri matnda ham yiqiladi). Ya'ni to'g'ri sahifada turib ham false-negative beradi.
-- **Afzal yechim — `tests/smoke/flows/flow_navigate.py::expect_page(page, heading=None, url=None, timeout=...)`** (navigate_to'dan keyin chaqiriladi; `navigate_to` o'zi faqat navigatsiya qiladi, tekshirmaydi):
-  - `expect_page(page, heading="Цены")` — `heading` str (substring, registrga befarq) yoki `re.compile(...)` bo'lishi mumkin (masalan `re.compile(r"Комп|Comp")`). Ichida `get_by_role("heading").filter(has_text=...).first` + `to_be_visible()` ishlatiladi: ortiqcha heading bo'lsa ham mosini tanlaydi, `.first` strict-mode'dan saqlaydi, retry qiladi.
-  - `expect_page(page, url="price_type_list")` — `url` bo'lagi (substring) yoki regex. **URL slug eng ishonchli signal**: locale'ga bog'liq emas, har sahifada unikal.
-  - `expect_page(page, heading="...", url="...")` — ikkalasi birga, eng kuchli tekshiruv.
+- **Afzal yechim — `base.expect_page(heading=None, url=None, timeout=...)`** (`base.navigate_to(...)` dan keyin chaqiriladi; `navigate_to` o'zi faqat navigatsiya qiladi, tekshirmaydi):
+  - `base.expect_page(heading="Цены")` — `heading` str (substring, registrga befarq) yoki `re.compile(...)` bo'lishi mumkin (masalan `re.compile(r"Комп|Comp")`). Ichida `get_by_role("heading").filter(has_text=...).first` + `to_be_visible()` ishlatiladi: ortiqcha heading bo'lsa ham mosini tanlaydi, `.first` strict-mode'dan saqlaydi, retry qiladi.
+  - `base.expect_page(url="price_type_list")` — `url` bo'lagi (substring) yoki regex. **URL slug eng ishonchli signal**: locale'ga bog'liq emas, har sahifada unikal.
+  - `base.expect_page(heading="...", url="...")` — ikkalasi birga, eng kuchli tekshiruv.
 - Barqaror URL slug'lar: `price_type_list`, `payment_type_list`, `filial_list`, `inventory_list` (ТМЦ), `action_list` (Акции), `order_list`, `anor/mkf/contract_list`, `template_list`.
 - Eski `expect(page.get_by_role("heading", name="X")).to_be_visible()` ham ishlaydi (substring; `exact=True` ISHLATMA — list heading'larda ko'pincha oldida icon/probel bo'ladi), lekin yangi/refactor kodda `expect_page` afzal: bitta markaziy nuqta, xato xabari hozirgi heading + url ni ko'rsatadi.
 
@@ -42,11 +49,12 @@ Tags: form, discovery, checkbox, switch, radio
 
 ### b-input
 Tags: b-input, locator
-- Qoida: `b-input` uchun public API bitta bo'lsin: `BasePage.b_input_by_label(...)`.
+- Qoida: `b-input` uchun public API bitta bo'lsin: `BasePage.b_input(...)`.
 - Ishlatish:
-  - `BasePage.b_input_by_label(label, value=option_text)` — tanlash
-  - `BasePage.b_input_by_label(label, expect_value=expected_value)` — value assert
-  - `BasePage.b_input_by_label(label, return_value=True)` — joriy value olish
+  - `BasePage.b_input(label, value=option_text)` — tanlash
+  - `BasePage.b_input(ng_model="d.x", value=option_text)` — label ishonchsiz/yo'q bo'lsa fallback
+  - `BasePage.b_input(label, expect_value=expected_value)` — value assert
+  - `BasePage.b_input(label, return_value=True)` — joriy value olish
 - Eslatma: ba'zi input value'lar sahifa textiga kirmaydi; input value assert qilish kerak.
 
 ### b-input Server-Search (report group)
@@ -125,10 +133,12 @@ Tags: screenshot, debug, url
 
 ### Umumiy Forma Helper'lari (DRY)
 Tags: locator, form, helper, setup
-- Qayerda: `tests/smoke/flows/flow_form.py` va `utils/base_page.py`.
-- Kontekst: `company` formasi Angular `smt-control` strukturada; boshqa setup/report/biznes formalar eski Biruni/AngularJS holida, shuning uchun `flow_form.py` helperlari ularga mos.
-- Joylashuv: label asosidagi universal helperlar (`input`, `b_input_by_label`, `checkbox`) `utils/base_page.py` ichida tursin; ular biznes flow emas, umumiy UI primitive. `tests/smoke/flows/flow_form.py` esa `ng-model` asosidagi low-level fallback helper sifatida qolsin.
-- Qoida: ng-model asosidagi forma amallari uchun yangi helper yozilmasin — text input/textarea uchun `base.input(ng_model="d.x", value=...)` (universal funksiya, label ishonchsiz bo'lganda), qolganlari uchun `flow_form.py` dagi tayyorlari: `fill_textarea`, `select_b_input_by_search`, `select_tashkent_region`, `assert_visible_page_text`. `root` sifatida `page` ham, modal locator (`.modal.show`) ham beriladi — alohida `_modal_*` variant kerak emas. Checkbox/switch uchun `flow_form` da alohida helper YO'Q — `base.checkbox(...)` ishlatiladi (pastdagi qoidaga qara). (Eski `flow_form.fill_input` olib tashlandi — `base.input(ng_model=...)` ga konsolidatsiya qilingan, 2026-06-30.)
+- Qayerda: `utils/base_page.py`.
+- Kontekst: `company` formasi Angular `smt-control` strukturada; boshqa setup/report/biznes formalar eski Biruni/AngularJS holida. Umumiy UI primitive'lar `BasePage` ichida turadi.
+- Joylashuv: navigatsiya/page state va label/ng-model asosidagi universal helperlar (`navigate_to`, `expect_page`, `switch_filial`, `input`, `b_input`, `checkbox`, `text`) `utils/base_page.py` ichida tursin; ular biznes flow emas, umumiy UI primitive.
+- Chegara: faqat bitta testga kerak bo'lgan biznes/helper logika `BasePage` ga chiqmaydi; o'sha test faylida `_...` local helper bo'lib qoladi.
+- Qoida: `navigate_to`, `expect_page`, `switch_filial` uchun alohida wrapper import qilinmaydi; avval `base = BasePage(page)` qilinadi, keyin `base.navigate_to(...)`, `base.expect_page(...)`, `base.switch_filial(...)` ishlatiladi. `flow_navigate.py` faqat maxsus `navigate_to_a2` kabi alohida flowlar uchun qoladi.
+- Qoida: ng-model asosidagi forma amallari uchun yangi helper yozilmasin — text input/textarea uchun `base.input(ng_model="d.x", value=...)`, b-input uchun `base.b_input(ng_model="d.x", value=...)` (label ishonchsiz bo'lganda), checkbox/switch uchun `base.checkbox(...)`, sahifa/view matn tekshiruvi uchun `base.text(...)` ishlatiladi. `text` default `root="b-page"` ishlatadi; kerak bo'lsa `root` sifatida selector yoki modal locator (`.modal.show`) beriladi — alohida `_modal_*` variant kerak emas.
 - Qoida: **oddiy text input bilan ishlashda yagona universal funksiya — `BasePage.input(...)`** (`checkbox()` kabi pattern). Topish strategiyalari (faqat bittasi): `label="Код"` (asosiy), `ng_model="d.code"` (label ishonchsiz bo'lsa, masalan label DOMda inputdan keyin kelsa), `placeholder="Поиск"`, `locator` (positional, tayyor selector). Amal: `value=...` (clear+fill), `expect_value=...` (assert; value berilsa default expect_value=value), `return_value=True` (string), `press_tab=True`, `index=`, `root=`. `first`/`nth` locatorlar test ichida qolmasin.
 - Qoida: label konteyner qidirishda avval eng yaqin `col`/`col-*` konteyneri olinadi, keyin `input-group`, `form-group`, `form-row`, `row`. Sabab: eski formalarda bir `form-group` ichida ikkita field turishi mumkin (`Код` + `Порядковый номер`, `Название` + `Код акции`, `Дата начала` + `Срок действия`); `form-group`ni birinchi olish noto'g'ri birinchi inputni tanlaydi.
 - Qoida: labeldan field topishda keng card/col ichidagi birinchi inputni olish yetarli emas; label elementidan keyingi birinchi mos field (`input`/`textarea`/`b-input`/checkbox) target qilinsin. Room add formasida `Название` keng konteyner orqali `Код` inputini qayta to'ldirib yuborgani 2026-06-26 da tasdiqlangan.

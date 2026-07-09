@@ -2,7 +2,6 @@ import re
 
 import allure
 from playwright.sync_api import expect
-from tests.smoke.flows.flow_navigate import expect_page
 
 from utils.base_page import BasePage
 
@@ -15,14 +14,14 @@ def flow_contract_add_page(
     amount="500000",
     payment_type=None,
 ):
+    base = BasePage(page)
     expect(page).to_have_url(re.compile(r".*/anor/mkf/contract\+add"))
-    BasePage(page).wait_for_loader()
+    base.wait_for_loader()
     expect(page.locator("b-page")).to_contain_text("Номер*")
     expect(page.locator("b-page")).to_contain_text("Название*")
     expect(page.locator("b-page")).to_contain_text("Валюта*")
 
     with allure.step("Contract Add: asosiy majburiy maydonlarni to'ldirish"):
-        base = BasePage(page)
         base.input(label="Код", value=contract_code)
         base.input(label="Номер", value=code)
         base.input(
@@ -32,20 +31,21 @@ def flow_contract_add_page(
         )
         expect(page.get_by_text("Физическое лицо", exact=True)).to_be_visible()
         page.get_by_text("Физическое лицо", exact=True).click()
-        base.b_input_by_label("Физическое лицо", value=f"natural_client-pw{code}")
-        base.b_input_by_label("Валюта", value="Узбекский сум")
+        base.b_input(label="Физическое лицо", value=f"natural_client-pw{code}")
+        base.b_input(label="Валюта", value="Узбекский сум")
         base.input(label="Сумма договора", value=amount)
 
     if payment_type:
         with allure.step(f"Contract Add: Типы оплат -> '{payment_type}' tanlash"):
-            BasePage(page).b_input_by_label("Типы оплат", value=payment_type)
+            base.b_input(label="Типы оплат", value=payment_type)
 
 
 def flow_contract_save(page):
+    base = BasePage(page)
     with allure.step("Contract Add: contractni saqlash"):
         page.get_by_role("button", name="Сохранить", exact=True).first.click()
-        BasePage(page).wait_for_loader()
-        expect_page(page, heading="Договоры")
+        base.wait_for_loader()
+        base.expect_page(heading="Договоры")
         expect(page).to_have_url(re.compile(r".*/anor/mkf/contract_list"))
 
 

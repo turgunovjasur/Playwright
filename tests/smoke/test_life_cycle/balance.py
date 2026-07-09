@@ -1,18 +1,18 @@
 import allure
-from playwright.sync_api import expect
-from tests.smoke.flows.flow_navigate import navigate_to, expect_page
+from utils.base_page import BasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Life Cycle"), allure.story("Balance")]
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 def run_balance(page, code):
+    base = BasePage(page)
     with allure.step("1 - TMC qoldiqlar sahifasiga o'tish"):
-        navigate_to(page, tab="Склад", name="Остатки ТМЦ")
-        expect_page(page, heading="Остатки ТМЦ")
+        base.navigate_to(tab="Склад", name="Остатки ТМЦ")
+        base.expect_page(heading="Остатки ТМЦ", url="balance_list")
 
     with allure.step("2 - Mahsulot qoldig'i ro'yxatda ko'rinishini tekshirish"):
-        expect(page.locator("b-page")).to_contain_text(f"code_product-pw{code}")
+        base.grid(f"code_product-pw{code}", f"product-pw{code}")
 
 # ----------------------------------------------------------------------------------------------------------------------
 

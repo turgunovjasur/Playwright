@@ -3,21 +3,22 @@ import re
 import allure
 from playwright.sync_api import expect
 
-from tests.smoke.flows.flow_navigate import navigate_to, expect_page
 from utils.base_page import BasePage
 
 
 def flow_open_contract_list(page):
-    navigate_to(page, tab="Финансы", name="Договоры")
-    BasePage(page).wait_for_loader()
-    expect_page(page, url="anor/mkf/contract_list")
-    expect_page(page, heading="Договоры")
+    base = BasePage(page)
+    base.navigate_to(tab="Финансы", name="Договоры")
+    base.wait_for_loader()
+    base.expect_page(url="anor/mkf/contract_list")
+    base.expect_page(heading="Договоры")
     expect(page.get_by_role("button", name="Создать", exact=True)).to_be_visible()
 
 
 def flow_contract_list(page, add=False, find_code=None, view=False):
-    expect_page(page, url="anor/mkf/contract_list")
-    expect_page(page, heading="Договоры")
+    base = BasePage(page)
+    base.expect_page(url="anor/mkf/contract_list")
+    base.expect_page(heading="Договоры")
 
     if add:
         with allure.step("Contract List: 'Создать' button click"):
@@ -29,7 +30,7 @@ def flow_contract_list(page, add=False, find_code=None, view=False):
         with allure.step(f"Contract List: contract code -> '{find_code}' qidirish"):
             page.get_by_role("searchbox", name="Поиск").fill(find_code)
             page.get_by_role("searchbox", name="Поиск").press("Enter")
-            BasePage(page).wait_for_loader()
+            base.wait_for_loader()
             expect(page.locator("b-grid")).to_contain_text(find_code)
             page.locator("b-grid").get_by_text(find_code).first.click()
 

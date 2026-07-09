@@ -33,7 +33,7 @@ Tags: contract, precondition, a-group
 Tags: contract, order, b-input
 - Qayerda: order add main page `Договор`.
 - Qoida: Order formasidagi `Договор` maydoni contract code bilan emas, `contract_name` bilan tanlanadi.
-- Testda ishlatish: `BasePage.b_input_by_label("Договор", value=contract_name, exact=False)`.
+- Testda ishlatish: `BasePage.b_input("Договор", value=contract_name, exact=False)`.
 
 ### Contract Sum Limit
 Tags: contract, limit, order, error

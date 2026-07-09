@@ -1,7 +1,6 @@
 import allure
 from playwright.sync_api import expect
 from tests.smoke.flows.flow_authorization import authorization
-from tests.smoke.flows.flow_navigate import switch_filial
 from utils.base_page import BasePage
 from tests.smoke.test_groups.test_report_grup.report_helpers import generate_and_verify_download, select_b_input_option
 
@@ -21,11 +20,12 @@ def run_report_saleswork_check(page, code, login=True):
       3. SalesWork'da tanlangan shablon nomi kiritilgan nom bilan mosligini tekshirish
       4. Экспорт -> sales_work.zip yuklanishi va bo'sh emasligini tekshirish
     """
+    base = BasePage(page)
     template_name = f"SalesWork-pw{code}"
 
     if login:
         authorization(page)
-        switch_filial(page, name=f"filial-pw{code}")
+        base.switch_filial(name=f"filial-pw{code}")
 
     with allure.step("1 - SalesWork sahifasini ochish"):
         base, _, rest = page.url.partition("#/")
@@ -37,7 +37,7 @@ def run_report_saleswork_check(page, code, login=True):
         page.locator('button[ng-click="selectTemplate()"]').click()
         page.locator('button[ng-click="add()"]').click()
         expect(page.get_by_role("heading")).to_contain_text("Шаблон Saleswork")
-        BasePage(page).input(ng_model="d.name", value=template_name)
+        base.input(ng_model="d.name", value=template_name)
         select_b_input_option(page, "product_groups", "Группа")
         page.locator('button[ng-click="save()"]').click()
 

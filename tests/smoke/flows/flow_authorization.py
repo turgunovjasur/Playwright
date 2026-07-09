@@ -120,10 +120,11 @@ def _resolve_code(code=None, generated_code="new"):
 # ----------------------------------------------------------------------------------------------------------------------
 
 def logout(page):
+    base = BasePage(page)
     page.locator(".btn.btn-icon.w-auto").click()
     expect(page.locator("#kt_header").get_by_text("Admin")).to_be_visible()
     page.locator('a[ng-click="a.logout()"]').click()
-    BasePage(page).confirm_biruni("Хотите выйти?")
+    base.confirm_biruni("Хотите выйти?")
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -137,8 +138,8 @@ def login(page, email=None, password=None):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def dashboard(page):
-    expect(page.get_by_role("heading", name="Trade")).to_be_visible(timeout=120_000)
+def dashboard(page, timeout=120_000):
+    expect(page.get_by_role("heading", name="Trade")).to_be_visible(timeout=timeout)
 
 # ----------------------------------------------------------------------------------------------------------------------
 

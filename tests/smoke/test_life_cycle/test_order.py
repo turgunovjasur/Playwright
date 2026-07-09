@@ -1,5 +1,4 @@
 import allure
-from tests.smoke.flows.flow_navigate import navigate_to
 from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.flows.flow_order.flow_order_add import (
     auto_filled_order_dates,
@@ -9,17 +8,18 @@ from tests.smoke.flows.flow_order.flow_order_add import (
 )
 from tests.smoke.flows.flow_order.flow_order_list import flow_order_list, flow_order_list_grid_setting
 from tests.smoke.flows.flow_order.flow_order_view import flow_order_view
+from utils.base_page import BasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Life Cycle"), allure.story("Order")]
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 def run_order_basic(page, code, save_data):
+    base = BasePage(page)
     authorization(page, who="user", code=code)
 
     with allure.step("Navigate To: Order Page"):
-        navigate_to(page,
-                    tab="Продажа",
+        base.navigate_to(tab="Продажа",
                     name="Заказы")
 
     with allure.step("Order List: Add Button"):

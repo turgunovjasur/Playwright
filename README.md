@@ -152,6 +152,7 @@ macOS / Linuxda qisqa wrapper ham bor:
 ```
 
 Bu bitta buyruq: eski natijalarni tozalaydi → smoke testlarni o'tkazadi → Allure hisobotini yaratadi → brauzerda ochadi.
+`--open-report` o'rniga shell env yoki repo `.env` ichida `OPEN_REPORT=1` ham ishlatish mumkin.
 
 Yangi company yaratish kerak bo'lsa shu command ishlatiladi:
 
@@ -216,7 +217,7 @@ Bu buyruq macOS, Linux va Windowsda ishlaydi. `.env` ishlatilmaydi.
 | `--head-email <email>` | Yangi company yaratish uchun head profil login emaili. |
 | `--head-password <password>` | Yangi company yaratish uchun head profil paroli. |
 | `--disable-license-policy` | Yangi companyda license policy ni off qiladi. |
-| `--open-report` | Testdan keyin Allure reportni generate qilib ochadi. |
+| `--open-report` / `OPEN_REPORT=1` | Testdan keyin Allure reportni generate qilib ochadi. `OPEN_REPORT=1` shell env yoki repo `.env` ichida berilishi mumkin. |
 | `--headless` | Browserni ko'rsatmasdan ishlatadi. |
 | `--regression` | Testlarni regression scope bilan ishlatadi. |
 | `--show-trace` | Testdan keyin oxirgi Playwright trace viewerini ochadi. |

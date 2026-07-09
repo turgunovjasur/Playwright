@@ -39,7 +39,7 @@ MCP bilan tasdiqlangan (2026-06-30, Штат formasi):
 - Dropdown (`.hint > .hint-item`) **b-input ICHIDA** render bo'ladi (body'ga portal emas) →
   variant `b-input ... .hint` ichida scope qilinadi.
 - Tanlangach **search maydoni bo'shaydi** (variant matnini ko'rsatmaydi) → `to_have_value()`
-  ishlamaydi, shuning uchun `b_input_by_label`/`select_b_input` mos kelmaydi.
+  ishlamaydi, shuning uchun `b_input`/`select_b_input` mos kelmaydi.
 - Tanlangach **dropdown ochiq qoladi** → keyingi maydonga o'tishdan oldin **Escape** kerak
   (`multiselect` buni `close=True` bilan o'zi qiladi).
 - Tasdiqlash `.multiple` ichidagi **chip** (tanlangan element matni) bo'yicha qilinadi.
@@ -50,7 +50,7 @@ MCP bilan tasdiqlangan (2026-06-30, Штат formasi):
 
 `page.get_by_role("button", name="Сохранить", exact=True).first.click()` → `expect_page(page, heading="Штат")` — biruni confirm yo'q.
 
-Natija ro'yxatda (`grid_row(robot_name, robot_code)`):
+Natija ro'yxatda (`grid(robot_name, robot_code)`):
 - `code_robot-pw{code}` ko'rinadi
 - `robot-pw{code}` ko'rinadi
 

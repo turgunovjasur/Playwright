@@ -84,7 +84,8 @@ allure serve test-results/allure-results
 - Smoke natijasini tahlil qilganda minimal path ishlaganini tekshir; regression natijasini tahlil qilganda add form full to'ldirilgani, list check va view check bajarilganini alohida ko'r.
 - `pytest.ini` dagi `testpaths = tests` va `addopts` avtomatik qo'llanadi
 - Trace fayllari `test-results/traces/` ga, Allure natijalar `test-results/allure-results/` ga yoziladi
-- `scripts/run_tests.py` report/trace viewerlarni faqat `--open-report` yoki `--show-trace` bo'lsa ochadi.
+- `scripts/run_tests.py` Allure reportni `--open-report` yoki shell/repo `.env` dagi `OPEN_REPORT=1` bilan ochadi.
+- `scripts/run_tests.py` trace viewerini faqat `--show-trace` bo'lsa ochadi.
 - Directory/default collectionda runner bo'lmagan smoke testlar duplicate flow bo'lmasligi uchun deselect qilinadi; kerak bo'lsa `--include-leaf-tests` ishlatiladi.
 
 ## Loyiha Xususiyatlari

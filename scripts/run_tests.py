@@ -36,6 +36,28 @@ def normalized_url(value):
     return (value or "").strip().rstrip("/")
 
 
+def env_flag(env, name):
+    return str(env.get(name, "")).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def load_local_dotenv(env):
+    env_path = ROOT / ".env"
+    if not env_path.exists():
+        return
+    with env_path.open("r", encoding="utf-8") as f:
+        for raw_line in f:
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            if line.startswith("export "):
+                line = line[len("export "):].strip()
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip("\"'")
+            if key and key not in env:
+                env[key] = value
+
+
 def clean_allure_results():
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     for item in RESULTS_DIR.iterdir():
@@ -155,6 +177,7 @@ def parse_args():
 def main():
     args, pytest_extra = parse_args()
     env = os.environ.copy()
+    load_local_dotenv(env)
 
     unsupported_ai_flags = [item for item in pytest_extra if item == "--no-ai-summary" or item.startswith("--ai-model")]
     if unsupported_ai_flags:
@@ -165,6 +188,7 @@ def main():
     if not company_url_arg:
         print("--url bo'sh bo'lishi mumkin emas", file=sys.stderr)
         return 2
+    env["SMARTUP_RUNNER"] = "1"
     env["COMPANY_URL"] = company_url_arg
 
     if args.disable_license_policy and not args.create_company:
@@ -261,7 +285,7 @@ def main():
         dry_run=args.dry_run,
     )
 
-    generate_report(env, open_report=args.open_report, dry_run=args.dry_run)
+    generate_report(env, open_report=args.open_report or env_flag(env, "OPEN_REPORT"), dry_run=args.dry_run)
     if args.show_trace:
         show_trace(env, dry_run=args.dry_run)
 

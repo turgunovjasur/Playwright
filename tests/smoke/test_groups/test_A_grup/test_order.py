@@ -3,7 +3,6 @@ import re
 import allure
 import pytest
 from playwright.sync_api import expect
-from tests.smoke.flows.flow_navigate import expect_page
 
 from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.flows.flow_order.flow_order_add import (
@@ -22,6 +21,13 @@ pytestmark = [
     allure.feature("Order"),
     allure.story("Order With Contract"),
 ]
+
+
+def _close_extended_alert(page):
+    alert = page.locator("#biruniAlertExtended")
+    expect(alert).to_be_visible()
+    alert.locator("button.close").click()
+    alert.wait_for(state="hidden")
 
 
 def run_a_group_contract_limit_validation_and_valid_order(
@@ -43,6 +49,7 @@ def run_a_group_contract_limit_validation_and_valid_order(
     8. Zakaz listda ko'rinishini va view oynasida contract, client, summa, product ko'ringanini tekshirish.
     9. Order id qiymatini keyingi A-group testlari uchun data_store.json ga saqlash.
     """
+    base = BasePage(page)
 
     if login:
         with allure.step("1 - User tizimga muvaffaqiyatli kiradi"):
@@ -82,13 +89,13 @@ def run_a_group_contract_limit_validation_and_valid_order(
 
     with allure.step("5 - Contract limitidan oshgani uchun save xabari chiqadi"):
         page.get_by_role("button", name="Сохранить").click()
-        BasePage(page).confirm_biruni("Сохранить?")
+        base.confirm_biruni("Сохранить?")
         expect(page.locator("body")).to_contain_text("Сумма заказа превышает сумму остатка по договору")
         expect(page.locator("body")).to_contain_text(re.compile(r"Сумма остатка по договору: \d+"))
         expect(page.locator("body")).to_contain_text("сумма заказа = 700000")
         expect(page).to_have_url(re.compile(r".*/order\+add"))
         expect(page.locator("#kt_content")).to_contain_text("Заказ (создание)")
-        BasePage(page).close_extended_alert()
+        _close_extended_alert(page)
 
     with allure.step("6 - Order listga qaytib, contract bilan 1 ta mahsulotli zakaz tayyorlanadi"):
         flow_open_order_list(page)
@@ -108,9 +115,9 @@ def run_a_group_contract_limit_validation_and_valid_order(
     with allure.step("7 - 7000 summali zakaz muvaffaqiyatli saqlanadi"):
         # Order wizard save tugmasi ikonkali: exact accessible name mos kelmaydi -> exact=False
         page.get_by_role("button", name="Сохранить", exact=False).first.click()
-        BasePage(page).confirm_biruni("Сохранить?")
-        BasePage(page).wait_for_loader()
-        expect_page(page, heading="Заказы")
+        base.confirm_biruni("Сохранить?")
+        base.wait_for_loader()
+        base.expect_page(heading="Заказы")
         expect(page).to_have_url(re.compile(r".*/order_list"))
 
     with allure.step("8 - Zakaz list va view oynasida contract bilan tekshiriladi"):
@@ -119,7 +126,7 @@ def run_a_group_contract_limit_validation_and_valid_order(
         expect(page.get_by_role("button", name="Просмотреть", exact=True)).to_be_visible()
         page.get_by_role("button", name="Просмотреть", exact=True).click()
         expect(page).to_have_url(re.compile(r".*/order_view"))
-        BasePage(page).wait_for_loader()
+        base.wait_for_loader()
         expect(page.locator("#kt_content")).to_contain_text(f"natural_client-pw{code}")
         expect(page.locator("#kt_content")).to_contain_text(contract_name)
         expect(page.locator("#kt_content")).to_contain_text("Наличные деньги")
@@ -151,6 +158,7 @@ def run_a_group_order_uses_contract_payment_type(
     7. Zakaz view oynasida contract, o'zgartirilgan payment type, client, product va summa ko'ringanini tekshirish.
     8. Order id qiymatini keyingi A-group testlari uchun data_store.json ga saqlash.
     """
+    base = BasePage(page)
 
     if login:
         with allure.step("1 - User tizimga muvaffaqiyatli kiradi"):
@@ -187,15 +195,15 @@ def run_a_group_order_uses_contract_payment_type(
         expect(page.locator("#kt_content")).to_contain_text("ИТОГО")
         expect(page.locator("#kt_content")).to_contain_text("700 000")
         expect(page.locator("#kt_content")).to_contain_text(contract_name)
-        BasePage(page).b_input_by_label("Тип оплаты", expect_value=contract_payment_type)
+        base.b_input(label="Тип оплаты", expect_value=contract_payment_type)
 
         page.get_by_role("button", name="Сохранить").click()
-        BasePage(page).confirm_biruni("Сохранить?")
+        base.confirm_biruni("Сохранить?")
         expect(page.locator("body")).to_contain_text("Сумма заказа превышает сумму остатка по договору")
         expect(page.locator("body")).to_contain_text(re.compile(r"Сумма остатка по договору: \d+"))
         expect(page.locator("body")).to_contain_text("сумма заказа = 700000")
         expect(page).to_have_url(re.compile(r".*/order\+add"))
-        BasePage(page).close_extended_alert()
+        _close_extended_alert(page)
 
     with allure.step("5 - Tip oplati contract bilan 1 ta mahsulotli zakaz tayyorlanadi"):
         flow_open_order_list(page)
@@ -211,9 +219,9 @@ def run_a_group_order_uses_contract_payment_type(
         expect(page.locator("#kt_content")).to_contain_text(contract_name)
 
     with allure.step("6 - Contractdagi Типы оплат auto-fill bo'ladi va user uni o'zgartira oladi"):
-        BasePage(page).b_input_by_label("Тип оплаты", expect_value=contract_payment_type)
-        BasePage(page).b_input_by_label("Тип оплаты", value="Наличные деньги", clear=True)
-        BasePage(page).b_input_by_label("Тип оплаты", expect_value="Наличные деньги")
+        base.b_input(label="Тип оплаты", expect_value=contract_payment_type)
+        base.b_input(label="Тип оплаты", value="Наличные деньги", clear=True)
+        base.b_input(label="Тип оплаты", expect_value="Наличные деньги")
 
     with allure.step("7 - O'zgartirilgan tip oplati bilan zakaz muvaffaqiyatli saqlanadi"):
         flow_order_final_page(
@@ -230,7 +238,7 @@ def run_a_group_order_uses_contract_payment_type(
         expect(page.get_by_role("button", name="Просмотреть", exact=True)).to_be_visible()
         page.get_by_role("button", name="Просмотреть", exact=True).click()
         expect(page).to_have_url(re.compile(r".*/order_view"))
-        BasePage(page).wait_for_loader()
+        base.wait_for_loader()
         expect(page.locator("#kt_content")).to_contain_text(f"natural_client-pw{code}")
         expect(page.locator("#kt_content")).to_contain_text(contract_name)
         expect(page.locator("#kt_content")).to_contain_text("Наличные деньги")

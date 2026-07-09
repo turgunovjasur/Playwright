@@ -22,6 +22,7 @@ Bu skill Smartup bo'yicha bilimlarni tez topish uchun index vazifasini bajaradi.
 - Order biznes qoidalari va flowlar: [references/orders.md](references/orders.md)
 - Smoke runner setup zanjiri: [references/smoke-runner.md](references/smoke-runner.md)
 - Smartup UI, locator, modal, grid patternlari: [references/ui-patterns.md](references/ui-patterns.md)
+- A2 (migratsiya qilingan yangi) formalar, filial-menyu, URL/error signallari: [references/a2-migrated-forms.md](references/a2-migrated-forms.md)
 - Test setup, debug va screenshot arxivi: [references/testing-debug.md](references/testing-debug.md)
 
 ## Form Dossier Ro'yxati (to'liq)
@@ -44,6 +45,7 @@ Setup formalar:
 Biznes formalar:
 - [order-add.md](references/forms/order-add.md) — Order yaratish
 - [contract-view.md](references/forms/contract-view.md) — Kontrakt ko'rish
+- [init-balance.md](references/forms/init-balance.md) — Boshlang'ich TMC qoldiq hujjati
 - [action.md](references/forms/action.md) — Акция (aksiya/chegirma)
 - [cislink.md](references/forms/cislink.md) — CIS link integratsiya
 - [integration-three.md](references/forms/integration-three.md) — Integration Three hisobotlar

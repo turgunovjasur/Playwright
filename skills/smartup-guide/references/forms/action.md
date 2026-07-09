@@ -59,6 +59,16 @@ Natija (10 × 7 000 = 70 000, 10% skidka): **Товар** qatorida `Сумма �
 
 > Eslatma: aksiya formasidagi **"Тип цены"** maydoni (Главное) sotuv narx turini (`Price Type UZB-pw{code}`) beradi, **"Акция" emas** — bu C-01 da bo'sh qoldiriladi va chegirmaga ta'sir qilmaydi.
 
+## Aksiyani o'chirish (Удалить) — cheklov (MCP 2026-06-16)
+
+Orderda allaqachon qo'llanilgan aksiyani "Акции" ro'yxatidan **"Удалить"** bilan o'chirib bo'lmaydi — Smartup xato modali beradi:
+
+```
+ORA-02292: integrity constraint (XTRADE.MDEAL_PRODUCT_MARGINS_F3) violated - child record found
+```
+
+Sabab: aksiya order product margin (`MDEAL_PRODUCT_MARGINS`) yozuvlarini yaratgan — bular child yozuv, ular turганда parent aksiya o'chmaydi. Testda aksiyani tozalash kerak bo'lsa, avval unga bog'liq orderlarni o'chirish/bekor qilish, so'ng aksiyani o'chirish kerak.
+
 ## Login / data eslatma
 
 - Aksiya user profil bilan yaratiladi: `user-pw{code}@<company>`, parol USER_PASS. `code` va konkret qiymatlar `data_store.json` dan olinadi (dossierга literal yozilmaydi).

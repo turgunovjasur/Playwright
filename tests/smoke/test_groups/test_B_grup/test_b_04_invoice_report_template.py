@@ -8,7 +8,6 @@ import pytest
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError, expect
 
 from tests.smoke.flows.flow_authorization import authorization, logout
-from tests.smoke.flows.flow_navigate import navigate_to, expect_page
 from tests.smoke.flows.flow_order.flow_order_list import flow_open_order_list, flow_order_list
 from utils.base_page import BasePage
 
@@ -29,6 +28,7 @@ ONLYOFFICE_EDITOR_HOST = "office.smartup.online"
 
 
 def _search_grid(page, text):
+    base = BasePage(page)
     search = page.locator('input[ng-model="o.searchValue"]').first
     expect(search).to_be_visible()
     search.click()
@@ -36,7 +36,7 @@ def _search_grid(page, text):
     search.press("Backspace")
     search.fill(text)
     search.press("Enter")
-    BasePage(page).wait_for_loader(timeout=120_000)
+    base.wait_for_loader(timeout=120_000)
 
 
 def _grid_row_is_visible(page, text, timeout=2_000):
@@ -201,6 +201,7 @@ def run_b_group_create_custom_invoice_report_template(
     6. Admin profildan chiqib user bilan kirish.
     7. Order list rowidagi Счет-фактуры buttonidan custom template OnlyOffice spreadsheet editorda ochilishini tekshirish.
     """
+    base = BasePage(page)
     template_name = f"Test_invoice_report-{code}"
     form_name = "Накладная (заказ)"
     role_name = "Админ"
@@ -215,8 +216,8 @@ def run_b_group_create_custom_invoice_report_template(
             expect(page.locator("body")).to_contain_text("Trade", timeout=120_000)
 
     with allure.step("2 - Шаблоны накладных sahifasida custom template tayyorlanadi"):
-        navigate_to(page, tab="Главное", name="Шаблоны накладных")
-        expect_page(page, url="template_list")
+        base.navigate_to(tab="Главное", name="Шаблоны накладных")
+        base.expect_page(url="template_list")
         expect(page.locator("body")).to_contain_text("Шаблоны накладных")
 
         _search_grid(page, template_name)
@@ -247,7 +248,7 @@ def run_b_group_create_custom_invoice_report_template(
             expect(page.locator("body")).to_contain_text(template_file.name, timeout=60_000)
 
             page.locator('button[ng-click="save()"]').click()
-            BasePage(page).wait_for_loader(timeout=120_000)
+            base.wait_for_loader(timeout=120_000)
             expect(page).to_have_url(re.compile(r".*/template_list"), timeout=60_000)
 
             _search_grid(page, template_name)
@@ -258,8 +259,8 @@ def run_b_group_create_custom_invoice_report_template(
             expect(template_row).to_contain_text("Активный")
 
     with allure.step("3 - Template Админ rolega qayta attach qilinadi"):
-        navigate_to(page, tab="Главное", name="Шаблоны накладных")
-        expect_page(page, url="template_list")
+        base.navigate_to(tab="Главное", name="Шаблоны накладных")
+        base.expect_page(url="template_list")
         _search_grid(page, template_name)
 
         template_row = page.locator("b-grid .tbl-row").filter(has_text=template_name).first
@@ -274,7 +275,7 @@ def run_b_group_create_custom_invoice_report_template(
         expect(page.locator("body")).to_contain_text(re.compile("доступные", re.IGNORECASE))
 
         page.locator("button").filter(has_text=re.compile(r"^\s*Прикрепленные\s*$", re.IGNORECASE)).first.click()
-        BasePage(page).wait_for_loader(timeout=120_000)
+        base.wait_for_loader(timeout=120_000)
         _search_grid(page, role_name)
         if _grid_row_is_visible(page, role_name):
             role_row = page.locator("b-grid .tbl-row").filter(has_text=role_name).first
@@ -283,16 +284,16 @@ def run_b_group_create_custom_invoice_report_template(
             expect(detach_button).to_be_visible()
             detach_button.click()
             try:
-                BasePage(page).confirm_biruni()
+                base.confirm_biruni()
             except (AssertionError, PlaywrightTimeoutError):
                 pass
-            BasePage(page).wait_for_loader(timeout=120_000)
+            base.wait_for_loader(timeout=120_000)
             _search_grid(page, role_name)
             if _grid_row_is_visible(page, role_name, timeout=1_000):
                 raise AssertionError(f"{role_name} role template'dan detach bo'lmadi")
 
         page.locator("button").filter(has_text=re.compile(r"^\s*Доступные\s*$", re.IGNORECASE)).first.click()
-        BasePage(page).wait_for_loader(timeout=120_000)
+        base.wait_for_loader(timeout=120_000)
         _search_grid(page, role_name)
         role_row = page.locator("b-grid .tbl-row").filter(has_text=role_name).first
         expect(role_row).to_be_visible()
@@ -302,20 +303,20 @@ def run_b_group_create_custom_invoice_report_template(
         expect(attach_button).to_be_visible()
         attach_button.click()
         try:
-            BasePage(page).confirm_biruni()
+            base.confirm_biruni()
         except (AssertionError, PlaywrightTimeoutError):
             pass
-        BasePage(page).wait_for_loader(timeout=120_000)
+        base.wait_for_loader(timeout=120_000)
 
         page.locator("button").filter(has_text=re.compile(r"^\s*Прикрепленные\s*$", re.IGNORECASE)).first.click()
-        BasePage(page).wait_for_loader(timeout=120_000)
+        base.wait_for_loader(timeout=120_000)
         _search_grid(page, role_name)
         role_row = page.locator("b-grid .tbl-row").filter(has_text=role_name).first
         expect(role_row).to_be_visible()
         expect(role_row).to_contain_text("Активный")
 
         page.locator("button").filter(has_text=re.compile(r"^\s*Закрыть\s*$", re.IGNORECASE)).first.click()
-        expect_page(page, url="template_list")
+        base.expect_page(url="template_list")
         expect(page.locator("body")).to_contain_text("Шаблоны накладных")
 
     with allure.step("4 - User order listda Счет-фактуры custom template OnlyOffice'da ochilishini tekshiradi"):

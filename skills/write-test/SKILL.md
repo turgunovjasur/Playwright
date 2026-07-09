@@ -21,13 +21,12 @@ Quyidagi qoidalarga qat'iy rioya qil:
 Har bir test fayl IKKI funksiyadan iborat (test_legal_person / test_filial / test_room / test_robot real namunalari):
 
 - **`run_<nomi>(page, code, ...)`** — qayta ishlatiladigan biznes logika; setup/group runner zanjiri shuni chaqiradi. `page` ni **allaqachon login qilingan** deb qabul qiladi (auth ichida chaqirilmaydi). Raqamlangan docstring testcase + `with allure.step("N - ...")` bloklari.
-- **`test_<nomi>(page, code, ...)`** — `@allure.title(...)` bilan pytest entry; alohida/debug run uchun. `authorization(...)` (+ forma faqat filialda ko'rinsa `switch_filial(...)`) qilib, so'ng `run_<nomi>(...)` ni chaqiradi. Kerakli fixturalarni (`save_data`/`load_data`) qabul qilib `run_` ga uzatadi.
+- **`test_<nomi>(page, code, ...)`** — `@allure.title(...)` bilan pytest entry; alohida/debug run uchun. `authorization(...)` (+ forma faqat filialda ko'rinsa `base.switch_filial(...)`) qilib, so'ng `run_<nomi>(...)` ni chaqiradi. Kerakli fixturalarni (`save_data`/`load_data`) qabul qilib `run_` ga uzatadi.
 
 ```python
 import allure
 from playwright.sync_api import expect            # Python assert emas, faqat kerak bo'lsa import
 from tests.smoke.flows.flow_authorization import authorization
-from tests.smoke.flows.flow_navigate import navigate_to, expect_page, switch_filial
 from utils.base_page import BasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("<Feature>"), allure.story("<Story>")]
@@ -43,22 +42,23 @@ def run_<nomi>(page, code, save_data=None):
     """
     entity_name = f"<entity>-pw{code}"
     entity_code = f"cod_<entity>_pw{code}"
+    base = BasePage(page)
 
     with allure.step("1 - <Entity> ro'yxatiga o'tish"):
-        navigate_to(page, tab="<Tab>", name="<Menyu>")
-        expect_page(page, heading="<Ro'yxat heading>")
+        base.navigate_to(tab="<Tab>", name="<Menyu>")
+        base.expect_page(heading="<Ro'yxat heading>")
 
     with allure.step("2 - Yangi <entity> formasini to'ldirish"):
         page.get_by_role("button", name="Создать").click()
-        expect_page(page, heading="<Create heading>")
-        BasePage(page).input(label="Код", value=entity_code)
-        BasePage(page).input(label="Название", value=entity_name)
-        BasePage(page).checkbox(label="Статус", expect_checked=True)
+        base.expect_page(heading="<Create heading>")
+        base.input(label="Код", value=entity_code)
+        base.input(label="Название", value=entity_name)
+        base.checkbox(label="Статус", expect_checked=True)
 
     with allure.step("3 - Saqlash va ro'yxatda tekshirish"):
         page.get_by_role("button", name="Сохранить", exact=True).first.click()
-        expect_page(page, heading="<Ro'yxat heading>")
-        BasePage(page).grid_row(entity_name, entity_code, "Активный")
+        base.expect_page(heading="<Ro'yxat heading>")
+        base.grid(entity_name, entity_code, "Активный")
 
     # Downstream testlarga kerak bo'lsa (oxirgi step):
     #     save_data("<key>", entity_code)
@@ -68,18 +68,19 @@ def run_<nomi>(page, code, save_data=None):
 @allure.title("<Inson o'qiydigan test nomi>")
 def test_<nomi>(page, code, save_data):
     authorization(page, who='admin')
-    # switch_filial(page, name=f"filial-pw{code}")   # forma faqat o'sha filialda ko'rinsa
+    base = BasePage(page)
+    # base.switch_filial(name=f"filial-pw{code}")   # forma faqat o'sha filialda ko'rinsa
     run_<nomi>(page, code, save_data=save_data)
 ```
 
 ### `run_` / `test_` konvensiyasi qoidalari
-- **Maksimal base funksiya**: `navigate_to`, `expect_page`, `switch_filial` (flow) va `BasePage(page).input_by_label/b_input_by_label/multiselect/checkbox/grid_controller/grid_row/click_grid_row/confirm_biruni/wait_for_loader`. Raw `page.get_by_role/locator` faqat mos base funksiya yo'q joyda (masalan "Создать"/"Сохранить" tugmasi).
+- **Maksimal base funksiya**: `base = BasePage(page)` qilib olinadi va `base.navigate_to/expect_page/switch_filial/input/b_input/multiselect/checkbox/grid_controller/grid/confirm_biruni/wait_for_loader` ishlatiladi. Raw `page.get_by_role/locator` faqat mos base funksiya yo'q joyda (masalan "Создать"/"Сохранить" tugmasi). Grid qatorini bosish kerak bo'lsa alohida wrapper emas, `base.grid(..., click=True)` ishlatiladi.
 - **allure.step raqamlari docstring qadamlari bilan mantiqan mos** kelsin; step nomi qisqa va professional.
 - **Test data** — `run_` boshida lokal `f"...{code}"` o'zgaruvchilar; downstream testga kerak bo'lsa oxirgi stepda `save_data(...)`.
 - **`run_` auth qilmaydi** (page login qilingan deb keladi). Istisno: rolni almashtirish kerak bo'lsa `run_` ichida boshqa rol bilan kiriladi (masalan `run_room_attachment` `authorization(who="user"...)` qiladi).
 - **Takroriy `switch_filial` qo'yma**: setup zanjiri bitta `session_page` ni bo'lishadi, shuning uchun filial konteksti `run_` lar orasida saqlanadi. Zanjirda filialga BIR MARTA o'tiladi (birinchi kerak bo'lgan `run_` — masalan `run_room` filial-pw{code} ga o'tadi), keyingi `run_` lar (robot, natural_person, ...) o'sha filialni meros qilib oladi va QAYTA `switch_filial` qilmaydi (ortiqcha kod). Standalone/debug run uchun `switch_filial` ni `test_` wrapper'ga qo'y (run_ ichiga emas) — shunda zanjirda takrorlanmaydi, alohida run'da esa default filialdan to'g'ri filialga o'tadi.
-- **Verifikatsiya zanjiri**: save → `expect_page(list heading)` → (ro'yxatda topish uchun kerak bo'lsa) `grid_controller(search=...)` → `grid_row(code, name, "Активный")`.
-- **Lokal helper** (`_select_grid_checkall` kabi) faqat shu faylda ishlatilsa faylda `_` prefiksi bilan qoladi; bir nechta testda kerak bo'lsa `flows/` yoki `BasePage` ga chiqariladi (1 qatorlik wrapper yozilmaydi).
+- **Verifikatsiya zanjiri**: save → `base.expect_page(list heading)` → (ro'yxatda topish uchun kerak bo'lsa) `grid_controller(search=...)` → `grid(code, name, "Активный")`.
+- **Lokal helper** faqat haqiqiy biznes/flow murakkabligini yashirsa va shu faylda ishlatilsa faylda `_` prefiksi bilan qoladi; bir nechta testda kerak bo'lsa `flows/` yoki `BasePage` ga chiqariladi. 1 qatorlik wrapper yozilmaydi.
 - Fayl boshida module-level `pytestmark = [allure.epic, allure.feature, allure.story]` va funksiyalar orasida `# ---...---` separator.
 
 ## 3. Qoidalar
@@ -90,6 +91,10 @@ def test_<nomi>(page, code, save_data):
 - **Allure**: har bir test `@allure.title()` va `with allure.step()` bilan bo'lishi SHART
 - **Locator**: `page.locator()` ishlatilsin, `page.find_element()` EMAS
 - **Assert**: `expect(locator).to_be_visible()` ishlatilsin, Python `assert` EMAS
+- **Project helper first**: sahifa ochilishi, heading, save natijasi, grid row, form input, checkbox/switch, b-input/multiselect va loader kutish uchun avval mavjud loyiha helperlarini ishlat (`base.expect_page(...)`, `base.save_and_expect_heading(...)`, `base.grid(...)`, `base.input(...)`, `base.checkbox(...)`, `base.wait_for_loader(...)`). `utils/base_page.py` ichida mos method bor bo'lsa raw `page.locator(...)`, raw `page.get_by_role(...)` yoki yangi local helper yozilmaydi; raw `expect(...)` faqat mos helper yo'q bo'lsa yoki yangi reusable helper yozishdan oldin lokal tekshiruv uchun ishlatiladi.
+- **BasePage scope**: `utils/base_page.py` ga hamma yoki ko'p testlar ishlatadigan umumiy UI primitive'lar yoziladi. Faqat bitta testga kerak bo'lgan biznes/helper logika test faylida `_helper_name(...)` local helper bo'lib qoladi.
+- **Navigation wrapper ishlatilmaydi**: `navigate_to`, `expect_page`, `switch_filial` flow helper sifatida import qilinmaydi; test/flow ichida `base = BasePage(page)` qilib, to'g'ridan-to'g'ri `base.navigate_to(...)`, `base.expect_page(...)`, `base.switch_filial(...)` ishlatiladi.
+- **Page ready check**: `base.expect_page(..., heading=...)` heading visible bo'lishi bilan birga Smartup loader (`.block-ui-overlay:visible`) yo'qolganini ham kutadi. Loader yo'q bo'lsa 2 sekund kutmaydi; darhol davom etadi. Bu route/page state check uchun yetarli; lekin keyingi action aynan grid/form ichki async reloadga bog'liq bo'lsa `base.wait_for_loader()` alohida qoladi.
 - **Timeout**: DEFAULT_TIMEOUT (10s) yetarli; kerak bo'lsa `page.wait_for_timeout()` emas, `expect(...).to_be_visible()` kutish
 - **Session data**: `save_data("key", value)` va `load_data("key")` orqali ma'lumot almashing
 - **`code`**: har bir test uchun unikal identifikator, nom sifatida ishlating
@@ -142,7 +147,7 @@ def test_XX_<nomi>(session_page: Page, code):
 - Contract add formasida generated `contract_code_{random_son}` qiymati `Код` inputiga yoziladi; `Номер` inputi bilan almashtirib yuborma.
 - Dinamik test qiymatlarini test boshida alohida o'zgaruvchiga yig'ib olma; kerakli joyida `f"...{code}"` ko'rinishida yoz.
 - Barcha testlarda qayta ishlatiladigan umumiy helperlar, masalan `b-input` tanlash, local test helper emas `utils/base_page.py` ichidagi `BasePage` methodi bo'lsin.
-- `input[ng-model=...]` kabi Angularga bog'langan locatorlardan iloji boricha foydalanma; label/role/text asosidagi `BasePage.fill_textbox_by_label`, `BasePage.select_b_input_by_label`, `page.get_by_role(...)` kabi locatorlarni afzal ko'r.
+- `input[ng-model=...]` kabi Angularga bog'langan locatorlardan iloji boricha foydalanma; label/role/text asosidagi `BasePage.fill_textbox_by_label`, `BasePage.select_b_input`, `page.get_by_role(...)` kabi locatorlarni afzal ko'r.
 - Smoke UI testlarda form inputlarini to'ldirish, switch/radio/checkbox/button bosish uchun `page.evaluate()` ishlatma; real user action bo'lgan `locator.click()`, `locator.fill()`, `locator.press()` va `expect(...)` ishlat. `page.evaluate()` faqat o'qish/diagnostika yoki haqiqiy user flowga ta'sir qilmaydigan yordamchi holatlarda ishlatiladi.
 - Test nomi, Allure title va step nomlari professional, sodda va test maqsadini darhol tushuntiradigan bo'lsin.
 - Har bir test boshida docstringda testcase qadamlarini yoz; docstringdagi qadamlar test ichidagi `with allure.step(...)` bo'limlari bilan mantiqan mos kelsin.
@@ -202,6 +207,14 @@ def test_XX_<nomi>(session_page: Page, code):
 - Contract add formasida contractni turli shartlar bilan yaratish mumkin; masalan `Типы оплат` sharti keyingi order testlarida alohida case sifatida tekshirilishi mumkin. Bunday holatlarda contract yaratish flowi parametrli bo'lsin va order test shu shart bilan yaratilgan contractni ishlatsin.
 - Contract + `Типы оплат` case'ida `Тип оплаты` orderda auto-fill bo'lishini tekshir; user uni o'zgartirsa ham order ishlashi kerak, faqat contract sum limit tekshiriladi.
 - Contract valyutasi order productlarini filterlaydi; boshqa valyutali contractga almashtirilsa, oldin tanlangan productlar o'chishi kutiladi.
+
+### Ko'p-elementli (batch) smoke testlarda natija hisoboti
+- Bitta test ichida ko'plab element ketma-ket tekshirilsa (masalan a2 formalarni navbat bilan ochish), kodni SODDA saqla:
+  **NamedTuple/dataclass/type hint ishlatma** (bu loyihada yo'q, user ularni yozmaydi). Formalar ro'yxatini oddiy
+  `list` + `tuple` (masalan `(tab, path, name)`) yoki oddiy `dict` bilan ber; natijalarni ham `(filial, path, name, ok, detail)` tuple ro'yxatiga yig'.
+- Har elementni bitta aniq nomli **flow/helper chaqiruvi** bilan och (masalan `navigate_to_a2(page, tab, path)`), ochilishni `expect(...)` bilan tasdiqla. Test o'zi qisqa loop bo'lsin, "framework" bo'lmasin (JS `evaluate`, klassifikator, mode-dispatcher yozma — bu tushunarsiz bo'ladi).
+- Xatoda to'xtamaslik kerak bo'lsa: har elementni `try/except (AssertionError, PlaywrightTimeoutError)` bilan o'rab natija yig', muammoда screenshot attach qil.
+- Yakuniy hisobotni alohida sodda funksiyaga chiqar: filial/guruh bo'yicha `✅`/`⚠` + nom + path qatorlari, tepada `Jami/OK/Muammo`. Ortiqcha bezak (box-drawing ramka va h.k.) SHART EMAS — sodda o'qiladigan matn yetarli.
 
 ## 6. Ish tartibi
 

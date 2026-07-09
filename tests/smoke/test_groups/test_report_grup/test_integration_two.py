@@ -4,7 +4,6 @@ import allure
 import pytest
 from playwright.sync_api import expect
 from tests.smoke.flows.flow_authorization import authorization
-from tests.smoke.flows.flow_navigate import switch_filial
 from tests.smoke.test_groups.test_report_grup.report_helpers import generate_and_verify_download, select_b_input_option
 from utils.base_page import BasePage
 
@@ -53,6 +52,7 @@ def run_report_integration_two_check(page, code, load_data, login=True):
       5. import_order_status (CRMOrderStatus) -> .xml yuklab olish
       6. export_input (CRMInput) -> begin_date + .xml yuklab olish
     """
+    base = BasePage(page)
     price_type_name = load_data("price_type_name_UZB") if load_data else None
     if not price_type_name:
         pytest.skip("price_type_name_UZB data_store'da yo'q — avval user_setup runnerini ishga tushiring")
@@ -61,7 +61,7 @@ def run_report_integration_two_check(page, code, load_data, login=True):
         authorization(page)
 
     with allure.step("1 - Администрирование filialiga o'tib Integration Two sahifasini ochish"):
-        switch_filial(page, name="Администрирование")
+        base.switch_filial(name="Администрирование")
         base, _, rest = page.url.partition("#/")
         session_token = rest.split("/", 1)[0]
         page.goto(f"{base}#/{session_token}/trade/rep/integration/integration_two")
@@ -69,15 +69,15 @@ def run_report_integration_two_check(page, code, load_data, login=True):
 
     with allure.step("2 - Настройки: filtrlar va checkboxlar -> saqlash"):
         page.locator('button[ng-click="q.show_setting = true"]').click()
-        BasePage(page).input(ng_model="d.company_id", value="8605425")
-        BasePage(page).input(ng_model="d.user_name", value="123")
-        BasePage(page).input(ng_model="d.url", value="https")
-        BasePage(page).input(ng_model="d.unit_of_quant_measurement", value="шт")
-        BasePage(page).input(ng_model="d.unit_of_box_measurement", value="шт")
+        base.input(ng_model="d.company_id", value="8605425")
+        base.input(ng_model="d.user_name", value="123")
+        base.input(ng_model="d.url", value="https")
+        base.input(ng_model="d.unit_of_quant_measurement", value="шт")
+        base.input(ng_model="d.unit_of_box_measurement", value="шт")
         select_b_input_option(page, "price_types", price_type_name, search_text=str(code))
         select_b_input_option(page, "product_groups", "Группа")
         for ng_model in SETTING_CHECKBOXES:
-            BasePage(page).checkbox(ng_model=ng_model, checked=True)
+            base.checkbox(ng_model=ng_model, checked=True)
         save_btn = page.locator('button[ng-click="save()"]')
         save_btn.click()
         expect(save_btn).to_be_hidden()

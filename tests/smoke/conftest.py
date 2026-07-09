@@ -3,6 +3,7 @@ import json
 import shutil
 import socket
 import random
+import subprocess
 import allure
 import pytest
 from pathlib import Path
@@ -671,5 +672,40 @@ def pytest_runtest_logreport(report):
         longrepr_str = str(report.longrepr) if report.longrepr else "Xabar yo'q"
         log_path = write_failure_log(report.nodeid, report.when, longrepr_str)
         print(f"\n[LOG] Xato logi saqlandi: {log_path}")
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+@pytest.hookimpl(trylast=True)
+def pytest_sessionfinish(session, exitstatus):
+    """Direct pytest/PyCharm run tugaganda OPEN_REPORT=1 bo'lsa Allure reportni ochadi.
+
+    scripts/run_tests.py o'zi report generate/open qiladi, shuning uchun u orqali kelgan runlarda bu hook skip bo'ladi.
+    """
+    if not _env_flag("OPEN_REPORT") or _env_flag("SMARTUP_RUNNER"):
+        return
+
+    allure_bin = shutil.which("allure")
+    if not allure_bin:
+        print("\n[ALLURE] OPEN_REPORT=1, lekin allure CLI topilmadi")
+        return
+
+    generate_command = [
+        allure_bin,
+        "generate",
+        str(ROOT_DIR / ALLURE_RESULTS_DIR),
+        "-o",
+        str(ROOT_DIR / ALLURE_REPORT_DIR),
+        "--clean",
+    ]
+    open_command = [allure_bin, "open", str(ROOT_DIR / ALLURE_REPORT_DIR)]
+
+    print("\n[ALLURE] Report generate qilinmoqda...")
+    generate_result = subprocess.call(generate_command, cwd=ROOT_DIR)
+    if generate_result != 0:
+        print(f"[ALLURE] Report generate failed: exit_code={generate_result}")
+        return
+
+    print("[ALLURE] Report ochilmoqda...")
+    subprocess.Popen(open_command, cwd=ROOT_DIR)
 
 # ----------------------------------------------------------------------------------------------------------------------

@@ -6,7 +6,6 @@ import allure
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError, expect
 
 from tests.smoke.flows.flow_authorization import authorization
-from tests.smoke.flows.flow_navigate import navigate_to, expect_page
 from tests.smoke.flows.flow_order.flow_order_add import (
     flow_order_final_page,
     flow_order_main_page,
@@ -231,7 +230,8 @@ def _save_visible_confirm_if_open(page):
 
 
 def _input_validation_state_by_label(page, label, index=0):
-    input_el = BasePage(page).input(label=label, index=index)
+    base = BasePage(page)
+    input_el = base.input(label=label, index=index)
     return {
         "value": input_el.input_value(),
         "className": input_el.get_attribute("class") or "",
@@ -240,7 +240,8 @@ def _input_validation_state_by_label(page, label, index=0):
 
 
 def _input_has_non_neutral_border_by_label(page, label, neutral_colors):
-    input_el = BasePage(page).input(label=label)
+    base = BasePage(page)
+    input_el = base.input(label=label)
     for color in neutral_colors:
         try:
             expect(input_el).to_have_css("border-color", color, timeout=200)
@@ -289,10 +290,11 @@ def _close_error_dialog(page, expected_text=None):
 
 def _save_order_from_final_page(page):
     # Order wizard save tugmasi ikonkali: exact accessible name mos kelmaydi -> exact=False
+    base = BasePage(page)
     page.get_by_role("button", name="Сохранить", exact=False).first.click()
-    BasePage(page).confirm_biruni()
-    BasePage(page).wait_for_loader()
-    expect_page(page, heading="Заказы")
+    base.confirm_biruni()
+    base.wait_for_loader()
+    base.expect_page(heading="Заказы")
 
 
 def _assert_save_blocked_without_confirm(page, expected_date=None):
@@ -360,8 +362,9 @@ def _click_consignment_add_button(page):
 
 
 def _open_order_settings(page):
-    navigate_to(page, tab="Главное", name="Настройки системы")
-    expect_page(page, heading="Настройки системы")
+    base = BasePage(page)
+    base.navigate_to(tab="Главное", name="Настройки системы")
+    base.expect_page(heading="Настройки системы")
     page.get_by_role("link", name="Заказ").click()
     expect(page.get_by_text("Разрешить выдачу консигнации", exact=True)).to_be_visible()
 
@@ -437,6 +440,7 @@ def run_b_group_create_order_with_consignment_limit(page, code, save_data, login
     7. Konsignatsiya date/amount, payment type va status to'ldirilib 5 dona order saqlanadi.
     8. Order viewda asosiy ma'lumotlar va Консигнация tabidagi date/amount tekshiriladi.
     """
+    base = BasePage(page)
     if login:
         with allure.step("1 - User tizimga muvaffaqiyatli kiradi"):
             authorization(page, who="user", code=code)
@@ -450,8 +454,8 @@ def run_b_group_create_order_with_consignment_limit(page, code, save_data, login
 
     with allure.step("4 - Yangi zakaz asosiy va TMC qadamlaridan o'tkaziladi"):
         flow_order_list(page, add=True)
-        deal_time = BasePage(page).input(label="Дата заказа", return_value=True)
-        delivery_date = BasePage(page).input(label="Дата отгрузки", return_value=True)
+        deal_time = base.input(label="Дата заказа", return_value=True)
+        delivery_date = base.input(label="Дата отгрузки", return_value=True)
         flow_order_main_page(
             page,
             check_form=True,
@@ -484,14 +488,14 @@ def run_b_group_create_order_with_consignment_limit(page, code, save_data, login
         ).strftime("%d.%m.%Y")
 
     with allure.step("6 - Konsignatsiya date/amount, tip oplati va status to'ldirilib saqlanadi"):
-        BasePage(page).input(
+        base.input(
             label="Дата оплаты по консигнации",
             value=expected_limit_date,
             expect_value=expected_limit_date,
             press_tab=True,
         )
 
-        BasePage(page).input(
+        base.input(
             label="Сумма консигнации",
             value="35000",
             expect_value="35 000",
@@ -546,6 +550,7 @@ def run_b_group_edit_order_with_consignment_limit(page, code, load_data, save_da
     6. Konsignatsiya summasi + orqali 2 ta sanaga bo'linadi va order saqlanadi.
     7. Order viewda 28 000 total hamda ikki konsignatsiya sana/summa tekshiriladi.
     """
+    base = BasePage(page)
     if login:
         with allure.step("1 - User tizimga muvaffaqiyatli kiradi"):
             authorization(page, who="user", code=code)
@@ -563,7 +568,7 @@ def run_b_group_edit_order_with_consignment_limit(page, code, load_data, save_da
     with allure.step("3 - Order edit qilinib quantity 5 dan 4 ga kamaytiriladi"):
         flow_order_list(page, find_row=created_order_client, edit=True)
         expect(page).to_have_url(re.compile(r".*/order\+edit"))
-        delivery_date = BasePage(page).input(label="Дата отгрузки", return_value=True)
+        delivery_date = base.input(label="Дата отгрузки", return_value=True)
         delivery_date_value = datetime.strptime(delivery_date, "%d.%m.%Y")
         first_split_date = (delivery_date_value + timedelta(days=15)).strftime("%d.%m.%Y")
         limit_date = (delivery_date_value + timedelta(days=30)).strftime("%d.%m.%Y")
@@ -581,19 +586,19 @@ def run_b_group_edit_order_with_consignment_limit(page, code, load_data, save_da
             page,
             "Общая сумма консигнаций не должна быть больше суммы заказа",
         )
-        BasePage(page).input(label="Дата оплаты по консигнации", expect_value="")
-        BasePage(page).input(label="Сумма консигнации", expect_value="")
+        base.input(label="Дата оплаты по консигнации", expect_value="")
+        base.input(label="Сумма консигнации", expect_value="")
         _expect_text_visible(page, "ИТОГО")
         _expect_text_visible(page, "28 000")
 
     with allure.step("5 - 30 kundan katta konsignatsiya sanasi save qilinmaydi"):
-        BasePage(page).input(
+        base.input(
             label="Дата оплаты по консигнации",
             value=invalid_date,
             expect_value=invalid_date,
             press_tab=True,
         )
-        BasePage(page).input(
+        base.input(
             label="Сумма консигнации",
             value="28000",
             expect_value="28 000",
@@ -603,13 +608,13 @@ def run_b_group_edit_order_with_consignment_limit(page, code, load_data, save_da
         expect(page).to_have_url(re.compile(r".*/order\+edit"))
 
     with allure.step("6 - Konsignatsiya + orqali 2 ta sanaga bo'linadi"):
-        BasePage(page).input(
+        base.input(
             label="Дата оплаты по консигнации",
             value=first_split_date,
             expect_value=first_split_date,
             press_tab=True,
         )
-        BasePage(page).input(
+        base.input(
             label="Сумма консигнации",
             value="14000",
             expect_value="14 000",
@@ -617,14 +622,14 @@ def run_b_group_edit_order_with_consignment_limit(page, code, load_data, save_da
         )
 
         _click_consignment_add_button(page)
-        BasePage(page).input(
+        base.input(
             label="Дата оплаты по консигнации",
             value=limit_date,
             expect_value=limit_date,
             index=1,
             press_tab=True,
         )
-        BasePage(page).input(
+        base.input(
             label="Сумма консигнации",
             value="14000",
             expect_value="14 000",

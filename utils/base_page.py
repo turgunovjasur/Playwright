@@ -1,6 +1,5 @@
 import logging
 import re
-from datetime import datetime, timedelta
 
 from playwright.sync_api import expect
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
@@ -17,7 +16,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def current_heading_text(self):
+    def _current_heading_text(self):
         try:
             headings = [item.strip() for item in self.page.get_by_role("heading").all_inner_texts()]
         except Exception:
@@ -26,7 +25,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def visible_error_text(self, timeout=1_000):
+    def _visible_error_text(self, timeout=1_000):
         selectors = (
             "#biruniAlertExtended",
             "#biruniAlert",
@@ -89,7 +88,7 @@ class BasePage:
         timeout=120_000,
         location_hint="",
     ):
-        before = before_state or self.current_heading_text()
+        before = before_state or self._current_heading_text()
         button = self.page.get_by_role("button", name=button_name, exact=exact_button).first
         expect(button).to_be_visible()
         button.click()
@@ -99,9 +98,9 @@ class BasePage:
         self.wait_for_loader(timeout=timeout)
 
         expected = expected_state or f"{expected_heading} heading ochilishi"
-        ui_error = self.visible_error_text(timeout=1_000)
+        ui_error = self._visible_error_text(timeout=1_000)
         if ui_error:
-            actual = f"still on {self.current_heading_text() or before or 'unknown'}"
+            actual = f"still on {self._current_heading_text() or before or 'unknown'}"
             raise AssertionError(
                 self._transition_failure_message(
                     action=action,
@@ -117,14 +116,14 @@ class BasePage:
         try:
             expect(heading).to_be_visible(timeout=timeout)
         except (AssertionError, PlaywrightTimeoutError) as exc:
-            actual = f"still on {self.current_heading_text() or before or 'unknown'}; url={self.page.url}"
+            actual = f"still on {self._current_heading_text() or before or 'unknown'}; url={self.page.url}"
             raise AssertionError(
                 self._transition_failure_message(
                     action=action,
                     expected=expected,
                     before_state=before,
                     actual_state=actual,
-                    ui_error=self.visible_error_text(timeout=500),
+                    ui_error=self._visible_error_text(timeout=500),
                     location_hint=location_hint,
                 )
             ) from exc
@@ -274,6 +273,75 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    def navigate_to(self, tab="Главное", name="Организации", timeout=120_000):
+        self.page.locator("a.menu-link.menu-toggle", has_text=tab).click()
+        self.page.locator("a.menu-link.menu-link-title").get_by_text(name, exact=True).click()
+
+        try:
+            self.wait_for_loader(timeout=timeout)
+        except Exception as exc:
+            raise AssertionError(
+                f"navigate_to: '{tab} -> {name}' sahifa {timeout // 1000}s ichida yuklanmadi "
+                f"(loader yo'qolmadi), url={self.page.url}"
+            ) from exc
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def expect_page(self, heading=None, url=None, timeout=120_000, check_unblocked=True):
+        if heading is None and url is None:
+            raise ValueError("expect_page: kamida 'heading' yoki 'url' berilishi kerak")
+
+        if url is not None:
+            pattern = url if isinstance(url, re.Pattern) else re.compile(re.escape(url))
+            try:
+                expect(self.page).to_have_url(pattern, timeout=timeout)
+            except (AssertionError, PlaywrightTimeoutError) as exc:
+                raise AssertionError(
+                    f"expect_page: kutilgan URL '{getattr(url, 'pattern', url)}' ochilmadi; "
+                    f"hozirgi url={self.page.url}"
+                ) from exc
+
+        if heading is not None:
+            target = self.page.get_by_role("heading").filter(has_text=heading).first
+            try:
+                expect(target).to_be_visible(timeout=timeout)
+            except (AssertionError, PlaywrightTimeoutError) as exc:
+                shown = getattr(heading, "pattern", heading)
+                raise AssertionError(
+                    f"expect_page: kutilgan heading '{shown}' ko'rinmadi; "
+                    f"hozirgi heading(lar)=\"{self._current_heading_text() or 'yo`q'}\", url={self.page.url}"
+                ) from exc
+
+            if check_unblocked:
+                try:
+                    expect(self.page.locator(".block-ui-overlay:visible")).to_have_count(0, timeout=timeout)
+                except (AssertionError, PlaywrightTimeoutError) as exc:
+                    shown = getattr(heading, "pattern", heading)
+                    raise AssertionError(
+                        f"expect_page: heading '{shown}' ko'rindi, lekin Smartup loader overlay bilan "
+                        f"bloklangan; url={self.page.url}"
+                    ) from exc
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def switch_filial(self, name, timeout=120_000):
+        self.page.locator(".pt-3.px-2").click()
+        option = self.page.get_by_role("link", name=name, exact=True)
+        expect(option).to_be_visible()
+        option.click()
+
+        try:
+            self.wait_for_loader(timeout=timeout)
+        except Exception as exc:
+            raise AssertionError(
+                f"switch_filial: '{name}' filialiga o'tishda loader {timeout // 1000}s ichida "
+                f"yo'qolmadi, url={self.page.url}"
+            ) from exc
+
+        expect(self.page.get_by_role("paragraph").filter(has_text=name)).to_be_visible()
+
+    # ------------------------------------------------------------------------------------------------------------------
+
     def confirm_biruni(self, expected_text=None, button_name="да"):
         """Biruni confirm modalini barqaror tasdiqlaydi."""
         confirm = self.page.locator("#biruniConfirm")
@@ -286,21 +354,17 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def grid_row(self, text, *contains, grid_selector="b-grid"):
+    def grid(self, text, *contains, grid_selector="b-grid", click=False):
         """`text` bo'yicha grid qatorini topadi, ko'rinishini va (berilgan bo'lsa)
-        `contains` dagi har bir matnni (nom, status va h.k.) o'z ichiga olishini tekshiradi."""
+        `contains` dagi har bir matnni (nom, status va h.k.) o'z ichiga olishini tekshiradi.
+        `click=True` berilsa topilgan qatorni bosadi."""
         grid = self.page.locator(grid_selector)
         row = grid.locator(".tbl-row").filter(has_text=text).first
         expect(row).to_be_visible()
         for value in contains:
             expect(row).to_contain_text(value)
-        return row
-
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def click_grid_row(self, text, grid_selector="b-grid"):
-        row = self.grid_row(text, grid_selector=grid_selector)
-        row.click()
+        if click:
+            row.click()
         return row
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -353,34 +417,11 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def select_option(self, ng_model, option_text, clear=False):
-        b_input = self.page.locator(f'b-input:has(input[ng-model="{ng_model}"])')
-        b_input.locator("input").click()
-        if clear:
-            edit = b_input.locator(".edit")
-            if edit.count() > 0 and edit.first.is_visible():
-                edit.first.click()
-                b_input.locator("input").click()
-        option = b_input.locator("div.hint").get_by_text(option_text, exact=True).first
-        expect(option).to_be_visible()
-        option.click()
-
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def select_b_input(self, ng_model, option_text, clear=False):
-        b_input = self.page.locator(f'b-input:has(input[ng-model="{ng_model}"])')
-        search = b_input.get_by_placeholder("Поиск")
-        search.click()
-        if clear:
-            edit = b_input.locator(".edit")
-            if edit.count() > 0 and edit.first.is_visible():
-                edit.first.click()
-            search.click()
-        search.fill(option_text)
-        option = b_input.locator("div.hint").get_by_text(option_text, exact=True)
-        expect(option).to_be_visible()
-        option.click()
-        expect(search).to_have_value(option_text)
+    def text(self, *values, root="b-page"):
+        content = self.page.locator(root) if isinstance(root, str) else root
+        for value in values:
+            if value:
+                expect(content).to_contain_text(value)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -392,7 +433,7 @@ class BasePage:
         name: berilsa, label e'tiborsiz va `b-input[name=...]` orqali topiladi
               (masalan name="roles"/"rooms" — UI matniga bog'liq emas, barqarorroq).
 
-        Single-select `select_b_input`/`b_input_by_label` dan farqi (Штат formasida
+        Single-select `select_b_input`/`b_input` dan farqi (Штат formasida
         MCP bilan tasdiqlangan, 2026-06-30):
           - tanlangach search maydoni bo'shaydi (variant matnini ko'rsatmaydi),
             shuning uchun search value tasdiqlanmaydi;
@@ -490,6 +531,53 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    def _field_locator_by_grid_header(self, label, *, index=0, root=None, target="input"):
+        """b-pg-grid ichida column header matni bo'yicha shu column inputini topadi.
+
+        Smartup editable gridlarida `Кол-во`, `Цена`, `Название` kabi matnlar
+        `<label>` emas, header cell bo'ladi. Oddiy label qidiruv topmasa, shu
+        fallback headerning x-koordinatasi ostidagi input/b-inputni qaytaradi.
+        """
+        root = root or self.page
+        grid = root.locator("b-pg-grid:visible").first
+        if grid.count() == 0:
+            grid = root
+
+        headers = grid.locator(".tbl-header-cell").filter(has_text=self._label_pattern(label))
+        if headers.count() == 0:
+            raise AssertionError(f"Grid header not found by label: {label}")
+
+        header = headers.nth(index)
+        expect(header).to_be_visible(timeout=1_000)
+        header_box = header.bounding_box()
+        if header_box is None:
+            raise AssertionError(f"Grid header has no bounding box: {label}")
+
+        if target == "b-input":
+            candidates = grid.locator("b-input:visible")
+        elif target == "input":
+            candidates = grid.locator(
+                "input:visible:not([ng-model='g.searchValue']), textarea:visible"
+            )
+        else:
+            candidates = grid.locator("input:visible, textarea:visible, b-input:visible")
+
+        header_left = header_box["x"]
+        header_right = header_box["x"] + header_box["width"]
+
+        for candidate_index in range(candidates.count()):
+            candidate = candidates.nth(candidate_index)
+            box = candidate.bounding_box()
+            if box is None:
+                continue
+            center_x = box["x"] + box["width"] / 2
+            if header_left <= center_x <= header_right:
+                return candidate
+
+        raise AssertionError(f"Field not found under grid header: {label} (target={target})")
+
+    # ------------------------------------------------------------------------------------------------------------------
+
     def _field_locator_by_label(self, label, *, index=0, root=None, target="input"):
         root = root or self.page
         label_locator = root.locator(
@@ -545,15 +633,21 @@ class BasePage:
                 return field.first
             match_index += 1
 
+        try:
+            return self._field_locator_by_grid_header(label, index=index, root=root, target=target)
+        except AssertionError:
+            pass
+
         raise AssertionError(f"Field not found by label: {label} (target={target})")
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def b_input_by_label(
+    def b_input(
         self,
-        label,
+        label=None,
         value=_UNSET,
         *,
+        ng_model=None,
         expect_value=_UNSET,
         return_value=False,
         search_text=None,
@@ -565,7 +659,16 @@ class BasePage:
         root=None,
         timeout=30_000,
     ):
-        b_input = self._field_locator_by_label(label, index=index, root=root, target="b-input")
+        root = root or self.page
+        if label is not None and ng_model is not None:
+            raise ValueError("b_input(): label yoki ng_model dan faqat bittasini bering")
+        if label is not None:
+            b_input = self._field_locator_by_label(label, index=index, root=root, target="b-input")
+        elif ng_model is not None:
+            b_input = root.locator(f'b-input:has(input[ng-model="{ng_model}"])').nth(index)
+        else:
+            raise ValueError("b_input(): label yoki ng_model berilishi kerak")
+
         search = b_input.locator("input[placeholder]").first
         expect(search).to_be_visible()
 
@@ -684,32 +787,5 @@ class BasePage:
         if return_value:
             return input_el.input_value()
         return input_el
-
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def close_extended_alert(self):
-        alert = self.page.locator("#biruniAlertExtended")
-        expect(alert).to_be_visible()
-        alert.locator("button.close").click()
-        alert.wait_for(state="hidden")
-
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def select_date(self, ng_model, option="custom", day=None, add_days=0):
-        today = datetime.today()
-
-        if option == "first":
-            target = today.replace(day=1)
-        elif option == "last":
-            next_month = today.replace(day=28) + timedelta(days=4)
-            target = next_month - timedelta(days=next_month.day)
-        elif option == "today":
-            target = today + timedelta(days=add_days)
-        else:  # custom
-            target = today.replace(day=day)
-
-        self.page.locator(f'input[ng-model="{ng_model}"]').click()
-        # self.page.get_by_role("cell", name=str(target.day)).first.click()
-        self.page.get_by_role("cell", name=str(target.day), exact=True).first.click()
 
     # ------------------------------------------------------------------------------------------------------------------

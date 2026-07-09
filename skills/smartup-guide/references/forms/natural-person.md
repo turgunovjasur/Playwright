@@ -51,7 +51,7 @@ Tags: natural-person, list, grid, assert
 Tags: natural-person, view, assert
 - View URL pattern: `/anor/mr/person/natural_person_view?person_id=<id>`.
 - View heading bilan tab heading birga chiqishi mumkin; heading assertda `get_by_role("heading").filter(has_text="Физическое лицо (просмотр)")` ishlatiladi.
-- View strukturasi (MCP 2026-07-01): yuqorida `Закрыть` tugmasi; summary blok `nom (id)` + `Активный`; chap tomonda Пол/Имя/Фамилия/Отчество/Код/Дата рождения; ichki tablar: `Основная информация`, `Детали`, `Характеристика контрагента`, `Расчетный счет`, `Файлы`. Smoke `assert_visible_page_text(page, full_name, "Активный")` — `b-page` ichida nom va statusni tekshiradi (yetarli).
+- View strukturasi (MCP 2026-07-01): yuqorida `Закрыть` tugmasi; summary blok `nom (id)` + `Активный`; chap tomonda Пол/Имя/Фамилия/Отчество/Код/Дата рождения; ichki tablar: `Основная информация`, `Детали`, `Характеристика контрагента`, `Расчетный счет`, `Файлы`. Smoke `BasePage(page).text(full_name, "Активный")` — default `b-page` ichida nom va statusni tekshiradi (yetarli).
 - Smoke view assert hozir yaratilgan person name va `Активный` statusini tekshiradi; regression view assert qo'shimcha `code`, `birthday`, `email`, `address`, `post_address` qiymatlarini ham tekshiradi.
 - `natural_client-pw{code}` case uchun person viewdan keyin `Клиенты` listida ham client nomi borligi tekshiriladi.
 
