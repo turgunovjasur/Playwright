@@ -15,18 +15,18 @@ Robot = **Штат** (xodim/sotuvchi). Smoke testda "Админ" rolli, room-pw{
 
 | # | Maydon | Locator | Qiymat |
 |---|---|---|---|
-| 1 | Код | `input(label="Код")` | `code_robot-pw{code}` |
+| 1 | Код | `input(label="Код")` | `c_rb_pw{code}` |
 | 2 | Название | `input(label="Название")` | `robot-pw{code}` |
-| 3 | Роли (rol, multi-select) | `multiselect("Роли", "Админ")` | `Админ` |
-| 4 | Рабочие зоны (multi-select) | `multiselect("Рабочие зоны", f"room-pw{code}")` | `room-pw{code}` |
+| 3 | Роли (rol, multi-select) | `multiselect(label="Роли", value="Админ")` | `Админ` |
+| 4 | Рабочие зоны (multi-select) | `multiselect(label="Рабочие зоны", value=room_name)` | `room-pw{code}` |
 
 `Пользователь` (name=persons) va `Руководитель` (name=robot_manager) — single-select b-input'lar, smoke'da to'ldirilmaydi.
 
 ## Multi-select b-input ("N Выбранных") — `multiselect`
 
-Base funksiya: `BasePage.multiselect(label, *option_texts, name=None, index=0, close=True, exact=True)`.
-Birinchi argument — label ("Роли"/"Рабочие зоны"), keyin variant(lar). `name="roles"`/`"rooms"`
-berilsa label e'tiborsiz va b-input atribut orqali topiladi (eng barqaror).
+Base funksiya `b_input` bilan bir xil parametr uslubida ishlaydi:
+`BasePage.multiselect(label=..., value=..., expect_value=..., return_value=..., clear=...)`.
+`label` asosiy locator; label bo'lmasa `name="roles"`/`name="rooms"` fallback sifatida beriladi.
 
 MCP bilan tasdiqlangan (2026-06-30, Штат formasi):
 
@@ -51,7 +51,7 @@ MCP bilan tasdiqlangan (2026-06-30, Штат formasi):
 `page.get_by_role("button", name="Сохранить", exact=True).first.click()` → `expect_page(page, heading="Штат")` — biruni confirm yo'q.
 
 Natija ro'yxatda (`grid(robot_name, robot_code)`):
-- `code_robot-pw{code}` ko'rinadi
+- `c_rb_pw{code}` ko'rinadi
 - `robot-pw{code}` ko'rinadi
 
 ## Downstream ta'siri

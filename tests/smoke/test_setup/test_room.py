@@ -10,12 +10,12 @@ def run_room(page, code):
     """Testcase: yangi ish zonasi (room) yaratish.
 
     1. filial-pw{code} ga o'tib, Справочники -> Рабочие зоны ro'yxatini ochish.
-    2. "Создать" -> code (code_room_pw{code}) va nom (room-pw{code}) ni kiritish.
+    2. "Создать" -> code (c_rm_pw{code}) va nom (room-pw{code}) ni kiritish.
     3. Saqlab, ro'yxatda room nomi va kodi ko'rinishini tekshirish.
     """
     base = BasePage(page)
     room_name = f"room-pw{code}"
-    room_code = f"code_room_pw{code}"
+    room_code = f"c_rm_pw{code}"
 
     with allure.step("1 - Ish zonalari ro'yxatiga o'tish"):
         base.switch_filial(name=f"filial-pw{code}")

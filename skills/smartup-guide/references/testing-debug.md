@@ -14,6 +14,11 @@ Tags: code, data-store
   - `product-pw{code}`
 - Yakka testlarda `code` `test-results/data/data_store.json` dan olinadi.
 
+### Yakka testda user login code'i
+Tags: authorization, user, code, data-store, debug
+- `authorization` code generatsiya qilmaydi va `data_store.json`dan code o'qimaydi; yangi/eski code tanlovining yagona source'i `NEW_CODE` boshqaradigan `code` fixture.
+- `who="user"` bilan login qiladigan runner va yakka testlarda doim `authorization(page, who="user", code=code)` ishlatilsin; `code` berilmasa authorization darhol aniq `AssertionError` beradi.
+
 ### Debug Iteratsiyada Precondition Qayta Yaratilmaydi
 Tags: debug, data-store, precondition
 - Qoida: Test yozish/debug iteratsiyasi paytida precondition entity allaqachon yaratilgan va `data_store.json` ga saqlangan bo'lsa, uni qayta yaratish shart emas.
@@ -33,15 +38,6 @@ Tags: fresh-db, setup, group, data
 Tags: debug, input, date, amount, mask
 - Smartup date/amount mask inputlarida invalid qiymatdan keyin oddiy `fill()` eski qiymatni almashtirmay ustiga qo'shib yuborishi mumkin.
 - Test helper avval inputni focus qilib `ControlOrMeta+A` va `Backspace` bilan tozalasin, keyin yangi value yozib `Tab` bossin.
-
-### Smoke Va Regression
-Tags: smoke, regression
-- Smoke: forma minimal yurishi uchun majburiy maydonlar va minimal harakatlar.
-- Regression: `--scope=regression` bilan ishga tushirilganda test to'liq yuradi: forma to'liq (mavjud bo'lsa) to'ldiriladi, list check va view check majburiy bajariladi.
-- Smoke/regression mode faqat bitta testga xos bo'lmasin; barcha all/setup/group runnerlar global test mode bilan ishlaydi.
-- Yangi test yozilganda `run_*` flow smoke va regression branchlarini qabul qila oladigan qilib yoziladi: smoke minimal precondition + asosiy assertlar, regression kengaytirilgan data + optional fieldlar + chuqur view/assertlar.
-- Default mode smoke bo'ladi; regression explicit run flag yoki runner mode orqali ishga tushiriladi.
-- Formada mavjudligi brauzerda ochib tekshirilmagan maydon regression fill ro'yxatiga qo'shilmaydi; taxminiy `short_name/phone/email/...` fieldlar faqat real add form screenshot/label bilan tasdiqlangandan keyin yoziladi.
 
 ### Setup Va Group Model
 Tags: setup, group, dependency
@@ -95,11 +91,16 @@ Tags: screenshot, debug
 
 ### Test Results Retention
 Tags: test-results, data-store, traces, allure, cleanup
-- `test-results/data/data_store.json` yakka testlar va `--reuse-code` uchun kerakli runtime state; keyingi chain/test shu run datalariga tayanayotgan bo'lsa saqlanadi.
+- `test-results/data/data_store.json` `NEW_CODE=0` rejimidagi yakka testlar va runnerlar uchun kerakli runtime state; keyingi chain/test shu run datalariga tayanayotgan bo'lsa saqlanadi.
 - `test-results/allure-results/` va `test-results/allure-report/` hisobot output; test ishlashi uchun doimiy shart emas, yangi run/reportda qayta yaratiladi.
 - `test-results/traces/*.zip` debug output; xato tahlili tugaganidan keyin kerak emas, yangi runlarda qayta yoziladi yoki yangi zip yaratiladi.
 - `test-results/logs/*.log` faqat failed test longrepr loglari; 0 byte yoki tahlil qilingan eski loglar kerak emas.
 - `test-results/allure-results/` pytest/Allure failure attachment outputi; foydali form screenshotlar doim skill arxivida bo'lishi kerak.
+
+## Loyiha Xususiyatlari
+
+### PyCharmdagi Allure report cleanup
+- PyCharm/direct pytest hookidagi `subprocess.Popen(["allure", "open", ...])` browser oynasi yopilganda Java serverini to'xtatmaydi; jarayonlar qolib ketmasligi uchun `scripts/open_allure_report.py`dagi heartbeatli serverdan foydalanish kerak.
 
 ### Xato Case Va Dublikat Kod
 Tags: review, duplicate, testcase

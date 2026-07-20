@@ -25,11 +25,8 @@ def run_role(page):
         base.grid("Админ", click=True)
         page.get_by_role("button", name="Изменить").click()
         base.expect_page(heading="Роль (изменение)")
+        base.hide_ui("#onboarding-launcher, .b24-widget-button-popup, .b24-widget-button-popup-image")
 
-        # Har bir ruxsat — <label class="switch"> ichidagi yashirin Angular checkbox. O'rovchi
-        # label'ni bosish uni ishonchli toggle qiladi (ichki <span> ni bosish barqaror emas edi).
-        # `t:text-is("нет")` faqat o'chiq (state='N') switchlarni belgilaydi — status switch va
-        # chat-widget tegmaydi, shuning uchun pozitsiya/widget-zona hisob-kitobi kerak emas.
         off_switches = page.locator('label.switch:has(t:text-is("нет"))')
         remaining = off_switches.count()
         while remaining > 0:
@@ -39,12 +36,14 @@ def run_role(page):
 
     with allure.step("3 - Saqlash va natijani tekshirish"):
         page.get_by_role("button", name="Сохранить", exact=True).first.click()
-        base.wait_for_loader(timeout=600_000)
-        base.expect_page(heading="Роли", timeout=600_000)
+        # base.wait_for_loader(timeout=600_000)
+        base.expect_page(heading="Роли", url="role_list")
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 @allure.title("Admin rolini sozlash (barcha ruxsatlar)")
-def test_role(page):
+def test_role(page, code):
+    base = BasePage(page)
     authorization(page, who='admin')
+    base.switch_filial(name=f"filial-pw{code}")
     run_role(page)

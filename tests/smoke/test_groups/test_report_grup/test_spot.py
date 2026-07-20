@@ -24,7 +24,7 @@ def run_report_spot_check(page, code, login=True):
     template_name = f"Spot2D-pw{code}"
 
     if login:
-        authorization(page)
+        authorization(page, who="admin")
         base.switch_filial(name=f"filial-pw{code}")
 
     with allure.step("1 - Spot sahifasini ochish"):

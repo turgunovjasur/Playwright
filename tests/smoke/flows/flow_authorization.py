@@ -1,6 +1,5 @@
 import os
 import json
-import random
 from pathlib import Path
 
 from playwright.sync_api import expect
@@ -92,33 +91,6 @@ def head_password():
     return value
 
 
-def _resolve_code(code=None, generated_code="new"):
-    """`who='user'` emailini yig'ish uchun code'ni hal qiladi.
-
-    - code berilsa: o'sha ishlatiladi (runner zanjiri session code'ni shu yo'l bilan beradi)
-    - generated_code='old': data_store.json dagi mavjud code (yakka/debug run uchun)
-    - aks holda ('new'): yangi random 6 xonali code
-    """
-    if code:
-        return str(code)
-    if generated_code == "old":
-        saved = None
-        if DATA_STORE_PATH.exists():
-            try:
-                data = json.loads(DATA_STORE_PATH.read_text(encoding="utf-8"))
-                saved = data.get("code") if isinstance(data, dict) else None
-            except json.JSONDecodeError:
-                saved = None
-        if not saved:
-            raise AssertionError(
-                "generated_code='old': data_store.json da 'code' topilmadi. "
-                "Avval to'liq runner ishga tushiring."
-            )
-        return str(saved)
-    return str(random.randint(100000, 999999))
-
-# ----------------------------------------------------------------------------------------------------------------------
-
 def logout(page):
     base = BasePage(page)
     page.locator(".btn.btn-icon.w-auto").click()
@@ -143,7 +115,7 @@ def dashboard(page, timeout=120_000):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def authorization(page, who="admin", *, email=None, password=None, code=None, generated_code="new"):
+def authorization(page, *, who, code=None):
     """Rolga qarab tizimga kiradi.
 
     who:
@@ -151,22 +123,23 @@ def authorization(page, who="admin", *, email=None, password=None, code=None, ge
         "head"  → HEAD_ADMIN_EMAIL + HEAD_ADMIN_PASSWORD (company yaratish uchun)
         "user"  → user-pw{code}@{company} + USER_PASSWORD / USER_PASS
 
-    email/password to'g'ridan-to'g'ri berilsa — who e'tiborsiz, o'shalar ishlatiladi (eski chaqiruvlar uchun).
-    generated_code: "new" → yangi random code; "old" → data_store.json dagi code (user emailini yig'ish uchun).
-    code berilsa — generated_code e'tiborsiz, o'sha code ishlatiladi.
+    Credentiallar faqat who qiymatiga qarab tanlanadi.
+    who="user" uchun code fixture qiymati majburiy; yangi/eski code tanlovini faqat NEW_CODE boshqaradi.
     """
-    if email is None and password is None:
-        if who == "admin":
-            email, password = admin_email(), admin_password()
-        elif who == "head":
-            email, password = head_email(), head_password()
-        elif who == "user":
-            resolved_code = _resolve_code(code, generated_code)
-            email, password = user_email_for(resolved_code), user_password()
-        else:
-            raise ValueError(
-                f"authorization: noma'lum who={who!r}. 'admin', 'user' yoki 'head' bo'lishi kerak."
+    if who == "admin":
+        email, password = admin_email(), admin_password()
+    elif who == "head":
+        email, password = head_email(), head_password()
+    elif who == "user":
+        if not code:
+            raise AssertionError(
+                "authorization(who='user') uchun code fixture qiymatini code=code orqali bering."
             )
+        email, password = user_email_for(str(code)), user_password()
+    else:
+        raise ValueError(
+            f"authorization: noma'lum who={who!r}. 'admin', 'user' yoki 'head' bo'lishi kerak."
+        )
     login(page, email=email, password=password)
     dashboard(page)
 

@@ -4,6 +4,7 @@ import shutil
 import socket
 import random
 import subprocess
+import sys
 import allure
 import pytest
 from pathlib import Path
@@ -138,9 +139,13 @@ def _explicit_file_args(config):
 
 def _selected_runner_paths(config):
     root = Path(str(config.rootpath))
+    full_runner_paths = {
+        (root / "tests/smoke/test_setup/test_setup_runner.py").resolve(),
+        (root / "tests/smoke/test_all_runner.py").resolve(),
+    }
     raw_args = [arg for arg in (getattr(config.invocation_params, "args", ()) or ()) if not arg.startswith("-")]
     if not raw_args:
-        return {(root / "tests/smoke/test_all_runner.py").resolve()}
+        return full_runner_paths
 
     selected = set()
     for raw_arg in raw_args:
@@ -150,6 +155,8 @@ def _selected_runner_paths(config):
             path = root / path
         if not path.is_dir():
             continue
+        if path.resolve() == (root / "tests/smoke").resolve():
+            return full_runner_paths
         all_runner = path / "test_all_runner.py"
         if all_runner.exists():
             return {all_runner.resolve()}
@@ -160,8 +167,12 @@ def _selected_runner_paths(config):
 def pytest_addoption(parser):
     smoke = parser.getgroup("smartup smoke")
     smoke.addoption("--headless", action="store_true", default=False, help="Chromium ni headless rejimda ishga tushiradi")
-    smoke.addoption("--new-code", action="store_true", default=False, help="Yangi 4 xonali code yaratadi")
-    smoke.addoption("--reuse-code", action="store_true", default=False, help="data_store.json dagi mavjud code ni ishlatadi")
+    smoke.addoption(
+        "--new-code",
+        action="store_true",
+        default=False,
+        help="Yangi 6 xonali code yaratadi; berilmasa data_store.json dagi mavjud code ishlatiladi",
+    )
     smoke.addoption("--url", default="", help="Majburiy server URL")
     smoke.addoption(
         "--company-code",
@@ -195,12 +206,6 @@ def pytest_addoption(parser):
         default=False,
         help="--create-company bilan yangi companyda Политика лицензирования ni o'chiradi.",
     )
-    smoke.addoption(
-        "--include-leaf-tests",
-        action="store_true",
-        default=False,
-        help="Directory/default collection paytida runner bo'lmagan smoke testlarni ham collect qiladi",
-    )
 
 
 def pytest_collection_modifyitems(config, items):
@@ -214,7 +219,7 @@ def pytest_collection_modifyitems(config, items):
             if path_name == "test_company.py" or item.name == "test_00_company":
                 item.add_marker(skip_company)
 
-    if _option_flag_or_env(config, "--include-leaf-tests", "INCLUDE_LEAF_TESTS") or _explicit_file_args(config):
+    if _explicit_file_args(config):
         return
 
     selected_runners = _selected_runner_paths(config)
@@ -530,20 +535,11 @@ def company_setup_enabled(request):
 @pytest.fixture(scope="session")
 def code(request):
     """
-    user_setup runner orqali ishlaganda: yangi random code yaratadi.
-    Yakka test ishlaganda: data_store.json fayldan o'qiydi.
+    NEW_CODE=1 yoki --new-code: yangi random 6 xonali code yaratadi.
+    NEW_CODE=0 yoki flag berilmasa: data_store.json fayldan mavjud code ni o'qiydi.
     """
     new_code = _option_flag_or_env(request.config, "--new-code", "NEW_CODE")
-    reuse_code = _option_flag_or_env(request.config, "--reuse-code", "REUSE_CODE")
-    if new_code and reuse_code:
-        raise pytest.UsageError("--new-code va --reuse-code birga ishlatilmaydi")
-
-    is_full_run = new_code or (
-        not reuse_code
-        and any(_is_user_setup(item) for item in request.session.items)
-    )
-
-    if is_full_run:
+    if new_code:
         return str(random.randint(100000, 999999))
 
     saved = _load_data_file().get("code")
@@ -697,7 +693,13 @@ def pytest_sessionfinish(session, exitstatus):
         str(ROOT_DIR / ALLURE_REPORT_DIR),
         "--clean",
     ]
-    open_command = [allure_bin, "open", str(ROOT_DIR / ALLURE_REPORT_DIR)]
+    # `allure open` Java serverini browser oynasi yopilgandan keyin ham qoldiradi.
+    # Helper report tabining heartbeatini kuzatadi va serverni avtomatik to'xtatadi.
+    open_command = [
+        sys.executable,
+        str(ROOT_DIR / "scripts" / "open_allure_report.py"),
+        str(ROOT_DIR / ALLURE_REPORT_DIR),
+    ]
 
     print("\n[ALLURE] Report generate qilinmoqda...")
     generate_result = subprocess.call(generate_command, cwd=ROOT_DIR)

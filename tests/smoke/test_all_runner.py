@@ -5,18 +5,6 @@ from tests.smoke.test_groups.test_A_grup.test_a_group_runner import run_a_group_
 from tests.smoke.test_groups.test_B_grup.test_b_group_runner import run_b_group_chain
 from tests.smoke.test_groups.test_C_grup.test_c_group_runner import run_c_group_chain
 from tests.smoke.test_groups.test_report_grup.test_report_group_runner import run_report_group_chain
-from tests.smoke.test_setup.test_setup_runner import run_setup_chain
-
-
-@pytest.mark.user_setup
-@allure.epic("Smoke")
-@allure.feature("Setup Runner")
-@allure.story("Setup Chain")
-@allure.title("01 - User setup runner")
-def test_01_user_setup_runner(session_page, code, save_data, load_data, logger, company_setup_enabled):
-    run_setup_chain(session_page, code, save_data, logger,
-                    load_data=load_data,
-                    company_setup_enabled=company_setup_enabled)
 
 
 @pytest.mark.smoke_group("A")

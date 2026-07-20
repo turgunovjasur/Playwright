@@ -12,11 +12,15 @@ Price type = **Цена** / narx turi. Smoke testda `Price Type UZB-pw{code}` ya
 
 | Maydon | Locator | Qiymat |
 |---|---|---|
-| Код | `#anor183-input-text-code` textbox | `code_price_type_uzb_pw{code}` |
+| Код | `#anor183-input-text-code` textbox | `c_p_t_pw{code}` |
 | Название | `#anor183-input-text-name` textbox | `Price Type UZB-pw{code}` |
 | Рабочие зоны | `b-input.filter("Выбранных").get_by_placeholder("Поиск")` → `room-pw{code}` → Escape | `room-pw{code}` |
 
-Room tanlanganidan keyin **"Цена продажи"** avtomatik ko'rinishi kerak (expect).
+Room tanlanganidan keyin **"Цена продажи"** avtomatik tanlangan bo'lishi kerak. Live trace
+(2026-07-13): `input[name="price_type_kind"][value="S"]` (`Цена продажи`) `checked=true`,
+`value="P"` (`Цена закупки`) esa `checked=false`. Tekshiruv:
+`BasePage(page).radio("Цена продажи", expect_checked=True)`. Faqat matn ko'rinishini
+tekshirish yoki umumiy `BasePage.text("Цена продажи")` false-positive berishi mumkin.
 
 ## Label Helper Mapping
 

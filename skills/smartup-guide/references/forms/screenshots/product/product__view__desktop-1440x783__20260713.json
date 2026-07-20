@@ -1,0 +1,12 @@
+{
+  "form_slug": "product",
+  "state": "view",
+  "captured_at": "2026-07-13T19:06:00+05:00",
+  "viewport": {
+    "width": 1440,
+    "height": 783
+  },
+  "server": "https://smartup.online",
+  "source": "Playwright live UI probe",
+  "notes": "TMC view form with main information and close action."
+}

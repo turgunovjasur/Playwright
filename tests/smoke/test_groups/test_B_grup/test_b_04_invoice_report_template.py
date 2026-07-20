@@ -212,7 +212,7 @@ def run_b_group_create_custom_invoice_report_template(
 
     if login:
         with allure.step("1 - Admin user tizimga kiradi"):
-            authorization(page)
+            authorization(page, who="admin")
             expect(page.locator("body")).to_contain_text("Trade", timeout=120_000)
 
     with allure.step("2 - Шаблоны накладных sahifasida custom template tayyorlanadi"):

@@ -20,15 +20,13 @@ def run_change_password(page, code):
     base = BasePage(page)
     with allure.step("1 - Foydalanuvchi sifatida kirish"):
         login(page, email=user_email_for(code), password=USER_PASS)
-        expect(page.locator(".alert-icon")).to_be_visible()
+        base.text(root=".alert-icon")
 
     with allure.step("2 - Yangi parol kiritish va tasdiqlash"):
-        # BasePage.input ishlatilmaydi: u fokus uchun input_el.click() qiladi, bu formada esa
-        # parol-validatsiya qoidalari (<label class="checkbox text-success">) inputlar ustiga
-        # tushib click'ni bloklaydi (MCP 2026-07). .fill() pointer click qilmay fokuslaydi.
-        page.locator("#current_password").fill(USER_PASS)
-        page.locator("#new_password").fill(USER_PASS)
-        page.locator("#rewritten_password").fill(USER_PASS)
+        base.input(label="Текущий пароль", value=USER_PASS)
+        base.input(label="Новый пароль", value=USER_PASS)
+        base.input(label="Подтверждение пароля", value=USER_PASS)
+
         page.get_by_role("button", name="Подтвердить").click()
         base.confirm_biruni()
 

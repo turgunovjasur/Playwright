@@ -176,7 +176,8 @@ AI default holatda off. `--ai-summary` flagi berilsa testdan keyin qo'shimcha
 report ichida `System Test Summary` har doim, `AI Test Summary` esa faqat
 `--ai-summary` bilan ko'rinadi.
 
-✅ Tayyor — hisobot brauzerda ochiladi. Keyinroq hisobotni qayta ochish uchun: `allure open test-results/allure-report`.
+✅ Tayyor — hisobot brauzerda ochiladi. Report tabini yopsangiz, lokal server ham avtomatik to'xtaydi.
+Keyinroq hisobotni qayta ochish uchun: `python scripts/open_allure_report.py`.
 
 ---
 
@@ -380,30 +381,32 @@ Default target `all`, ya'ni full suite.
 
 `--create-company` faqat `all`, `setup`, `company` targetlari bilan ishlatiladi. Group targetlari uchun avval mavjud company va setup data kerak.
 
+Code tanlovi `.env` dagi yagona `NEW_CODE` flagi bilan boshqariladi: `NEW_CODE=1` yangi 6 xonali code yaratadi, `NEW_CODE=0` esa `test-results/data/data_store.json` dagi mavjud code ni ishlatadi.
+
 ### <a id="pytest-orqali-debug"></a>Pytest Orqali Debug
 
 Asosiy run uchun `scripts/run_tests.py` ishlatish tavsiya qilinadi. Debug uchun to'g'ridan-to'g'ri pytest yuritish mumkin:
 
 ```bash
-./.venv/bin/pytest tests/smoke/test_all_runner.py --new-code --url <server_url> --company-code <company_code> --company-password <company_password> -v
+./.venv/bin/pytest tests/smoke/test_setup/test_setup_runner.py tests/smoke/test_all_runner.py --new-code --url <server_url> --company-code <company_code> --company-password <company_password> -v
 ```
 
 Yangi company bilan:
 
 ```bash
-./.venv/bin/pytest tests/smoke/test_all_runner.py --new-code --url <server_url> --create-company --head-email <head_email> --head-password <head_password> -v
+./.venv/bin/pytest tests/smoke/test_setup/test_setup_runner.py tests/smoke/test_all_runner.py --new-code --url <server_url> --create-company --head-email <head_email> --head-password <head_password> -v
 ```
 
 ---
 
 > **Muhim:** User setup testlari bir-biriga bog'liq — har biri oldingi test yaratgan ma'lumotdan foydalanadi.
-> Shuning uchun full smoke uchun **`test_all_runner.py`**, setup uchun esa **`test_setup_runner.py`** ishlatiladi. Oddiy `pytest` yoki directory collection duplicate flowlarni yurgizmasligi uchun default holatda runner bo'lmagan smoke testlar deselect qilinadi; kerak bo'lsa `--include-leaf-tests` ishlatiladi.
+> Shuning uchun full smoke uchun pytestga **`test_setup_runner.py` va `test_all_runner.py`** shu tartibda beriladi; faqat setup uchun `test_setup_runner.py` ishlatiladi. Oddiy `pytest` yoki directory collection duplicate flowlarni yurgizmasligi uchun runner bo'lmagan smoke testlar deselect qilinadi. Leaf testni debug qilish uchun uning fayl yo'lini pytestga aniq bering.
 
 ---
 
 ## <a id="test-qamrovi"></a>Test qamrovi
 
-`tests/smoke/test_all_runner.py` — barcha runnerlarni jamlaydi va mavjud runner fayllarini ketma-ket chaqiradi: user setup, keyin A, B, C va Report group runnerlar.
+`tests/smoke/test_all_runner.py` — A, B, C va Report group runnerlarini saqlaydi. Full run undan oldin `tests/smoke/test_setup/test_setup_runner.py` ni collect qiladi.
 
 `tests/smoke/test_setup/test_setup_runner.py` — user setup testlari **bitta browser sessiyasida** ketma-ket ishlaydi.
 
@@ -481,8 +484,8 @@ test-results/
 # Natijalardan hisobot yaratish
 allure generate test-results/allure-results -o test-results/allure-report --clean
 
-# Hisobotni brauzerda ochish
-allure open test-results/allure-report
+# Hisobotni brauzerda ochish; report tabini yopganda server ham to'xtaydi
+python scripts/open_allure_report.py
 ```
 
 ### <a id="allure-serve"></a>Faqat serve qilish (papkani yaratmasdan)
@@ -555,11 +558,11 @@ playwright codegen <server_url>/login.html
 python scripts/run_tests.py --url <server_url> --company-code <company_code> --company-password <company_password> --headless
 
 # Faqat muvaffaqiyatsiz testlarni qayta ishlatish
-./.venv/bin/pytest tests/smoke/test_all_runner.py --reuse-code --url <server_url> --company-code <company_code> --company-password <company_password> --lf
+./.venv/bin/pytest tests/smoke/test_setup/test_setup_runner.py tests/smoke/test_all_runner.py --url <server_url> --company-code <company_code> --company-password <company_password> --lf
 
 # Xato bo'lganda darhol to'xtatish
-./.venv/bin/pytest tests/smoke/test_all_runner.py --new-code --url <server_url> --company-code <company_code> --company-password <company_password> -x
+./.venv/bin/pytest tests/smoke/test_setup/test_setup_runner.py tests/smoke/test_all_runner.py --new-code --url <server_url> --company-code <company_code> --company-password <company_password> -x
 
 # Verbose + to'liq xato traceback
-./.venv/bin/pytest tests/smoke/test_all_runner.py --new-code --url <server_url> --company-code <company_code> --company-password <company_password> -v --tb=long
+./.venv/bin/pytest tests/smoke/test_setup/test_setup_runner.py tests/smoke/test_all_runner.py --new-code --url <server_url> --company-code <company_code> --company-password <company_password> -v --tb=long
 ```

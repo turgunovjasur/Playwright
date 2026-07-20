@@ -22,13 +22,14 @@ def run_role_attach_form(page):
         base.expect_page(heading="Роли")
         base.grid("Админ", click=True)
         page.get_by_role("button", name="Просмотреть").click()
-        page.get_by_role("link", name=" Формы").click()
+        base.expect_page(heading="Роль (Просмотр)")
+        page.get_by_role("link", name="Формы").click()
 
     with allure.step("2 - Barcha formalarga ruxsat berish"):
         page.get_by_role("button", name="Доступ ко всем формам").click()
         page.get_by_role("link", name="Разрешить").click()
-        base.confirm_biruni()
-        base.wait_for_loader(timeout=600_000)
+        base.confirm_biruni(expected_text="Разрешить доступ ко всем формам?")
+        base.expect_page(heading="Роль (Просмотр)")
 
     with allure.step("3 - Ruxsatlar berilganini tekshirish"):
         page.get_by_role("button", name="Доступные").click()
@@ -39,6 +40,8 @@ def run_role_attach_form(page):
 # ----------------------------------------------------------------------------------------------------------------------
 
 @allure.title("Admin roliga barcha formalarga ruxsat berish")
-def test_role_attach_form(page):
+def test_role_attach_form(page, code):
+    base = BasePage(page)
     authorization(page, who='admin')
+    base.switch_filial(name=f"filial-pw{code}")
     run_role_attach_form(page)

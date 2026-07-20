@@ -24,7 +24,7 @@ def run_filial(page, code,
     """
     base = BasePage(page)
     filial_name = f"filial-pw{code}"
-    legal_person_code = legal_person_code or f"cod_lg_pw{code}"
+    legal_person_code = legal_person_code or f"c_l_p_pw{code}"
     filial_currency = "Узбекский сум"
 
     with allure.step("1 - Tashkilotlar ro'yxatiga o'tish"):

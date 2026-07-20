@@ -14,11 +14,11 @@ To'lov turlari **yaratilmaydi** — global katalogdan company'ga ulanadi (При
 ```
 "Прикрепление" button
 → "Тип оплат (прикрепление)" heading kutish
-→ BasePage.set_checkall()  — barchasini belgilash
+→ `BasePage.grid(checkbox="all")` — barchasini belgilash
 → "Прикрепить" button
 → confirm_biruni("Прикрепить типы оплат в количестве 4?")
 → wait_for_loader()
-→ "нет данных" (barcha available bo'sh qolishi kerak)
+→ `BasePage.grid(is_empty=True)` natijasi `True` ekanini tekshirish (barcha available bo'sh qolishi kerak)
 → "Закрыть" button
 ```
 
@@ -34,6 +34,7 @@ Ro'yxatda ko'rinishi kerak:
 
 - `code` parametri yo'q — bu global, har bir company'ga bir xil 4 ta to'lov turi ulanadi
 - Room prikreplenie (`room.md`) uchun ham shu Типы оплат ro'yxatidan tanlanadi
+- Standalone pytest wrapper `authorization(page, who="user", code=code)` bilan user sifatida login qiladi; `run_payment_type(page)` esa allaqachon login qilingan page qabul qiladi.
 
 ## Test
 

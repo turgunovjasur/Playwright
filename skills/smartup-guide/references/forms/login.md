@@ -23,3 +23,9 @@ Tags: login, auth, session, timeout, overlay, flaky, locator
   - Parol: oxirgi `login()` dagi parol (admin: company_password, user: 123456789) `id(page)` bo'yicha saqlanadi.
 - **Muhim nuance**: `press("Tab")`siz `fill`+`click` ishlamaydi (ng-model commit bo'lmaydi, relogin bo'sh parol bilan ketadi). relogin URL'ni o'zgartirmaydi (`url_changed=False`), in-place sessiyani tiklaydi.
 - Trigger (debug uchun): `angular.element(document.getElementById('closing-session')).scope()` zanjirida `a.session.lockScreen()` overlayni summon qiladi.
+
+### Login POST 500 — UCP-29
+Tags: login, auth, backend, connection-pool, 500, debug
+- Belgisi: login maydonlari to'g'ri to'ldirilib `Войти` bosilgach sahifa `login.html`da qoladi; `dashboard()` `Trade` headingni kutib timeout bo'ladi va UI'da aniq credential xatosi ko'rinmasligi mumkin.
+- Tasdiqlangan sabab (2026-07-13): trace networkda `POST /b/biruni/s$log_in` javobi `500`, response body `UCP-29: Failed to get a connection` bo'lgan.
+- Tahlil qoidasi: bunday holatni darhol noto'g'ri `code` yoki parol deb xulosa qilma; trace networkdagi login POST statusi va response bodyni tekshir. `UCP-29` Smartup backend connection pool xatosi, test locator xatosi emas.

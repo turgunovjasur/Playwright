@@ -33,7 +33,7 @@ Loyihaning kuchli tomoni — infratuzilma va yangi avlod testlarning sifati. Aso
 - **Yechim:** Har wrapperga `authorization(page, who='admin')` (+ kerak bo'lsa `switch_filial`) qo'shish — `test_robot.py:48-51` namunasidek.
 
 ### 1.3. life_cycle testlari ham yakka run'da ishlamaydi
-- **Joyi:** `test_life_cycle/test_order.py:141-143` (`test_order_add_column_order_id`), `test_life_cycle/balance.py:19-21` (`test_balance`)
+- **Joyi:** `test_life_cycle/test_order.py:141-143` (`test_order_add_column_order_id`), `test_setup/test_balance.py:19-21` (`test_balance`)
 - **Muammo:** Wrapper na login qiladi, na kerakli sahifaga navigate qiladi.
 - **Yechim:** `authorization(page, who="user", code=code)` + defensive navigate qo'shish.
 

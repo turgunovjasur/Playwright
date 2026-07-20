@@ -22,13 +22,19 @@ SUMMARY_FILES = (
 CREATED_COMPANY_PASSWORD = "greenwhite"
 
 TARGETS = {
-    "all": ("tests/smoke/test_all_runner.py", "--new-code"),
+    "all": (
+        (
+            "tests/smoke/test_setup/test_setup_runner.py",
+            "tests/smoke/test_all_runner.py",
+        ),
+        "--new-code",
+    ),
     "setup": ("tests/smoke/test_setup/test_setup_runner.py", "--new-code"),
     "company": ("tests/smoke/test_setup/test_setup_runner.py::test_00_company", "--new-code"),
-    "group-a": ("tests/smoke/test_groups/test_A_grup/test_a_group_runner.py", "--reuse-code"),
-    "group-b": ("tests/smoke/test_groups/test_B_grup/test_b_group_runner.py", "--reuse-code"),
-    "group-c": ("tests/smoke/test_groups/test_C_grup/test_c_group_runner.py", "--reuse-code"),
-    "group-report": ("tests/smoke/test_groups/test_report_grup/test_report_group_runner.py", "--reuse-code"),
+    "group-a": ("tests/smoke/test_groups/test_A_grup/test_a_group_runner.py", ""),
+    "group-b": ("tests/smoke/test_groups/test_B_grup/test_b_group_runner.py", ""),
+    "group-c": ("tests/smoke/test_groups/test_C_grup/test_c_group_runner.py", ""),
+    "group-report": ("tests/smoke/test_groups/test_report_grup/test_report_group_runner.py", ""),
 }
 
 
@@ -101,7 +107,7 @@ def generate_report(env, open_report, dry_run):
     run(generate_command, env, dry_run=dry_run)
 
     if open_report:
-        run([allure, "open", str(REPORT_DIR)], env, dry_run=dry_run)
+        run([sys.executable, str(ROOT / "scripts" / "open_allure_report.py"), str(REPORT_DIR)], env, dry_run=dry_run)
 
 
 def show_trace(env, dry_run):
@@ -245,8 +251,10 @@ def main():
     else:
         env.pop("DISABLE_LICENSE_POLICY", None)
 
-    target, code_mode = TARGETS.get(args.target, (args.target, ""))
-    pytest_command = [sys.executable, "-m", "pytest", target]
+    targets, code_mode = TARGETS.get(args.target, (args.target, ""))
+    if isinstance(targets, str):
+        targets = (targets,)
+    pytest_command = [sys.executable, "-m", "pytest", *targets]
 
     if code_mode:
         pytest_command.append(code_mode)

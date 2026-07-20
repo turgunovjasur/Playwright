@@ -22,6 +22,10 @@ Fayl: `$ARGUMENTS`
 - [ ] `save_data` / `load_data` ma'lumot uzatish uchun ishlatilgan
 - [ ] `logger` xato loglash uchun to'g'ri ishlatilgan
 
+### 2.1 BasePage-first (majburiy)
+- [ ] UI primitive uchun mos `BasePage` metodi avval ishlatilgan: `expect_page`, `save_and_expect_heading`, `grid`, `grid_controller`, `input`, `b_input`, `multiselect`, `checkbox`, `confirm_biruni`, `wait_for_loader`
+- [ ] Mos `BasePage` metodi mavjud bo'lsa raw `page.locator()`, `page.get_by_role()` yoki local wrapper ishlatilmagan; raw locator faqat helper mavjud bo'lmagan UI harakati uchun qolgan
+
 ### 3. Locator sifati
 - [ ] `page.locator()` ishlatilgan (`find_element` emas)
 - [ ] `expect(locator).to_be_visible()` ishlatilgan (Python `assert` emas)
@@ -54,3 +58,6 @@ Oxirida umumiy baho: `Yaxshi / O'rta / Qayta ko'rib chiqish kerak`
 
 ### Smoke run isolation
 - Setup/group smoke flowlarda har bir `run_*` o'z ro'yxat sahifasiga defensive `navigate_to(...)` qilishi kerak; session/page holatini oldingi qadamdan meros olish flaky dependency hisoblanadi.
+
+### Dalilga asoslangan review
+- Muammo sifatida faqat ko'rilgan kod, test natijasi yoki tegishli Smartup dossierida tasdiqlangan holatni yoz; boshqa testdan olingan taxminni fakt sifatida kiritma.

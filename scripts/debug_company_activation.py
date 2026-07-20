@@ -52,10 +52,8 @@ def main():
     from tests.smoke.test_setup.test_company import (  # noqa: E402
         _company_code_text_pattern,
         _open_company_list,
-        head_admin_email,
-        head_admin_password,
     )
-    from tests.smoke.flows.flow_authorization import login  # noqa: E402
+    from tests.smoke.flows.flow_authorization import authorization  # noqa: E402
     from utils.base_page import BasePage  # noqa: E402
 
     data = json.loads((ROOT / "test-results/data/data_store.json").read_text(encoding="utf-8"))
@@ -73,7 +71,7 @@ def main():
         context.set_default_timeout(15_000)
         page = context.new_page()
 
-        login(page, email=head_admin_email(), password=head_admin_password())
+        authorization(page, who="head")
         _open_company_list(page)
         search = page.get_by_role("searchbox", name="Поиск")
         search.fill(company_code)

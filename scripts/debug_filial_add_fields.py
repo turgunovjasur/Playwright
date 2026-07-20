@@ -189,7 +189,7 @@ def main():
         context.set_default_timeout(10_000)
         page = context.new_page()
 
-        authorization(page)
+        authorization(page, who="admin")
         navigate_to(page, tab="Главное", name="Организации")
         expect(page.get_by_role("heading")).to_contain_text("Организации")
         page.get_by_role("button", name="Создать").click()

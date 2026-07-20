@@ -6,7 +6,7 @@
 - Filial add formda `short_name`, `phone`, `email`, `website`, `address`, `note` maydonlari yo'q; ularni taxmin qilib testga qo'shmaslik kerak.
 - `test_03_filial` legal person bog‘lanishini `legal_person_code`/`legal_person_name` orqali qiladi va list/view checklarini ham amalga oshiradi.
 - `Юридическое лицо` filialga bir marta bog'langandan keyin keyingi filial add searchda chiqmaydi; ikkinchi filial yaratish uchun yangi legal person kerak.
-- `--reuse-code` bilan eski `legal_person_code` ishlatilsa filial add search faqat `Добавить -> <code>` ko'rsatishi mumkin; to'g'ri chain `--new-code` bilan yangi legal person yaratib keyin filial yaratadi.
+- `NEW_CODE=0` bilan eski `legal_person_code` ishlatilsa filial add search faqat `Добавить -> <code>` ko'rsatishi mumkin; to'g'ri chain `NEW_CODE=1` bilan yangi legal person yaratib keyin filial yaratadi.
 - Filial screenshotlari doimiy bilim sifatida `references/forms/screenshots/filial/` ichida saqlanadi; `test-results` faqat vaqtinchalik debug output.
 
 ## Field Bilimlari
@@ -51,7 +51,7 @@ Tags: filial, run-result, screenshot
 - `test_01_authorization + test_02_legal_person + test_03_filial --scope=regression --new-code -q -s` passed: 3 passed in 89.35s.
 - Switch discovery JSON: `references/forms/screenshots/filial/filial__add-switches.json`.
 - VAT/Excise enabled discovery JSON: `references/forms/screenshots/filial/filial__add-fields-after-switches.json`.
-- `test_01_authorization + test_03_filial --scope=regression --reuse-code -q -s` passed after filling `d.vat_percent=12`: 2 passed in 21.42s.
+- `test_01_authorization + test_03_filial` saqlangan code (`NEW_CODE=0`) va regression scope bilan, `d.vat_percent=12` to'ldirilgach passed: 2 passed in 21.42s.
 - View main screenshot: `references/forms/screenshots/filial/filial__view-main__desktop-1920x1080.png`.
 - Product tab screenshot: `references/forms/screenshots/filial/filial__view-products__desktop-1920x1080.png`.
 - View discovery JSON: `references/forms/screenshots/filial/filial__view-state.json`.

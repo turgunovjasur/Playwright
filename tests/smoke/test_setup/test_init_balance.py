@@ -3,16 +3,16 @@ from playwright.sync_api import expect
 from tests.smoke.flows.flow_authorization import authorization
 from utils.base_page import BasePage
 
-pytestmark = [allure.epic("Smoke"), allure.feature("Life Cycle"), allure.story("Init Balance")]
+pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Init Balance")]
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 def run_init_balance(page, code):
     base = BasePage(page)
-    product_code = f"code_product-pw{code}"
+    product_name = f"product-pw{code}"
+    product_code = f"c_p_pw{code}"
 
     with allure.step("1 - Foydalanuvchi sifatida kirish va sahifani ochish"):
-        authorization(page, who="user", code=code)
         base.navigate_to(tab="Склад", name="Ввод начальных остатков ТМЦ")
         base.expect_page(heading="Ввод начальных остатков ТМЦ")
 
@@ -20,10 +20,11 @@ def run_init_balance(page, code):
         page.get_by_role("button", name="Создать").click()
         base.expect_page(heading="Ввод начальных остатков ТМЦ (создание)")
         base.input(label="Номер", value=f"{code}")
-        base.b_input(label="Склад", value="Основной склад", clear=True)
+        base.b_input(ng_model="d.warehouse_name", value="Основной склад", clear=True)
         base.b_input(label="Валюта", value="Узбекский сум", clear=True)
+
         product_grid = page.locator("b-pg-grid")
-        base.b_input(label="Название", value=product_code, expect_value=product_code, root=product_grid)
+        base.b_input(label="Название", value=product_code, expect_value=product_name, root=product_grid)
         base.input(label="Кол-во", value="100", root=product_grid)
         base.input(label="Цена", value="5000", root=product_grid)
 
@@ -49,5 +50,6 @@ def run_init_balance(page, code):
 # ----------------------------------------------------------------------------------------------------------------------
 
 @allure.title("Boshlang'ich qoldiqlarni kiritish va o'tkazish")
-def test_init_balance(page, code):
+def test_init_balance (page, code):
+    authorization(page, who="user", code=code)
     run_init_balance(page, code)

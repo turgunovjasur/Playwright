@@ -54,7 +54,7 @@ def run_report_group_chain(group_page, code, save_data, load_data):
         title="Report Group: admin login va filialga o'tish",
         display="Report Group login",
     ):
-        authorization(group_page)  # ADMIN
+        authorization(group_page, who="admin")  # ADMIN
         base.switch_filial(name=f"filial-pw{code}")
     # Report-01 (CisLink) SKIP — qarang: CISLINK_SKIP_REASON. Sahifa deploymentlar
     # bo'ylab o'zgargani uchun chain'da ishga tushirilmaydi (barcha serverda).

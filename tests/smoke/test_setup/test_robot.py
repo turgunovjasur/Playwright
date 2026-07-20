@@ -12,14 +12,14 @@ def run_robot(page, code):
     """Testcase: yangi xodim (robot) yaratish.
 
     1. Справочники -> Штат ro'yxatini ochish.
-    2. "Создать" -> kod (code_robot-pw{code}) va nom (robot-pw{code}) ni kiritish.
+    2. "Создать" -> kod (c_rb_pw{code}) va nom (robot-pw{code}) ni kiritish.
     3. ATS rolini "Админ" qilib belgilab, Рабочая зона sifatida room-pw{code} ni
        biriktirish va "Активный" statusini tekshirish.
     4. Saqlab, ro'yxatda xodim nomi va kodi ko'rinishini tekshirish.
     """
     base = BasePage(page)
     robot_name = f"robot-pw{code}"
-    robot_code = f"code_robot-pw{code}"
+    robot_code = f"c_rb_pw{code}"
     room_name = f"room-pw{code}"
 
     with allure.step("1 - Xodimlar ro'yxatiga o'tish"):
@@ -33,8 +33,8 @@ def run_robot(page, code):
         base.input(label="Название", value=robot_name)
 
     with allure.step("3 - ATS roli (Админ) va ish zonasini biriktirish"):
-        base.multiselect("Роли", "Админ")
-        base.multiselect("Рабочие зоны", room_name)
+        base.multiselect(label="Роли", value="Админ")
+        base.multiselect(label="Рабочие зоны", value=room_name)
         base.checkbox(label="Статус", expect_checked=True)
 
     with allure.step("4 - Saqlash va ro'yxatda tekshirish"):

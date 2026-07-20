@@ -39,7 +39,7 @@ Inputlar:
 
 - Iframe id/name **"report-frame" emas** — id/name bo'sh; `src*="integration_three"` bilan topiladi.
 - Sheet tablari index/nom: checklistdagi "document 1/2/3" = sheet indekslari; UI'da named tablar (Склады/Документы/Остатки). Test **index** bilan klik qiladi (data-nomga bog'lanmaslik uchun).
-- Login: admin (`authorization(page)`), CisLink kabi. Report aktiv filial uchun → admin `switch_filial(filial-pw{code})`.
+- Login: admin (`authorization(page, who="admin")`), CisLink kabi. Report aktiv filial uchun → admin `switch_filial(filial-pw{code})`.
 
 ## Test
 

@@ -58,7 +58,7 @@ def run_report_integration_two_check(page, code, load_data, login=True):
         pytest.skip("price_type_name_UZB data_store'da yo'q — avval user_setup runnerini ishga tushiring")
 
     if login:
-        authorization(page)
+        authorization(page, who="admin")
 
     with allure.step("1 - Администрирование filialiga o'tib Integration Two sahifasini ochish"):
         base.switch_filial(name="Администрирование")

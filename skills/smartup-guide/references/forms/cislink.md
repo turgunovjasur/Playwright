@@ -47,7 +47,7 @@ Mavjud group variantlari (autotest'da): person — `Группа/Категор�
 
 - **Filial maydoni YO'Q**: bu CisLink versiyasida settings'da ham, asosiy sahifada ham `Филиал` yo'q. Report **aktiv filial** uchun ishlaydi → admin sifatida avval `switch_filial(filial-pw{code})` qilinadi (checklistdagi (h) qadam o'rniga).
 - **Price type nomi**: checklistda `Цена продажи UZB-{cod}` — bu eski Selenium loyiha nomi. Bu loyihada `Price Type UZB-pw{code}` (test_price_type yaratgan nom). `Цена продажи` — narx turi (kind), nom emas.
-- **Login**: checklist admin login talab qiladi → `authorization(page)` (admin@`<company>`). Lekin user (`user-pw{code}`) ham sahifaga kira oladi.
+- **Login**: checklist admin login talab qiladi → `authorization(page, who="admin")` (admin@`<company>`). Lekin user (`user-pw{code}`) ham sahifaga kira oladi.
 - Generatsiyada confirm modal chiqmaydi — to'g'ridan-to'g'ri download bo'ladi.
 
 ## Server farqi: app3.greenwhite.uz/xtrade ≠ smartup.online (MUHIM)

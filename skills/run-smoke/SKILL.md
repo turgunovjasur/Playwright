@@ -78,15 +78,11 @@ allure serve test-results/allure-results
 - `--create-company` bilan `--company-code` va `--company-password` berilmaydi; company code test ichida `autotest<code>` ko'rinishida yaratiladi.
 - Company setupda Security tabdagi `Политика лицензирования`ni off qilish kerak bo'lsa `--create-company --head-email <email> --head-password <password> --disable-license-policy` ishlatiladi.
 - `--disable-license-policy` ishlatilsa `Buy License` va `Attach License` qadamlari o'tkazib yuboriladi.
-- `scripts/run_tests.py` default scope `smoke`; `--regression` berilsa pytestga `--scope regression` uzatiladi.
-- Bevosita pytest runlarda scope shunday beriladi: `./.venv/bin/pytest tests/smoke/test_setup/test_setup_runner.py::test_02_legal_person --scope=regression`.
-- Scope faqat bitta testga xos emas; all/setup/group runnerlar orqali butun suitega uzatiladigan global mode.
-- Smoke natijasini tahlil qilganda minimal path ishlaganini tekshir; regression natijasini tahlil qilganda add form full to'ldirilgani, list check va view check bajarilganini alohida ko'r.
 - `pytest.ini` dagi `testpaths = tests` va `addopts` avtomatik qo'llanadi
 - Trace fayllari `test-results/traces/` ga, Allure natijalar `test-results/allure-results/` ga yoziladi
 - `scripts/run_tests.py` Allure reportni `--open-report` yoki shell/repo `.env` dagi `OPEN_REPORT=1` bilan ochadi.
 - `scripts/run_tests.py` trace viewerini faqat `--show-trace` bo'lsa ochadi.
-- Directory/default collectionda runner bo'lmagan smoke testlar duplicate flow bo'lmasligi uchun deselect qilinadi; kerak bo'lsa `--include-leaf-tests` ishlatiladi.
+- Directory/default collectionda runner bo'lmagan smoke testlar duplicate flow bo'lmasligi uchun deselect qilinadi; leaf testni debug qilish uchun uning fayl yo'lini pytestga aniq ber.
 
 ## Loyiha Xususiyatlari
 

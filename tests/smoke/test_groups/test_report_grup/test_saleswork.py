@@ -24,7 +24,7 @@ def run_report_saleswork_check(page, code, login=True):
     template_name = f"SalesWork-pw{code}"
 
     if login:
-        authorization(page)
+        authorization(page, who="admin")
         base.switch_filial(name=f"filial-pw{code}")
 
     with allure.step("1 - SalesWork sahifasini ochish"):

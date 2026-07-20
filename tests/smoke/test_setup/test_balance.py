@@ -1,7 +1,7 @@
 import allure
 from utils.base_page import BasePage
 
-pytestmark = [allure.epic("Smoke"), allure.feature("Life Cycle"), allure.story("Balance")]
+pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Balance")]
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -12,7 +12,7 @@ def run_balance(page, code):
         base.expect_page(heading="Остатки ТМЦ", url="balance_list")
 
     with allure.step("2 - Mahsulot qoldig'i ro'yxatda ko'rinishini tekshirish"):
-        base.grid(f"code_product-pw{code}", f"product-pw{code}")
+        base.grid(f"c_p_pw{code}", f"product-pw{code}")
 
 # ----------------------------------------------------------------------------------------------------------------------
 

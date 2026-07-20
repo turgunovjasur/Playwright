@@ -38,7 +38,7 @@ def run_report_optimum_check(page, code, login=True):
     filial_name = f"filial-pw{code}"
 
     if login:
-        authorization(page)
+        authorization(page, who="admin")
         base.switch_filial(name=filial_name)
 
     with allure.step("1 - Optimum sahifasini ochish"):

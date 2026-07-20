@@ -31,9 +31,7 @@ def run_user(page, code):
         base.input(label="Пароль", value=USER_PASS)
         base.b_input(label="Физическое лицо", value=f"natural_person-pw{code}")
         base.b_input(label="Штат", value=f"robot-pw{code}")
-        # Штат tanlanganda uning roli "Роли" read-only view'ida (.form-view) auto ko'rinadi — input emas.
-        roli_group = page.locator("div.form-group").filter(has=page.get_by_text("Роли", exact=True))
-        expect(roli_group.locator(".form-view")).to_contain_text("Админ")
+        base.checkbox(label="Статус", expect_checked=True)
 
     with allure.step("3 - Saqlash va ro'yxatda tekshirish"):
         page.get_by_role("button", name="Сохранить", exact=True).first.click()

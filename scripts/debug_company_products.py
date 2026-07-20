@@ -61,10 +61,8 @@ def main():
         _products_card,
         _select_required_templates,
         company_code_for,
-        head_admin_email,
-        head_admin_password,
     )
-    from tests.smoke.flows.flow_authorization import login  # noqa: E402
+    from tests.smoke.flows.flow_authorization import authorization  # noqa: E402
 
     with sync_playwright() as p:
         browser = p.chromium.launch(
@@ -78,7 +76,7 @@ def main():
         context.set_default_timeout(15_000)
         page = context.new_page()
 
-        login(page, email=head_admin_email(), password=head_admin_password())
+        authorization(page, who="head")
         _open_company_list(page)
         _open_company_add(page)
         _fill_company_required_fields(page, args.code, company_code_for(args.code))

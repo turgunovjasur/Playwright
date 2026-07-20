@@ -27,7 +27,7 @@ Tags: legal-person, screenshot
 
 ### Main legal person fields
 Tags: legal-person, input, faker
-- `Полное название*` yagona ko'rinadigan majburiy main input; `Код`, `Веб-сайт`, `Штрих-код`, `Почтовый индекс`, `Альтернативное название`, `Телефон`, `Телеграм`, `Email`, `Регион`, `Адрес`, `Почтовый адрес`, `ИНН`, `ОКЭД`, `Регистрационный код плательщика НДС`, `Ориентир` ixtiyoriy inputlar.
+- `Полное название*` yagona ko'rinadigan majburiy main input; `Код`, `Веб-сайт`, `Штрих-код`, `Почтовый индекс`, `Альтернативное название`, `Телефон`, `Телеграм`, `Email`, `Регион`, `Адрес`, `Почтовый адрес`, `ИНН`, `ОКЭД`, `Регистрационный код плательщика НДС`, `Ориентир` ixtiyoriy inputlar. Smoke code qiymati: `c_l_p_pw{code}`.
 - `GPS координаты` readonly input; map button (`selectLatLng(d.latlng, 'main')`) orqali tanlanadi, oddiy `.fill()` bilan to'ldirilmaydi.
 - GPS modalida `q.search_lat_lng` inputiga `41.2994958,69.2400734` yozib `Создать и закрыть` bosilganda formadagi `d.latlng` qiymati `41.2994958,69.2400734,12` bo'ladi; modal ko'rinib qolsa `Закрыть` bilan yopiladi.
 - Testda Faker `ru_RU` company/name/address qiymatlari ishlatiladi; asosiy legal person nomida `legal_person-pw{code}` suffix saqlanadi, chunki keyingi filial setup shu suffixni tekshiradi.

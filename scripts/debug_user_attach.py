@@ -70,7 +70,7 @@ def main():
         context.set_default_timeout(15_000)
         page = context.new_page()
 
-        authorization(page)
+        authorization(page, who="admin")
         switch_filial(page, name=f"filial-pw{code}")
         navigate_to(page, tab="Главное", name="Пользователи")
         expect(page.get_by_role("heading")).to_contain_text("Пользователи")
@@ -87,7 +87,7 @@ def main():
         screenshot_path = ARCHIVE_DIR / "user__attach-forms-available__desktop-1920x1080.png"
         page.screenshot(path=str(screenshot_path), full_page=True)
         before = checkbox_state(page)
-        BasePage(page).checkbox(first_visible=True, checked=True)
+        BasePage(page).grid(checkbox="all")
         after = checkbox_state(page)
         print(
             json.dumps(

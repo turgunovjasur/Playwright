@@ -4,6 +4,13 @@
 
 Tags: smoke, setup, runner, dependency, data-store, license, balance, tmc, room, user
 
+### 2026-07-20 Balance testlari setup papkasiga ko'chirildi
+Tags: smoke, setup, runner, balance, init-balance, structure
+- `Init Balance` moduli `tests/smoke/test_setup/test_init_balance.py` ga ko'chirildi.
+- `Balance` moduli `tests/smoke/test_setup/test_balance.py` ga ko'chirildi.
+- `test_setup_runner.py` ikkala `run_*` funksiyani yangi setup modullaridan import qiladi; `test_20_init_balance` va `test_21_balance` setup zanjiridagi o'rnini saqlaydi.
+- Ikkala modulning Allure feature qiymati `Setup`; setup runner collect-only tekshiruvida 22 test yig'ildi.
+
 ### 2026-05-25 Run Natijasi
 Tags: smoke, run-result, sandbox
 - Buyruq: `./.venv/bin/pytest tests/smoke/test_all_runner.py -v --tb=short`
@@ -13,9 +20,15 @@ Tags: smoke, run-result, sandbox
 - Trace: `test-results/traces/smoke_trace.zip` saqlandi.
 - Eslatma: sandbox ichida Chromium Crashpad permission xatosi bilan browser ochilmadi; sandboxdan tashqarida xuddi shu runner passed bo'ldi.
 
+### 2026-07-14 qisqa entity code verifikatsiyasi
+Tags: smoke, entity, naming, run-result
+- Fresh `--new-code --headless` setup chainda Legal Person `c_l_p`, Room `c_rm`, Robot `c_rb`, Natural Person `c_n_p`, Price Type `c_p_t`, Sector `c_s`, Product `c_p` va Natural Client `c_n_c` code'lari bilan step 02–19 muvaffaqiyatli o'tdi.
+- Runner step 20 `Init Balance`da product tanlashga yetmasdan `Склад -> Основной склад` optioni topilmagani sabab to'xtadi; bu compact entity code namingdan alohida precondition/UI muammosi.
+
 ### Runner Qoidasi
 Tags: smoke, setup, dependency, data-store
-- `tests/smoke/test_all_runner.py` barcha runnerlarni jamlaydi: user setup, keyin A/B/... group runnerlar.
+- Full run `scripts/run_tests.py` orqali ikkita pytest targetni shu tartibda collect qiladi: `tests/smoke/test_setup/test_setup_runner.py` (00–21 alohida setup testlari), keyin `tests/smoke/test_all_runner.py` (A/B/C/Report group runnerlari).
+- `tests/smoke/test_all_runner.py` setupni qayta chaqirmaydi; u faqat group runnerlarni saqlaydi. Shu sabab setup Allure'da ikki marta yurmaydi.
 - Umumiy runner pytest `test_*` funksiyalarini import qilib chaqirmaydi; runnerlar `run_*_chain` va biznes `run_*` funksiyalarini setup -> A -> B -> ... tartibida chaqiradi.
 - `tests/smoke/test_setup/test_setup_runner.py` ichidagi testlar bitta `session_page` bilan ketma-ket ishlaydi; UI state va login holati testlar orasida saqlanadi.
 - `.env` ishlatilmaydi; `--url` har doim majburiy.
@@ -32,50 +45,50 @@ Tags: smoke, setup, dependency, data-store
 - Full runnerda har group uchun alohida `group_page` ochiladi; alohida group runner faylida testlar `group_user_page` module-scoped fixture bilan bitta login/page ishlatadi.
 - Har bir group runner ichida `*_GROUP_TEST_SCENARIO` ko'rinishida group-level test ssenariy yoziladi va `run_*_group_chain` uni Allure description'ga beradi; foydalanuvchi group qaysi biznes ssenariyni qamrab olishini runnerdan ko'rishi kerak.
 - B-group leaf testlari bittadan pytest testli alohida fayllarda turadi; `test_b_group_runner.py` ularni `run_*` helper funksiyalari orqali bitta B-group zanjiriga yig'adi.
-- `code` fixture full/setup runnerda yoki `--new-code` bilan yangi random 4 xonali qiymat beradi; yakka/group debugda `--reuse-code` yoki default orqali `test-results/data/data_store.json` dan o'qiladi.
+- `code` fixture faqat `NEW_CODE` bilan boshqariladi: `NEW_CODE=1` (yoki `.env` yo'q muhitda `--new-code`) yangi random 6 xonali qiymat beradi; `NEW_CODE=0` mavjud `test-results/data/data_store.json` dagi code ni o'qiydi. Alohida `REUSE_CODE`/`--reuse-code` yo'q.
+- `authorization`da `who` majburiy keyword-only parametr; har bir caller `who="admin"|"head"|"user"` rolini ochiq yozadi. Funksiya alohida code yaratmaydi yoki saqlangan code'ni o'qimaydi; user login uchun doim session `code` fixture qiymati `authorization(..., who="user", code=code)` orqali uzatiladi.
 - `test_01_authorization` `save_data("code", code)` orqali yangi code ni keyingi yakka/debug testlar uchun saqlaydi.
 - Smoke runner `data_store.json` ni tozalab qayta yaratmaydi; faqat `code` yozadi. Shu sabab group testlardan qolgan eski `contract_*` yoki `order_id` qiymatlarini smoke setupning hozirgi code qiymati bilan bir xil deb qabul qilmaslik kerak.
 
+### 2026-07-15 setup runner structure fix
+Tags: smoke, setup, runner, collection, allure, fix
+- `test_setup_runner.py` ichida `test_00_company` va `test_01_authorization`–`test_21_balance` wrapperlari tiklandi; collect-only natijasi `22 tests collected`.
+- `test_all_runner.py` dagi outer `test_01_user_setup_runner -> run_setup_chain(...)` olib tashlandi; u `4 tests collected` (A/B/C/Report). Full target ikkala fayl bilan jami `26 tests collected` qiladi.
+- `scripts/run_tests.py` `all` targetida setup runnerni birinchi, group runnerni ikkinchi target sifatida uzatadi; `setup` va `company` targetlari ham haqiqiy collectable testlarga yo'naladi. Uchala target dry-run bilan exit `0` berdi.
+- Ishlatilmaydigan global scope konfiguratsiyasi olib tashlandi; suite smoke testlar sifatida ishlaydi.
+
+### Allure'da setup bosqichlarini alohida test sifatida ko'rsatish
+Tags: smoke, setup, runner, allure, collection
+- `allure.step` va `progress_step` faqat bitta pytest test ichidagi nested step yaratadi; Allure'da alohida test case chiqishi uchun har setup bosqichi pytest tomonidan alohida `test_*` item sifatida collect qilinishi shart.
+- Tavsiya etilgan model: `test_setup_runner.py` ichida `test_00_company`, `test_01_authorization` ... `test_21_balance` wrapperlari `session_page` bilan collect qilinadi va faqat tegishli `run_*` funksiyani chaqiradi. Moduldagi `pytest.mark.user_setup` barcha wrapperlarga tatbiq qilinadi.
+- Mavjud `pytest_runtest_makereport`/`pytest_runtest_setup` mexanizmi alohida setup itemlar bilan mos: bir setup item fail bo'lsa `_USER_SETUP_FAILED=True`, keyingi setup itemlar va grouplar skip qilinadi; Allure har birini `passed`/`failed`/`skipped` sifatida alohida ko'rsatadi.
+- Full run bitta outer `test_01_user_setup_runner -> run_setup_chain(...)` ni yuritmasligi kerak; pytest targetlari setup runner fayli va group runner fayllarini birga collect qilishi kerak. Aks holda setup Allure'da yana bitta test bo'lib qoladi yoki ikki marta bajariladi.
+
 - Setup zanjiri buzilsa keyingi testlar ham precondition yo'qligi sabab yiqilishi mumkin; yakka testdan oldin to'liq runner yoki mos precondition ma'lumotlari kerak.
-- Directory/default collection duplicate business flow yurmasligi uchun default holatda faqat mos runner fayllarini qoldiradi; leaf testlarni collect qilish kerak bo'lsa `--include-leaf-tests` ishlatiladi.
+- Directory/default collection duplicate business flow yurmasligi uchun faqat mos runner fayllarini qoldiradi; leaf testni debug qilish uchun uning fayl yo'li pytestga aniq beriladi.
 - Cross-platform asosiy run: `python scripts/run_tests.py --url {server_url} --company-code {code} --company-password {password}` yoki `python scripts/run_tests.py --url {server_url} --create-company --head-email {email} --head-password {password}`; Mac/Linux wrapper: `./run_tests.sh ...`.
 - Runner debug mode'lari: `all`, `setup`, `company`, `group-a`, `group-b`; foydalanuvchi odatda bo'laklarga bo'lib run qilmaydi, normal run doim full suite.
-- Test scope mode global bo'ladi: all/setup/group runnerlar smoke yoki regression mode bilan yuradi va bu mode `run_*_chain` -> `run_*` flowlarga uzatiladi.
-- Yangi testlar bitta biznes flow ichida ikki scope bilan yoziladi: smoke branch minimal data va asosiy list/assertlar, regression branch optional data, kengroq tab/view assertlar va edge case tekshiruvlarni bajaradi.
 
 ### Smoke Credentiallari Majburiy
 Tags: setup, runner, credential
 - Qoida: mavjud company uchun `--company-code/--company-password` majburiy; yangi company yaratish uchun `--create-company --head-email/--head-password` majburiy. Yangi company code `autotest<code>`, admin login `admin@autotest<code>`, admin password test ichidagi default qiymat.
 
-### Smoke/Regression Scope Arxitekturasi
-Tags: smoke, regression, scope, runner, write-test, data-store
-- Scope butun suite uchun global: `scripts/run_tests.py` default `smoke`, `--regression` yoki `--scope regression` esa pytestga `--scope <mode>` qilib uzatiladi; pytestda `test_scope` fixture shu qiymatni qaytaradi.
-- Scope berilmasa default `smoke`; pytest bevosita yurgizilganda `--scope=regression` yoki env `TEST_SCOPE=regression` ishlatiladi.
-- Runnerlar `test_scope` ni chain funksiyalarga uzatadi: `test_all_runner.py` -> `run_setup_chain/run_*_group_chain` -> biznes `run_*` funksiyalar. Yangi runner/testlarda ham shu propagation buzilmasin.
-- Bitta testni alohida smoke va regression faylga bo'lma; bitta `run_*` funksiyada `scope: str = "smoke"` parametr bo'lsin, smoke va regression branchlar shu parametr bilan ajralsin.
-- Smoke branch minimal bo'ladi: formaning yurishi uchun kerakli majburiy maydonlar, downstream uchun zarur data-store keylar, save, listdagi asosiy `code/name/status` tekshiruvlar.
-- Regression branch foydalanuvchi aytganda `full` ma'nosini beradi: real add formadagi mavjud barcha muhim input/switch/tab/modal maydonlar to'ldiriladi, Faker bilan mantiqli real qiymatlar ishlatiladi, kerakli dependency entitylar yaratiladi, list va view tekshiriladi.
-- Regression view tekshiruvi faqat view ochilganini ko'rish emas: addda yozilgan qiymatlar viewdagi mos card/tablarda ko'rinishini tekshir; formaga xos product/module/permission tablari bo'lsa ularning holatini ham tekshir.
-- Hech qachon add form fieldlarini taxmin qilib yozma. Regression qilishdan oldin browserda real forma ochiladi, screenshot va field state olinadi, keyin `smartup-guide/references/forms/<form-slug>.md` va `screenshots/<form-slug>/` yangilanadi.
-- Data store smoke va regressionda toza ajratilsin: smoke faqat keyingi testlarga kerak minimal keylarni yozadi va regression-only keylarni stale bo'lib qolmasligi uchun `None`/null bilan tozalaydi; regression qo'shimcha view/list assertlar uchun kerak bo'lgan hamma muhim keylarni saqlaydi.
-- Scope ishidan keyin kamida tegishli runner ikki mode bilan tekshiriladi: `python scripts/run_tests.py --url <server_url>` va `python scripts/run_tests.py --url <server_url> --regression`.
-
 ### Entity Naming
 Tags: smoke, entity, naming
 - Company server code: `autotest{code}`; login suffix sifatida `@autotest{code}` ishlatiladi.
-- Legal person: `cod_lg_pw{code}` / Faker company name + `legal_person-pw{code}` suffix.
+- Legal person: `c_l_p_pw{code}` / Faker company name + `legal_person-pw{code}` suffix.
 - Legal person owner: `cod_owner_lg_pw{code}` / Faker company name + `legal_owner-pw{code}` suffix.
 - Legal person director: `director_np_pw{code}` natural person, Faker F.I.O.; Legal Person regression buni Natural Person helper orqali yaratadi.
-- Employee natural person code: `natural_person_pw{code}`; ko'rinadigan nom: `natural_person-pw{code}`.
-- Client natural person code: `natural_client_pw{code}`; ko'rinadigan nom: `natural_client-pw{code}`.
+- Employee natural person code: `c_n_p_pw{code}`; ko'rinadigan nom: `natural_person-pw{code}`.
+- Client natural person code: `c_n_c_pw{code}`; ko'rinadigan nom: `natural_client-pw{code}`.
 - Legal person contact position: `contact_position_pw{code}` / `Директор по развитию-pw{code}`.
-- Filial/organization: `filial-pw{code}`; yuridik shaxs `cod_lg_pw{code}` ga ulanadi.
-- Room/work zone: `code_room_pw{code}` / `room-pw{code}`.
-- Robot/staff: `code_robot-pw{code}` / `robot-pw{code}`.
+- Filial/organization: `filial-pw{code}`; yuridik shaxs `c_l_p_pw{code}` ga ulanadi.
+- Room/work zone: `c_rm_pw{code}` / `room-pw{code}`.
+- Robot/staff: `c_rb_pw{code}` / `robot-pw{code}`.
 - User: `user-pw{code}@<active_company_code>`; active company code company testi yaratgan `company_code`, bo'lmasa `--company-code`; password kod ichidagi test user default qiymati.
-- Price type: `code_price_type_uzb_pw{code}` / `Price Type UZB-pw{code}`.
-- Sector/TMC set: `code_sector_pw{code}` / `sector-pw{code}`.
-- Product/TMC: `code_product-pw{code}` / `product-pw{code}`; price `7000`.
+- Price type: `c_p_t_pw{code}` / `Price Type UZB-pw{code}`.
+- Sector/TMC set: `c_s_pw{code}` / `sector-pw{code}`.
+- Product/TMC: `c_p_pw{code}` / `product-pw{code}`; price `7000`.
 - Init balance document number: `{code}`; quantity `100`, price `5000`, expected posting sum `500 000`.
 
 ## Testlar Tartibi Va Vazifasi
@@ -102,7 +115,7 @@ Tags: authorization, data-store
 Tags: legal-person, setup, owner, director, data-store
 - Fayl: `tests/smoke/test_setup/test_legal_person.py`.
 - Navigation: `Справочники` -> `Юридические лица`.
-- Smoke: minimal branch. Faqat `cod_lg_pw{code}` va `legal_person-pw{code}` uchun asosiy maydonlar to'ldiriladi, saqlanadi va listda `Код`, `Название`, `Активный` tekshiriladi.
+- Smoke: minimal branch. Faqat `c_l_p_pw{code}` va `legal_person-pw{code}` uchun asosiy maydonlar to'ldiriladi, saqlanadi va listda `Код`, `Название`, `Активный` tekshiriladi.
 - Regression: to'liq branch. Avval `Собственник` (`cod_owner_lg_pw{code}`), Natural Person helper orqali `Руководитель` (`director_np_pw{code}`) va `contact_position_pw{code}` yaratiladi, so‘ng asosiy legal personga bog'lanadi. `Собственник`, `Руководитель`, `GPS`, bank, kontakt, qo'shimcha tablar to'ldiriladi.
 - GPS: map modalida `41.2994958,69.2400734` search qilib `d.latlng=41.2994958,69.2400734,12` saqlanadi.
 - Bank account: `МФО=00001` yozib `Tab` bosilganda bank auto-fill `Центр расчетов Центрального банка по г. Ташкенту`; valyuta `Узбекский сум`.
@@ -115,7 +128,7 @@ Tags: legal-person, setup, owner, director, data-store
 Tags: filial, organization, legal-person
 - Fayl: `tests/smoke/test_setup/test_filial.py`.
 - Navigation: `Главное` -> `Организации`.
-- Smoke: minimal branch. `filial-pw{code}` tashkilot yaratiladi, valyuta `Узбекский сум` va `cod_lg_pw{code}` yuridik shaxs bilan ulanadi.
+- Smoke: minimal branch. `filial-pw{code}` tashkilot yaratiladi, valyuta `Узбекский сум` va `c_l_p_pw{code}` yuridik shaxs bilan ulanadi.
 - Regression: qo'shimcha tekshiruv: row click + `Просмотреть` orqali view ochiladi; viewda filial nomi, valyuta, status (`Активный`) va legal person code ko'riladi; agar `legal_person_name` data-store’da bo'lsa u ham tekshiriladi.
 - Har ikki rejimda: ro'yxatda filial va legal person code ni tekshirib, reload + loader kutiladi.
 - Data store: `filial_name`, `filial_code`, `filial_currency`, `filial_legal_person_code`, va agar mavjud bo'lsa `filial_legal_person_name` saqlanadi.
@@ -125,14 +138,14 @@ Tags: room, filial, work-zone
 - Fayl: `tests/smoke/test_setup/test_room.py`.
 - Precondition: `switch_filial(page, name=f"filial-pw{code}")`.
 - Navigation: `Справочники` -> `Рабочие зоны`.
-- Nima yaratadi: `code_room_pw{code}` / `room-pw{code}` ish zonasi.
+- Nima yaratadi: `c_rm_pw{code}` / `room-pw{code}` ish zonasi.
 - Tekshiruv: saqlagandan keyin `Рабочие зоны` ro'yxatida code va nom ko'rinadi.
 
 ### 05 Robot
 Tags: robot, staff, room
 - Fayl: `tests/smoke/test_setup/test_robot.py`.
 - Navigation: `Справочники` -> `Штат`.
-- Nima yaratadi: `code_robot-pw{code}` / `robot-pw{code}` xodim.
+- Nima yaratadi: `c_rb_pw{code}` / `robot-pw{code}` xodim.
 - Bog'lanish: `Админ` tanlanadi va `room-pw{code}` ish zonasi ulanadi.
 
 ### 06 Natural Person
@@ -140,7 +153,7 @@ Tags: natural-person, employee
 - Fayl: `tests/smoke/test_setup/test_natural_person.py`.
 - Precondition: `filial-pw{code}` filialiga o'tadi.
 - Navigation: `Справочники` -> `Физические лица`.
-- Nima yaratadi: xodim uchun `natural_person_pw{code}` code va `natural_person-pw{code}` ko'rinadigan nomli jismoniy shaxs.
+- Nima yaratadi: xodim uchun `c_n_p_pw{code}` code va `natural_person-pw{code}` ko'rinadigan nomli jismoniy shaxs.
 - Smoke: majburiy `d.first_name`, `d.code` va `Активный` minimal path; list va viewda nom/status tekshiriladi.
 - Regression: birthday, passport, region, address/post address, phone, tin, telegram, email, web to'ldiriladi; viewda asosiy kiritilgan qiymatlar tekshiriladi.
 - Arxitektura: Natural Person helperlari shu test faylida turadi; Legal Person direktor yaratishda shu helperlarni import qiladi.
@@ -214,20 +227,20 @@ Tags: payment-type, room-attachment
 ### 16 Sector
 Tags: tmc, sector, room
 - Fayl: `tests/smoke/test_setup/test_sector.py`.
-- Nima yaratadi: `Наборы ТМЦ` ichida `code_sector_pw{code}` / `sector-pw{code}` TMC to'plami.
+- Nima yaratadi: `Наборы ТМЦ` ichida `c_s_pw{code}` / `sector-pw{code}` TMC to'plami.
 - Bog'lanish: `room-pw{code}` tanlanadi.
 
 ### 17 Product
 Tags: tmc, product, price
 - Fayl: `tests/smoke/test_setup/test_product.py`.
-- Nima yaratadi: `ТМЦ` ichida `code_product-pw{code}` / `product-pw{code}` mahsulot.
+- Nima yaratadi: `ТМЦ` ichida `c_p_pw{code}` / `product-pw{code}` mahsulot.
 - Bog'lanish: measure `шт`, product type `Товар`, sahifada `sector-pw{code}` ko'rinishi precondition sifatida tekshiriladi.
 - Qo'shimcha: `Установить цены` orqali gridga `7000` narx yozib saqlaydi.
 
 ### 18 Natural Person For Client 1
 Tags: natural-person, client
 - Fayl: `tests/smoke/test_setup/test_natural_person.py`.
-- Nima yaratadi: `natural_client_pw{code}` code va `natural_client-pw{code}` ko'rinadigan nomli jismoniy shaxs, `Клиент` belgisi yoqiladi.
+- Nima yaratadi: `c_n_c_pw{code}` code va `natural_client-pw{code}` ko'rinadigan nomli jismoniy shaxs, `Клиент` belgisi yoqiladi.
 - Tekshiruv: avval `Физические лица` list va `Просмотр` viewda nom/status tekshiriladi, keyin `Клиенты` ro'yxatida ko'rinadi; regressionda natural person qo'shimcha maydonlari ham to'ldiriladi.
 
 ### 19 Room Attachment
@@ -239,14 +252,14 @@ Tags: room, payment-type, warehouse, cashbox, client
 
 ### 20 Init Balance
 Tags: inventory, init-balance, product
-- Fayl: `tests/smoke/test_life_cycle/init_balance.py`.
+- Fayl: `tests/smoke/test_setup/test_init_balance.py`.
 - Nima qiladi: `authorization_user(page, code)` bilan user sifatida kiradi, `Склад` -> `Ввод начальных остатков ТМЦ` sahifasida boshlang'ich qoldiq hujjati yaratadi.
 - Formda `Склад` display text auto-fill ko'rinsa ham `warehouse_id` backendga set bo'lmasligi mumkin; test `d.warehouse_name` b-inputida `Основной склад`ni real dropdown orqali qayta tanlaydi.
-- Hujjat: number `{code}`, product `code_product-pw{code}`, quantity `100`, price `5000`.
+- Hujjat: number `{code}`, product `c_p_pw{code}`, quantity `100`, price `5000`.
 - Tekshiruv: hujjat o'tkazilgandan keyin `Проводки` popupida `100` va `500 000` borligi tekshiriladi.
 
 ### 21 Balance
 Tags: inventory, balance, product
-- Fayl: `tests/smoke/test_life_cycle/balance.py`.
+- Fayl: `tests/smoke/test_setup/test_balance.py`.
 - Navigation: `Склад` -> `Остатки ТМЦ`.
-- Tekshiruv: qoldiq sahifasida `code_product-pw{code}` ko'rinadi.
+- Tekshiruv: qoldiq sahifasida `c_p_pw{code}` ko'rinadi.

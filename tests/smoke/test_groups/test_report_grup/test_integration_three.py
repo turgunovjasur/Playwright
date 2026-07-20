@@ -35,7 +35,7 @@ def run_report_integration_three_check(page, code, login=True):
     """
     base = BasePage(page)
     if login:
-        authorization(page)  # ADMIN login (checklist preconditioniga ko'ra)
+        authorization(page, who="admin")  # ADMIN login (checklist preconditioniga ko'ra)
         base.switch_filial(name=f"filial-pw{code}")
 
     with allure.step("1 - Integration №3 report sahifasini ochish"):

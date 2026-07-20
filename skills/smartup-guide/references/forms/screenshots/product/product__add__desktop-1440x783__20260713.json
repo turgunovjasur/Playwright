@@ -1,0 +1,12 @@
+{
+  "form_slug": "product",
+  "state": "add",
+  "captured_at": "2026-07-13T18:51:00+05:00",
+  "viewport": {
+    "width": 1440,
+    "height": 783
+  },
+  "server": "https://smartup.online",
+  "source": "Playwright live UI probe",
+  "notes": "TMC add form; required sector chip, status, product type and measure controls are visible."
+}

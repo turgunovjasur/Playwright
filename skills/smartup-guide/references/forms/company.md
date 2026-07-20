@@ -3,7 +3,7 @@
 ## Navigatsiya
 
 - **Head admin** (--head-email/--head-password) bilan kirish kerak — oddiy user yoki admin emas
-- `run_company` va `test_company_add` boshida mavjud flowlardan foydalanadi: `authorization(page, email=head_admin_email(), password=head_admin_password())`, so'ng `navigate_to(page, tab="Главное", name="Компании")`.
+- `run_company` va `test_company_add` boshida mavjud flowlardan foydalanadi: `authorization(page, who="head")`, so'ng `navigate_to(page, tab="Главное", name="Компании")`.
 - Menyu: **Главное → Компании**.
 - Ro'yxat heading: `Компании` / `Companies`
 
@@ -75,3 +75,5 @@ Tags: company, setup, locator, wait
 
 - `tests/smoke/test_setup/test_company.py` → `run_company(page, code, save_data)`
 - `save_data("company_code", company_code)` — data_store.json ga saqlanadi
+- Test BasePage-first yozilgan: navigation/page state uchun `navigate_to`/`expect_page`, list uchun `grid_controller`/`grid`, maydonlar uchun `input`, switchlar uchun `checkbox`, save/confirm uchun `save_and_expect_heading`/`confirm_biruni` ishlatiladi.
+- `smt-select-trigger`, Products card ichidagi switchni labelga bog'lash va Security'dagi segmented `Отключено` control uchun BasePage'da mos universal primitive yo'q; shu uch custom UI qismida scoped raw locator saqlanadi.

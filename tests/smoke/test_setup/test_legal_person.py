@@ -15,14 +15,14 @@ def run_legal_person(page, code, save_data=None):
     """Testcase: yangi yuridik shaxs (legal person) yaratish.
 
     1. Справочники -> Юридические лица ro'yxatini ochish.
-    2. "Создать" -> Код (cod_lg_pw{code}) va Полное название (faker nomi) ni kiritish,
+    2. "Создать" -> Код (c_l_p_pw{code}) va Полное название (faker nomi) ni kiritish,
        Статус = Активный bo'lishini tekshirish.
     3. Saqlab, Юридические лица ro'yxatiga qaytishni tasdiqlash.
     4. Ro'yxatda yaratilgan yuridik shaxs kodi, nomi va "Активный" statusini tekshirish.
     5. legal_person_code va legal_person_name ni data_store ga saqlash.
     """
     base = BasePage(page)
-    legal_code = f"cod_lg_pw{code}"
+    legal_code = f"c_l_p_pw{code}"
     legal_name = f"{fake_ru.company()} legal_person-pw{code}"
 
     with allure.step("1 - Yuridik shaxslar ro'yxatiga o'tish"):

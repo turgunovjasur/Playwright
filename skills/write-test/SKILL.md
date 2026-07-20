@@ -41,7 +41,7 @@ def run_<nomi>(page, code, save_data=None):
     3. Saqlab, ro'yxatda nom/kod/status ko'rinishini tekshirish.
     """
     entity_name = f"<entity>-pw{code}"
-    entity_code = f"cod_<entity>_pw{code}"
+    entity_code = f"c_<short_entity>_pw{code}"
     base = BasePage(page)
 
     with allure.step("1 - <Entity> ro'yxatiga o'tish"):
@@ -77,21 +77,24 @@ def test_<nomi>(page, code, save_data):
 - **Maksimal base funksiya**: `base = BasePage(page)` qilib olinadi va `base.navigate_to/expect_page/switch_filial/input/b_input/multiselect/checkbox/grid_controller/grid/confirm_biruni/wait_for_loader` ishlatiladi. Raw `page.get_by_role/locator` faqat mos base funksiya yo'q joyda (masalan "Создать"/"Сохранить" tugmasi). Grid qatorini bosish kerak bo'lsa alohida wrapper emas, `base.grid(..., click=True)` ishlatiladi.
 - **allure.step raqamlari docstring qadamlari bilan mantiqan mos** kelsin; step nomi qisqa va professional.
 - **Test data** — `run_` boshida lokal `f"...{code}"` o'zgaruvchilar; downstream testga kerak bo'lsa oxirgi stepda `save_data(...)`.
+- **Entity name/code patterni** — yangi yoki refactor qilinayotgan setup entitylarda `entity_name = f"<entity>-pw{code}"`, `entity_code = f"c_<qisqa_entity_alias>_pw{code}"` ishlatilsin (masalan Natural Person `c_n_p_pw{code}`); code qiymati uzun entity nomini takrorlamasin. Oldindan downstream bog'liqligi tasdiqlangan biznes hujjat formatlari alohida saqlanadi.
 - **`run_` auth qilmaydi** (page login qilingan deb keladi). Istisno: rolni almashtirish kerak bo'lsa `run_` ichida boshqa rol bilan kiriladi (masalan `run_room_attachment` `authorization(who="user"...)` qiladi).
 - **Takroriy `switch_filial` qo'yma**: setup zanjiri bitta `session_page` ni bo'lishadi, shuning uchun filial konteksti `run_` lar orasida saqlanadi. Zanjirda filialga BIR MARTA o'tiladi (birinchi kerak bo'lgan `run_` — masalan `run_room` filial-pw{code} ga o'tadi), keyingi `run_` lar (robot, natural_person, ...) o'sha filialni meros qilib oladi va QAYTA `switch_filial` qilmaydi (ortiqcha kod). Standalone/debug run uchun `switch_filial` ni `test_` wrapper'ga qo'y (run_ ichiga emas) — shunda zanjirda takrorlanmaydi, alohida run'da esa default filialdan to'g'ri filialga o'tadi.
 - **Verifikatsiya zanjiri**: save → `base.expect_page(list heading)` → (ro'yxatda topish uchun kerak bo'lsa) `grid_controller(search=...)` → `grid(code, name, "Активный")`.
 - **Lokal helper** faqat haqiqiy biznes/flow murakkabligini yashirsa va shu faylda ishlatilsa faylda `_` prefiksi bilan qoladi; bir nechta testda kerak bo'lsa `flows/` yoki `BasePage` ga chiqariladi. 1 qatorlik wrapper yozilmaydi.
+- **Soni aniq biznes qadamlari loopga yashirilmaydi**: bitta testdagi alohida Allure step va alohida ma'noga ega bo'lgan kam sonli bo'limlar (masalan room attachment'dagi `Типы оплат`, `Склады`, `Кассы`) `list + tuple` va umumiy loopga yig'ilmasin; har biri ochiq `with allure.step(...)` blokida yozilsin. Loop faqat haqiqiy batch/matrix ko'rinishidagi ko'p bir xil elementlar uchun ishlatiladi.
 - Fayl boshida module-level `pytestmark = [allure.epic, allure.feature, allure.story]` va funksiyalar orasida `# ---...---` separator.
 
 ## 3. Qoidalar
 
 - **Fixtures** — conftest.py dan keladi, import qilma:
   - `page` — yakka test uchun fresh page; `session_page` — setup chain; `group_user_page` — group chain (login qilingan)
-  - `code` — 6 xonali unikal son; `test_scope` — "smoke"/"regression"; `save_data` / `load_data` / `require_data` — data_store; `logger`
+  - `code` — 6 xonali unikal son; `save_data` / `load_data` / `require_data` — data_store; `logger`
 - **Allure**: har bir test `@allure.title()` va `with allure.step()` bilan bo'lishi SHART
 - **Locator**: `page.locator()` ishlatilsin, `page.find_element()` EMAS
 - **Assert**: `expect(locator).to_be_visible()` ishlatilsin, Python `assert` EMAS
 - **Project helper first**: sahifa ochilishi, heading, save natijasi, grid row, form input, checkbox/switch, b-input/multiselect va loader kutish uchun avval mavjud loyiha helperlarini ishlat (`base.expect_page(...)`, `base.save_and_expect_heading(...)`, `base.grid(...)`, `base.input(...)`, `base.checkbox(...)`, `base.wait_for_loader(...)`). `utils/base_page.py` ichida mos method bor bo'lsa raw `page.locator(...)`, raw `page.get_by_role(...)` yoki yangi local helper yozilmaydi; raw `expect(...)` faqat mos helper yo'q bo'lsa yoki yangi reusable helper yozishdan oldin lokal tekshiruv uchun ishlatiladi.
+- **b-input API bir xilligi**: single-select uchun `base.b_input(label=..., value=..., expect_value=..., return_value=...)`, multi-select uchun ham shu uslubdagi `base.multiselect(label=..., value=..., expect_value=..., return_value=..., clear=...)` ishlatiladi. Auto-selected chipni tekshirish uchun `expect_value`, tanlash uchun `value` beriladi.
 - **BasePage scope**: `utils/base_page.py` ga hamma yoki ko'p testlar ishlatadigan umumiy UI primitive'lar yoziladi. Faqat bitta testga kerak bo'lgan biznes/helper logika test faylida `_helper_name(...)` local helper bo'lib qoladi.
 - **Navigation wrapper ishlatilmaydi**: `navigate_to`, `expect_page`, `switch_filial` flow helper sifatida import qilinmaydi; test/flow ichida `base = BasePage(page)` qilib, to'g'ridan-to'g'ri `base.navigate_to(...)`, `base.expect_page(...)`, `base.switch_filial(...)` ishlatiladi.
 - **Page ready check**: `base.expect_page(..., heading=...)` heading visible bo'lishi bilan birga Smartup loader (`.block-ui-overlay:visible`) yo'qolganini ham kutadi. Loader yo'q bo'lsa 2 sekund kutmaydi; darhol davom etadi. Bu route/page state check uchun yetarli; lekin keyingi action aynan grid/form ichki async reloadga bog'liq bo'lsa `base.wait_for_loader()` alohida qoladi.
@@ -122,17 +125,28 @@ def test_XX_<nomi>(session_page: Page, code):
   ```
 
 ### code fixture
-- `pytest.mark.user_setup` runner orqali ishlaganda: yangi `random.randint(100000, 999999)` yaratadi (6 xonali)
-- Yakka test ishlaganda: `test-results/data/data_store.json` dan `"code"` kalitini o'qiydi
+- `NEW_CODE=1` (yoki `.env` yo'q muhitda `--new-code`) bo'lsa yangi `random.randint(100000, 999999)` yaratadi (6 xonali)
+- `NEW_CODE=0` bo'lsa runner yoki yakka testligidan qat'i nazar `test-results/data/data_store.json` dan `"code"` kalitini o'qiydi
+- Alohida `REUSE_CODE`/`--reuse-code` ishlatilmaydi; yangi/eski code tanlovining yagona source'i `NEW_CODE`
 - Agar `data_store.json` bo'lmasa: `pytest.exit()` bilan aniq xato beradi
 
+### Tanlov holatini tekshirish
+- Radio, checkbox yoki select option uchun faqat label/matn ko'rinishini emas, tanlangan holatini ham (`expect(...).to_be_checked()` yoki mos value assert) tekshir.
+
+### `expect_page` heading scope
+- Heading aniq konteyner ichida tekshirilishi kerak bo'lsa `base.expect_page(heading=..., root="<selector>")` ishlat; `root` berilmasa heading butun sahifadan qidiriladi, loader esa har ikki holatda global tekshiriladi.
+
+### `grid` holatini tekshirish
+- Grid holati bo'yicha branch qilish uchun `base.grid(is_empty=True, root="<grid selector>")` ishlat; u bo'sh grid uchun `True`, ma'lumotli grid uchun `False` qaytaradi. Eski assertion-semantikadagi `empty=True` ishlatilmaydi.
+- Ma'lum grid qatori mavjudligi bo'yicha branch qilish uchun raw `.tbl-row.filter(...).is_visible()` yozma; `base.grid("row text", is_visible=True, root="<grid selector>")` ishlat. Qator ko'rinsa `True`, topilmasa `False` qaytaradi.
+
 ### authorization (rolga qarab login)
-- Yagona funksiya: `authorization(page, who="admin"|"user"|"head", *, email=None, password=None, code=None, generated_code="new")`. **Eski `authorization_user` OLIB TASHLANGAN — ishlatma.**
+- Yagona funksiya: `authorization(page, *, who="admin"|"user"|"head", code=None)`. `who` majburiy keyword-only parametr: har bir chaqiruv login rolini ochiq yozishi shart. **Eski `authorization_user` OLIB TASHLANGAN — ishlatma.**
 - `who="user"` → `user-pw{code}@{company}` + `USER_PASSWORD`/`USER_PASS`. Avvalgi `authorization_user(page, code)` o'rniga `authorization(page, who="user", code=code)` yoz.
-- `who="admin"` → `ADMIN_EMAIL`/`admin@{company}` + `ADMIN_PASSWORD`/`COMPANY_PASSWORD`. Avvalgi `authorization(page)` shu (default `who="admin"`).
+- `who="admin"` → `ADMIN_EMAIL`/`admin@{company}` + `ADMIN_PASSWORD`/`COMPANY_PASSWORD`.
 - `who="head"` → `HEAD_ADMIN_EMAIL`/`HEAD_ADMIN_PASSWORD` (company yaratish uchun).
-- `generated_code="new"` → yangi random code; `"old"` → `data_store.json` dagi `code` (yakka/debug run uchun). `code` berilsa — `generated_code` e'tiborsiz, o'sha ishlatiladi.
-- `email`/`password` to'g'ridan-to'g'ri berilsa — `who` e'tiborsiz, o'shalar ishlatiladi.
+- `authorization` code generatsiya qilmaydi va `data_store.json`dan code o'qimaydi; `who="user"` uchun `code=code` majburiy. Yangi/eski code tanlovining yagona source'i `NEW_CODE` boshqaradigan `code` fixture.
+- Credentiallar tashqaridan uzatilmaydi; `authorization` ularni faqat `who` qiymatiga qarab o'zi tanlaydi.
 - Credentiallar `.env` dan olinadi (precedence: `.env` yutadi — `conftest._option_or_env`).
 
 ### Selenium migratsiya source fayli
@@ -159,19 +173,6 @@ def test_XX_<nomi>(session_page: Page, code):
 - Smartup test yozish jarayonida yangi formaga kirilganda yoki URL/form state o'zgarganda screenshotni `skills/smartup-guide/references/forms/screenshots/<form-slug>/` ichiga saqla; `test-results/screens/smartup/` forma arxivi uchun ishlatilmasin.
 - Natural Person alohida entity flow/test hisoblanadi; Legal Person regressionda director natural person kerak bo'lsa Natural Person helperini import qilib ishlatadi, natural person locator/fill/assert logikasini Legal Person ichida dublikat qilmaydi.
 
-### Smoke va Regression farqi
-- Smoke testlarda forma minimal yurishi uchun kerak bo'lgan majburiy maydonlar va minimal harakatlar bajariladi; maqsad forma ishlashini tez tekshirish.
-- Regression testlarda formaning barcha imkoniyatlari qamrab olinadi: mavjud barcha muhim inputlar to'ldiriladi, qo'shimcha sozlamalar/holatlar ishlatiladi va kengroq tekshiruvlar yoziladi.
-- Bu loyihada smoke/regression scope global arxitektura: `scripts/run_tests.py` default `smoke`, `--regression` yoki `--scope=regression` esa pytest `--scope` ga uzatiladi; `test_scope` fixture runner va biznes `run_*` funksiyalarga beriladi.
-- Yangi test yozganda alohida smoke test va alohida regression test yaratma; bitta biznes `run_*` funksiyada `scope: str = "smoke"` parametr bo'lsin.
-- Runner wrapperlar `test_scope` fixture qabul qilib `run_*(..., scope=test_scope)` chaqirsin; group/setup chain funksiyalari ham `scope` qabul qilib ichki `run_*` funksiyalarga uzatsin.
-- Smoke branch minimal: real formani saqlash uchun kerakli majburiy maydonlar, keyingi testlarga kerak data-store keylari, save, listdagi asosiy `code/name/status` check.
-- Regression branch full: forma ichidagi real mavjud barcha muhim inputlar, checkbox/switchlar, tablar va modal/quick-addlar browserda ko'rib aniqlanadi; Faker bilan real nom/manzil/shaxs qiymatlari to'ldiriladi; add qilingan data list va viewda tekshiriladi.
-- Foydalanuvchi “shu testni regression qilamiz” desa, bu avtomatik ravishda add formani full to'ldirish, list check, view check, viewdagi mos card/tab/module holatlarini check qilish degani.
-- Fieldlarni taxmin qilma. Har yangi regression forma uchun avval browserda add/view ochib screenshot/field state ol, screenshotlarni `smartup-guide/references/forms/screenshots/<form-slug>/` ichiga arxivla va forma bilimini `smartup-guide/references/forms/<form-slug>.md` ga yoz.
-- Regression-only qiymatlar `data_store.json` da eski runlardan qolib ketmasin: smoke branch ularni `None`/null qilib tozalasin, regression branch esa view/list assert uchun kerak hamma muhim qiymatlarni saqlasin.
-- Scope bilan yozilgan testni yakunda ikki mode bilan tekshir: smoke minimal path, regression full path. Cross-platform runnerda mavjud company uchun `python scripts/run_tests.py --url <server_url> --company-code <company_code> --company-password <company_password>` va `python scripts/run_tests.py --url <server_url> --company-code <company_code> --company-password <company_password> --regression` ishlatiladi; yangi company kerak bo'lsa `--create-company --head-email <head_email> --head-password <head_password>` mode ishlatiladi.
-
 ### Setup va Group test dependency modeli
 - Yangi testlar har doim yangi server/baza holatida ham ishlashi kerak; lokal debugda oldingi rerunlardan data ko'paygan bo'lsa ham, testni mavjud dataga suyanib yozma.
 - Fresh bazada feature settinglar default o'chirilgan bo'lishi mumkin; testga kerak bo'lgan settingni mavjud holatga suyanmay, idempotent tarzda yoqib/sozlab keyin asosiy flowga o't.
@@ -182,8 +183,8 @@ def test_XX_<nomi>(session_page: Page, code):
 - Group testlar boshqa group yaratgan data yoki statega suyanmasin; A failed bo'lsa ham B, C, D... group testlari user_setup natijalaridan mustaqil run bo'lishi kerak.
 - Har bir group ichki dependency uchun o'z data_store key prefixidan foydalansin (`a_group_*`, `b_group_*`, `c_group_*`), boshqa group prefixlarini o'qimasin.
 - Group runnerlar `tests/smoke/test_groups/test_<X>_grup/test_<x>_group_runner.py` ko'rinishida bo'lsin; group ichidagi tartib wrapper test nomlari orqali `X-01`, `X-02` tarzida aniq berilsin.
-- Har yangi group runner qo'shilganda `tests/smoke/test_all_runner.py` ichidagi import/listga ham qo'shilsin; full run faqat shu all runner orqali yuradi.
-- `tests/smoke/test_all_runner.py` individual testlarni qayta e'lon qilmaydi; u user setup runner va group runner fayllarini setup -> A -> B -> ... tartibida ketma-ket chaqiradigan umumiy runner bo'lsin.
+- Har yangi group runner qo'shilganda `tests/smoke/test_all_runner.py` ichidagi import/testga ham qo'shilsin; full run `test_setup_runner.py` va `test_all_runner.py` targetlarini shu tartibda bir pytest sessiyasida collect qiladi.
+- `tests/smoke/test_setup/test_setup_runner.py` setup bosqichlarini Allure uchun alohida pytest test sifatida saqlaydi; `tests/smoke/test_all_runner.py` setupni qayta e'lon qilmaydi va faqat group runner testlarini saqlaydi.
 - Mexanizm pytest hook/marker orqali bo'lsin: `pytest.mark.user_setup` setup chain uchun, `pytest.mark.smoke_group("A")` kabi markerlar group chain uchun ishlatiladi.
 - Bitta group testi failed bo'lsa faqat shu groupning keyingi testlari skip qilinadi, boshqa group markerlari skip qilinmaydi; user_setup failed bo'lsa barcha group testlar skip qilinadi.
 - Grouplar bir-birining browser/page holatini meros qilib olmasin: full runnerda har group `group_page` bilan alohida oyna oladi, alohida group runner faylida esa testlar `group_user_page` bilan bitta module-scoped oyna va bitta loginni bo'lishadi.

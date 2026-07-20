@@ -62,6 +62,14 @@ User view → **Формы** link:
 
 Page size 50→1000 qilinadi (agar 50/ button ko'rinsa). Bu attach pattern faqat shu testga xos, shuning uchun `test_user_attach_form.py` ichidagi `_attach_available_permissions(page, base)` local helperida qoladi.
 
+### User attach form grid controller
+Tags: user, grid, locator, setup, mcp
+- screenshot: `references/forms/screenshots/user/user__attach-forms-available-mcp-20260710__desktop-1440x1000.png`
+- sahifa: `Пользователь (просмотр) → Формы → Доступные` (`natural_person-pw{code}` user view).
+- MCP kuzatuv: sahifada bir nechta `b-grid-controller` DOMda qoladi; hidden tab controllerlari visible controllerdan oldin kelishi mumkin. `BasePage.grid_controller()` default selector bilan hidden controllerga tushmasligi uchun visible controllerni ishlatishi kerak.
+- `expand`: faqat string limit qabul qiladi — `"50"`, `"100"`, `"500"`, `"1000"`. Dropdownni ochib, shu limit linkini tanlaydi va loaderni kutadi; `expand=True` ishlatilmaydi.
+- testda ishlatish: `run_user_attach_form`da `_attach_available_permissions(page, base)` saqlansin; helper ichida page size uchun `base.grid_controller(expand="1000")` → `base.checkbox(first_visible=True, checked=True)` → `Прикрепить` → `confirm_biruni()` tartibi ishlatiladi.
+
 ## run_role — Admin rolini sozlash
 
 ```
@@ -86,6 +94,11 @@ while remaining > 0:
 ```
 
 Save timeout = **600_000** (10 min) — ko'p switch bo'lishi mumkin.
+
+### Floating widgetlar switch klikini to'ssa
+Tags: role, permissions, onboarding, chat-widget, locator, debug
+- Muammo: `#onboarding-launcher` va Bitrix `.b24-widget-button-popup`/`.b24-widget-button-popup-image` role switch ustiga tushib, Playwright logida `intercepts pointer events` bilan click timeout beradi.
+- Yechim: `Роль (изменение)` sahifasi ochilgach, switch loopidan oldin `BasePage.hide_ui(..., remove=True)` bilan bu testga aloqasiz widgetlarni DOMdan olib tashlang. `force=True` ishlatilmadi: haqiqiy click actionabilitysi saqlanadi.
 
 ## run_role_attach_form — roliga barcha formalar
 
