@@ -6,6 +6,7 @@ from playwright.sync_api import expect
 from utils.base_page import BasePage
 
 USER_PASS = "123456789"
+DASHBOARD_TIMEOUT = 120_000
 
 DATA_STORE_PATH = Path("test-results/data/data_store.json")
 
@@ -110,7 +111,7 @@ def login(page, email=None, password=None):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def dashboard(page, timeout=120_000):
+def dashboard(page, timeout=DASHBOARD_TIMEOUT):
     expect(page.get_by_role("heading", name="Trade")).to_be_visible(timeout=timeout)
 
 # ----------------------------------------------------------------------------------------------------------------------

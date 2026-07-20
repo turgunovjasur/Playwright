@@ -5,6 +5,8 @@ from datetime import date as calendar_date, datetime, timedelta
 from playwright.sync_api import expect
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
+from utils.timeouts import BasePageTimeouts
+
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +16,14 @@ _UNSET = object()
 class BasePage:
     def __init__(self, page):
         self.page = page
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def _resolve_root(self, root):
+        """``root`` selector stringini Locatorga aylantiradi; None bo'lsa Page qaytaradi."""
+        if root is None:
+            return self.page
+        return self.page.locator(root) if isinstance(root, str) else root
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -55,7 +65,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def _visible_error_text(self, timeout=1_000):
+    def _visible_error_text(self, timeout=BasePageTimeouts.SHORT_CHECK):
         selectors = (
             "#biruniAlertExtended",
             "#biruniAlert",
@@ -115,7 +125,7 @@ class BasePage:
         confirm_text=None,
         button_name="Сохранить",
         exact_button=True,
-        timeout=120_000,
+        timeout=BasePageTimeouts.UI_TRANSITION,
         location_hint="",
     ):
         before = before_state or self._current_heading_text()
@@ -128,7 +138,7 @@ class BasePage:
         self.wait_for_loader(timeout=timeout)
 
         expected = expected_state or f"{expected_heading} heading ochilishi"
-        ui_error = self._visible_error_text(timeout=1_000)
+        ui_error = self._visible_error_text(timeout=BasePageTimeouts.SHORT_CHECK)
         if ui_error:
             actual = f"still on {self._current_heading_text() or before or 'unknown'}"
             raise AssertionError(
@@ -153,7 +163,7 @@ class BasePage:
                     expected=expected,
                     before_state=before,
                     actual_state=actual,
-                    ui_error=self._visible_error_text(timeout=500),
+                    ui_error=self._visible_error_text(timeout=BasePageTimeouts.FIELD_PROBE),
                     location_hint=location_hint,
                 )
             ) from exc
@@ -185,9 +195,9 @@ class BasePage:
           - expect_checked=True/False: faqat holatni tasdiqlaydi
           - return_value=True: joriy bool holatni qaytaradi
 
-        `root` (Page yoki modal Locator) va `index` topishni cheklaydi.
+        `root` (Page, Locator yoki selector string) va `index` topishni cheklaydi.
         """
-        root = root or self.page
+        root = self._resolve_root(root)
 
         # --- topish: bitta strategiya ---
         if label is not None:
@@ -228,7 +238,7 @@ class BasePage:
         Radio holatini o'zgartirish bu helper vazifasi emas; kerakli optionni tanlash
         uchun alohida user action ishlatiladi.
         """
-        root = root or self.page
+        root = self._resolve_root(root)
         radio_el = self._field_locator_by_label(label, index=index, root=root, target="radio")
 
         if expect_checked is not _UNSET:
@@ -251,7 +261,7 @@ class BasePage:
 
         def reached():
             try:
-                expect(cb).to_be_checked(timeout=1_000) if checked else expect(cb).not_to_be_checked(timeout=1_000)
+                expect(cb).to_be_checked(timeout=BasePageTimeouts.SHORT_CHECK) if checked else expect(cb).not_to_be_checked(timeout=BasePageTimeouts.SHORT_CHECK)
                 return True
             except (AssertionError, PlaywrightTimeoutError):
                 return False
@@ -301,7 +311,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def wait_for_loader(self, timeout=300_000):
+    def wait_for_loader(self, timeout=BasePageTimeouts.LOADER):
         """
         Loader (overlay) paydo bo'lishini va keyin yo'qolishini kutadi.
         Sahifa settled bo'lsa True qaytaradi; loader timeout ichida
@@ -309,9 +319,9 @@ class BasePage:
         """
         overlay = self.page.locator(".block-ui-overlay")
         try:
-            overlay.wait_for(state="visible", timeout=2_000)
+            overlay.wait_for(state="visible", timeout=BasePageTimeouts.LOADER_APPEAR)
         except Exception:
-            # Agar loader 2 soniyada chiqmasa, demak jarayon tugagan yoki juda tez o'tgan
+            # Loader qisqa detection oralig'ida chiqmasa, jarayon tugagan yoki juda tez o'tgan.
             return True
 
         try:
@@ -323,7 +333,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def navigate_to(self, tab="Главное", name="Организации", timeout=120_000):
+    def navigate_to(self, tab="Главное", name="Организации", timeout=BasePageTimeouts.UI_TRANSITION):
         self.page.locator("a.menu-link.menu-toggle", has_text=tab).click()
         self.page.locator("a.menu-link.menu-link-title").get_by_text(name, exact=True).click()
 
@@ -337,7 +347,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def expect_page(self, heading=None, url=None, timeout=120_000, check_unblocked=True, root=None):
+    def expect_page(self, heading=None, url=None, timeout=BasePageTimeouts.UI_TRANSITION, check_unblocked=True, root=None):
         """Sahifaning URL va heading holatini tekshiradi.
 
         ``root`` berilsa, heading faqat shu CSS selector yoki Locator ichidan qidiriladi.
@@ -381,7 +391,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def switch_filial(self, name, timeout=120_000):
+    def switch_filial(self, name, timeout=BasePageTimeouts.UI_TRANSITION):
         self.page.locator(".pt-3.px-2").click()
         option = self.page.get_by_role("link", name=name, exact=True)
         expect(option).to_be_visible()
@@ -529,7 +539,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def text(self, *values, root="b-page", timeout=10_000):
+    def text(self, *values, root="b-page", timeout=BasePageTimeouts.TEXT):
         """Ko'rinadigan root ichida berilgan matnlar borligini tekshiradi.
 
         ``values`` berilmasa, faqat root locator UI'da ko'rinishini tekshiradi.
@@ -549,7 +559,7 @@ class BasePage:
         *,
         index=0,
         root=None,
-        timeout=30_000,
+        timeout=BasePageTimeouts.COMPONENT,
     ):
         """Label orqali Bootstrap datepickerdan berilgan sanani tanlaydi.
 
@@ -574,7 +584,7 @@ class BasePage:
         else:
             raise TypeError("date_picker(): date satr bo'lishi kerak")
 
-        root = root or self.page
+        root = self._resolve_root(root)
         input_el = self._field_locator_by_label(label, index=index, root=root, target="input")
         expect(input_el).to_be_visible()
         input_el.click()
@@ -622,7 +632,7 @@ class BasePage:
         index=0,
         close=True,
         exact=True,
-        timeout=30_000,
+        timeout=BasePageTimeouts.COMPONENT,
         root=None,
     ):
         """Multi-select b-input ("N Выбранных") bilan ishlash.
@@ -647,7 +657,7 @@ class BasePage:
 
         close=True: oxirida Escape bilan dropdown yopiladi (keyingi b-input uchun zarur).
         """
-        root = root or self.page
+        root = self._resolve_root(root)
         if label is not None and name is not None:
             raise ValueError("multiselect(): label yoki name dan faqat bittasini bering")
         if label is not None:
@@ -728,7 +738,7 @@ class BasePage:
     # ------------------------------------------------------------------------------------------------------------------
 
     def _field_container_by_label(self, label, needs_search=False, index=0, root=None, target=None):
-        root = root or self.page
+        root = self._resolve_root(root)
         target = target or ("b-input" if needs_search else "input")
         label_locator = root.locator(
             "label, t, span, .control-label, .col-form-label, .form-label"
@@ -749,7 +759,7 @@ class BasePage:
         for label_index in range(label_locator.count()):
             label_item = label_locator.nth(label_index)
             try:
-                expect(label_item).to_be_visible(timeout=1_000)
+                expect(label_item).to_be_visible(timeout=BasePageTimeouts.SHORT_CHECK)
             except (AssertionError, PlaywrightTimeoutError):
                 continue
 
@@ -776,7 +786,7 @@ class BasePage:
         `<label>` emas, header cell bo'ladi. Oddiy label qidiruv topmasa, shu
         fallback headerning x-koordinatasi ostidagi input/b-inputni qaytaradi.
         """
-        root = root or self.page
+        root = self._resolve_root(root)
         grid = root.locator("b-pg-grid:visible").first
         if grid.count() == 0:
             grid = root
@@ -786,7 +796,7 @@ class BasePage:
             raise AssertionError(f"Grid header not found by label: {label}")
 
         header = headers.nth(index)
-        expect(header).to_be_visible(timeout=1_000)
+        expect(header).to_be_visible(timeout=BasePageTimeouts.SHORT_CHECK)
         header_box = header.bounding_box()
         if header_box is None:
             raise AssertionError(f"Grid header has no bounding box: {label}")
@@ -817,7 +827,7 @@ class BasePage:
     # ------------------------------------------------------------------------------------------------------------------
 
     def _field_locator_by_label(self, label, *, index=0, root=None, target="input"):
-        root = root or self.page
+        root = self._resolve_root(root)
         label_locator = root.locator(
             "label, t, span, .control-label, .col-form-label, .form-label"
         ).filter(has_text=self._label_pattern(label))
@@ -840,7 +850,7 @@ class BasePage:
         for label_index in range(label_locator.count()):
             label_item = label_locator.nth(label_index)
             try:
-                expect(label_item).to_be_visible(timeout=1_000)
+                expect(label_item).to_be_visible(timeout=BasePageTimeouts.SHORT_CHECK)
             except (AssertionError, PlaywrightTimeoutError):
                 continue
 
@@ -867,7 +877,7 @@ class BasePage:
 
             if target not in {"switch", "radio"}:
                 try:
-                    expect(field.first).to_be_visible(timeout=500)
+                    expect(field.first).to_be_visible(timeout=BasePageTimeouts.FIELD_PROBE)
                 except (AssertionError, PlaywrightTimeoutError):
                     continue
 
@@ -896,12 +906,12 @@ class BasePage:
         clear=False,
         exact=True,
         server_search=False,
-        delay=50,
+        delay=BasePageTimeouts.TYPE_DELAY,
         index=0,
         root=None,
-        timeout=30_000,
+        timeout=BasePageTimeouts.COMPONENT,
     ):
-        root = root or self.page
+        root = self._resolve_root(root)
         if label is not None and ng_model is not None:
             raise ValueError("b_input(): label yoki ng_model dan faqat bittasini bering")
         if label is not None:
@@ -992,10 +1002,10 @@ class BasePage:
           - return_value=True: joriy qiymatni (str) qaytaradi
           - press_tab=True: to'ldirgach Tab bosadi
 
-        `index` bir nechta mos input orasidan N-chisini, `root` (Page yoki modal Locator)
-        topishni cheklaydi.
+        `index` bir nechta mos input orasidan N-chisini, `root` (Page, Locator yoki
+        selector string) topishni cheklaydi.
         """
-        root = root or self.page
+        root = self._resolve_root(root)
 
         if label is not None:
             input_el = self._field_locator_by_label(label, index=index, root=root, target="input")

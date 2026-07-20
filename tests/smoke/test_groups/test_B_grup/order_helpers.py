@@ -14,6 +14,16 @@ from tests.smoke.flows.flow_order.flow_order_add import (
 from tests.smoke.flows.flow_order.flow_order_list import flow_open_order_list, flow_order_list
 from utils.base_page import BasePage
 
+# Faqat order input border-color validatsiyasiga tegishli tezkor lokal timeout: 0.2 s.
+INPUT_BORDER_ASSERT_TIMEOUT = 200
+ORDER_QUICK_PRESENCE_TIMEOUT = 2_000
+ORDER_OPTIONAL_DIALOG_TIMEOUT = 1_500
+ORDER_OPTIONAL_UI_TIMEOUT = 3_000
+ORDER_ACTION_TIMEOUT = 10_000
+ORDER_POPUP_TIMEOUT = 30_000
+ORDER_REPORT_LOAD_TIMEOUT = 60_000
+ORDER_PAGE_TRANSITION_TIMEOUT = 120_000
+
 B_GROUP_ORDER_INVOICE_REPORT_OPTIONS = [
     "Загрузочный лист",
     "Лист заказов № 3",
@@ -77,7 +87,7 @@ def _invoice_dropdown_option_names(page):
 
 def _open_order_invoice_dropdown(page, client):
     flow_open_order_list(page)
-    expect(page.locator("#kt_content")).to_contain_text(client, timeout=120_000)
+    expect(page.locator("#kt_content")).to_contain_text(client, timeout=ORDER_PAGE_TRANSITION_TIMEOUT)
     flow_order_list(page, find_row=client)
     invoice_button = page.locator("#trade81-button-report_one").first
     expect(invoice_button).to_be_visible()
@@ -99,8 +109,11 @@ def _assert_invoice_dropdown_options(page):
 
 
 def _assert_report_loaded(report_page, option_name):
-    expect(report_page.locator("body")).to_contain_text(B_GROUP_ORDER_INVOICE_REPORT_CONTROL_RE, timeout=60_000)
-    report_text = report_page.locator("body").inner_text(timeout=60_000)
+    expect(report_page.locator("body")).to_contain_text(
+        B_GROUP_ORDER_INVOICE_REPORT_CONTROL_RE,
+        timeout=ORDER_REPORT_LOAD_TIMEOUT,
+    )
+    report_text = report_page.locator("body").inner_text(timeout=ORDER_REPORT_LOAD_TIMEOUT)
     normalized_text = _normalize_report_text(report_text)
     normalized_lower = normalized_text.lower()
     if not any(marker in normalized_lower for marker in ("печать", "распечатать", "excel")):
@@ -167,15 +180,15 @@ def _open_invoice_report_and_assert(page, client, option_name, expected_data):
 
     report_page = None
     try:
-        with page.context.expect_page(timeout=30_000) as report_info:
+        with page.context.expect_page(timeout=ORDER_POPUP_TIMEOUT) as report_info:
             option.click()
         report_page = report_info.value
-        report_page.wait_for_load_state("domcontentloaded", timeout=60_000)
+        report_page.wait_for_load_state("domcontentloaded", timeout=ORDER_REPORT_LOAD_TIMEOUT)
         report_page.bring_to_front()
         if option_name in B_GROUP_ORDER_INVOICE_OPEN_ONLY_OPTIONS:
             return report_page.url
         try:
-            report_page.wait_for_load_state("networkidle", timeout=10_000)
+            report_page.wait_for_load_state("networkidle", timeout=ORDER_ACTION_TIMEOUT)
         except PlaywrightTimeoutError:
             pass
         report_text = _assert_report_loaded(report_page, option_name)
@@ -205,7 +218,7 @@ def _download_invoice_export_and_assert(page, client, option_name):
     option = _invoice_report_option_locator(page, option_name)
     expect(option).to_be_visible()
 
-    with page.expect_download(timeout=60_000) as download_info:
+    with page.expect_download(timeout=ORDER_REPORT_LOAD_TIMEOUT) as download_info:
         option.click()
     download = download_info.value
     failure = download.failure()
@@ -221,7 +234,7 @@ def _download_invoice_export_and_assert(page, client, option_name):
 def _save_visible_confirm_if_open(page):
     confirm = page.get_by_role("dialog").filter(has=page.get_by_role("button", name="да"))
     try:
-        expect(confirm).to_be_visible(timeout=3_000)
+        expect(confirm).to_be_visible(timeout=ORDER_OPTIONAL_UI_TIMEOUT)
     except Exception:
         return
 
@@ -244,14 +257,14 @@ def _input_has_non_neutral_border_by_label(page, label, neutral_colors):
     input_el = base.input(label=label)
     for color in neutral_colors:
         try:
-            expect(input_el).to_have_css("border-color", color, timeout=200)
+            expect(input_el).to_have_css("border-color", color, timeout=INPUT_BORDER_ASSERT_TIMEOUT)
             return False
         except AssertionError:
             continue
     return True
 
 
-def _page_text_is_present(page, text, timeout=3_000):
+def _page_text_is_present(page, text, timeout=ORDER_OPTIONAL_UI_TIMEOUT):
     try:
         expect(page.locator("body")).to_contain_text(text, timeout=timeout)
         return True
@@ -301,7 +314,7 @@ def _assert_save_blocked_without_confirm(page, expected_date=None):
     page.get_by_role("button", name="Сохранить").click()
     confirm = page.get_by_role("dialog").filter(has=page.get_by_role("button", name="да"))
     try:
-        expect(confirm).to_be_visible(timeout=1_500)
+        expect(confirm).to_be_visible(timeout=ORDER_OPTIONAL_DIALOG_TIMEOUT)
     except Exception:
         try:
             _close_error_dialog(page)
@@ -387,13 +400,13 @@ def _cancel_existing_client_orders_if_any(page, code):
     flow_open_order_list(page)
 
     for _ in range(20):
-        if not _page_text_is_present(page, f"natural_client-pw{code}", timeout=2_000):
+        if not _page_text_is_present(page, f"natural_client-pw{code}", timeout=ORDER_QUICK_PRESENCE_TIMEOUT):
             break
 
         flow_order_list(page, find_row=f"natural_client-pw{code}", status="Отменен")
         flow_open_order_list(page)
 
-    if _page_text_is_present(page, f"natural_client-pw{code}", timeout=2_000):
+    if _page_text_is_present(page, f"natural_client-pw{code}", timeout=ORDER_QUICK_PRESENCE_TIMEOUT):
         raise AssertionError(f"natural_client-pw{code} uchun active orderlar tozalanmadi")
 
 
@@ -683,7 +696,7 @@ def run_b_group_order_invoice_reports(page, code, load_data):
 
     with allure.step("1 - B-group draft order listda topiladi"):
         flow_open_order_list(page)
-        if not _page_text_is_present(page, created_order_client, timeout=10_000):
+        if not _page_text_is_present(page, created_order_client, timeout=ORDER_ACTION_TIMEOUT):
             raise AssertionError(
                 "B-group draft order listda topilmadi. "
                 "Avval B-01 va B-02 testlari shu group sessiyada muvaffaqiyatli yurishi kerak."
@@ -726,4 +739,7 @@ def run_b_group_order_invoice_reports(page, code, load_data):
             attachment_type=allure.attachment_type.JSON,
         )
         flow_open_order_list(page)
-        expect(page.locator("#kt_content")).to_contain_text(created_order_client, timeout=120_000)
+        expect(page.locator("#kt_content")).to_contain_text(
+            created_order_client,
+            timeout=ORDER_PAGE_TRANSITION_TIMEOUT,
+        )

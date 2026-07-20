@@ -2,9 +2,11 @@ import re
 
 from playwright.sync_api import expect
 
+A2_NAVIGATION_TIMEOUT = 60_000
+
 # ----------------------------------------------------------------------------------------------------------------------
 
-def navigate_to_a2(page, tab, path, timeout=60_000):
+def navigate_to_a2(page, tab, path, timeout=A2_NAVIGATION_TIMEOUT):
     """Eski menyu orqali a2 (yangi migratsiya) formani ochadi — real foydalanuvchi yo'li.
 
     tab  — yuqori menyu bo'limi matni ("Продажа", "Склад", "Плагин", ...).

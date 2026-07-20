@@ -6,6 +6,7 @@ from tests.smoke.flows.flow_license import attach_license_policy_skip_note, lice
 from utils.base_page import BasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("License")]
+LICENSE_ATTACH_LOADER_TIMEOUT = 120_000
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -47,13 +48,13 @@ def run_attach_license(page, code, logger):
 
         page.get_by_role("button", name="Доступные").click()
         base.expect_page(heading="Доступные пользователи")
-        base.wait_for_loader(timeout=120_000)
+        base.wait_for_loader(timeout=LICENSE_ATTACH_LOADER_TIMEOUT)
         # Bu sahifada 2 ta b-grid-controller bor: yashirin (table_license grid) va ko'rinadigan(table grid = mavjud userlar)
         base.grid_controller(search=f"natural_person-pw{code}", root="b-grid-controller:visible")
         base.grid(f"natural_person-pw{code}", root='b-grid[name="table"]', click=True)
         page.get_by_role("button", name="Прикрепить").click()
         base.confirm_biruni("Прикрепить пользователя")
-        base.wait_for_loader(timeout=120_000)
+        base.wait_for_loader(timeout=LICENSE_ATTACH_LOADER_TIMEOUT)
 
         base.expect_page(heading="Доступные пользователи")
         page.get_by_role("button", name="Закрыть").click()

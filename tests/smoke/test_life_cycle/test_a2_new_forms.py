@@ -43,6 +43,15 @@ from tests.smoke.flows.flow_authorization import (
 
 pytestmark = [allure.epic("Smoke"), allure.feature("A2 New Forms"), allure.story("URL ochilish tekshiruvi")]
 
+# Faqat A2 direct URL navigation uchun lokal timeout: 40 s.
+A2_DIRECT_NAVIGATION_TIMEOUT = 40_000
+
+# Faqat A2 sahifa resolved bo'lgandan keyingi fixed settle intervali: 1.2 s.
+A2_SETTLE_INTERVAL = 1_200
+
+# Faqat A2 quick dashboard/open tekshiruvlariga tegishli lokal timeout: 30 s.
+A2_QUICK_CHECK_TIMEOUT = 30_000
+
 ADMIN_FILIAL = "Администрирование"
 GRID_ROW = "main .smt-data-row"  # a2 grid data qatori (barqaror class)
 
@@ -165,7 +174,7 @@ def _login_profile(page, profile_key):
     password = os.getenv("HEAD_ADMIN_PASSWORD") or company_password()
     login(page, email=email, password=password)
     try:
-        dashboard(page, timeout=30_000)  # head yo'q serverda tezroq skip qilish uchun qisqa timeout
+        dashboard(page, timeout=A2_QUICK_CHECK_TIMEOUT)  # head yo'q serverda tezroq skip qilish uchun qisqa timeout
     except (AssertionError, PlaywrightTimeoutError):
         pytest.skip(f"head profil ({email}) bu serverda login bo'lmadi — head kompaniya yo'q, skip.")
     return email
@@ -215,10 +224,14 @@ def _classify(info):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def _open_direct(page, path, timeout=30_000, settle_ms=1_200):
+def _open_direct(page, path, timeout=A2_QUICK_CHECK_TIMEOUT, settle_ms=A2_SETTLE_INTERVAL):
     """a2 formani to'g'ridan-to'g'ri URL bilan ochib holatini qaytaradi."""
     try:
-        page.goto(f"{company_url()}/a2/{path}", wait_until="domcontentloaded", timeout=40_000)
+        page.goto(
+            f"{company_url()}/a2/{path}",
+            wait_until="domcontentloaded",
+            timeout=A2_DIRECT_NAVIGATION_TIMEOUT,
+        )
     except PlaywrightTimeoutError:
         return "error", "sahifa 40s da yuklanmadi"
     try:
@@ -231,13 +244,17 @@ def _open_direct(page, path, timeout=30_000, settle_ms=1_200):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def _open_via_list(page, parent_list, timeout=30_000, settle_ms=1_200):
+def _open_via_list(page, parent_list, timeout=A2_QUICK_CHECK_TIMEOUT, settle_ms=A2_SETTLE_INTERVAL):
     """`_list` ochib, grid birinchi qatorini double-click qilib forma (id bilan) ochiladi.
 
     Qaytadi: (outcome, detail) — outcome: ok | no_rows | not_found | denied | error | id_or_empty
     """
     try:
-        page.goto(f"{company_url()}/a2/{parent_list}", wait_until="domcontentloaded", timeout=40_000)
+        page.goto(
+            f"{company_url()}/a2/{parent_list}",
+            wait_until="domcontentloaded",
+            timeout=A2_DIRECT_NAVIGATION_TIMEOUT,
+        )
     except PlaywrightTimeoutError:
         return "error", f"{parent_list} 40s da yuklanmadi"
 

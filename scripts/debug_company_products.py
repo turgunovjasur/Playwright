@@ -12,6 +12,7 @@ if str(ROOT) not in sys.path:
 from _debug_env import add_company_args, configure_company_env
 
 ARCHIVE_DIR = ROOT / "skills/smartup-guide/references/forms/screenshots/company"
+DEBUG_TEXT_TIMEOUT = 1_000
 
 
 def _ancestor_text(locator, level):
@@ -19,7 +20,7 @@ def _ancestor_text(locator, level):
     if ancestor.count() == 0:
         return ""
     try:
-        text = ancestor.first.inner_text(timeout=1_000)
+        text = ancestor.first.inner_text(timeout=DEBUG_TEXT_TIMEOUT)
     except Exception:
         return ""
     return " ".join(text.split())

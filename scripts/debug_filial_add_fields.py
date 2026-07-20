@@ -15,6 +15,12 @@ from tests.smoke.flows.flow_navigate import navigate_to
 
 ARCHIVE_DIR = ROOT / "skills/smartup-guide/references/forms/screenshots/filial"
 
+# Faqat filial field discovery debug state barqarorlashishi uchun lokal interval: 0.3 s.
+DEBUG_SETTLE_INTERVAL = 300
+
+# Faqat filial debug screenshot oldidan UI barqarorlashishi uchun lokal interval: 0.5 s.
+SCREENSHOT_SETTLE_INTERVAL = 500
+
 
 def collect_fields(page):
     return page.evaluate(
@@ -111,7 +117,7 @@ def set_checkbox(page, ng_model, checked):
         return
     if checkbox.is_checked() != checked:
         checkbox.evaluate("el => el.click()")
-    page.wait_for_timeout(300)
+    page.wait_for_timeout(DEBUG_SETTLE_INTERVAL)
 
 
 def collect_b_input_options(page):
@@ -132,7 +138,7 @@ def collect_b_input_options(page):
         )
         page.keyboard.press("Escape")
         search.click(force=True)
-        page.wait_for_timeout(300)
+        page.wait_for_timeout(DEBUG_SETTLE_INTERVAL)
         options = b_input.locator("div.hint:visible").evaluate_all(
             """(items) => items
                 .map((item) => (item.textContent || '').trim())
@@ -155,7 +161,7 @@ def collect_b_input_search_options(page, ng_model, query):
     page.keyboard.press("Escape")
     search.click(force=True)
     search.fill(query)
-    page.wait_for_timeout(500)
+    page.wait_for_timeout(SCREENSHOT_SETTLE_INTERVAL)
     options = b_input.locator("div.hint:visible").evaluate_all(
         """(items) => items
             .map((item) => (item.textContent || '').trim())

@@ -9,6 +9,7 @@ pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Licen
 
 MANDATORY_LICENSE = "Smartup ERP: Базовый пользователь (Обязательный)"
 REGULAR_LICENSE = "Smartup ERP: Базовый пользователь"
+MANDATORY_LICENSE_ROW_TIMEOUT = 3_000
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -50,7 +51,7 @@ def run_buy_license(page, logger):
             has=page.get_by_role("columnheader", name="Тип лицензии", exact=True)
         ).first
         try:
-            base.text(MANDATORY_LICENSE, root=purchase_table, timeout=3_000)
+            base.text(MANDATORY_LICENSE, root=purchase_table, timeout=MANDATORY_LICENSE_ROW_TIMEOUT)
             license_row = purchase_table.get_by_role("row").filter(
                 has=page.get_by_text(MANDATORY_LICENSE, exact=True)
             ).first

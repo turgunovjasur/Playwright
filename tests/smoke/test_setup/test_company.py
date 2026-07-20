@@ -10,9 +10,11 @@ from utils.base_page import BasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Company")]
 
-
-COMPANY_FORM_TIMEOUT = 60_000
+# Faqat company create/save flowiga tegishli lokal timeout: 10 minut.
 COMPANY_SAVE_TIMEOUT = 600_000
+
+# Faqat company form/control render bo'lishiga tegishli lokal timeout: 1 minut.
+COMPANY_FORM_TIMEOUT = 60_000
 
 
 def company_code_for(code):
@@ -183,11 +185,11 @@ def run_company(page, code, save_data=None, company_code=None):
 
     with allure.step("2 - Company ro'yxatiga o'tish"):
         base.navigate_to(tab="Главное", name="Компании")
-        base.expect_page(heading="Компании")
+        base.expect_page(url="/a2/biruni/md/company_list")
 
     with allure.step("4 - Yangi company formasini ochish"):
         page.get_by_role("button", name="Создать").click()
-        base.expect_page(heading="Компания (создание)")
+        base.expect_page(url="company_add")
 
     with allure.step("5 - Majburiy maydonlarni to'ldirish"):
         base.input(label="Код сервера", value=company_code, root="app-main-info")

@@ -6,6 +6,7 @@ from tests.smoke.flows.flow_authorization import authorization
 from utils.base_page import BasePage
 
 pytestmark = [allure.epic("Report Group"), allure.feature("Integration Report"), allure.story("Integration Three")]
+REPORT_RENDER_TIMEOUT = 60_000
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -65,7 +66,7 @@ def run_report_integration_three_check(page, code, login=True):
     with allure.step("5 - Hisobot iframe'ida 3 ta sheet tekshiriladi"):
         report = page.frame_locator('iframe[src*="integration_three"]')
         tabs = report.locator("a.nav-link")
-        expect(report.locator("#sheet1")).to_be_visible(timeout=60_000)
+        expect(report.locator("#sheet1")).to_be_visible(timeout=REPORT_RENDER_TIMEOUT)
         tabs.nth(1).click()
         expect(report.locator("#sheet2")).to_be_visible()
         tabs.nth(2).click()

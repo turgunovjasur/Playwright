@@ -5,6 +5,9 @@ import allure
 from playwright.sync_api import expect
 
 DOWNLOAD_DIR = Path("test-results/downloads")
+REPORT_SEARCH_TYPE_DELAY = 50
+REPORT_OPTION_TIMEOUT = 30_000
+REPORT_DOWNLOAD_TIMEOUT = 120_000
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -27,15 +30,15 @@ def select_b_input_option(page, b_input_name, option, search_text=None):
     if search_text is None:
         search.fill(option)
     else:
-        search.press_sequentially(search_text, delay=50)
+        search.press_sequentially(search_text, delay=REPORT_SEARCH_TYPE_DELAY)
     opt = b_input.locator(".hint-item").filter(has_text=option).first
-    expect(opt).to_be_visible(timeout=30_000)
+    expect(opt).to_be_visible(timeout=REPORT_OPTION_TIMEOUT)
     opt.click()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def generate_and_verify_download(page, trigger, expected_prefix, save_name, timeout=120_000):
+def generate_and_verify_download(page, trigger, expected_prefix, save_name, timeout=REPORT_DOWNLOAD_TIMEOUT):
     """`trigger` (Locator) bosilganda yuklanadigan faylni kutadi va tekshiradi: prefiks + bo'sh emasligi."""
     DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
     with page.expect_download(timeout=timeout) as download_info:

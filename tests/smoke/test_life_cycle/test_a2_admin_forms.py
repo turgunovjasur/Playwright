@@ -28,6 +28,7 @@ from tests.smoke.flows.flow_navigate import navigate_to_a2
 pytestmark = [allure.epic("Smoke"), allure.feature("A2 New Forms"), allure.story("Menyu orqali ochilish (admin)")]
 
 ADMIN_FILIAL = "Администрирование"
+A2_ADMIN_FORM_TIMEOUT = 60_000
 
 # operatsion filialdagi a2 formalar: (tab, yo'l, forma nomi)
 OPERATIONAL_FORMS = [
@@ -94,7 +95,7 @@ def _back_to_menu(page):
     """a2 formadan eski menyuli dashboardga qaytadi (keyingi forma uchun)."""
     if "/a2/" in page.url:
         page.go_back()
-    expect(page.locator("a.menu-link.menu-toggle").first).to_be_visible(timeout=60_000)
+    expect(page.locator("a.menu-link.menu-toggle").first).to_be_visible(timeout=A2_ADMIN_FORM_TIMEOUT)
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -127,8 +128,8 @@ def _open_a2_via_sibling(page, filial, tab, parent_leaf, sibling_name, a2_path, 
             sibling = page.locator('a[ng-click*="openSibling"]', has_text=sibling_name).first
             expect(sibling).to_be_visible()
             sibling.click()
-            expect(page).to_have_url(re.compile(re.escape(f"/a2/{a2_path}")), timeout=60_000)
-            expect(page).not_to_have_title("Smartup Online", timeout=60_000)
+            expect(page).to_have_url(re.compile(re.escape(f"/a2/{a2_path}")), timeout=A2_ADMIN_FORM_TIMEOUT)
+            expect(page).not_to_have_title("Smartup Online", timeout=A2_ADMIN_FORM_TIMEOUT)
             results.append((filial, a2_path, name, True, page.title()))
         except (AssertionError, PlaywrightTimeoutError) as exc:
             results.append((filial, a2_path, name, False, str(exc).splitlines()[0][:150]))

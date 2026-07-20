@@ -4,6 +4,7 @@ from tests.smoke.flows.flow_authorization import authorization
 from utils.base_page import BasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Init Balance")]
+POSTINGS_POPUP_TIMEOUT = 30_000
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -41,7 +42,7 @@ def run_init_balance(page, code):
 
     with allure.step("5 - Provodkalarni tekshirish (miqdor va summa)"):
         base.grid(f"{code}", click=True)
-        with page.expect_popup(timeout=30_000) as page2_info:
+        with page.expect_popup(timeout=POSTINGS_POPUP_TIMEOUT) as page2_info:
             page.get_by_role("button", name="Проводки").click()
         page2 = page2_info.value
         expect(page2.get_by_role("rowgroup")).to_contain_text("100")

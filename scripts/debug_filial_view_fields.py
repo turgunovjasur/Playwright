@@ -15,6 +15,7 @@ from tests.smoke.flows.flow_navigate import navigate_to
 from utils.base_page import BasePage
 
 ARCHIVE_DIR = ROOT / "skills/smartup-guide/references/forms/screenshots/filial"
+SCREENSHOT_SETTLE_INTERVAL = 500
 
 
 def visible_texts(page, selector):
@@ -84,7 +85,7 @@ def click_tab_by_text(page, text):
         return False
     tab.click()
     BasePage(page).wait_for_loader()
-    page.wait_for_timeout(500)
+    page.wait_for_timeout(SCREENSHOT_SETTLE_INTERVAL)
     return True
 
 

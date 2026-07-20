@@ -110,6 +110,9 @@ Tags: role, permissions, onboarding, chat-widget, locator, debug
 
 ## run_change_password — parolni tasdiqlash
 
+**Screenshot:** `references/forms/screenshots/user/user__change-password-validation-overlay__desktop-1440x783.png`
+— validation qoidalari confirmation input ustiga tushib pointer clickni bloklagan holat.
+
 **"Пароль (изменение)" formasi qachon chiqadi (2026-07 tasdiqlangan):** (a) user qo'shilganda — birinchi loginda majburiy, (b) user paroli o'zgartirilganda, (c) profildan "Изменить пароль" (`a.openChangePassword()`). Uchalasida ham **bir xil forma** (route `biruni/md/change_password`).
 
 **MUHIM:** bu **mavjud company'da ham** yangi yaratilgan user (masalan setup zanjiridagi user-pw{code}) birinchi loginda force-change oladi — `test_13_change_password` mavjud red_test chain'ida green (2026-07 chain tasdiqlangan). Faqat **allaqachon parolini o'zgartirgan** eski user to'g'ridan-to'g'ri dashboardga kiradi (`.alert-icon` chiqmaydi). Bu `run_` o'zi user sifatida `login()` qiladi (auth wrapper'da emas) — wrapper `test_change_password` bare.

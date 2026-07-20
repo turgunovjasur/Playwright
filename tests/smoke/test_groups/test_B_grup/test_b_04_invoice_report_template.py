@@ -22,9 +22,13 @@ pytestmark = [
 # Custom invoice report fayl download bo'lmaydi — OnlyOffice spreadsheet editorda
 # (office.smartup.online) yangi popupda ochiladi; shuning uchun download emas, editor
 # popup ochilishi tekshiriladi.
-CUSTOM_REPORT_EDITOR_TIMEOUT = 120_000
-EDITOR_POLL_INTERVAL = 500
 ONLYOFFICE_EDITOR_HOST = "office.smartup.online"
+INVOICE_SHORT_CHECK_TIMEOUT = 1_000
+INVOICE_GRID_ROW_TIMEOUT = 2_000
+INVOICE_COMPONENT_TIMEOUT = 30_000
+INVOICE_REPORT_LOAD_TIMEOUT = 60_000
+INVOICE_PAGE_TRANSITION_TIMEOUT = 120_000
+INVOICE_EDITOR_POLL_INTERVAL = 500
 
 
 def _search_grid(page, text):
@@ -36,10 +40,10 @@ def _search_grid(page, text):
     search.press("Backspace")
     search.fill(text)
     search.press("Enter")
-    base.wait_for_loader(timeout=120_000)
+    base.wait_for_loader(timeout=INVOICE_PAGE_TRANSITION_TIMEOUT)
 
 
-def _grid_row_is_visible(page, text, timeout=2_000):
+def _grid_row_is_visible(page, text, timeout=INVOICE_GRID_ROW_TIMEOUT):
     try:
         expect(page.locator("b-grid .tbl-row").filter(has_text=text).first).to_be_visible(timeout=timeout)
         return True
@@ -66,7 +70,7 @@ def _visible_error_texts(page):
             continue
         for index in range(count):
             try:
-                text = locator.nth(index).inner_text(timeout=1_000).strip()
+                text = locator.nth(index).inner_text(timeout=INVOICE_SHORT_CHECK_TIMEOUT).strip()
             except Exception:
                 continue
             if text and text not in texts:
@@ -92,7 +96,7 @@ def _attach_editor_open_diagnostics(report_page, template_name):
             pass
 
     try:
-        body_text = report_page.locator("body").inner_text(timeout=1_000)
+        body_text = report_page.locator("body").inner_text(timeout=INVOICE_SHORT_CHECK_TIMEOUT)
     except Exception:
         body_text = ""
 
@@ -140,31 +144,31 @@ def _open_custom_report_in_editor_and_assert(page, report_option, template_name)
     ochilib, report OnlyOffice spreadsheet editorida (office.smartup.online) ko'rsatiladi.
     Shu popup ochilib, OnlyOffice editor iframe yuklanganini tekshiradi.
     """
-    with page.context.expect_page(timeout=60_000) as report_info:
-        _clickable_dropdown_option(report_option).click(timeout=30_000)
+    with page.context.expect_page(timeout=INVOICE_REPORT_LOAD_TIMEOUT) as report_info:
+        _clickable_dropdown_option(report_option).click(timeout=INVOICE_COMPONENT_TIMEOUT)
     report_page = report_info.value
 
     try:
-        report_page.wait_for_load_state("domcontentloaded", timeout=60_000)
+        report_page.wait_for_load_state("domcontentloaded", timeout=INVOICE_REPORT_LOAD_TIMEOUT)
 
         editor_frame = None
-        deadline = time.monotonic() + (CUSTOM_REPORT_EDITOR_TIMEOUT / 1000)
+        deadline = time.monotonic() + (INVOICE_PAGE_TRANSITION_TIMEOUT / 1000)
         while time.monotonic() < deadline:
             if report_page.is_closed():
                 break
             editor_frame = _find_onlyoffice_editor_frame(report_page)
             if editor_frame is not None:
                 break
-            report_page.wait_for_timeout(EDITOR_POLL_INTERVAL)
+            report_page.wait_for_timeout(INVOICE_EDITOR_POLL_INTERVAL)
 
         if editor_frame is None:
             _attach_editor_open_diagnostics(report_page, template_name)
             raise AssertionError(
-                f"{template_name} bosildi, lekin {CUSTOM_REPORT_EDITOR_TIMEOUT // 1000} sekund ichida "
+                f"{template_name} bosildi, lekin {INVOICE_PAGE_TRANSITION_TIMEOUT // 1000} sekund ichida "
                 f"OnlyOffice spreadsheet editor ({ONLYOFFICE_EDITOR_HOST}) ochilmadi"
             )
 
-        editor_frame.wait_for_load_state("domcontentloaded", timeout=60_000)
+        editor_frame.wait_for_load_state("domcontentloaded", timeout=INVOICE_REPORT_LOAD_TIMEOUT)
         report_page_url = report_page.url
         allure.attach(
             json.dumps(
@@ -213,7 +217,7 @@ def run_b_group_create_custom_invoice_report_template(
     if login:
         with allure.step("1 - Admin user tizimga kiradi"):
             authorization(page, who="admin")
-            expect(page.locator("body")).to_contain_text("Trade", timeout=120_000)
+            expect(page.locator("body")).to_contain_text("Trade", timeout=INVOICE_PAGE_TRANSITION_TIMEOUT)
 
     with allure.step("2 - Шаблоны накладных sahifasida custom template tayyorlanadi"):
         base.navigate_to(tab="Главное", name="Шаблоны накладных")
@@ -235,7 +239,7 @@ def run_b_group_create_custom_invoice_report_template(
             origin.click()
             origin.fill(form_name)
             option = page.locator('b-input[name="origin"] .hint-item').filter(has_text=form_name).first
-            expect(option).to_be_visible(timeout=30_000)
+            expect(option).to_be_visible(timeout=INVOICE_COMPONENT_TIMEOUT)
             option.click()
             expect(origin).to_have_value(re.compile(re.escape(form_name)))
 
@@ -245,11 +249,11 @@ def run_b_group_create_custom_invoice_report_template(
             expect(name_input).to_have_value(template_name)
 
             page.locator('input[type="file"][accept=".xlsx"]').set_input_files(template_file)
-            expect(page.locator("body")).to_contain_text(template_file.name, timeout=60_000)
+            expect(page.locator("body")).to_contain_text(template_file.name, timeout=INVOICE_REPORT_LOAD_TIMEOUT)
 
             page.locator('button[ng-click="save()"]').click()
-            base.wait_for_loader(timeout=120_000)
-            expect(page).to_have_url(re.compile(r".*/template_list"), timeout=60_000)
+            base.wait_for_loader(timeout=INVOICE_PAGE_TRANSITION_TIMEOUT)
+            expect(page).to_have_url(re.compile(r".*/template_list"), timeout=INVOICE_REPORT_LOAD_TIMEOUT)
 
             _search_grid(page, template_name)
             template_row = page.locator("b-grid .tbl-row").filter(has_text=template_name).first
@@ -275,7 +279,7 @@ def run_b_group_create_custom_invoice_report_template(
         expect(page.locator("body")).to_contain_text(re.compile("доступные", re.IGNORECASE))
 
         page.locator("button").filter(has_text=re.compile(r"^\s*Прикрепленные\s*$", re.IGNORECASE)).first.click()
-        base.wait_for_loader(timeout=120_000)
+        base.wait_for_loader(timeout=INVOICE_PAGE_TRANSITION_TIMEOUT)
         _search_grid(page, role_name)
         if _grid_row_is_visible(page, role_name):
             role_row = page.locator("b-grid .tbl-row").filter(has_text=role_name).first
@@ -287,13 +291,13 @@ def run_b_group_create_custom_invoice_report_template(
                 base.confirm_biruni()
             except (AssertionError, PlaywrightTimeoutError):
                 pass
-            base.wait_for_loader(timeout=120_000)
+            base.wait_for_loader(timeout=INVOICE_PAGE_TRANSITION_TIMEOUT)
             _search_grid(page, role_name)
-            if _grid_row_is_visible(page, role_name, timeout=1_000):
+            if _grid_row_is_visible(page, role_name, timeout=INVOICE_SHORT_CHECK_TIMEOUT):
                 raise AssertionError(f"{role_name} role template'dan detach bo'lmadi")
 
         page.locator("button").filter(has_text=re.compile(r"^\s*Доступные\s*$", re.IGNORECASE)).first.click()
-        base.wait_for_loader(timeout=120_000)
+        base.wait_for_loader(timeout=INVOICE_PAGE_TRANSITION_TIMEOUT)
         _search_grid(page, role_name)
         role_row = page.locator("b-grid .tbl-row").filter(has_text=role_name).first
         expect(role_row).to_be_visible()
@@ -306,10 +310,10 @@ def run_b_group_create_custom_invoice_report_template(
             base.confirm_biruni()
         except (AssertionError, PlaywrightTimeoutError):
             pass
-        base.wait_for_loader(timeout=120_000)
+        base.wait_for_loader(timeout=INVOICE_PAGE_TRANSITION_TIMEOUT)
 
         page.locator("button").filter(has_text=re.compile(r"^\s*Прикрепленные\s*$", re.IGNORECASE)).first.click()
-        base.wait_for_loader(timeout=120_000)
+        base.wait_for_loader(timeout=INVOICE_PAGE_TRANSITION_TIMEOUT)
         _search_grid(page, role_name)
         role_row = page.locator("b-grid .tbl-row").filter(has_text=role_name).first
         expect(role_row).to_be_visible()
@@ -326,7 +330,10 @@ def run_b_group_create_custom_invoice_report_template(
         authorization(page, who="user", code=code)
 
         flow_open_order_list(page)
-        expect(page.locator("#kt_content")).to_contain_text(created_order_client, timeout=120_000)
+        expect(page.locator("#kt_content")).to_contain_text(
+            created_order_client,
+            timeout=INVOICE_PAGE_TRANSITION_TIMEOUT,
+        )
         flow_order_list(page, find_row=created_order_client)
 
         invoice_button = page.locator("button:visible, a:visible").filter(

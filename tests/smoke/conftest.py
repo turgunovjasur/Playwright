@@ -11,6 +11,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright, expect
 from tests.smoke.flows.flow_authorization import authorization
 from utils.logger import write_failure_log, get_logger
+from utils.timeouts import PlaywrightTimeouts
 
 TRACE_DIR = "test-results/traces"
 DATA_DIR = "test-results/data"
@@ -18,10 +19,6 @@ ALLURE_RESULTS_DIR = "test-results/allure-results"
 ALLURE_REPORT_DIR = "test-results/allure-report"
 CREATED_COMPANY_PASSWORD = "greenwhite"
 ROOT_DIR = Path(__file__).resolve().parents[2]
-
-# Timeout konstantalari — bitta joyda, butun loyiha bo'ylab ishlatiladi
-DEFAULT_TIMEOUT    = 10_000    # click, fill, expect va boshqa locator amallari (ms)
-NAVIGATION_TIMEOUT = 20_000    # page.goto, wait_for_load_state (ms)
 
 _USER_SETUP_FAILED = False
 _FAILED_SMOKE_GROUPS = set()
@@ -316,7 +313,7 @@ def _write_data_file(data, file_name="data_store"):
 
 def pytest_configure(config):
     """Allure hisoboti uchun environment, categories, executor va history tayyorlaydi."""
-    expect.set_options(timeout=DEFAULT_TIMEOUT)
+    expect.set_options(timeout=PlaywrightTimeouts.ACTION)
     company_url = _option_or_env(config, "--url", "COMPANY_URL", "URL", normalize=_normalized_url)
     run_mode = _run_mode_from_cli_or_env(config)
     create_company = run_mode == "create"
@@ -440,8 +437,8 @@ def session_browser(request):
 def session_context(session_browser, request):
     """Barcha smoke testlar uchun yagona context. Bitta trace yoziladi."""
     context = session_browser.new_context(**_browser_context_options(request.config))
-    context.set_default_timeout(DEFAULT_TIMEOUT)
-    context.set_default_navigation_timeout(NAVIGATION_TIMEOUT)
+    context.set_default_timeout(PlaywrightTimeouts.ACTION)
+    context.set_default_navigation_timeout(PlaywrightTimeouts.NAVIGATION)
     context.tracing.start(screenshots=True, snapshots=True, sources=True)
     yield context
     os.makedirs(TRACE_DIR, exist_ok=True)
@@ -463,8 +460,8 @@ def session_page(session_context):
 def group_page(session_browser, request):
     """Group testlar uchun fresh context/page. Grouplar bir-birining UI holatini meros qilmaydi."""
     context = session_browser.new_context(**_browser_context_options(request.config))
-    context.set_default_timeout(DEFAULT_TIMEOUT)
-    context.set_default_navigation_timeout(NAVIGATION_TIMEOUT)
+    context.set_default_timeout(PlaywrightTimeouts.ACTION)
+    context.set_default_navigation_timeout(PlaywrightTimeouts.NAVIGATION)
     context.tracing.start(screenshots=True, snapshots=True, sources=True)
     page_obj = context.new_page()
 
@@ -482,8 +479,8 @@ def group_page(session_browser, request):
 def group_session_page(session_browser, request, code):
     """Bitta group runner moduli uchun bitta context/page."""
     context = session_browser.new_context(**_browser_context_options(request.config))
-    context.set_default_timeout(DEFAULT_TIMEOUT)
-    context.set_default_navigation_timeout(NAVIGATION_TIMEOUT)
+    context.set_default_timeout(PlaywrightTimeouts.ACTION)
+    context.set_default_navigation_timeout(PlaywrightTimeouts.NAVIGATION)
     context.tracing.start(screenshots=True, snapshots=True, sources=True)
     page_obj = context.new_page()
 
@@ -509,8 +506,8 @@ def group_user_page(group_session_page, code):
 def page(browser, request):
     """Har bir test uchun yangi sahifa, to'liq ekran (no_viewport + --start-maximized). Trace yoziladi."""
     context = browser.new_context(**_browser_context_options(request.config))
-    context.set_default_timeout(DEFAULT_TIMEOUT)
-    context.set_default_navigation_timeout(NAVIGATION_TIMEOUT)
+    context.set_default_timeout(PlaywrightTimeouts.ACTION)
+    context.set_default_navigation_timeout(PlaywrightTimeouts.NAVIGATION)
 
     context.tracing.start(screenshots=True, snapshots=True, sources=True)
     page_obj = context.new_page()

@@ -4,6 +4,7 @@ from tests.smoke.flows.flow_authorization import authorization
 from utils.base_page import BasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Filial")]
+FILIAL_SAVE_LOADER_TIMEOUT = 60_000
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -58,7 +59,7 @@ def run_filial(page, code,
         base.grid_controller(search=filial_name)
         base.grid(filial_name, legal_person_code, "Активный")
         page.reload()
-        base.wait_for_loader(timeout=60_000)
+        base.wait_for_loader(timeout=FILIAL_SAVE_LOADER_TIMEOUT)
 
     with allure.step("5 - Muhim ma'lumotlarni data storega saqlash"):
         save_data("filial_name", filial_name)

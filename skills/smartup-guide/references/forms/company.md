@@ -5,7 +5,25 @@
 - **Head admin** (--head-email/--head-password) bilan kirish kerak — oddiy user yoki admin emas
 - `run_company` va `test_company_add` boshida mavjud flowlardan foydalanadi: `authorization(page, who="head")`, so'ng `navigate_to(page, tab="Главное", name="Компании")`.
 - Menyu: **Главное → Компании**.
-- Ro'yxat heading: `Компании` / `Companies`
+- Ro'yxatda `Компании` / `Companies` matni breadcrumb/navigation sifatida ko'rinadi;
+  A2 `company_list` sahifasida u accessibility `heading` role'iga ega emas.
+- DOM responsive: desktopda ko'rinadigan title `<span>`, mobile varianti esa
+  `h1.lg:hidden`; shu sabab desktopda `get_by_role("heading")` ko'rinadigan element topmaydi.
+- List page tayyorligini `get_by_role("heading")` bilan tekshirmaslik kerak; URL va
+  listning stabil elementi (`Создать` tugmasi yoki grid) bilan tekshiriladi.
+- Aynan title matnini kutish kerak bo'lsa:
+  `page.locator("#main-content").get_by_text("Компании", exact=True).filter(visible=True)`.
+- `BasePage.expect_page(url=...)`ning o'zi loader spinnerni kutmaydi: amaldagi
+  `check_unblocked` faqat `heading` berilgan branchda ishlaydi. Company navigationda
+  spinnerni undan oldingi `BasePage.navigate_to()` kutadi; `expect_page(url=...)`
+  standalone ishlatilsa undan keyin `BasePage.wait_for_loader()` alohida chaqiriladi.
+
+## Screenshotlar
+
+- `references/forms/screenshots/company/company__list-heading-role-missing__desktop-1440x783.png`
+  — list to'liq render bo'lgan, lekin `heading` role mavjud bo'lmagan failure holati.
+- `references/forms/screenshots/company/company__add-initial__desktop-1440x783.png`
+  — yangi company formasining boshlang'ich, maydonlar hali to'ldirilmagan holati.
 
 ## Company code pattern
 
@@ -69,6 +87,7 @@ Company qatori → Просмотреть → "Безопасность"/"Securi
 ### Company Add
 Tags: company, setup, locator, wait
 - `Создать` bosilgandan keyin `Компания (создание)` headeri `#companyForm` mount bo'lishidan oldin ko'rinishi mumkin; required fieldlarni to'ldirishdan oldin `#companyForm` va kamida bitta `smt-control` ko'rinishini kutish kerak.
+- `BasePage.input()`/`b_input()`/`checkbox()`ga `root="app-main-info"` kabi selector string berilganda u avval Locatorga normalizatsiya qilinishi shart; aks holda stringda `.locator()` chaqirilib `AttributeError` chiqadi. Bu barcha field helperlar uchun `BasePage._resolve_root()` orqali bajariladi.
 - `Шаблоны` card ichidagi `Маркировка` inputidan `UZ Marking` optioni tanlanadi; company setupda `План счетов=UZ COA`, `Банки=UZ BANK`, `Маркировка=UZ Marking` shablonlari majburiy.
 
 ## Test

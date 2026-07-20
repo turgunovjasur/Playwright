@@ -12,6 +12,7 @@ if str(ROOT) not in sys.path:
 from _debug_env import add_company_args, configure_company_env
 
 ARCHIVE_DIR = ROOT / "skills/smartup-guide/references/forms/screenshots/company"
+DEBUG_TEXT_TIMEOUT = 1_000
 
 
 def visible_texts(locator, limit=50):
@@ -20,7 +21,7 @@ def visible_texts(locator, limit=50):
         item = locator.nth(index)
         if not item.is_visible():
             continue
-        text = " ".join(item.inner_text(timeout=1_000).split())
+        text = " ".join(item.inner_text(timeout=DEBUG_TEXT_TIMEOUT).split())
         if text:
             result.append(text)
     return result
@@ -32,7 +33,7 @@ def click_visible_text_button(page, text):
         button = buttons.nth(index)
         if not button.is_visible():
             continue
-        button_text = " ".join(button.inner_text(timeout=1_000).split())
+        button_text = " ".join(button.inner_text(timeout=DEBUG_TEXT_TIMEOUT).split())
         if text.lower() in button_text.lower():
             button.click()
             return True
@@ -50,6 +51,7 @@ def main():
     ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
 
     from tests.smoke.test_setup.test_company import (  # noqa: E402
+        COMPANY_SAVE_TIMEOUT,
         _company_code_text_pattern,
         _open_company_list,
     )
@@ -112,7 +114,7 @@ def main():
                 if button.count() > 0 and button.first.is_visible():
                     button.first.click()
                     BasePage(page).confirm_biruni()
-                    BasePage(page).wait_for_loader(timeout=600_000)
+                    BasePage(page).wait_for_loader(timeout=COMPANY_SAVE_TIMEOUT)
                     output["activated_by"] = name
                     output["after_body"] = page.locator("body").inner_text()
                     break

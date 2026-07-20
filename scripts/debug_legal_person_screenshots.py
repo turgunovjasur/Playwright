@@ -16,6 +16,7 @@ from utils.base_page import BasePage
 
 
 ARCHIVE_DIR = ROOT / "skills/smartup-guide/references/forms/screenshots/legal-person"
+SCREENSHOT_SETTLE_INTERVAL = 500
 
 
 def sanitize(value):
@@ -42,7 +43,7 @@ def save_state(page, name, states):
 def click_tab(page, name):
     page.locator("a:visible").filter(has_text=name).first.click()
     BasePage(page).wait_for_loader()
-    page.wait_for_timeout(500)
+    page.wait_for_timeout(SCREENSHOT_SETTLE_INTERVAL)
 
 
 def main():

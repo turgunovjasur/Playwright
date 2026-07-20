@@ -10,6 +10,9 @@ from utils.base_page import BasePage
 pytestmark = [allure.epic("Report Group"), allure.feature("Integration Report"), allure.story("Integration Two")]
 
 SETTING_CHECKBOXES = ["d.edit_person", "d.ignore_updated_deals", "d.show_owner_person_code", "d.send_all_deals"]
+OPTIONAL_ALERT_TIMEOUT = 1_500
+ALERT_CLOSE_TIMEOUT = 10_000
+SETTINGS_BUTTON_TIMEOUT = 60_000
 
 # (exchange_mode value, yuklanadigan fayl prefiksi, begin_date kerakmi)
 EXCHANGE_MODES = [
@@ -27,9 +30,9 @@ def _close_alert_if_open(page):
     for selector in ("#biruniAlertExtended", "#biruniAlert"):
         alert = page.locator(selector)
         try:
-            alert.wait_for(state="visible", timeout=1_500)
+            alert.wait_for(state="visible", timeout=OPTIONAL_ALERT_TIMEOUT)
             page.keyboard.press("Escape")
-            alert.wait_for(state="hidden", timeout=10_000)
+            alert.wait_for(state="hidden", timeout=ALERT_CLOSE_TIMEOUT)
             return
         except Exception:
             continue
@@ -65,7 +68,7 @@ def run_report_integration_two_check(page, code, load_data, login=True):
         base, _, rest = page.url.partition("#/")
         session_token = rest.split("/", 1)[0]
         page.goto(f"{base}#/{session_token}/trade/rep/integration/integration_two")
-        expect(page.locator('button[ng-click="q.show_setting = true"]')).to_be_visible(timeout=60_000)
+        expect(page.locator('button[ng-click="q.show_setting = true"]')).to_be_visible(timeout=SETTINGS_BUTTON_TIMEOUT)
 
     with allure.step("2 - Настройки: filtrlar va checkboxlar -> saqlash"):
         page.locator('button[ng-click="q.show_setting = true"]').click()

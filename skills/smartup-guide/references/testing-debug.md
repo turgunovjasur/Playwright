@@ -4,6 +4,19 @@
 
 Tags: debug, data-store, setup, screenshot, dependency, smoke, regression
 
+### Markaziy Playwright timeout konfiguratsiyasi
+Tags: timeout, playwright, base-page, conftest, debug
+- Yagona source of truth: `utils/timeouts.py`.
+- `PlaywrightTimeouts` faqat sof Playwright API defaultlarini, `BasePageTimeouts` esa loyiha yozgan `BasePage` helperlarining timeout va delay qiymatlarini millisekundda saqlaydi; asosiy ajratish chegarasi sof Playwright va loyiha helperlaridir.
+- `TYPE_DELAY` maksimal timeout emas, lekin `BasePage.b_input()`ga tegishli bo'lgani uchun `BasePageTimeouts` ichida turadi va har bir belgi uchun real kutiladi.
+- `utils/timeouts.py` ni faqat `tests/smoke/conftest.py` va `utils/base_page.py` import qiladi: `conftest.py` faqat `PlaywrightTimeouts`ni, `base_page.py` faqat `BasePageTimeouts`ni ishlatadi.
+- Smoke flow/test/report helper/debug script timeoutlari, hatto qiymati boshqa test bilan bir xil bo'lsa ham, global deb hisoblanmaydi; ular o'z modulida lokal va actionga xos aniq nom bilan turadi. Masalan company create/save uchun `test_company.py` ichidagi `COMPANY_SAVE_TIMEOUT`.
+- `PlaywrightTimeouts.NAVIGATION` faqat Playwright'ning to'liq document navigation operatsiyalariga (`page.goto()`, reload va hokazo) tegishli. `BasePageTimeouts.UI_TRANSITION` esa `BasePage` orqali Smartup ichidagi click/save/filial/sahifa holati almashishini kutadi. `BasePage.navigate_to()` nomiga qaramay `page.goto()` emas — u menyuni bosadigan UI helper.
+- `BasePage.expect_page(url=...)` URL mosligini kutadi, lekin hozirgi implementatsiyada loader `check_unblocked` tekshiruvi faqat `heading` branchida ishlaydi; URL-only chaqiruv loader kutishi deb qabul qilinmaydi. Menyu flowida loaderni `BasePage.navigate_to()`, standalone URL tekshiruvida esa alohida `BasePage.wait_for_loader()` kutadi.
+- `requests`/`urllib` HTTP timeoutlari sekundlarda va UI kutishlaridan boshqa mas'uliyatga ega, shu sabab `utils/timeouts.py` ga kiritilmaydi.
+- Birinchi migratsiyada vaqtlar o'zgartirilmadi: refaktor faqat mavjud qiymatlarni markazlashtirdi. Tezlik optimizatsiyasi alohida, test natijalari bilan tasdiqlangan o'zgarish bo'lishi kerak.
+- Loyiha qoidasi: timeout va interval klasslaridagi har bir qiymat yonida `Ishlatadi` bilan faqat tegishli `conftest`/`BasePage` funksiya-helperlari, `Ta'siri` bilan oshirish-kamaytirish oqibati hamda fixed interval yoki maksimal limit ekanini tushuntiruvchi inline izoh bo'lishi shart.
+
 ### Code Fixture
 Tags: code, data-store
 - Session `code` setupda yaratiladi.
@@ -98,6 +111,9 @@ Tags: test-results, data-store, traces, allure, cleanup
 - `test-results/allure-results/` pytest/Allure failure attachment outputi; foydali form screenshotlar doim skill arxivida bo'lishi kerak.
 
 ## Loyiha Xususiyatlari
+
+### Diagnostika va kod o'zgartirish chegarasi
+- Foydalanuvchi test xatosining sababini so'rasa, avval faqat diagnostika beriladi; test yoki production kod faqat foydalanuvchi tuzatishni aniq so'ragandan keyin o'zgartiriladi.
 
 ### PyCharmdagi Allure report cleanup
 - PyCharm/direct pytest hookidagi `subprocess.Popen(["allure", "open", ...])` browser oynasi yopilganda Java serverini to'xtatmaydi; jarayonlar qolib ketmasligi uchun `scripts/open_allure_report.py`dagi heartbeatli serverdan foydalanish kerak.

@@ -24,7 +24,7 @@ def run_change_password(page, code):
 
     with allure.step("2 - Yangi parol kiritish va tasdiqlash"):
         base.input(label="Текущий пароль", value=USER_PASS)
-        base.input(label="Новый пароль", value=USER_PASS)
+        base.input(label="Новый пароль", value=USER_PASS, press_tab=True)
         base.input(label="Подтверждение пароля", value=USER_PASS)
 
         page.get_by_role("button", name="Подтвердить").click()
