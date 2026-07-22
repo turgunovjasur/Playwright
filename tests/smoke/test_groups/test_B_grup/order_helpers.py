@@ -387,21 +387,21 @@ def _open_order_settings(page: Page) -> None:
     navigate_to(page, tab="Главное", name="Настройки системы")
     expect(page.get_by_role("heading", name="Настройки системы")).to_be_visible()
     page.get_by_role("link", name="Заказ").click()
-    expect(page.get_by_text("Разрешить выдачу консигнации", exact=True)).to_be_visible()
+    expect(page.get_by_text("Разрешить консигнацию", exact=True)).to_be_visible()
 
 
 def _enable_consignment_for_orders(page: Page) -> None:
     _open_order_settings(page)
     base = BasePage(page)
 
-    base.set_switch_by_label_text("Разрешить выдачу консигнации", True)
+    base.set_switch_by_label_text("Разрешить консигнацию", True)
     _fill_input_by_label_text(page, "Лимит консигнации (в днях)", "30")
     expect(_input_by_label_text(page, "Лимит консигнации (в днях)")).to_have_value("30")
 
     page.get_by_role("button", name="Сохранить").first.click()
     _save_visible_confirm_if_open(page)
 
-    expect(base.switch_checkbox_by_label_text("Разрешить выдачу консигнации")).to_be_checked()
+    expect(base.switch_checkbox_by_label_text("Разрешить консигнацию")).to_be_checked()
     expect(_input_by_label_text(page, "Лимит консигнации (в днях)")).to_have_value("30")
 
 
@@ -454,7 +454,7 @@ def run_b_group_create_order_with_consignment_limit(page: Page, code: str, save_
     """
     Testcase:
     1. User sifatida tizimga kirish.
-    2. Главное > Настройки системы > Заказ tabida Разрешить выдачу консигнации yoqiladi.
+    2. Главное > Настройки системы > Заказ tabida Разрешить консигнацию yoqiladi.
     3. Лимит консигнации (в днях) qiymati 30 qilib saqlanadi.
     4. Mavjud active orderlar bo'lsa Отменен statusga o'tkazilib, product booking tozalanadi.
     5. Yangi order yaratiladi va 3-formada konsignatsiya kartasi ko'rinishi tekshiriladi.

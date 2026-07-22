@@ -120,9 +120,7 @@ def run_a_group_contract_limit_validation_and_valid_order(
 
     with allure.step("8 - Zakaz list va view oynasida contract bilan tekshiriladi"):
         expect(page.locator("b-grid")).to_contain_text("7 000")
-        page.locator("b-grid").get_by_text("7 000").first.click()
-        expect(page.get_by_role("button", name="Просмотреть", exact=True)).to_be_visible()
-        page.get_by_role("button", name="Просмотреть", exact=True).click()
+        flow_order_list(page, find_row=f"natural_client-pw{code}", view=True)
         expect(page).to_have_url(re.compile(r".*/order_view"))
         BasePage(page).wait_for_loader()
         expect(page.locator("#kt_content")).to_contain_text(f"natural_client-pw{code}")
@@ -232,9 +230,7 @@ def run_a_group_order_uses_contract_payment_type(
 
     with allure.step("8 - Zakaz view oynasida contract va o'zgartirilgan tip oplati tekshiriladi"):
         expect(page.locator("b-grid")).to_contain_text("7 000")
-        page.locator("b-grid").get_by_text("7 000").first.click()
-        expect(page.get_by_role("button", name="Просмотреть", exact=True)).to_be_visible()
-        page.get_by_role("button", name="Просмотреть", exact=True).click()
+        flow_order_list(page, find_row=f"natural_client-pw{code}", view=True)
         expect(page).to_have_url(re.compile(r".*/order_view"))
         BasePage(page).wait_for_loader()
         expect(page.locator("#kt_content")).to_contain_text(f"natural_client-pw{code}")

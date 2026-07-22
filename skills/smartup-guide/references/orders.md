@@ -58,7 +58,7 @@ Tags: order, edit, a-group, status
 ### Consignment Order Case
 Tags: order, consignment, settings, view
 - Qayerda: `Главное > Настройки системы > Заказ`.
-- Sozlama: `Разрешить выдачу консигнации` switchi va `Лимит консигнации (в днях)` inputi label text orqali topiladi; testda raw `ng-model` locator ishlatilmaydi.
+- Sozlama: `Разрешить консигнацию` switchi va `Лимит консигнации (в днях)` inputi label text orqali topiladi; testda raw `ng-model` locator ishlatilmaydi. Eski UI matni `Разрешить выдачу консигнации` bo'lgan.
 - Fresh DB qoida: konsignatsiya default o'chirilgan bo'ladi; B-group konsignatsiya testi order yaratishdan oldin shu settingni yoqib, limitni `30` qilib saqlashi kerak.
 - Qoida: limit `30` saqlansa, order add final/3-formasida `Дата оплаты по консигнации` va `Сумма консигнации` kartasi ko'rinadi.
 - Create test maqsadi keyingi edit case uchun precondition ham yaratadi: quantity `5`, total/konsignatsiya `35 000` bo'lsin; quantity `1` bilan keyingi testda totalni kamaytirib bo'lmaydi.
@@ -66,6 +66,11 @@ Tags: order, consignment, settings, view
 - View assert: order viewda visible `Консигнация` textini bosib, visible text orqali consignment date va `35 000` summa tekshiriladi.
 - B-group order helper fayli: `tests/smoke/test_groups/test_B_grup/order_helpers.py`.
 - B-group leaf testlari alohida fayllarda turadi: `test_b_01_*`, `test_b_02_*`, `test_b_03_*`; har bir faylda faqat bitta pytest test bo'ladi.
+
+### Order list view tugmasi
+Tags: order, order-list, view, locator
+- Hozirgi UI row action tugmasini `Просмотр` deb ko'rsatadi; eski deploymentlarda `Просмотреть` bo'lishi mumkin.
+- Testda ishlatish: amount cellni qo'lda bosib global tugma qidirmang. `flow_order_list(page, find_row=<unique client>, view=True)` ishlating; flow ikkala matn variantini qabul qiladi va tugmani tanlangan row ichida qidiradi.
 
 ### Consignment Edit And Split Case
 Tags: order, consignment, edit, validation, split

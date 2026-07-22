@@ -24,6 +24,7 @@ Tags: locator, heading, get_by_role
 
 ### View (Просмотр) label→value olish — exact match
 Tags: locator, order-view, label, xpath
+- Order list row action tugmasi hozir `Просмотр`, eski deploymentlarda `Просмотреть`; `flow_order_list(..., view=True)` ikkala variantni regex bilan qabul qiladi va tugmani row ichida scope qiladi.
 - `flow_order_view` view sahifasida label→value ni `//t[normalize-space()="{key}"]/../../span` orqali oladi.
 - `contains(text(),"{key}")` ISHLATMA: ilova label'larga yangi uzun matn qo'shsa (masalan `Статус` yoniga `Статус заказов, которые более 90 (дней)` tooltip/label qo'shilgan — 2026-06-21), `contains` ikkala `<t>` ga mos kelib strict mode violation beradi. Aniq (`normalize-space()=`) moslik shart.
 

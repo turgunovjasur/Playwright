@@ -6,6 +6,8 @@ from tests.smoke.flows import flow_modal
 from tests.smoke.flows.flow_navigate import navigate_to
 from utils.base_page import BasePage
 
+ORDER_VIEW_BUTTON_NAME = re.compile(r"^Просмотр(?:еть)?$")
+
 # ----------------------------------------------------------------------------------------------------------------------
 
 
@@ -47,9 +49,9 @@ def flow_order_list(page, add=False, find_row=None, view=False, edit=False, stat
         row = None
 
     if view:
-        with allure.step("Order List: 'Просмотреть' button click"):
+        with allure.step("Order List: 'Просмотр' button click"):
             button_scope = row or page
-            button_scope.get_by_role("button", name="Просмотреть", exact=True).click()
+            button_scope.get_by_role("button", name=ORDER_VIEW_BUTTON_NAME).click()
 
     if edit:
         with allure.step("Order List: 'Изменить' button click"):
