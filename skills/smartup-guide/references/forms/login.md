@@ -6,6 +6,7 @@ Tags: login, auth, screenshot, locator
 - Screenshot: `skills/smartup-guide/references/forms/screenshots/login/login__default__desktop-1440x900__20260610-151534.png`.
 - UI holati: markazda Smartup login kartasi, yuqorida til selector (`Язык: РУС`), maydonlar `Логин@компания` va `Пароль`, asosiy tugma `ВОЙТИ`, linklar `Забыли пароль?` va `Войти через номер телефона`.
 - Test locatorlari: `page.get_by_placeholder("Логин@компания")`, `page.get_by_role("textbox", name="Пароль")`, `page.get_by_role("button", name="Войти")`.
+- `authorization(...)` login oxirida `dashboard(page)` orqali `Trade` headingni tekshiradi; caller bu assertni qayta yozmaydi.
 - Debug note: snapshot credential kiritmasdan, faqat default login sahifasi yuklangandan keyin olindi.
 
 ### Sessiya Qulfi / Timeout Overlay (#closing-session)

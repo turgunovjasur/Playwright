@@ -43,6 +43,7 @@ Setup formalar:
 - [login.md](references/forms/login.md) — Login sahifasi
 
 Biznes formalar:
+- [order-list.md](references/forms/order-list.md) — Order ro'yxati, row selection va action tugmalari
 - [order-add.md](references/forms/order-add.md) — Order yaratish
 - [contract-view.md](references/forms/contract-view.md) — Kontrakt ko'rish
 - [init-balance.md](references/forms/init-balance.md) — Boshlang'ich TMC qoldiq hujjati

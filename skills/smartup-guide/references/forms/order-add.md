@@ -23,6 +23,7 @@
 ## Step 1 — Main page
 - Stabil id'li date inputlar: `#anor279-input-deal_time` (`d.deal_time`),
   `#anor279-input-delivery_date` (`d.delivery_date`). Date inputlarda `min`/`max` atribut **yo'q**.
+- 2026-07-21 live A-group runida wizard DOMida `BasePage.input(label="Дата заказа")` fieldni topmadi; date qiymatlarini raw locator bilan emas, stabil IDni helperga berib `base.input(locator="#anor279-input-deal_time", ...)` va `base.input(locator="#anor279-input-delivery_date", ...)` orqali o'qish/tekshirish kerak.
 - b-input wrapperlari (`div`, ichida `input[placeholder="Поиск..."]`):
   - `#anor279-input-b_input-room_name` — label "Рабочая зона*", `d.room_name`
   - `#anor279-input-b_input-robot_name` — label "Штат*", `d.robot_name`
@@ -40,6 +41,7 @@
 - Product grid: `#anor279_input-b_pg_grid-goods_items` (tag `b-pg-grid`).
 - Quantity input: `#anor279_input-b_pg_col-quantity_0` (`item.quantity`) — **product tanlanmaguncha mavjud emas**,
   qator yaratilgach paydo bo'ladi.
+- 2026-07-22 Chrome MCP live DOM: birinchi ko'rinadigan product grid `b-pg-grid[name="goods_items"]`; product `Название` headeri ostidagi `b-input`, quantity esa aniq `Кол-во` headeri ostidagi `input[ng-model="item.quantity"]`. Public helperlar ikkalasini header koordinatasi orqali topadi: `base.b_input(label="Название", ..., root=product_grid)` va `base.input(label="Кол-во", ..., root=product_grid)`. Shu sabab flowda `anor279` row IDlari kerak emas.
 - **Product dropdown (flaky bo'lgan joy):**
   - Search bosilganda b-input ichida `.hint` ochiladi: `.hint-header` (Название/Цена/Остаток ustunlari) + `.hint-item` qatorlar.
   - Option matni **kombinatsiyalangan**: `"product-pw{code}  Основной склад  Price Type ...  7 000"` —
@@ -59,13 +61,17 @@
 ## Step 3 — Final page
 - Payment type b-input: `d.payment_type_name`, label "Тип оплаты" → `b_input("Тип оплаты", value=...)` (label orqali, id'da typo bor).
 - Status ui-select: `#anor279-ui_select-status` (div), ichida "Select box activate" (`.ui-select-toggle`),
-  optionlar `.ui-select-choices-row-inner`. Default "Новый".
+  optionlar `.ui-select-choices-row-inner`. Default "Новый". Tanlash va assert uchun
+  `base.ui_select(label="Статус", value=...)` / `expect_value=...` ishlatiladi.
+- Final summarydagi `ИТОГО` `.form-view` qiymati minglik probel bilan formatlanadi (`7 000`); testda `form_view(label="ИТОГО", expect_value="7000", remove_spaces=True)` ishlatib format whitespace'ini e'tiborsiz qilish mumkin.
+- Final summarydagi `Клиент` qiymati step 1 dagi `natural_client-pw{code}`; `natural_person-pw{code}` esa alohida `Торговый представитель` qiymati, ularni assertionda almashtirib yubormaslik kerak.
 - Save: `#anor279-button-next_step` matni "СОХРАНИТЬ" (`nextStep()`), `save_and_expect_heading(..., exact_button=False)`.
 
 ### Konsignatsiya kartasi (consignment enabled bo'lsa)
 - Faqat `Главное > Настройки системы > Заказ` da `Разрешить выдачу консигнации` yoqilgan bo'lsa ko'rinadi.
 - Inputlar: `item.consignment_date` (label "Дата оплаты по консигнации", placeholder "Выбрать дату"),
   `item.consignment_amount` (label "Сумма консигнации"). `+` qo'shish: `button[ng-click="addConsignment()"]`.
+- Split rowlar dinamik `ng-repeat` bilan yaratiladi; bir nechta rowda qiymat kiritish/tekshirish uchun `BasePage.input(ng_model="item.consignment_date", index=...)` va `BasePage.input(ng_model="item.consignment_amount", index=...)` ishlatiladi. Labeldan `following input` topish save requestda faqat oxirgi row qolishiga olib kelgan holat trace orqali tasdiqlangan.
 - **30 kunlik limit qayerda (MUHIM):**
   - Limit DOM textida YOKI date input atributida (`max`) **ko'rinmaydi**.
   - Faqat AngularJS scope'da: **`q.consignment_day_limit`** = "30". (`q.consignment_allow`="Y", `q.total_amount`=5×narx.)
@@ -80,7 +86,15 @@
 ## Ishlatiladigan flow/helper/test fayllari
 - Flowlar: `tests/smoke/flows/flow_order/flow_order_add.py` (main/product/final), `flow_order_list.py` (list/add/find_row/view/edit/status).
 - B-group consignment: `tests/smoke/test_groups/test_B_grup/order_helpers.py`.
-- A-group order: `tests/smoke/test_groups/test_A_grup/test_order.py`.
+- B-group leaf testlari:
+  - `tests/smoke/test_groups/test_B_grup/test_create_order_with_consignment_limit.py`
+  - `tests/smoke/test_groups/test_B_grup/test_edit_order_with_consignment_limit.py`
+  - `tests/smoke/test_groups/test_B_grup/test_order_invoice_reports.py`
+  - `tests/smoke/test_groups/test_B_grup/test_invoice_report_template.py`
+- A-group order leaf testlari:
+  - `tests/smoke/test_groups/test_A_grup/test_contract_limit_validation_and_valid_order.py`
+  - `tests/smoke/test_groups/test_A_grup/test_order_uses_contract_payment_type.py`
+  - `tests/smoke/test_groups/test_A_grup/test_edit_order_and_save_as_new.py`
 
 ## Known issues / debug notes
 - Product chiqmasligi → balans/booking; orders.md "Product Chiqmasa" bo'limiga qara.

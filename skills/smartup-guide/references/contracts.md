@@ -21,12 +21,13 @@ Tags: contract, precondition, a-group
 - Minimal qiymatlar:
   - `Код`: `contract_code_{random}`
   - `Номер`: session `code`
-  - `Название`: Faker company + `order contract-pw{code}`
+  - `Название`: Faker company + `contract-pw{code}`
   - client turi: `Физическое лицо`
   - `Физическое лицо`: `natural_client-pw{code}`
   - `Валюта`: `Узбекский сум`
   - `Сумма договора`: `500000`
 - Testda ishlatish: `Код` input birinchi qidiriladi; `Номер` bilan almashtirilmaydi. Listda `contract_code` bilan qidir, viewda code/name/client/currency/amount tekshir.
+- Counterparty turi radio: `Физическое лицо` bosilgach `BasePage.radio("Физическое лицо", expect_checked=True)` bilan tanlangan holat tasdiqlanadi.
 - Data: `contract_code` va `contract_name` `data_store.json` ga saqlanadi.
 
 ### Orderda Contract Tanlash

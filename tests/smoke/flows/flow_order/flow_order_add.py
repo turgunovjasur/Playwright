@@ -1,7 +1,8 @@
 import re
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import allure
-from playwright.sync_api import expect
 from utils.base_page import BasePage
 
 from tests.smoke.flows.flow_order.flow_order_list import flow_order_list
@@ -9,11 +10,29 @@ from tests.smoke.flows.flow_order.flow_order_list import flow_order_list
 # ----------------------------------------------------------------------------------------------------------------------
 
 def auto_filled_order_dates(page):
-    deal_time_input = page.locator("#anor279-input-deal_time")
-    delivery_date_input = page.locator("#anor279-input-delivery_date")
-    expect(deal_time_input).to_have_value(re.compile(r"\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}"))
-    expect(delivery_date_input).to_have_value(re.compile(r"\d{2}\.\d{2}\.\d{4}"))
-    return deal_time_input.input_value().strip(), delivery_date_input.input_value().strip()
+    base = BasePage(page)
+
+    today = datetime.now(
+        ZoneInfo("Asia/Tashkent")
+    ).strftime("%d.%m.%Y")
+
+    deal_time = base.input(
+        locator="#anor279-input-deal_time",
+        expect_value=re.compile(
+            rf"^{re.escape(today)} \d{{2}}:\d{{2}}$"
+        ),
+        return_value=True,
+    )
+
+    delivery_date = base.input(
+        locator="#anor279-input-delivery_date",
+        expect_value=re.compile(
+            rf"^{re.escape(today)}$"
+        ),
+        return_value=True,
+    )
+
+    return deal_time.strip(), delivery_date.strip()
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -30,25 +49,25 @@ def flow_order_main_page(
     next_page=True,
 ):
     base = BasePage(page)
-    page.wait_for_url(re.compile(r".*/order\+(add|edit)"))
-    expect(page.locator("#kt_content")).to_have_text(re.compile(r"Заказ \((создание|изменение)\)"))
+    base.expect_page(url=re.compile(r".*/order\+(add|edit)"))
+    base.text(re.compile(r"Заказ \((создание|изменение)\)"), root="#kt_content")
 
     if check_form:
         with allure.step("Main Page: Auto fill bo'lganini tekshirish"):
-            expect(page.locator("#anor279-input-deal_time")).to_have_value(deal_time)
-            expect(page.locator("#anor279-input-delivery_date")).to_have_value(delivery_date)
-            expect(page.locator("#anor279-input-b_input-room_name").get_by_role("textbox", name="Поиск")).to_have_value(room)
-            expect(page.locator("#anor279-input-b_input-robot_name").get_by_role("textbox", name="Поиск")).to_have_value(robot)
-            expect(page.locator("#anor279-input-b_input-person_name").get_by_role("textbox", name="Поиск")).to_have_value(natural_client)
+            base.input(locator="#anor279-input-deal_time", expect_value=deal_time)
+            base.input(locator="#anor279-input-delivery_date", expect_value=delivery_date)
+            base.b_input(label="Рабочая зона", expect_value=room)
+            base.b_input(label="Штат", expect_value=robot)
+            base.b_input(label="Клиент", expect_value=natural_client)
 
             if contract:
-                expect(page.locator("b-page")).to_contain_text(contract)
+                base.b_input(label="Договор", expect_value=contract)
 
     if contract and not check_form:
         with allure.step(f"Main Page: contract -> '{contract}' tanlash"):
             base.b_input(label="Договор", value=contract, exact=False)
             if contract_balance_text:
-                expect(page.locator("#kt_content")).to_contain_text(contract_balance_text)
+                base.text(contract_balance_text, root="#kt_content")
 
     if next_page:
         with allure.step("Main Page: Keyingi page ga o'tish"):
@@ -65,26 +84,17 @@ def flow_order_product_page(
     price_type=None,
     next_page=True,
 ):
-    expect(page.locator("#kt_content")).to_have_text(re.compile(r"Заказ \((создание|изменение)\)"))
+    base = BasePage(page)
+    base.text(re.compile(r"Заказ \((создание|изменение)\)"), root="#kt_content")
+    product_grid = page.locator('b-pg-grid[name="goods_items"]')
 
     if product and not check_form:
         with allure.step(f"Product Page: product -> '{product}' tanlash"):
-            # Product b-input dropdownidagi option matni kombinatsiyalangan
-            # ("product-pw{code}  <ombor>  <price type>  <narx>"), shuning uchun
-            # page-wide get_by_text(product) bir nechta elementga tushib flaky bo'ladi.
-            # Dropdownni shu b-inputga scope qilib, hint-item ko'rinishini kutib bosamiz.
-            product_input = page.locator("#anor279_input-b_input-product_name_goods0")
-            search = product_input.get_by_role("textbox", name="Поиск")
-            search.click()
-            search.fill(product)
-            option = product_input.locator(".hint-item").filter(has_text=product).first
-            expect(option).to_be_visible()
-            option.click()
-            expect(product_input.locator("input").first).to_have_value(product)
+            base.b_input(label="Название", value=product, root=product_grid)
 
     if quantity and not check_form:
         with allure.step(f"Product Page: quantity -> '{quantity}' kiritish"):
-            page.locator("#anor279_input-b_pg_col-quantity_0").fill(quantity)
+            base.input(label="Кол-во", value=quantity, root=product_grid)
 
     if check_form:
         with allure.step(f"Product Page: "
@@ -93,10 +103,9 @@ def flow_order_product_page(
                          f"Check price_type -> '{price_type}', "
                          f"Check quantity -> '{quantity}'"
                          ):
-            expect(page.locator("#anor279_input-b_input-product_name_goods0").get_by_role("textbox", name="Поиск")).to_have_value(product)
-            expect(page.locator("#anor279_input-b_pg_grid-goods_items")).to_contain_text(warehouse)
-            expect(page.locator("#anor279_input-b_pg_grid-goods_items")).to_contain_text(price_type)
-            expect(page.locator("#anor279_input-b_pg_col-quantity_0")).to_have_value(quantity)
+            base.b_input(label="Название", expect_value=product, root=product_grid)
+            base.text(warehouse, price_type, root=product_grid)
+            base.input(label="Кол-во", expect_value=quantity, root=product_grid)
 
     if next_page:
         with allure.step("Product Page: Keyingi page ga o'tish"):
@@ -106,14 +115,11 @@ def flow_order_product_page(
 
 def flow_order_final_page(page, check_form=False, payment_type=None, natural_client=None, room=None, robot=None, status=None, save=True):
     base = BasePage(page)
-    expect(page.locator("#kt_content")).to_have_text(re.compile(r"Заказ \((создание|изменение)\)"))
+    base.text(re.compile(r"Заказ \((создание|изменение)\)"), root="#kt_content")
 
     if status and not check_form:
         with allure.step(f"Final Page: Order status -> '{status}' tanlash"):
-            page.locator("#anor279-ui_select-status:visible").get_by_label("Select box activate").click()
-            option = page.locator(".ui-select-choices-row-inner").get_by_text(status, exact=True)
-            expect(option).to_be_visible()
-            option.click()
+            base.ui_select(label="Статус", value=status)
 
     if payment_type and not check_form:
         with allure.step(f"Final Page: Payment Type -> '{payment_type}' tanlash"):
@@ -126,21 +132,21 @@ def flow_order_final_page(page, check_form=False, payment_type=None, natural_cli
                          f"Check natural_client -> '{natural_client}'"
                          f"Check room -> '{room}'"
                          f"Check robot -> '{robot}'"
-                         ):
+            ):
             base.b_input(label="Тип оплаты", expect_value=payment_type)
-            expect(page.locator("#anor279-ui_select-status:visible")).to_contain_text(status)
-            expect(page.locator("form[name=\"step2\"]")).to_contain_text(natural_client)
-            expect(page.locator("form[name=\"step2\"]")).to_contain_text(room)
-            expect(page.locator("form[name=\"step2\"]")).to_contain_text(robot)
+            if status:
+                base.ui_select(label="Статус", expect_value=status)
+            base.text(natural_client, room, robot, root='form[name="step2"]')
 
     if save:
         with allure.step("Final Page: Order save qilish"):
-            # Order wizard tugmasida fa-save ikonka bor: ::before glyph accessible name'ga
-            # qo'shilib exact match buziladi, shuning uchun exact=False
-            page.get_by_role("button", name="Сохранить", exact=False).first.click()
-            base.confirm_biruni("Сохранить?")
-            base.wait_for_loader()
-            base.expect_page(heading="Заказы")
+            base.save_and_expect_heading(
+                "Заказы",
+                confirm_text="Сохранить?",
+                exact_button=False,
+                location_hint="order final wizard",
+            )
+            base.expect_page(url="order_list")
 
 # ----------------------------------------------------------------------------------------------------------------------
 

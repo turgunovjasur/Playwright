@@ -1,0 +1,14 @@
+{
+  "form_slug": "order-list",
+  "state": "row-actions-open",
+  "captured_at": "2026-07-20T18:06:54+05:00",
+  "viewport_context": "desktop",
+  "image_dimensions": "2880x1566",
+  "source": "Allure failure attachment for A-03 order list view action assertion",
+  "url_pattern": "*/trade/tdeal/order/order_list",
+  "observations": [
+    "The newly saved draft order is visible in the grid.",
+    "Clicking the amount cell opened the row action panel.",
+    "The view button visible text is Просмотр, not Просмотреть."
+  ]
+}

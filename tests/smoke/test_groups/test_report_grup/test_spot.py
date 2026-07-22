@@ -9,10 +9,10 @@ pytestmark = [allure.epic("Report Group"), allure.feature("Integration Report"),
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def run_report_spot_check(page, code, login=True):
+def run_report_spot_check(page, code):
     """Report-05: Spot 2d report — yangi shablon yaratib, Spot2D.zip yuklab olishni tekshirish.
 
-    Login (login=True bo'lsa): admin login va test filialiga (filial-pw{code}) o'tish.
+    Test admin login va test filialiga (filial-pw{code}) o'tishdan boshlanadi.
 
     Qadamlar (Allure step):
       1. Spot sahifasini ochish
@@ -23,9 +23,8 @@ def run_report_spot_check(page, code, login=True):
     base = BasePage(page)
     template_name = f"Spot2D-pw{code}"
 
-    if login:
-        authorization(page, who="admin")
-        base.switch_filial(name=f"filial-pw{code}")
+    authorization(page, who="admin")
+    base.switch_filial(name=f"filial-pw{code}")
 
     with allure.step("1 - Spot sahifasini ochish"):
         base, _, rest = page.url.partition("#/")

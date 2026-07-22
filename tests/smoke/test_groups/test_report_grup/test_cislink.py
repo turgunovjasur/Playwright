@@ -9,10 +9,10 @@ pytestmark = [allure.epic("Report Group"), allure.feature("Integration Report"),
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def run_report_cislink_check(page, code, login=True):
+def run_report_cislink_check(page, code):
     """Report-01: CisLink integration report — sozlash va .zip yuklab olishni tekshirish.
 
-    Login (login=True bo'lsa): admin login va test filialiga (filial-pw{code}) o'tish.
+    Test admin login va test filialiga (filial-pw{code}) o'tishdan boshlanadi.
 
     Qadamlar (Allure step):
       1. trade/rep/integration/cislink sahifasini ochish (menyuda yo'q — URL orqali)
@@ -25,9 +25,8 @@ def run_report_cislink_check(page, code, login=True):
     base = BasePage(page)
     price_type_name = f"Price Type UZB-pw{code}"
 
-    if login:
-        authorization(page, who="admin")
-        base.switch_filial(name=f"filial-pw{code}")
+    authorization(page, who="admin")
+    base.switch_filial(name=f"filial-pw{code}")
 
     with allure.step("1 - CisLink integration report sahifasini ochish"):
         base, _, rest = page.url.partition("#/")

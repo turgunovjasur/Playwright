@@ -27,9 +27,9 @@ Tags: smoke, entity, naming, run-result
 
 ### Runner Qoidasi
 Tags: smoke, setup, dependency, data-store
-- Full run `scripts/run_tests.py` orqali ikkita pytest targetni shu tartibda collect qiladi: `tests/smoke/test_setup/test_setup_runner.py` (00–21 alohida setup testlari), keyin `tests/smoke/test_all_runner.py` (A/B/C/Report group runnerlari).
-- `tests/smoke/test_all_runner.py` setupni qayta chaqirmaydi; u faqat group runnerlarni saqlaydi. Shu sabab setup Allure'da ikki marta yurmaydi.
-- Umumiy runner pytest `test_*` funksiyalarini import qilib chaqirmaydi; runnerlar `run_*_chain` va biznes `run_*` funksiyalarini setup -> A -> B -> ... tartibida chaqiradi.
+- Full run `scripts/run_tests.py` orqali `test_setup_runner.py`, keyin A/B/C/Report group runner fayllarini shu tartibda bitta pytest sessiyasida collect qiladi.
+- `groups` target setupni ishlatmasdan faqat A/B/C/Report runner fayllarini collect qiladi; alohida `group-a`, `group-b`, `group-c`, `group-report` targetlari saqlanadi.
+- Har bir setup va group case runner faylida alohida `test_*` pytest item; outer `test_all_runner.py` va `run_*_group_chain` ishlatilmaydi.
 - `tests/smoke/test_setup/test_setup_runner.py` ichidagi testlar bitta `session_page` bilan ketma-ket ishlaydi; UI state va login holati testlar orasida saqlanadi.
 - `.env` ishlatilmaydi; `--url` har doim majburiy.
 - Mavjud company bilan run qilish uchun `--url <server_url> --company-code <code> --company-password <password>` beriladi; company testi suitega qo'shilmaydi.
@@ -42,9 +42,8 @@ Tags: smoke, setup, dependency, data-store
 - `--create-company --disable-license-policy` ishlatilsa yangi companyda license policy off qilinadi va setupdagi `Buy License` / `Attach License` qadamlari o'tkazib yuboriladi.
 - `--create-company` full runnerda A/B group loginlari ham yaratilgan `company_code`ni ishlatadi; setup zanjirida user/role/password/license kabi user login precondition qadamlari o'chirilgan bo'lsa `user-pw{code}@<company_code>` yaratilmaydi va group login `login.html`da qolib ketadi.
 - Har bir group boshida user bir marta login qiladi; group ichidagi test/flowlar shu oynada davom etadi va group tugaganda yoki failed/skip bo'lganda fixture oynani yopadi.
-- Full runnerda har group uchun alohida `group_page` ochiladi; alohida group runner faylida testlar `group_user_page` module-scoped fixture bilan bitta login/page ishlatadi.
-- Har bir group runner ichida `*_GROUP_TEST_SCENARIO` ko'rinishida group-level test ssenariy yoziladi va `run_*_group_chain` uni Allure description'ga beradi; foydalanuvchi group qaysi biznes ssenariyni qamrab olishini runnerdan ko'rishi kerak.
-- B-group leaf testlari bittadan pytest testli alohida fayllarda turadi; `test_b_group_runner.py` ularni `run_*` helper funksiyalari orqali bitta B-group zanjiriga yig'adi.
+- Har group runner module-scoped `group_session_page` bilan boshqa grouplardan alohida context/page oladi; user grouplari `group_user_page` orqali group boshida bir marta login qiladi.
+- B-group biznes logikasi `run_*` helperlarda saqlanadi; `test_b_group_runner.py` B-01–B-04 caselarni alohida pytest wrapperlar sifatida yig'adi.
 - `code` fixture faqat `NEW_CODE` bilan boshqariladi: `NEW_CODE=1` (yoki `.env` yo'q muhitda `--new-code`) yangi random 6 xonali qiymat beradi; `NEW_CODE=0` mavjud `test-results/data/data_store.json` dagi code ni o'qiydi. Alohida `REUSE_CODE`/`--reuse-code` yo'q.
 - `authorization`da `who` majburiy keyword-only parametr; har bir caller `who="admin"|"head"|"user"` rolini ochiq yozadi. Funksiya alohida code yaratmaydi yoki saqlangan code'ni o'qimaydi; user login uchun doim session `code` fixture qiymati `authorization(..., who="user", code=code)` orqali uzatiladi.
 - `test_01_authorization` `save_data("code", code)` orqali yangi code ni keyingi yakka/debug testlar uchun saqlaydi.
@@ -57,9 +56,16 @@ Tags: smoke, setup, runner, collection, allure, fix
 - `scripts/run_tests.py` `all` targetida setup runnerni birinchi, group runnerni ikkinchi target sifatida uzatadi; `setup` va `company` targetlari ham haqiqiy collectable testlarga yo'naladi. Uchala target dry-run bilan exit `0` berdi.
 - Ishlatilmaydigan global scope konfiguratsiyasi olib tashlandi; suite smoke testlar sifatida ishlaydi.
 
+### 2026-07-21 group runnerlar alohida Allure testlarga o'tkazildi
+Tags: smoke, group, runner, allure, collection
+- A/B/C/Report runner fayllaridagi har bir case alohida pytest testga aylantirildi; full collection jami 39 item: Setup 22, A 5, B 4, C 2, Report 6.
+- `test_all_runner.py` outer-chain olib tashlandi; `scripts/run_tests.py all` setup va to'rtta group runner faylini bevosita collect qiladi, `groups` target esa faqat group runnerlarni ishlatadi.
+- Module-level `user_setup` va `smoke_group("A"|"B"|"C"|"Report")` markerlari fayldagi barcha testlarga tatbiq qilinadi; Allure har caseni alohida status/duration bilan ko'rsatadi.
+- Runner wrapperlarida title faqat `@allure.title(...)` orqali bir marta yoziladi; Telegram started/passed/failed/skipped eventlari `conftest.py` pytest hooklari tomonidan shu title, marker va runner pathdan avtomatik yaratiladi.
+
 ### Allure'da setup bosqichlarini alohida test sifatida ko'rsatish
 Tags: smoke, setup, runner, allure, collection
-- `allure.step` va `progress_step` faqat bitta pytest test ichidagi nested step yaratadi; Allure'da alohida test case chiqishi uchun har setup bosqichi pytest tomonidan alohida `test_*` item sifatida collect qilinishi shart.
+- `allure.step` faqat bitta pytest test ichidagi nested step yaratadi; Allure'da alohida test case chiqishi uchun har setup/group bosqichi pytest tomonidan alohida `test_*` item sifatida collect qilinishi shart.
 - Tavsiya etilgan model: `test_setup_runner.py` ichida `test_00_company`, `test_01_authorization` ... `test_21_balance` wrapperlari `session_page` bilan collect qilinadi va faqat tegishli `run_*` funksiyani chaqiradi. Moduldagi `pytest.mark.user_setup` barcha wrapperlarga tatbiq qilinadi.
 - Mavjud `pytest_runtest_makereport`/`pytest_runtest_setup` mexanizmi alohida setup itemlar bilan mos: bir setup item fail bo'lsa `_USER_SETUP_FAILED=True`, keyingi setup itemlar va grouplar skip qilinadi; Allure har birini `passed`/`failed`/`skipped` sifatida alohida ko'rsatadi.
 - Full run bitta outer `test_01_user_setup_runner -> run_setup_chain(...)` ni yuritmasligi kerak; pytest targetlari setup runner fayli va group runner fayllarini birga collect qilishi kerak. Aks holda setup Allure'da yana bitta test bo'lib qoladi yoki ikki marta bajariladi.

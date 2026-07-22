@@ -5,18 +5,16 @@ from datetime import datetime, timedelta
 import allure
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError, expect
 
-from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.flows.flow_order.flow_order_add import (
     flow_order_final_page,
     flow_order_main_page,
     flow_order_product_page,
 )
-from tests.smoke.flows.flow_order.flow_order_list import flow_open_order_list, flow_order_list
+from tests.smoke.flows.flow_order.flow_order_list import flow_order_list
 from utils.base_page import BasePage
 
 # Faqat order input border-color validatsiyasiga tegishli tezkor lokal timeout: 0.2 s.
 INPUT_BORDER_ASSERT_TIMEOUT = 200
-ORDER_QUICK_PRESENCE_TIMEOUT = 2_000
 ORDER_OPTIONAL_DIALOG_TIMEOUT = 1_500
 ORDER_OPTIONAL_UI_TIMEOUT = 3_000
 ORDER_ACTION_TIMEOUT = 10_000
@@ -30,7 +28,7 @@ B_GROUP_ORDER_INVOICE_REPORT_OPTIONS = [
     "Лист заказов № 6",
     "Лист заказов №1",
     "Накладная №3(2007)",
-    "Накладная №4(2012)",
+    "Накладная № 4 (2012)",
     "Накладная №5 (2018)",
     "Накладная №7",
     "Общая сумма",
@@ -51,7 +49,7 @@ B_GROUP_ORDER_INVOICE_REPORT_DATA_CHECKS = {
     "Лист заказов № 6": ("product", "total"),
     "Лист заказов №1": ("product", "total"),
     "Накладная №3(2007)": ("product", "total"),
-    "Накладная №4(2012)": ("product", "total"),
+    "Накладная № 4 (2012)": ("product", "total"),
     "Накладная №5 (2018)": ("product", "total"),
     "Накладная №7": ("product", "total"),
     "Общая сумма": ("product", "total"),
@@ -86,13 +84,14 @@ def _invoice_dropdown_option_names(page):
 
 
 def _open_order_invoice_dropdown(page, client):
-    flow_open_order_list(page)
-    expect(page.locator("#kt_content")).to_contain_text(client, timeout=ORDER_PAGE_TRANSITION_TIMEOUT)
+    base = BasePage(page)
+    base.navigate_to(tab="Продажа", name="Заказы")
+    base.text(client, root="#kt_content", timeout=ORDER_PAGE_TRANSITION_TIMEOUT)
     flow_order_list(page, find_row=client)
     invoice_button = page.locator("#trade81-button-report_one").first
     expect(invoice_button).to_be_visible()
     invoice_button.click()
-    expect(page.locator(".dropdown-menu:visible a.dropdown-item").first).to_be_visible()
+    base.text(root=page.locator(".dropdown-menu:visible").first)
 
 
 def _assert_invoice_dropdown_options(page):
@@ -109,8 +108,10 @@ def _assert_invoice_dropdown_options(page):
 
 
 def _assert_report_loaded(report_page, option_name):
-    expect(report_page.locator("body")).to_contain_text(
+    base = BasePage(report_page)
+    base.text(
         B_GROUP_ORDER_INVOICE_REPORT_CONTROL_RE,
+        root="body",
         timeout=ORDER_REPORT_LOAD_TIMEOUT,
     )
     report_text = report_page.locator("body").inner_text(timeout=ORDER_REPORT_LOAD_TIMEOUT)
@@ -231,17 +232,6 @@ def _download_invoice_export_and_assert(page, client, option_name):
     return suggested_filename
 
 
-def _save_visible_confirm_if_open(page):
-    confirm = page.get_by_role("dialog").filter(has=page.get_by_role("button", name="да"))
-    try:
-        expect(confirm).to_be_visible(timeout=ORDER_OPTIONAL_UI_TIMEOUT)
-    except Exception:
-        return
-
-    confirm.get_by_role("button", name="да").click()
-    confirm.wait_for(state="hidden")
-
-
 def _input_validation_state_by_label(page, label, index=0):
     base = BasePage(page)
     input_el = base.input(label=label, index=index)
@@ -264,18 +254,6 @@ def _input_has_non_neutral_border_by_label(page, label, neutral_colors):
     return True
 
 
-def _page_text_is_present(page, text, timeout=ORDER_OPTIONAL_UI_TIMEOUT):
-    try:
-        expect(page.locator("body")).to_contain_text(text, timeout=timeout)
-        return True
-    except Exception:
-        return False
-
-
-def _page_text_occurrences(page, text):
-    return page.locator("body").inner_text().count(text)
-
-
 def _order_id_from_current_url(page):
     order_id = re.search(r"[?&]deal_id=(\d+)", page.url)
     if not order_id:
@@ -283,34 +261,23 @@ def _order_id_from_current_url(page):
     return order_id.group(1)
 
 
-def _expect_text_visible(page, text):
-    expect(page.locator("body")).to_contain_text(text)
-
-
 def _click_visible_text(page, text):
-    _expect_text_visible(page, text)
+    BasePage(page).text(text, root="body")
     page.get_by_text(text, exact=True).first.click()
 
 
 def _close_error_dialog(page, expected_text=None):
+    base = BasePage(page)
     dialog = page.get_by_role("dialog").filter(has_text="Ошибка")
-    expect(dialog).to_be_visible()
+    base.text(root=dialog)
     if expected_text:
-        expect(dialog).to_contain_text(expected_text)
+        base.text(expected_text, root=dialog)
     dialog.get_by_role("button").first.click()
     dialog.wait_for(state="hidden")
 
 
-def _save_order_from_final_page(page):
-    # Order wizard save tugmasi ikonkali: exact accessible name mos kelmaydi -> exact=False
-    base = BasePage(page)
-    page.get_by_role("button", name="Сохранить", exact=False).first.click()
-    base.confirm_biruni()
-    base.wait_for_loader()
-    base.expect_page(heading="Заказы")
-
-
 def _assert_save_blocked_without_confirm(page, expected_date=None):
+    base = BasePage(page)
     page.get_by_role("button", name="Сохранить").click()
     confirm = page.get_by_role("dialog").filter(has=page.get_by_role("button", name="да"))
     try:
@@ -341,7 +308,7 @@ def _assert_save_blocked_without_confirm(page, expected_date=None):
                 )
                 return
             if expected_date:
-                expect(page).to_have_url(re.compile(r".*/order\+edit"))
+                base.expect_page(url="order+edit")
                 state = _input_validation_state_by_label(page, "Дата оплаты по консигнации")
                 allure.attach(
                     json.dumps(state, ensure_ascii=False, indent=2),
@@ -367,8 +334,7 @@ def _assert_save_blocked_without_confirm(page, expected_date=None):
 
 
 def _click_consignment_add_button(page):
-    label = page.get_by_text("Дата оплаты по консигнации", exact=True).first
-    expect(label).to_be_visible()
+    BasePage(page).text("Дата оплаты по консигнации", root="#kt_content")
     add_button = page.locator('button[ng-click="addConsignment()"]:visible').first
     expect(add_button).to_be_visible()
     add_button.click()
@@ -379,34 +345,39 @@ def _open_order_settings(page):
     base.navigate_to(tab="Главное", name="Настройки системы")
     base.expect_page(heading="Настройки системы")
     page.get_by_role("link", name="Заказ").click()
-    expect(page.get_by_text("Разрешить выдачу консигнации", exact=True)).to_be_visible()
+    base.wait_for_loader()
+    base.checkbox(ng_model="d.consignment_allow", return_value=True)
 
 
 def _enable_consignment_for_orders(page):
     _open_order_settings(page)
     base = BasePage(page)
 
-    base.checkbox(label="Разрешить выдачу консигнации", checked=True)
-    base.input(label="Лимит консигнации (в днях)", value="30", expect_value="30", press_tab=True)
+    base.checkbox(ng_model="d.consignment_allow", checked=True)
+    base.input(ng_model="d.consignment_day_limit", value="30", expect_value="30", press_tab=True)
 
     page.get_by_role("button", name="Сохранить").first.click()
-    _save_visible_confirm_if_open(page)
+    base.confirm_biruni_if_visible(timeout=ORDER_OPTIONAL_UI_TIMEOUT)
+    base.wait_for_loader()
 
-    base.checkbox(label="Разрешить выдачу консигнации", expect_checked=True)
-    base.input(label="Лимит консигнации (в днях)", expect_value="30")
+    base.checkbox(ng_model="d.consignment_allow", expect_checked=True)
+    base.input(ng_model="d.consignment_day_limit", expect_value="30")
 
 
 def _cancel_existing_client_orders_if_any(page, code):
-    flow_open_order_list(page)
+    base = BasePage(page)
+    base.navigate_to(tab="Продажа", name="Заказы")
+    base.expect_page(heading="Заказы", url="order_list")
 
     for _ in range(20):
-        if not _page_text_is_present(page, f"natural_client-pw{code}", timeout=ORDER_QUICK_PRESENCE_TIMEOUT):
+        if not base.grid(f"natural_client-pw{code}", is_visible=True):
             break
 
         flow_order_list(page, find_row=f"natural_client-pw{code}", status="Отменен")
-        flow_open_order_list(page)
+        base.navigate_to(tab="Продажа", name="Заказы")
+        base.expect_page(heading="Заказы", url="order_list")
 
-    if _page_text_is_present(page, f"natural_client-pw{code}", timeout=ORDER_QUICK_PRESENCE_TIMEOUT):
+    if base.grid(f"natural_client-pw{code}", is_visible=True):
         raise AssertionError(f"natural_client-pw{code} uchun active orderlar tozalanmadi")
 
 
@@ -441,34 +412,29 @@ def _consignment_day_limit(page):
     return limit
 
 
-def run_b_group_create_order_with_consignment_limit(page, code, save_data, login=True):
+def run_create_order_with_consignment_limit(page, code, save_data):
     """
     Testcase:
-    1. User sifatida tizimga kirish.
-    2. Главное > Настройки системы > Заказ tabida Разрешить выдачу консигнации yoqiladi.
-    3. Лимит консигнации (в днях) qiymati 30 qilib saqlanadi.
-    4. Mavjud active orderlar bo'lsa Отменен statusga o'tkazilib, product booking tozalanadi.
-    5. Yangi order yaratiladi va 3-formada konsignatsiya kartasi ko'rinishi tekshiriladi.
-    6. Konsignatsiya limiti 30 kun ekanligi max date orqali tekshiriladi.
-    7. Konsignatsiya date/amount, payment type va status to'ldirilib 5 dona order saqlanadi.
-    8. Order viewda asosiy ma'lumotlar va Консигнация tabidagi date/amount tekshiriladi.
+    1. Order sozlamasida konsignatsiya yoqilib, limit 30 kun qilib saqlanadi.
+    2. Mavjud active orderlar bo'lsa Отменен statusga o'tkazilib, product booking tozalanadi.
+    3. Yangi order yaratiladi va 3-formaga o'tiladi.
+    4. Konsignatsiya kartasi va 30 kunlik limit tekshiriladi.
+    5. Konsignatsiya date/amount, payment type va status to'ldirilib 5 dona order saqlanadi.
+    6. Order viewda asosiy ma'lumotlar tekshiriladi.
+    7. Консигнация tabidagi date/amount tekshiriladi.
+    8. Order id keyingi B-group testlari uchun saqlanadi.
     """
     base = BasePage(page)
-    if login:
-        with allure.step("1 - User tizimga muvaffaqiyatli kiradi"):
-            authorization(page, who="user", code=code)
-            expect(page.get_by_role("heading", name="Trade")).to_be_visible()
-
-    with allure.step("2 - Order settingsda konsignatsiya yoqiladi va limit 30 kun qilinadi"):
+    with allure.step("1 - Order settingsda konsignatsiya yoqiladi va limit 30 kun qilinadi"):
         _enable_consignment_for_orders(page)
 
-    with allure.step("3 - Mavjud active orderlar bo'lsa Отменен statusga o'tkazilib, product booking tozalanadi"):
+    with allure.step("2 - Mavjud active orderlar bo'lsa Отменен statusga o'tkazilib, product booking tozalanadi"):
         _cancel_existing_client_orders_if_any(page, code)
 
-    with allure.step("4 - Yangi zakaz asosiy va TMC qadamlaridan o'tkaziladi"):
+    with allure.step("3 - Yangi zakaz asosiy va TMC qadamlaridan o'tkaziladi"):
         flow_order_list(page, add=True)
-        deal_time = base.input(label="Дата заказа", return_value=True)
-        delivery_date = base.input(label="Дата отгрузки", return_value=True)
+        deal_time = base.input(locator="#anor279-input-deal_time", return_value=True)
+        delivery_date = base.input(locator="#anor279-input-delivery_date", return_value=True)
         flow_order_main_page(
             page,
             check_form=True,
@@ -486,10 +452,13 @@ def run_b_group_create_order_with_consignment_limit(page, code, save_data, login
             next_page=True,
         )
 
-    with allure.step("5 - 3-formada konsignatsiya kartasi va 30 kunlik limit tekshiriladi"):
-        _expect_text_visible(page, "Дата оплаты по консигнации")
-        _expect_text_visible(page, "Сумма консигнации")
-        _expect_text_visible(page, "ИТОГО")
+    with allure.step("4 - 3-formada konsignatsiya kartasi va 30 kunlik limit tekshiriladi"):
+        base.text(
+            "Дата оплаты по консигнации",
+            "Сумма консигнации",
+            "ИТОГО",
+            root="#kt_content",
+        )
 
         consignment_day_limit = _consignment_day_limit(page)
         if consignment_day_limit != "30":
@@ -500,7 +469,7 @@ def run_b_group_create_order_with_consignment_limit(page, code, save_data, login
             datetime.strptime(delivery_date, "%d.%m.%Y") + timedelta(days=int(consignment_day_limit))
         ).strftime("%d.%m.%Y")
 
-    with allure.step("6 - Konsignatsiya date/amount, tip oplati va status to'ldirilib saqlanadi"):
+    with allure.step("5 - Konsignatsiya date/amount, tip oplati va status to'ldirilib saqlanadi"):
         base.input(
             label="Дата оплаты по консигнации",
             value=expected_limit_date,
@@ -521,67 +490,66 @@ def run_b_group_create_order_with_consignment_limit(page, code, save_data, login
             status="Черновик",
             save=True,
         )
-        expect(page).to_have_url(re.compile(r".*/order_list"))
-        expect(page.get_by_role("heading")).to_contain_text("Заказы")
+        base.expect_page(heading="Заказы", url="order_list")
 
-    with allure.step("7 - Zakaz view oynasida asosiy ma'lumotlar tekshiriladi"):
+    with allure.step("6 - Zakaz view oynasida asosiy ma'lumotlar tekshiriladi"):
         flow_order_list(page, find_row=f"natural_client-pw{code}", view=True)
-        expect(page).to_have_url(re.compile(r".*/order_view"))
-        _expect_text_visible(page, f"natural_client-pw{code}")
-        _expect_text_visible(page, f"room-pw{code}")
-        _expect_text_visible(page, f"robot-pw{code}")
-        _expect_text_visible(page, "Наличные деньги")
-        _expect_text_visible(page, "Черновик")
-        _expect_text_visible(page, f"product-pw{code}")
-        _expect_text_visible(page, "35 000")
-        _expect_text_visible(page, "Ответственный за консигнацию")
-        _expect_text_visible(page, "Согласование консигнации")
+        base.expect_page(url="order_view")
+        base.text(
+            f"natural_client-pw{code}",
+            f"room-pw{code}",
+            f"robot-pw{code}",
+            "Наличные деньги",
+            "Черновик",
+            f"product-pw{code}",
+            "35 000",
+            "Ответственный за консигнацию",
+            "Согласование консигнации",
+            root="#kt_content",
+        )
 
-    with allure.step("8 - Viewdagi Консигнация tabida date va summa tekshiriladi"):
+    with allure.step("7 - Viewdagi Консигнация tabida date va summa tekshiriladi"):
         _click_visible_text(page, "Консигнация")
-        _expect_text_visible(page, expected_limit_date)
-        _expect_text_visible(page, "35 000")
+        base.text(expected_limit_date, "35 000", root="#kt_content")
 
-    with allure.step("9 - B-group konsignatsiya order id saqlanadi"):
+    with allure.step("8 - B-group konsignatsiya order id saqlanadi"):
         save_data("b_group_consignment_order_client", f"natural_client-pw{code}")
         save_data(
             "b_group_consignment_order_id",
             _order_id_from_current_url(page),
         )
-        page.get_by_role("button", name="Закрыть").click()
-        expect(page).to_have_url(re.compile(r".*/order_list"))
+        page.get_by_role("button", name="Закрыть", exact=True).click()
+        base.expect_page(heading="Заказы", url="order_list")
 
 
-def run_b_group_edit_order_with_consignment_limit(page, code, load_data, save_data, login=True):
+def run_edit_order_with_consignment_limit(page, code, load_data, save_data):
     """
     Testcase:
-    1. User sifatida tizimga kirish.
-    2. test_b_group_create_order_with_consignment_limit yaratgan active order listda topiladi.
-    3. Order edit qilinib quantity 5 dan 4 ga kamaytiriladi.
-    4. Eski konsignatsiya summasi order totalidan katta bo'lgani uchun error chiqishi va konsignatsiya clear bo'lishi tekshiriladi.
-    5. 30 kundan katta konsignatsiya sanasi kiritilib, save confirm chiqmasligi tekshiriladi.
-    6. Konsignatsiya summasi + orqali 2 ta sanaga bo'linadi va order saqlanadi.
+    1. Runnerdagi B-01 test yaratgan active order listda topiladi.
+    2. Order edit qilinib quantity 5 dan 4 ga kamaytiriladi.
+    3. Eski konsignatsiya summasi order totalidan katta bo'lgani uchun error chiqishi va konsignatsiya clear bo'lishi tekshiriladi.
+    4. 30 kundan katta konsignatsiya sanasi kiritilib, save confirm chiqmasligi tekshiriladi.
+    5. Konsignatsiya summasi + orqali 2 ta sanaga bo'linadi.
+    6. Order saqlanadi.
     7. Order viewda 28 000 total hamda ikki konsignatsiya sana/summa tekshiriladi.
+    8. Edit qilingan order ma'lumotlari keyingi B-group testlari uchun saqlanadi.
     """
     base = BasePage(page)
-    if login:
-        with allure.step("1 - User tizimga muvaffaqiyatli kiradi"):
-            authorization(page, who="user", code=code)
-            expect(page.get_by_role("heading", name="Trade")).to_be_visible()
-
-    with allure.step("2 - B-group create testi yaratgan active order listda topiladi"):
-        created_order_client = load_data("b_group_consignment_order_client") or f"natural_client-pw{code}"
-        flow_open_order_list(page)
-        if not _page_text_is_present(page, created_order_client):
+    with allure.step("1 - B-group create testi yaratgan active order listda topiladi"):
+        created_order_client = load_data("b_group_consignment_order_client")
+        if not created_order_client:
+            raise AssertionError("Konsignatsiyali order client topilmadi. Avval runnerdagi B-01 testni run qiling.")
+        base.navigate_to(tab="Продажа", name="Заказы")
+        if not base.grid(created_order_client, is_visible=True):
             raise AssertionError(
                 "Konsignatsiyali active order topilmadi. "
-                "Avval test_b_group_create_order_with_consignment_limit ni run qiling."
+                "Avval runnerdagi B-01 testni run qiling."
             )
 
-    with allure.step("3 - Order edit qilinib quantity 5 dan 4 ga kamaytiriladi"):
+    with allure.step("2 - Order edit qilinib quantity 5 dan 4 ga kamaytiriladi"):
         flow_order_list(page, find_row=created_order_client, edit=True)
-        expect(page).to_have_url(re.compile(r".*/order\+edit"))
-        delivery_date = base.input(label="Дата отгрузки", return_value=True)
+        base.expect_page(url="order+edit")
+        delivery_date = base.input(locator="#anor279-input-delivery_date", return_value=True)
         delivery_date_value = datetime.strptime(delivery_date, "%d.%m.%Y")
         first_split_date = (delivery_date_value + timedelta(days=15)).strftime("%d.%m.%Y")
         limit_date = (delivery_date_value + timedelta(days=30)).strftime("%d.%m.%Y")
@@ -594,41 +562,40 @@ def run_b_group_edit_order_with_consignment_limit(page, code, load_data, save_da
             next_page=True,
         )
 
-    with allure.step("4 - Eski konsignatsiya order totalidan katta bo'lgani uchun error chiqadi va clear bo'ladi"):
+    with allure.step("3 - Eski konsignatsiya order totalidan katta bo'lgani uchun error chiqadi va clear bo'ladi"):
         _close_error_dialog(
             page,
             "Общая сумма консигнаций не должна быть больше суммы заказа",
         )
-        base.input(label="Дата оплаты по консигнации", expect_value="")
-        base.input(label="Сумма консигнации", expect_value="")
-        _expect_text_visible(page, "ИТОГО")
-        _expect_text_visible(page, "28 000")
+        base.input(ng_model="item.consignment_date", expect_value="")
+        base.input(ng_model="item.consignment_amount", expect_value="")
+        base.text("ИТОГО", "28 000", root="#kt_content")
 
-    with allure.step("5 - 30 kundan katta konsignatsiya sanasi save qilinmaydi"):
+    with allure.step("4 - 30 kundan katta konsignatsiya sanasi save qilinmaydi"):
         base.input(
-            label="Дата оплаты по консигнации",
+            ng_model="item.consignment_date",
             value=invalid_date,
             expect_value=invalid_date,
             press_tab=True,
         )
         base.input(
-            label="Сумма консигнации",
+            ng_model="item.consignment_amount",
             value="28000",
             expect_value="28 000",
             press_tab=True,
         )
         _assert_save_blocked_without_confirm(page, expected_date=invalid_date)
-        expect(page).to_have_url(re.compile(r".*/order\+edit"))
+        base.expect_page(url="order+edit")
 
-    with allure.step("6 - Konsignatsiya + orqali 2 ta sanaga bo'linadi"):
+    with allure.step("5 - Konsignatsiya + orqali 2 ta sanaga bo'linadi"):
         base.input(
-            label="Дата оплаты по консигнации",
+            ng_model="item.consignment_date",
             value=first_split_date,
             expect_value=first_split_date,
             press_tab=True,
         )
         base.input(
-            label="Сумма консигнации",
+            ng_model="item.consignment_amount",
             value="14000",
             expect_value="14 000",
             press_tab=True,
@@ -636,45 +603,62 @@ def run_b_group_edit_order_with_consignment_limit(page, code, load_data, save_da
 
         _click_consignment_add_button(page)
         base.input(
-            label="Дата оплаты по консигнации",
+            ng_model="item.consignment_date",
+            expect_value=first_split_date,
+        )
+        base.input(
+            ng_model="item.consignment_amount",
+            expect_value="14 000",
+        )
+        base.input(
+            ng_model="item.consignment_date",
             value=limit_date,
             expect_value=limit_date,
             index=1,
             press_tab=True,
         )
         base.input(
-            label="Сумма консигнации",
+            ng_model="item.consignment_amount",
             value="14000",
             expect_value="14 000",
             index=1,
             press_tab=True,
         )
+        base.input(
+            ng_model="item.consignment_date",
+            expect_value=first_split_date,
+        )
+        base.input(
+            ng_model="item.consignment_amount",
+            expect_value="14 000",
+        )
 
-    with allure.step("7 - Order save qilinadi"):
-        _save_order_from_final_page(page)
-        expect(page).to_have_url(re.compile(r".*/order_list"))
-        expect(page.get_by_role("heading")).to_contain_text("Заказы")
+    with allure.step("6 - Order save qilinadi"):
+        base.save_and_expect_heading(
+            "Заказы",
+            confirm_text="Сохранить?",
+            exact_button=False,
+            location_hint="B-02 consignment split order final page",
+        )
+        base.expect_page(url="order_list")
 
-    with allure.step("8 - Order viewda split qilingan konsignatsiya tekshiriladi"):
+    with allure.step("7 - Order viewda split qilingan konsignatsiya tekshiriladi"):
         flow_order_list(page, find_row=created_order_client, view=True)
-        expect(page).to_have_url(re.compile(r".*/order_view"))
-        _expect_text_visible(page, created_order_client)
-        _expect_text_visible(page, f"product-pw{code}")
-        _expect_text_visible(page, "28 000")
+        base.expect_page(url="order_view")
+        base.text(created_order_client, f"product-pw{code}", "28 000", root="#kt_content")
         _click_visible_text(page, "Консигнация")
-        _expect_text_visible(page, first_split_date)
-        _expect_text_visible(page, limit_date)
-        if _page_text_occurrences(page, "14 000") < 2:
-            raise AssertionError("Viewda ikkita 14 000 konsignatsiya summasi ko'rinmadi")
+        consignment_grid = 'b-pg-grid[name="consignments"]'
+        base.grid(first_split_date, "14 000", root=consignment_grid)
+        base.grid(limit_date, "14 000", root=consignment_grid)
 
-    with allure.step("9 - Edit qilingan order ma'lumotlari saqlanadi"):
+    with allure.step("8 - Edit qilingan order ma'lumotlari saqlanadi"):
         save_data("b_group_consignment_order_split_first_date", first_split_date)
         save_data("b_group_consignment_order_split_second_date", limit_date)
-        page.get_by_role("button", name="Закрыть").click()
-        expect(page).to_have_url(re.compile(r".*/order_list"))
+        page.get_by_role("button", name="Закрыть", exact=True).click()
+        base.expect_page(heading="Заказы", url="order_list")
 
 
-def run_b_group_order_invoice_reports(page, code, load_data):
+def run_order_invoice_reports(page, code, load_data):
     """
     Testcase:
     1. B-group sessiyasida oldingi test yaratgan draft order listdan topiladi.
@@ -683,8 +667,13 @@ def run_b_group_order_invoice_reports(page, code, load_data):
     4. Scope bo'yicha report optionlar birma-bir ochilib, report sahifasi va asosiy order ma'lumotlari tekshiriladi.
     5. Экспортировать заказ optioni fayl yuklashini tekshiradi.
     """
-    created_order_client = load_data("b_group_consignment_order_client") or f"natural_client-pw{code}"
-    created_order_id = str(load_data("b_group_consignment_order_id") or "")
+    base = BasePage(page)
+    created_order_client = load_data("b_group_consignment_order_client")
+    created_order_id = load_data("b_group_consignment_order_id")
+    if not created_order_client or not created_order_id:
+        raise AssertionError("B-group order ma'lumotlari topilmadi. Avval runnerdagi B-01 va B-02 testlarni run qiling.")
+
+    created_order_id = str(created_order_id)
     expected_data = {
         "client": created_order_client,
         "product": f"product-pw{code}",
@@ -695,14 +684,13 @@ def run_b_group_order_invoice_reports(page, code, load_data):
     downloaded_files = {}
 
     with allure.step("1 - B-group draft order listda topiladi"):
-        flow_open_order_list(page)
-        if not _page_text_is_present(page, created_order_client, timeout=ORDER_ACTION_TIMEOUT):
+        base.navigate_to(tab="Продажа", name="Заказы")
+        if not base.grid(created_order_client, is_visible=True):
             raise AssertionError(
                 "B-group draft order listda topilmadi. "
                 "Avval B-01 va B-02 testlari shu group sessiyada muvaffaqiyatli yurishi kerak."
             )
-        _expect_text_visible(page, "Черновик")
-        _expect_text_visible(page, "28 000")
+        base.text("Черновик", "28 000", root="#kt_content", timeout=ORDER_ACTION_TIMEOUT)
 
     with allure.step("2 - Order row menu ichida Накладные dropdown optionlari tekshiriladi"):
         _open_order_invoice_dropdown(page, created_order_client)
@@ -738,8 +726,9 @@ def run_b_group_order_invoice_reports(page, code, load_data):
             name="b-group-invoice-downloads",
             attachment_type=allure.attachment_type.JSON,
         )
-        flow_open_order_list(page)
-        expect(page.locator("#kt_content")).to_contain_text(
+        base.navigate_to(tab="Продажа", name="Заказы")
+        base.text(
             created_order_client,
+            root="#kt_content",
             timeout=ORDER_PAGE_TRANSITION_TIMEOUT,
         )

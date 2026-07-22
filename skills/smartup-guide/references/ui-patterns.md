@@ -37,7 +37,8 @@ Tags: locator, heading, get_by_role, navigation, url
 
 ### View (Просмотр) label→value olish — exact match
 Tags: locator, order-view, label, xpath
-- `flow_order_view` view sahifasida label→value ni `//t[normalize-space()="{key}"]/../../span` orqali oladi.
+- `BasePage.form_view(...)` ikkala eski Smartup view DOMini qo'llaydi: `label + .form-view` va order viewdagi exact `<t>` labelning `../../span` qiymati. `flow_order_view` ham shu helperdan foydalanadi.
+- Formatlangan amountlarda `form_view(label=..., expect_value="7000", remove_spaces=True)` ishlatiladi: UI'dagi `7 000` kabi barcha whitespace assertda e'tiborsiz qilinadi; `return_value=True` bilan ham whitespace'siz qiymat qaytadi. Default `remove_spaces=False`, shuning uchun ism/status kabi qiymatlarda probellar tekshirilishda davom etadi.
 - `contains(text(),"{key}")` ISHLATMA: ilova label'larga yangi uzun matn qo'shsa (masalan `Статус` yoniga `Статус заказов, которые более 90 (дней)` tooltip/label qo'shilgan — 2026-06-21), `contains` ikkala `<t>` ga mos kelib strict mode violation beradi. Aniq (`normalize-space()=`) moslik shart.
 
 ### Form Field Discovery
@@ -66,8 +67,21 @@ Tags: b-input, server-search, hint, clear
 - Agar `.edit` ko'rinsa — avval clear qil, keyin yoz; ko'rinmasa — to'g'ri click qil.
 - Server-search uchun `press_sequentially(search_text, delay=50)` ishlatiladi (debounce trigger); client-search uchun oddiy `fill()` yetarli.
 - Dropdown locator faqat visible optionni oladi: `b_input.locator(".hint-item:visible").filter(has_text=option).first`. Hidden stale optionni `.first` qilib kutish mumkin emas — server/client refreshdan keyingi visible row DOMda boshqa element bo'lishi mumkin.
+- Asinxron dropdown natijasidan keyin `option.count()` bilan darhol fallback tanlanmasin. `expect(option).to_be_visible(timeout=...)` visible `.hint-item` DOMga kelguncha auto-retry qilsin. Aks holda qidiruv javobi hali kelmagan paytda exact-text fallback tanlanadi; option qatorida ombor/narx turi kabi qo'shimcha matnlar bo'lsa, backend natija qaytargan bo'lsa ham false-negative timeout yuz beradi (2026-07-22 order product trace bilan tasdiqlangan).
 - Radio button ustida label span tursa `label:has(input[value="..."])` orqali click qilinadi (force=True ishlamaydi — Angular ng-model update bo'lmaydi).
 - Shared helper: `report_helpers.select_b_input_option(page, b_input_name, option, search_text=None)`.
+
+### UI Select
+Tags: ui-select, locator, dropdown
+- Qoida: Angular UI Select uchun public API `BasePage.ui_select(...)`; uni `BasePage.b_input(...)` bilan boshqarma, chunki DOM va option strukturasi boshqa.
+- Ishlatish:
+  - `BasePage.ui_select(label="Статус", value="Черновик")` — option tanlash
+  - `BasePage.ui_select(label="Статус", expect_value="Черновик")` — tanlangan qiymatni tekshirish
+  - `BasePage.ui_select(label="Статус", return_value=True)` — joriy qiymatni olish
+  - `BasePage.ui_select(ng_model="d.status", value="Черновик")` — label ishonchsiz bo'lsa fallback
+- DOM: wrapper `.ui-select-container`, toggle `.ui-select-toggle`, tanlangan matn `.ui-select-match-text`, ochiq option `.ui-select-choices-row-inner:visible`.
+- Search yoqilgan variantlarda `search_text=...` beriladi; helper faqat visible `.ui-select-search`ni to'ldiradi.
+- `root` faqat qidiruv hududini cheklaydi, komponent turini almashtirmaydi.
 
 ### Multi-select b-input API
 Tags: b-input, multiselect, helper, selected-chip
@@ -82,7 +96,7 @@ Tags: input, mask, date, amount
 
 ### Biruni Confirm
 Tags: biruni, confirm, modal
-- Preferred: confirm oynasini `page.get_by_role("dialog")` orqali topib, `да` buttonni shu dialog ichida bosing.
+- Preferred: majburiy confirm uchun `BasePage.confirm_biruni(expected_text=...)`, faqat ayrim holatda chiqadigan confirm uchun `BasePage.confirm_biruni_if_visible(expected_text=...)` ishlatiladi. Optional helper modal ko'rinmasa `False`, tasdiqlasa `True` qaytaradi.
 - Pattern:
   - `confirm = page.get_by_role("dialog").filter(has=page.get_by_role("button", name="да"))`
   - `expect(confirm).to_be_visible()`
@@ -95,6 +109,7 @@ Tags: biruni, confirm, modal
 Tags: biruni, error, modal
 - Selector: `#biruniAlertExtended`.
 - Close button: `#biruniAlertExtended button.close`.
+- Extended alertni tekshirib yopish uchun `BasePage.close_biruni_alert(*expected_text)` ishlatiladi.
 - Qoida: ba'zan `Закрыть` textli button yo'q.
 - Qoida: Modal yopilmasa menu/list clicklari intercept bo'lishi mumkin.
 - Save/transition debug: `Сохранить` bosilgandan keyin list/view heading kutishdan oldin umumiy Biruni error modal tekshirilsin; aks holda haqiqiy xato add/edit formdagi save error bo'lsa ham test keyingi list/viewda timeout bo'lgandek ko'rinadi.
@@ -142,11 +157,12 @@ Tags: screenshot, debug, url
 Tags: locator, form, helper, setup
 - Qayerda: `utils/base_page.py`.
 - Kontekst: `company` formasi Angular `smt-control` strukturada; boshqa setup/report/biznes formalar eski Biruni/AngularJS holida. Umumiy UI primitive'lar `BasePage` ichida turadi.
-- Joylashuv: navigatsiya/page state va label/ng-model asosidagi universal helperlar (`navigate_to`, `expect_page`, `switch_filial`, `input`, `b_input`, `checkbox`, `radio`, `text`) `utils/base_page.py` ichida tursin; ular biznes flow emas, umumiy UI primitive.
+- Joylashuv: navigatsiya/page state va label/ng-model asosidagi universal helperlar (`navigate_to`, `expect_page`, `switch_filial`, `input`, `b_input`, `ui_select`, `checkbox`, `radio`, `text`, `form_view`, `close_biruni_alert`) `utils/base_page.py` ichida tursin; ular biznes flow emas, umumiy UI primitive.
 - Chegara: faqat bitta testga kerak bo'lgan biznes/helper logika `BasePage` ga chiqmaydi; o'sha test faylida `_...` local helper bo'lib qoladi.
 - Qoida: `navigate_to`, `expect_page`, `switch_filial` uchun alohida wrapper import qilinmaydi; avval `base = BasePage(page)` qilinadi, keyin `base.navigate_to(...)`, `base.expect_page(...)`, `base.switch_filial(...)` ishlatiladi. `flow_navigate.py` faqat maxsus `navigate_to_a2` kabi alohida flowlar uchun qoladi.
 - Qoida: ng-model asosidagi forma amallari uchun yangi helper yozilmasin — text input/textarea uchun `base.input(ng_model="d.x", value=...)`, b-input uchun `base.b_input(ng_model="d.x", value=...)` (label ishonchsiz bo'lganda), checkbox/switch uchun `base.checkbox(...)`, sahifa/view matn tekshiruvi uchun `base.text(...)` ishlatiladi. `text` default `root="b-page"` ishlatadi; kerak bo'lsa `root` sifatida selector yoki modal locator (`.modal.show`) beriladi — alohida `_modal_*` variant kerak emas.
 - Qoida: **oddiy text input bilan ishlashda yagona universal funksiya — `BasePage.input(...)`** (`checkbox()` kabi pattern). Topish strategiyalari (faqat bittasi): `label="Код"` (asosiy), `ng_model="d.code"` (label ishonchsiz bo'lsa, masalan label DOMda inputdan keyin kelsa), `placeholder="Поиск"`, `locator` (positional, tayyor selector). Amal: `value=...` (clear+fill), `expect_value=...` (assert; value berilsa default expect_value=value), `return_value=True` (string), `press_tab=True`, `index=`, `root=`. `first`/`nth` locatorlar test ichida qolmasin.
+- Qoida: view sahifasidagi `label + .form-view` yoki order viewdagi exact `<t>` labelga bog'langan `../../span` qiymati readonly input emas; bunday qiymat `BasePage.form_view(label=..., expect_value=..., return_value=..., index=..., root=...)` bilan tekshiriladi. `BasePage.input(...)` faqat real `input`/`textarea` uchun qoladi.
 - Qoida: label konteyner qidirishda avval eng yaqin `col`/`col-*` konteyneri olinadi, keyin `input-group`, `form-group`, `form-row`, `row`. Sabab: eski formalarda bir `form-group` ichida ikkita field turishi mumkin (`Код` + `Порядковый номер`, `Название` + `Код акции`, `Дата начала` + `Срок действия`); `form-group`ni birinchi olish noto'g'ri birinchi inputni tanlaydi.
 - Qoida: labeldan field topishda keng card/col ichidagi birinchi inputni olish yetarli emas; label elementidan keyingi birinchi mos field (`input`/`textarea`/`b-input`/checkbox) target qilinsin. Room add formasida `Название` keng konteyner orqali `Код` inputini qayta to'ldirib yuborgani 2026-06-26 da tasdiqlangan.
 - Qoida: `id="focusser-*"` inputlar real fill qilinadigan field emas, ular toggle/radio/focus uchun ichki elementlar. `input` bunday inputlarni chetlab o'tsin.

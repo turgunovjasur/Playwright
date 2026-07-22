@@ -8,10 +8,10 @@ Tags: contract, contract-view, view-form, locator, screenshot, order-preconditio
 - Navigation: `Финансы > Договоры` -> contract row -> `Просмотр`
 - URL pattern: `*/anor/mkf/contract_view`
 - Page container: `b-page`
-- Main test file: `tests/smoke/test_groups/test_A_grup/test_contract.py`
-- Main flow files:
-  - `tests/smoke/flows/flow_contract/flow_contract_list.py`
-  - `tests/smoke/flows/flow_contract/flow_contract_add.py`
+- Main test files:
+  - `tests/smoke/test_groups/test_A_grup/test_create_contract.py`
+  - `tests/smoke/test_groups/test_A_grup/test_create_contract_with_payment_type.py`
+- Contract testlari self-contained; `flow_contract` ishlatilmaydi.
 - Related domain docs:
   - `../contracts.md`
   - `../ui-patterns.md`
@@ -21,6 +21,8 @@ Tags: contract, contract-view, view-form, locator, screenshot, order-preconditio
 
 - Screenshot archive folder: `references/forms/screenshots/contract-view/`
 - Metadata folder: `references/forms/screenshots/contract-view/`
+- Archived trace screenshot: `references/forms/screenshots/contract-view/contract-view__default__trace-800x435__contract_code_2375.png`
+- Archived trace metadata: `references/forms/screenshots/contract-view/contract-view__default__trace-800x435__contract_code_2375.json`
 - Expected file naming:
   - `contract-view__default__desktop-1440x783__<contract_code>.png`
   - metadata: `contract-view__default__desktop-1440x783__<contract_code>.json`
@@ -29,10 +31,11 @@ Tags: contract, contract-view, view-form, locator, screenshot, order-preconditio
 
 ## Open Flow
 
-1. Open contract list: `flow_open_contract_list(page)`.
-2. Search/select by contract code: `flow_contract_list(page, find_code=contract_code)`.
-3. Open view: `flow_contract_list(page, view=True)`.
-4. Assert URL: `expect(page).to_have_url(re.compile(r".*/anor/mkf/contract_view"))`.
+1. Har test faylida `BasePage.navigate_to(tab="Финансы", name="Договоры")` bilan list ochiladi.
+2. `Создать` bosilib add heading/URL tekshiriladi; barcha inputlar shu test faylining `run_*` funksiyasida to'ldiriladi.
+3. `BasePage.save_and_expect_heading("Договоры")` bilan saqlanadi.
+4. `grid_controller(search=contract_code)` va `grid(..., click=True)` bilan row tekshiriladi.
+5. `Просмотр` bosilib qiymatlar `BasePage.form_view(...)` bilan tekshiriladi; `Закрыть` orqali listga qaytiladi.
 
 ## Known Locators
 
@@ -40,10 +43,12 @@ Tags: contract, contract-view, view-form, locator, screenshot, order-preconditio
 - Contract row in list: `page.locator("b-grid").get_by_text(contract_code).first`
 - View button: `page.get_by_role("button", name="Просмотр", exact=True)`
 - Close button: `page.get_by_role("button", name="Закрыть", exact=True)`
+- Contract View qiymatlari readonly input emas: DOM `label + span.form-view` ko'rinishida (`Название`, `Код`, `Контрагент`, `Валюта`, `Сумма договора`, `Тип оплаты`).
+- Qiymatni label bo'yicha tekshirish: `BasePage.form_view(label="Валюта", expect_value="Узбекский сум")`.
 
 ## Current View Assertions
 
-For A-group order contract:
+For A-group UZS contract:
 
 - `contract_code`
 - `contract_name`
@@ -56,6 +61,11 @@ For payment type contract:
 - same as above
 - `Перечисление` if contract was created with `Типы оплат = Перечисление`
 
+## Verified Contract Chain
+
+- 2026-07-21: A-01 va A-02 alohida self-contained test fayllarga ajratilgach runner orqali live tekshirildi — 2 passed (29.98s).
+- 2026-07-21: A-01 yaratgan `500000` limitli contract A-03 limit/valid-order testida, A-02 saqlagan payment-type keylari A-04 auto-fill testida live tekshirildi — 2 passed.
+
 ## Related Business Rules
 
 - Contract code and name are saved to `data_store.json` for order tests.
@@ -67,5 +77,5 @@ For payment type contract:
 ## Known Debug Notes
 
 - Contract list grid may not display every contract field. If a field is needed for list search/assert, enable its column/search through grid setting.
-- View assertions should use visible page text in `b-page`; input-like values may need label/input helper if they are not included in text.
+- Contract View'da `BasePage.input(label=..., expect_value=...)` ishlamaydi: qiymat `input[readonly]`da emas, `.form-view` spanida. `BasePage.form_view(...)` ishlatilsin.
 - During debug iteration, if `contract_code` / `contract_name` already exist in `data_store.json`, reuse them instead of recreating contract.

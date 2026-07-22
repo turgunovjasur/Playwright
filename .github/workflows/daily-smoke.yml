@@ -18,8 +18,11 @@ on:
         options:
           - all
           - setup
+          - groups
           - group-a
           - group-b
+          - group-c
+          - group-report
       ai_summary:
         description: Add Gemini AI conclusion
         required: false

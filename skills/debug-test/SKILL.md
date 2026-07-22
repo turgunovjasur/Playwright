@@ -104,4 +104,4 @@ Yechim: <nima qilish kerak>
 - AI summary default holatda off; faqat `scripts/run_tests.py ... --ai-summary` flagi berilganda ishlaydi va faqat 1-2 gaplik qo'shimcha xulosa yozadi.
 - AI xulosa `test-results/ai-summary.md/json` fayllariga yoziladi va Allure report ichida alohida `AI Test Summary` card sifatida attachment qilinadi; bu card test pass/fail statusini o'zgartirmaydi.
 - Telegramdagi asosiy natija xabari AIga bog'liq bo'lmasin; xom Gemini API error, uzun stacktrace yoki locator logini asosiy xabar sifatida yuborma.
-- `test_all_runner.py` kabi outer runner fail bo'lsa, Telegram xabarda faqat outer test nomi yetarli emas; Allure `steps` ichidan aynan qaysi ichki test/step yiqilganini (`inner_test`, `failed_step`, `source`) ko'rsatish shart.
+- Group runnerlarda har case alohida pytest/Allure test; Telegram va system summary failed runner testi bilan birga uning ichki failed step/source qiymatini ko'rsatishi shart.

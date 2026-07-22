@@ -1,65 +1,39 @@
 import allure
-from playwright.sync_api import expect
 
 from tests.smoke.flows import flow_modal
 from utils.base_page import BasePage
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-
-def _order_grid_row(page, row_text):
-    row = page.locator("b-grid .tbl-row").filter(has_text=row_text).first
-    expect(row).to_be_visible()
-    return row
-
-
-def _ensure_order_grid_row_open(page, row_text):
-    row = _order_grid_row(page, row_text)
-    if "open" not in (row.get_attribute("class") or "").split():
-        row.click()
-    expect(row.locator(".tbl-row-menu")).to_be_visible()
-    return row
-
-
-def flow_open_order_list(page):
+def flow_order_list(page, add=False, find_row=None, search=True, view=False, edit=False, status=None):
     base = BasePage(page)
-    base.navigate_to(tab="Продажа", name="Заказы")
-    base.expect_page(url="order_list")
-    base.expect_page(heading="Заказы")
-    expect(page.get_by_role("button", name="Создать", exact=True)).to_be_visible()
+    base.expect_page(heading="Заказы", url="order_list")
+    row = None
 
-# ----------------------------------------------------------------------------------------------------------------------
-
-def flow_order_list(page, add=False, find_row=None, view=False, edit=False, status=None):
-    base = BasePage(page)
-    page.wait_for_url("**/order_list")
-    base.expect_page(heading="Заказы")
+    if (view or edit or status) and not find_row:
+        raise ValueError("flow_order_list(): view/edit/status uchun find_row berilishi kerak")
 
     if add:
         with allure.step("Order List: 'Создать' button click"):
             page.get_by_role("button", name="Создать", exact=True).click()
-            return
 
     if find_row:
         with allure.step(f"Order List: find_row -> '{find_row}'"):
-            row = _ensure_order_grid_row_open(page, find_row)
-    else:
-        row = None
+            if search:
+                base.grid_controller(search=find_row)
+            row = base.grid(find_row, click=True)
 
     if view:
-        with allure.step("Order List: 'Просмотреть' button click"):
-            button_scope = row or page
-            button_scope.get_by_role("button", name="Просмотреть", exact=True).click()
+        with allure.step("Order List: 'Просмотр' button click"):
+            row.get_by_role("button", name="Просмотр", exact=True).click()
 
     if edit:
-        with allure.step("Order List: 'Изменить' button click"):
-            button_scope = row or page
-            button_scope.get_by_role("button", name="Изменить", exact=True).click()
+        with allure.step("Order List: 'Редактировать' button click"):
+            row.get_by_role("button", name="Редактировать", exact=True).click()
 
     if status:
         with allure.step("Order List: 'Изменить статус' button click"):
-            button_scope = row or page
-            button_scope.get_by_role("button", name="Изменить статус", exact=True).click()
+            row.get_by_role("button", name="Изменить статус", exact=True).click()
 
             flow_modal.dialog_status(page)
 
@@ -69,24 +43,21 @@ def flow_order_list(page, add=False, find_row=None, view=False, edit=False, stat
             base.wait_for_loader()
 
             if page.locator("#dropdown").count() > 0:
-                expect(page.locator("#dropdown").first).to_contain_text(status)
+                base.text(status, root=page.locator("#dropdown").first)
             else:
-                base.expect_page(heading="Заказы")
+                base.expect_page(heading="Заказы", url="order_list")
 
 def flow_order_list_grid_setting(page, colum_name, search_name):
     base = BasePage(page)
-    page.wait_for_url("**/order_list")
-    base.expect_page(heading="Заказы")
-    page.locator(".btn.btn-default.dropdown-toggle.no-after").first.click()
+    base.expect_page(heading="Заказы", url="order_list")
+    base.grid_controller(open_setting=True)
     page.get_by_role("link", name="Настройка таблицы").click()
 
-    expect(page.locator("#kt_content")).to_contain_text("Настройка таблицы: Заказы")
+    base.text("Настройка таблицы: Заказы", root="#kt_content")
     page.locator("#deal_id").get_by_text(colum_name).click()
     page.locator("label").filter(has_text=search_name).click()
-    expect(page.locator("#deal_id")).to_contain_text(colum_name)
-    page.get_by_role("button", name="Сохранить").click()
-
-    page.wait_for_url("**/order_list")
-    base.expect_page(heading="Заказы")
+    base.text(colum_name, root="#deal_id")
+    base.save_and_expect_heading("Заказы", location_hint="order list grid setting")
+    base.expect_page(url="order_list")
 
 # ----------------------------------------------------------------------------------------------------------------------

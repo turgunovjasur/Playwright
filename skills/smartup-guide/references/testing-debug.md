@@ -55,18 +55,18 @@ Tags: debug, input, date, amount, mask
 ### Setup Va Group Model
 Tags: setup, group, dependency
 - `tests/smoke/test_setup/test_setup_runner.py` ichidagi mavjud testlar user setup testlari; runner setup testlari bilan bir papkada turadi.
-- `tests/smoke/test_all_runner.py` barcha runnerlarni jamlaydi va full smoke entrypoint hisoblanadi.
+- `scripts/run_tests.py all` setup va A/B/C/Report group runner fayllarini bitta pytest sessiyasida collect qiladigan full smoke entrypoint hisoblanadi.
 - Setup testlari ketma-ket va bir-biriga bog'liq.
 - Smoke runner bo'yicha har bir test vazifasi va entity naming xaritasi `references/smoke-runner.md` ichida saqlanadi.
 - Group testlar user setup natijalariga bog'liq, lekin boshqa grouplarga bog'liq emas.
 - Group ichidagi testlar bir-biriga bog'liq bo'lishi mumkin; shu groupda bitta test failed bo'lsa, shu groupning keyingi testlari skip qilinadi.
 - Bir group failed bo'lishi boshqa grouplarga ta'sir qilmasin: A failed bo'lsa B/C/D... group testlari run bo'lishi kerak.
 - Group testlar boshqa groupning `data_store` keylari, UI state yoki yaratilgan biznes recordlariga suyanmasin; faqat user_setup va o'z group prefixidagi data ishlatilsin.
-- Yangi C/D/F/... group runner qo'shilsa, full run uchun `tests/smoke/test_all_runner.py`ga ham ulanadi.
+- Yangi C/D/F/... group runner qo'shilsa, full run uchun `scripts/run_tests.py` dagi `GROUP_RUNNER_PATHS` va `tests/smoke/conftest.py` default runner tanloviga ulanadi.
 - Full run mexanizmida user_setup failed bo'lsa barcha group testlar skip qilinadi; user_setup passed bo'lsa group failed statuslari group marker/prefix bo'yicha alohida yuritiladi.
 - Implementatsiya: `pytest.mark.user_setup` setup chain uchun, `pytest.mark.smoke_group("A")` kabi markerlar group chain uchun ishlatiladi.
-- Grouplar orasida browser/page state leak bo'lmasligi uchun full runner group wrapperlari `session_page` emas, `group_page` fixture ishlatadi; har group alohida context/page oladi.
-- Alohida group runner faylida group ichidagi testlar `group_user_page` fixture bilan bitta module-scoped page ishlatadi; login group boshida bir marta qilinadi, group tugaganda yoki failed bo'lganda fixture oynani yopadi.
+- Grouplar orasida browser/page state leak bo'lmasligi uchun har group runner module-scoped `group_session_page` bilan alohida context/page oladi.
+- User group ichidagi testlar `group_user_page` fixture bilan bitta module-scoped page ishlatadi; login group boshida bir marta qilinadi, group tugaganda fixture oynani yopadi.
 - A-group testlari `tests/smoke/test_groups/test_A_grup/` ichida.
 - Group ichidagi testlar bir-biriga bog'liq bo'lmasa `pytest.mark.smoke_group("X", independent=True)` ishlatiladi — bitta test failed bo'lsa ham qolganlar skip qilinmaydi. Report group shu sababli `independent=True` bilan belgilangan.
 
@@ -83,8 +83,8 @@ Tags: report, group, integration, download
 ### Runner Va Debug Helper Qoidalari
 Tags: runner, debug, modal, data-store
 - Runnerlar hech qachon boshqa moduldagi pytest `test_*` funksiyani import qilib chaqirmaydi; umumiy bajariladigan body `run_*` funksiyalarda turadi, pytest entrypointlar esa thin wrapper bo'ladi.
-- `run_*` va `run_*_chain` funksiyalari global test mode parametrini qabul qilishi kerak; runner mode qiymatini pastga uzatadi, leaf test esa default smoke yoki explicit regression bilan ishlaydi.
-- Group `run_*` funksiyalari standalone debug uchun `login=True` defaultga ega bo'ladi; group chain/runner wrapperlari esa bir martalik login qilganidan keyin ularni `login=False` bilan chaqiradi.
+- `run_*` funksiyalari global test mode parametrini qabul qilishi kerak; runner wrapper mode qiymatini pastga uzatadi, leaf test esa default smoke yoki explicit regression bilan ishlaydi.
+- Group `run_*` funksiyalarida `login=True/login=False` mode parametri ishlatilmaydi. User group runnerlari login qilingan `group_user_page` uzatadi; fresh `page` bilan standalone pytest wrapper `run_*` chaqiruvidan oldin o'zi login qiladi. B-04 va Report kabi admin preconditionli caselar esa kerakli admin loginni `run_*` ichida parametrsiz bajaradi.
 - `BasePage.confirm_biruni(expected_text=None)` `#biruniConfirm` uchun text, opacity `1`, scoped `да`, hidden kutishni bitta joyda bajaradi.
 - `logger.fail(..., raise_error=True)` false-pass bo'lmasligi uchun kerakli joyda real `AssertionError` ko'taradi.
 - `save_data/load_data` corrupt JSON holatini yashirmaydi; required precondition uchun `require_data` fixture ishlatiladi.
@@ -111,6 +111,9 @@ Tags: test-results, data-store, traces, allure, cleanup
 - `test-results/allure-results/` pytest/Allure failure attachment outputi; foydali form screenshotlar doim skill arxivida bo'lishi kerak.
 
 ## Loyiha Xususiyatlari
+
+### Codex Chrome MCP plagini
+- Smartup UI'ni foydalanuvchining mavjud Chrome sessiyasida tekshirish uchun Plugins Directory'dagi `Chrome` (`Control Chrome with...`) plagini o'rnatiladi; `Codex Browser Recorder` faqat flowlarni MP4 yozadi va MCP browser boshqaruvini bermaydi.
 
 ### Diagnostika va kod o'zgartirish chegarasi
 - Foydalanuvchi test xatosining sababini so'rasa, avval faqat diagnostika beriladi; test yoki production kod faqat foydalanuvchi tuzatishni aniq so'ragandan keyin o'zgartiriladi.

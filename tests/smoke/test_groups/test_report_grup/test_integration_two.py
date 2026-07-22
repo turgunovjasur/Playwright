@@ -40,7 +40,7 @@ def _close_alert_if_open(page):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def run_report_integration_two_check(page, code, load_data, login=True):
+def run_report_integration_two_check(page, code, load_data):
     """Report-06: Integration Two (монолит) — sozlamalar va 4 ta exchange rejimi uchun .xml yuklab olish.
 
     integration_two faqat "Администрирование" filialida ochiladi, shuning uchun sahifa ochishdan oldin
@@ -60,8 +60,7 @@ def run_report_integration_two_check(page, code, load_data, login=True):
     if not price_type_name:
         pytest.skip("price_type_name_UZB data_store'da yo'q — avval user_setup runnerini ishga tushiring")
 
-    if login:
-        authorization(page, who="admin")
+    authorization(page, who="admin")
 
     with allure.step("1 - Администрирование filialiga o'tib Integration Two sahifasini ochish"):
         base.switch_filial(name="Администрирование")

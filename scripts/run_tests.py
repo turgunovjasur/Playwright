@@ -21,20 +21,28 @@ SUMMARY_FILES = (
 )
 CREATED_COMPANY_PASSWORD = "greenwhite"
 
+GROUP_RUNNER_PATHS = (
+    "tests/smoke/test_groups/test_A_grup/test_a_group_runner.py",
+    "tests/smoke/test_groups/test_B_grup/test_b_group_runner.py",
+    "tests/smoke/test_groups/test_C_grup/test_c_group_runner.py",
+    "tests/smoke/test_groups/test_report_grup/test_report_group_runner.py",
+)
+
 TARGETS = {
     "all": (
         (
             "tests/smoke/test_setup/test_setup_runner.py",
-            "tests/smoke/test_all_runner.py",
+            *GROUP_RUNNER_PATHS,
         ),
         "--new-code",
     ),
     "setup": ("tests/smoke/test_setup/test_setup_runner.py", "--new-code"),
     "company": ("tests/smoke/test_setup/test_setup_runner.py::test_00_company", "--new-code"),
-    "group-a": ("tests/smoke/test_groups/test_A_grup/test_a_group_runner.py", ""),
-    "group-b": ("tests/smoke/test_groups/test_B_grup/test_b_group_runner.py", ""),
-    "group-c": ("tests/smoke/test_groups/test_C_grup/test_c_group_runner.py", ""),
-    "group-report": ("tests/smoke/test_groups/test_report_grup/test_report_group_runner.py", ""),
+    "groups": (GROUP_RUNNER_PATHS, ""),
+    "group-a": (GROUP_RUNNER_PATHS[0], ""),
+    "group-b": (GROUP_RUNNER_PATHS[1], ""),
+    "group-c": (GROUP_RUNNER_PATHS[2], ""),
+    "group-report": (GROUP_RUNNER_PATHS[3], ""),
 }
 
 
@@ -151,7 +159,10 @@ def parse_args():
         "target",
         nargs="?",
         default="all",
-        help="Default: all. Debug uchun: setup, company, group-a, group-b, group-c, group-report yoki pytest target path.",
+        help=(
+            "Default: all. Debug uchun: setup, company, groups, group-a, group-b, "
+            "group-c, group-report yoki pytest target path."
+        ),
     )
     parser.add_argument("--url", required=True, help="Majburiy server URL. Masalan: https://app3.greenwhite.uz/xtrade")
     parser.add_argument("--company-code", help="Mavjud company code. --create-company bo'lmasa majburiy.")
@@ -200,8 +211,12 @@ def main():
     if args.disable_license_policy and not args.create_company:
         print("--disable-license-policy faqat --create-company bilan ishlaydi", file=sys.stderr)
         return 2
-    if args.create_company and args.target in {"group-a", "group-b", "group-c", "group-report"}:
-        print("--create-company group-a/group-b targetlari bilan ishlamaydi; all, setup yoki company ishlating", file=sys.stderr)
+    group_only_targets = {"groups", "group-a", "group-b", "group-c", "group-report"}
+    if args.create_company and args.target in group_only_targets:
+        print(
+            "--create-company group-only targetlar bilan ishlamaydi; all, setup yoki company ishlating",
+            file=sys.stderr,
+        )
         return 2
     if args.target == "company" and not args.create_company:
         print("company target faqat --create-company bilan ishlaydi", file=sys.stderr)

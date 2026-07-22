@@ -1,6 +1,5 @@
 import json
 import re
-import time
 from pathlib import Path
 
 import allure
@@ -8,14 +7,14 @@ import pytest
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError, expect
 
 from tests.smoke.flows.flow_authorization import authorization, logout
-from tests.smoke.flows.flow_order.flow_order_list import flow_open_order_list, flow_order_list
+from tests.smoke.flows.flow_order.flow_order_list import flow_order_list
 from utils.base_page import BasePage
 
 pytestmark = [
     pytest.mark.smoke_group("B"),
     allure.epic("B Group"),
     allure.feature("Invoice Report Template"),
-    allure.story("B-04 Custom Invoice Report"),
+    allure.story("Custom Invoice Report"),
 ]
 
 
@@ -24,31 +23,13 @@ pytestmark = [
 # popup ochilishi tekshiriladi.
 ONLYOFFICE_EDITOR_HOST = "office.smartup.online"
 INVOICE_SHORT_CHECK_TIMEOUT = 1_000
-INVOICE_GRID_ROW_TIMEOUT = 2_000
 INVOICE_COMPONENT_TIMEOUT = 30_000
 INVOICE_REPORT_LOAD_TIMEOUT = 60_000
 INVOICE_PAGE_TRANSITION_TIMEOUT = 120_000
-INVOICE_EDITOR_POLL_INTERVAL = 500
 
 
-def _search_grid(page, text):
-    base = BasePage(page)
-    search = page.locator('input[ng-model="o.searchValue"]').first
-    expect(search).to_be_visible()
-    search.click()
-    search.press("ControlOrMeta+A")
-    search.press("Backspace")
-    search.fill(text)
-    search.press("Enter")
-    base.wait_for_loader(timeout=INVOICE_PAGE_TRANSITION_TIMEOUT)
-
-
-def _grid_row_is_visible(page, text, timeout=INVOICE_GRID_ROW_TIMEOUT):
-    try:
-        expect(page.locator("b-grid .tbl-row").filter(has_text=text).first).to_be_visible(timeout=timeout)
-        return True
-    except (AssertionError, PlaywrightTimeoutError):
-        return False
+def _grid_row_is_visible(page, text):
+    return BasePage(page).grid(text, is_visible=True)
 
 
 def _visible_error_texts(page):
@@ -151,15 +132,19 @@ def _open_custom_report_in_editor_and_assert(page, report_option, template_name)
     try:
         report_page.wait_for_load_state("domcontentloaded", timeout=INVOICE_REPORT_LOAD_TIMEOUT)
 
-        editor_frame = None
-        deadline = time.monotonic() + (INVOICE_PAGE_TRANSITION_TIMEOUT / 1000)
-        while time.monotonic() < deadline:
-            if report_page.is_closed():
-                break
-            editor_frame = _find_onlyoffice_editor_frame(report_page)
-            if editor_frame is not None:
-                break
-            report_page.wait_for_timeout(INVOICE_EDITOR_POLL_INTERVAL)
+        editor_frame = _find_onlyoffice_editor_frame(report_page)
+        if editor_frame is None and not report_page.is_closed():
+            try:
+                editor_frame = report_page.wait_for_event(
+                    "framenavigated",
+                    predicate=lambda frame: (
+                        ONLYOFFICE_EDITOR_HOST in (frame.url or "")
+                        and "spreadsheeteditor" in (frame.url or "")
+                    ),
+                    timeout=INVOICE_PAGE_TRANSITION_TIMEOUT,
+                )
+            except PlaywrightTimeoutError:
+                editor_frame = _find_onlyoffice_editor_frame(report_page)
 
         if editor_frame is None:
             _attach_editor_open_diagnostics(report_page, template_name)
@@ -189,11 +174,10 @@ def _open_custom_report_in_editor_and_assert(page, report_option, template_name)
             report_page.close()
 
 
-def run_b_group_create_custom_invoice_report_template(
+def run_create_custom_invoice_report_template(
     page,
     code,
     load_data,
-    login=True,
 ):
     """
     Testcase:
@@ -214,124 +198,108 @@ def run_b_group_create_custom_invoice_report_template(
     if not template_file.exists():
         raise AssertionError(f"Invoice report template fayli topilmadi: {template_file}")
 
-    if login:
-        with allure.step("1 - Admin user tizimga kiradi"):
-            authorization(page, who="admin")
-            expect(page.locator("body")).to_contain_text("Trade", timeout=INVOICE_PAGE_TRANSITION_TIMEOUT)
+    with allure.step("1 - Admin user tizimga kiradi"):
+        authorization(page, who="admin")
 
     with allure.step("2 - Шаблоны накладных sahifasida custom template tayyorlanadi"):
         base.navigate_to(tab="Главное", name="Шаблоны накладных")
         base.expect_page(url="template_list")
-        expect(page.locator("body")).to_contain_text("Шаблоны накладных")
+        base.text("Шаблоны накладных", root="body")
 
-        _search_grid(page, template_name)
+        base.grid_controller(search=template_name)
         if _grid_row_is_visible(page, template_name):
-            template_row = page.locator("b-grid .tbl-row").filter(has_text=template_name).first
-            expect(template_row).to_contain_text(form_name)
+            base.grid(template_name, form_name)
         else:
             page.locator('button[ng-click="add()"]:visible').click()
-            expect(page).to_have_url(re.compile(r".*/setting\+add"))
-            expect(page.locator("body")).to_contain_text("Настройки шаблонов")
-            expect(page.locator("body")).to_contain_text("Файл шаблона")
+            base.expect_page(url="setting+add")
+            base.text("Настройки шаблонов", "Файл шаблона", root="body")
 
             origin = page.locator('b-input[name="origin"] input').first
-            expect(origin).to_be_visible()
-            origin.click()
-            origin.fill(form_name)
+            base.input(locator=origin, value=form_name)
             option = page.locator('b-input[name="origin"] .hint-item').filter(has_text=form_name).first
             expect(option).to_be_visible(timeout=INVOICE_COMPONENT_TIMEOUT)
             option.click()
-            expect(origin).to_have_value(re.compile(re.escape(form_name)))
+            base.input(locator=origin, expect_value=re.compile(re.escape(form_name)))
 
-            name_input = page.locator('input[ng-model="d.name"]').first
-            expect(name_input).to_be_visible()
-            name_input.fill(template_name)
-            expect(name_input).to_have_value(template_name)
+            base.input(ng_model="d.name", value=template_name)
 
             page.locator('input[type="file"][accept=".xlsx"]').set_input_files(template_file)
-            expect(page.locator("body")).to_contain_text(template_file.name, timeout=INVOICE_REPORT_LOAD_TIMEOUT)
+            base.text(template_file.name, root="body", timeout=INVOICE_REPORT_LOAD_TIMEOUT)
 
-            page.locator('button[ng-click="save()"]').click()
-            base.wait_for_loader(timeout=INVOICE_PAGE_TRANSITION_TIMEOUT)
-            expect(page).to_have_url(re.compile(r".*/template_list"), timeout=INVOICE_REPORT_LOAD_TIMEOUT)
+            base.save_and_expect_heading(
+                "Шаблоны накладных",
+                exact_button=False,
+                timeout=INVOICE_PAGE_TRANSITION_TIMEOUT,
+                location_hint="B-04 invoice template add form",
+            )
+            base.expect_page(url="template_list", timeout=INVOICE_REPORT_LOAD_TIMEOUT)
 
-            _search_grid(page, template_name)
-            template_row = page.locator("b-grid .tbl-row").filter(has_text=template_name).first
-            expect(template_row).to_be_visible()
-            expect(template_row).to_contain_text(form_name)
-            expect(template_row).to_contain_text(template_file.name)
-            expect(template_row).to_contain_text("Активный")
+            base.grid_controller(search=template_name)
+            base.grid(template_name, form_name, template_file.name, "Активный")
 
     with allure.step("3 - Template Админ rolega qayta attach qilinadi"):
         base.navigate_to(tab="Главное", name="Шаблоны накладных")
         base.expect_page(url="template_list")
-        _search_grid(page, template_name)
+        base.grid_controller(search=template_name)
 
-        template_row = page.locator("b-grid .tbl-row").filter(has_text=template_name).first
-        expect(template_row).to_be_visible()
-        template_row.click()
+        base.grid(template_name, click=True)
 
         attach_roles_button = page.locator("button:visible").filter(has_text="Прикрепить роли").first
         expect(attach_roles_button).to_be_visible()
         attach_roles_button.click()
-        expect(page).to_have_url(re.compile(r".*/template_role_list"))
-        expect(page.locator("body")).to_contain_text(re.compile("прикрепленные", re.IGNORECASE))
-        expect(page.locator("body")).to_contain_text(re.compile("доступные", re.IGNORECASE))
+        base.expect_page(url="template_role_list")
+        base.text(
+            re.compile("прикрепленные", re.IGNORECASE),
+            re.compile("доступные", re.IGNORECASE),
+            root="body",
+        )
 
         page.locator("button").filter(has_text=re.compile(r"^\s*Прикрепленные\s*$", re.IGNORECASE)).first.click()
         base.wait_for_loader(timeout=INVOICE_PAGE_TRANSITION_TIMEOUT)
-        _search_grid(page, role_name)
+        base.grid_controller(search=role_name)
         if _grid_row_is_visible(page, role_name):
-            role_row = page.locator("b-grid .tbl-row").filter(has_text=role_name).first
-            role_row.click()
+            base.grid(role_name, click=True)
             detach_button = page.locator("button:visible").filter(has_text="Открепить").first
             expect(detach_button).to_be_visible()
             detach_button.click()
-            try:
-                base.confirm_biruni()
-            except (AssertionError, PlaywrightTimeoutError):
-                pass
+            base.confirm_biruni_if_visible(timeout=INVOICE_SHORT_CHECK_TIMEOUT)
             base.wait_for_loader(timeout=INVOICE_PAGE_TRANSITION_TIMEOUT)
-            _search_grid(page, role_name)
-            if _grid_row_is_visible(page, role_name, timeout=INVOICE_SHORT_CHECK_TIMEOUT):
+            base.grid_controller(search=role_name)
+            if _grid_row_is_visible(page, role_name):
                 raise AssertionError(f"{role_name} role template'dan detach bo'lmadi")
 
         page.locator("button").filter(has_text=re.compile(r"^\s*Доступные\s*$", re.IGNORECASE)).first.click()
         base.wait_for_loader(timeout=INVOICE_PAGE_TRANSITION_TIMEOUT)
-        _search_grid(page, role_name)
-        role_row = page.locator("b-grid .tbl-row").filter(has_text=role_name).first
-        expect(role_row).to_be_visible()
-        role_row.click()
+        base.grid_controller(search=role_name)
+        base.grid(role_name, click=True)
 
         attach_button = page.locator("button:visible").filter(has_text="Прикрепить").first
         expect(attach_button).to_be_visible()
         attach_button.click()
-        try:
-            base.confirm_biruni()
-        except (AssertionError, PlaywrightTimeoutError):
-            pass
+        base.confirm_biruni_if_visible(timeout=INVOICE_SHORT_CHECK_TIMEOUT)
         base.wait_for_loader(timeout=INVOICE_PAGE_TRANSITION_TIMEOUT)
 
         page.locator("button").filter(has_text=re.compile(r"^\s*Прикрепленные\s*$", re.IGNORECASE)).first.click()
         base.wait_for_loader(timeout=INVOICE_PAGE_TRANSITION_TIMEOUT)
-        _search_grid(page, role_name)
-        role_row = page.locator("b-grid .tbl-row").filter(has_text=role_name).first
-        expect(role_row).to_be_visible()
-        expect(role_row).to_contain_text("Активный")
+        base.grid_controller(search=role_name)
+        base.grid(role_name, "Активный")
 
         page.locator("button").filter(has_text=re.compile(r"^\s*Закрыть\s*$", re.IGNORECASE)).first.click()
         base.expect_page(url="template_list")
-        expect(page.locator("body")).to_contain_text("Шаблоны накладных")
+        base.text("Шаблоны накладных", root="body")
 
     with allure.step("4 - User order listda Счет-фактуры custom template OnlyOffice'da ochilishini tekshiradi"):
-        created_order_client = load_data("b_group_consignment_order_client") or f"natural_client-pw{code}"
+        created_order_client = load_data("b_group_consignment_order_client")
+        if not created_order_client:
+            raise AssertionError("B-group order client topilmadi. Avval runnerdagi B-01 testni run qiling.")
 
         logout(page)
         authorization(page, who="user", code=code)
 
-        flow_open_order_list(page)
-        expect(page.locator("#kt_content")).to_contain_text(
+        base.navigate_to(tab="Продажа", name="Заказы")
+        base.text(
             created_order_client,
+            root="#kt_content",
             timeout=INVOICE_PAGE_TRANSITION_TIMEOUT,
         )
         flow_order_list(page, find_row=created_order_client)
@@ -344,8 +312,7 @@ def run_b_group_create_custom_invoice_report_template(
         invoice_button.click()
 
         dropdown = page.locator(".dropdown-menu:visible, .dropdown:visible").filter(has_text=template_name).first
-        expect(dropdown).to_be_visible()
-        expect(dropdown).to_contain_text(template_name)
+        base.text(template_name, root=dropdown)
 
         report_option = page.locator(
             ".dropdown-menu:visible a:visible, "
@@ -359,14 +326,6 @@ def run_b_group_create_custom_invoice_report_template(
         _open_custom_report_in_editor_and_assert(page, report_option, template_name)
 
 
-@allure.title("B-04 - Custom invoice report template yaratish va orderda tekshirish")
-def test_b_04_invoice_report_template(
-    group_session_page,
-    code,
-    load_data,
-):
-    run_b_group_create_custom_invoice_report_template(
-        group_session_page,
-        code,
-        load_data,
-    )
+@allure.title("Custom invoice report template yaratish va orderda tekshirish")
+def test_invoice_report_template(page, code, load_data):
+    run_create_custom_invoice_report_template(page, code, load_data)

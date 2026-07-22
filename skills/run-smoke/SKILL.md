@@ -33,6 +33,7 @@ python scripts/run_tests.py --url <server_url> --create-company --head-email <he
 Debug uchun setup yoki group:
 ```bash
 python scripts/run_tests.py setup --url <server_url> --company-code <company_code> --company-password <company_password>
+python scripts/run_tests.py groups --url <server_url> --company-code <company_code> --company-password <company_password>
 python scripts/run_tests.py group-a --url <server_url> --company-code <company_code> --company-password <company_password>
 python scripts/run_tests.py group-b --url <server_url> --company-code <company_code> --company-password <company_password>
 python scripts/run_tests.py group-c --url <server_url> --company-code <company_code> --company-password <company_password>
@@ -83,6 +84,7 @@ allure serve test-results/allure-results
 - `scripts/run_tests.py` Allure reportni `--open-report` yoki shell/repo `.env` dagi `OPEN_REPORT=1` bilan ochadi.
 - `scripts/run_tests.py` trace viewerini faqat `--show-trace` bo'lsa ochadi.
 - Directory/default collectionda runner bo'lmagan smoke testlar duplicate flow bo'lmasligi uchun deselect qilinadi; leaf testni debug qilish uchun uning fayl yo'lini pytestga aniq ber.
+- Full run setup runner va barcha group runner fayllarini bitta pytest sessiyasida collect qiladi; har bir setup/group case Allure'da alohida test bo'lib ko'rinadi.
 
 ## Loyiha Xususiyatlari
 
@@ -90,7 +92,7 @@ allure serve test-results/allure-results
 - Telegram CI botda bir vaqtning o'zida faqat bitta test run faol bo'ladi; run tugaguncha yangi `/run` bloklanadi.
 - Telegram CI workflow har soat `00` daqiqada avtomatik smoke run qiladi.
 - Telegram CI progress xabari bitta edit-in-place message bo'ladi: `Test boshlandi`, `<Scope> scope tanlangan`, status, `Hozir`, `Passed` ro'yxati va failed bo'lsa `Group/Runner test/Ichki test/Step/Error turi`; workflow final xabar yuborgandan keyin progress message o'chiriladi.
-- Telegram CI progress eventlari real-time ko'rinishi uchun GitHub Actions pytestni `-s` bilan, progress wrapperni esa `python -u` bilan ishlatadi; aks holda pytest stdout capture sabab progress xabar `browser o'rnatildi`da qolib ketishi mumkin.
+- Telegram CI progress eventlari `conftest.py` pytest hooklaridan avtomatik chiqadi; real-time ko'rinishi uchun GitHub Actions pytestni `-s` bilan, progress processni esa `python -u` bilan ishlatadi.
 - Telegram CI final xabarida `test-results/data/data_store.json` ichidagi `code` va tanlangan company code asosida `User login: user-pw<code>@<company>` ko'rsatiladi; password xabarga chiqarilmaydi.
 - Telegram CI bot GitHub run statusini olishdagi vaqtinchalik network/API xatolarini retry qiladi; faqat ketma-ket 5 marta status olinmasa Telegramga xato yuboradi.
 - Botdan hamma foydalana oladi (chat_id allow-list yo'q); `/run` -> server -> scope tanlangach bot parol so'raydi. Faqat to'g'ri `TELEGRAM_RUN_PASSWORD` (hmac.compare_digest) kiritilsa test ishga tushadi; parol xabari qabul qilingach chatdan o'chiriladi, noto'g'ri bo'lsa qayta urinish mumkin (`PendingRunStore`).
@@ -114,5 +116,5 @@ allure serve test-results/allure-results
 - Run natijasini tahlil qilganda failure setup bosqichidami yoki group bosqichidami aniq ajratib ayt.
 - `tests/smoke/test_setup/test_setup_runner.py` ichidagi mavjud barcha testlar user setup testlari hisoblanadi.
 - A-group testlari user setupdan keyin run qilinadi; A-groupning birinchi testi order uchun contract yaratadi.
-- A-group testlari `tests/smoke/test_groups/test_A_grup/` papkasida saqlanadi; masalan contract testi `tests/smoke/test_groups/test_A_grup/test_contract.py` ichida.
+- A-group testlari `tests/smoke/test_groups/test_A_grup/` papkasida saqlanadi; contract testlari alohida `test_create_contract.py` va `test_create_contract_with_payment_type.py` fayllarida, tartib esa runnerda beriladi.
 - Order testlarida product chiqmasa, `test_20_init_balance` orqali balans qo'shib kelish yoki bron qilingan orderlarni `Canceled/Отменен` statusga o'tkazish kerak bo'lishi mumkin.

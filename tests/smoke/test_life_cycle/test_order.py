@@ -83,7 +83,7 @@ def run_order_basic(page, code, save_data):
         )
 
     with allure.step("Order List: Edit Button"):
-        flow_order_list(page, edit=True)
+        flow_order_list(page, find_row=f"room-pw{code}", edit=True)
 
     with allure.step("Order Edit: Main Page"):
         flow_order_main_page(page,

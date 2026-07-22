@@ -25,11 +25,14 @@ TARGET_LABELS = {
     "all": "All",
     "setup": "Setup",
     "company": "Company",
+    "groups": "Groups",
     "group-a": "Group A",
     "group-b": "Group B",
+    "group-c": "Group C",
+    "group-report": "Report Group",
 }
-GROUP_ORDER = ["Setup", "A group", "B group"]
-STATUS_MARK = {"PASSED": "✅", "FAILED": "❌"}
+GROUP_ORDER = ["Setup", "A group", "B group", "C group", "Report group"]
+STATUS_MARK = {"PASSED": "✅", "FAILED": "❌", "SKIPPED": "⏭"}
 
 
 def env_value(name):
@@ -322,10 +325,14 @@ def update_from_event(state, event):
         state["current_group"] = str(event.get("group") or "")
         return
 
-    if event_name not in {"passed", "failed"}:
+    if event_name not in {"passed", "failed", "skipped"}:
         return
 
-    status = "PASSED" if event_name == "passed" else "FAILED"
+    status = {
+        "passed": "PASSED",
+        "failed": "FAILED",
+        "skipped": "SKIPPED",
+    }[event_name]
     result = {
         "status": status,
         "display": display,
@@ -335,9 +342,10 @@ def update_from_event(state, event):
         "title": event.get("title") or "",
         "inner_test": event.get("title") or display,
         "error_type": event.get("error_type") or "",
+        "message": event.get("message") or "",
     }
     state.setdefault("results", []).append(result)
-    if event_name == "passed":
+    if event_name in {"passed", "skipped"}:
         state["current"] = ""
         state["current_group"] = ""
     else:

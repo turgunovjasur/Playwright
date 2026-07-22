@@ -8,8 +8,9 @@ import sys
 import allure
 import pytest
 from pathlib import Path
-from playwright.sync_api import sync_playwright, expect
+from playwright.sync_api import expect, sync_playwright
 from tests.smoke.flows.flow_authorization import authorization
+from tests.smoke.progress import emit_progress_event
 from utils.logger import write_failure_log, get_logger
 from utils.timeouts import PlaywrightTimeouts
 
@@ -23,6 +24,8 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 _USER_SETUP_FAILED = False
 _FAILED_SMOKE_GROUPS = set()
 _LOCAL_DOTENV_EXISTS = False
+_PROGRESS_STARTED_ATTR = "_smartup_progress_started"
+_PROGRESS_FINISHED_ATTR = "_smartup_progress_finished"
 
 
 def _load_local_dotenv():
@@ -134,12 +137,20 @@ def _explicit_file_args(config):
     return result
 
 
-def _selected_runner_paths(config):
+def _full_runner_paths(config):
     root = Path(str(config.rootpath))
-    full_runner_paths = {
+    return (
         (root / "tests/smoke/test_setup/test_setup_runner.py").resolve(),
-        (root / "tests/smoke/test_all_runner.py").resolve(),
-    }
+        (root / "tests/smoke/test_groups/test_A_grup/test_a_group_runner.py").resolve(),
+        (root / "tests/smoke/test_groups/test_B_grup/test_b_group_runner.py").resolve(),
+        (root / "tests/smoke/test_groups/test_C_grup/test_c_group_runner.py").resolve(),
+        (root / "tests/smoke/test_groups/test_report_grup/test_report_group_runner.py").resolve(),
+    )
+
+
+def _selected_runner_paths(config):
+    full_runner_paths = set(_full_runner_paths(config))
+    root = Path(str(config.rootpath))
     raw_args = [arg for arg in (getattr(config.invocation_params, "args", ()) or ()) if not arg.startswith("-")]
     if not raw_args:
         return full_runner_paths
@@ -154,9 +165,6 @@ def _selected_runner_paths(config):
             continue
         if path.resolve() == (root / "tests/smoke").resolve():
             return full_runner_paths
-        all_runner = path / "test_all_runner.py"
-        if all_runner.exists():
-            return {all_runner.resolve()}
         selected.update(runner.resolve() for runner in path.rglob("test_*_runner.py"))
     return selected
 
@@ -236,7 +244,15 @@ def pytest_collection_modifyitems(config, items):
 
     if deselected:
         config.hook.pytest_deselected(items=deselected)
-        items[:] = kept
+
+    runner_order = {path: index for index, path in enumerate(_full_runner_paths(config))}
+    kept.sort(
+        key=lambda item: runner_order.get(
+            Path(str(item.path)).resolve(),
+            len(runner_order),
+        )
+    )
+    items[:] = kept
 
 
 def _smoke_group_name(item):
@@ -256,6 +272,52 @@ def _smoke_group_independent(item):
 
 def _is_user_setup(item):
     return item.get_closest_marker("user_setup") is not None
+
+
+def _progress_metadata(item):
+    if _is_user_setup(item):
+        group = "Setup"
+    else:
+        group_name = _smoke_group_name(item)
+        if not group_name:
+            return None
+        group = f"{group_name} group"
+
+    title = getattr(getattr(item, "obj", None), "__allure_display_name__", None) or item.name
+    return {
+        "group": group,
+        "runner": Path(str(item.path)).name,
+        "test_id": item.name,
+        "title": title,
+    }
+
+
+def _start_progress(item):
+    metadata = _progress_metadata(item)
+    if not metadata or getattr(item, _PROGRESS_STARTED_ATTR, False):
+        return
+    setattr(item, _PROGRESS_STARTED_ATTR, True)
+    emit_progress_event(event="started", **metadata)
+
+
+def _finish_progress(item, event, *, error_type=None, message=None):
+    metadata = _progress_metadata(item)
+    if not metadata or getattr(item, _PROGRESS_FINISHED_ATTR, False):
+        return
+    setattr(item, _PROGRESS_FINISHED_ATTR, True)
+    emit_progress_event(
+        event=event,
+        error_type=error_type,
+        message=message,
+        **metadata,
+    )
+
+
+def _report_message(report):
+    text = str(report.longrepr or "").strip()
+    if not text:
+        return ""
+    return next((line.strip() for line in text.splitlines() if line.strip()), "")
 
 
 def _is_headless(config):
@@ -456,25 +518,6 @@ def session_page(session_context):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-@pytest.fixture
-def group_page(session_browser, request):
-    """Group testlar uchun fresh context/page. Grouplar bir-birining UI holatini meros qilmaydi."""
-    context = session_browser.new_context(**_browser_context_options(request.config))
-    context.set_default_timeout(PlaywrightTimeouts.ACTION)
-    context.set_default_navigation_timeout(PlaywrightTimeouts.NAVIGATION)
-    context.tracing.start(screenshots=True, snapshots=True, sources=True)
-    page_obj = context.new_page()
-
-    yield page_obj
-
-    os.makedirs(TRACE_DIR, exist_ok=True)
-    safe_name = request.node.nodeid.replace("/", "_").replace("::", "__")
-    context.tracing.stop(path=os.path.join(TRACE_DIR, f"{safe_name}.zip"))
-    page_obj.close()
-    context.close()
-
-# ----------------------------------------------------------------------------------------------------------------------
-
 @pytest.fixture(scope="module")
 def group_session_page(session_browser, request, code):
     """Bitta group runner moduli uchun bitta context/page."""
@@ -497,7 +540,6 @@ def group_session_page(session_browser, request, code):
 def group_user_page(group_session_page, code):
     """Group boshida user sifatida bir marta login qiladi."""
     authorization(group_session_page, who="user", code=code)
-    expect(group_session_page.get_by_role("heading", name="Trade")).to_be_visible()
     return group_session_page
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -593,10 +635,14 @@ def logger(request):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+@pytest.hookimpl(tryfirst=True)
 def pytest_runtest_setup(item):
     """User setup va smoke group dependency skip mexanizmi."""
-    if _is_user_setup(item) and _USER_SETUP_FAILED:
-        pytest.skip("Oldingi user_setup testi failed bo'lgani uchun qolgan user_setup testlari skip qilindi")
+    if _is_user_setup(item):
+        if _USER_SETUP_FAILED:
+            pytest.skip("Oldingi user_setup testi failed bo'lgani uchun qolgan user_setup testlari skip qilindi")
+        _start_progress(item)
+        return
 
     group_name = _smoke_group_name(item)
     if not group_name:
@@ -608,6 +654,8 @@ def pytest_runtest_setup(item):
     if group_name in _FAILED_SMOKE_GROUPS and not _smoke_group_independent(item):
         pytest.skip(f"{group_name} group ichidagi oldingi test failed bo'lgani uchun skip qilindi")
 
+    _start_progress(item)
+
 # ----------------------------------------------------------------------------------------------------------------------
 
 @pytest.hookimpl(hookwrapper=True)
@@ -617,12 +665,30 @@ def pytest_runtest_makereport(item, call):
     outcome = yield
     report = outcome.get_result()
 
+    if report.failed:
+        error_type = call.excinfo.typename if call.excinfo else "Failed"
+        exception_message = str(call.excinfo.value).strip() if call.excinfo else ""
+        _finish_progress(
+            item,
+            "failed",
+            error_type=error_type,
+            message=exception_message or _report_message(report),
+        )
+    elif report.skipped:
+        _finish_progress(
+            item,
+            "skipped",
+            error_type="Skipped",
+            message=_report_message(report),
+        )
+    elif report.when == "teardown":
+        _finish_progress(item, "passed")
+
     if report.when == "call" and report.failed:
         page = (
             item.funcargs.get("session_page")
             or item.funcargs.get("group_user_page")
             or item.funcargs.get("group_session_page")
-            or item.funcargs.get("group_page")
             or item.funcargs.get("page")
         )
         if page:

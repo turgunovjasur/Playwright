@@ -20,10 +20,10 @@ PREFIXES = [
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def run_report_optimum_check(page, code, login=True):
+def run_report_optimum_check(page, code):
     """Report-04: Optimum report — sozlamalar bilan optimum.zip yuklab olish.
 
-    Login (login=True bo'lsa): admin login va test filialiga (filial-pw{code}) o'tish.
+    Test admin login va test filialiga (filial-pw{code}) o'tishdan boshlanadi.
 
     Qadamlar (Allure step):
       1. Optimum sahifasini ochish
@@ -37,9 +37,8 @@ def run_report_optimum_check(page, code, login=True):
     base = BasePage(page)
     filial_name = f"filial-pw{code}"
 
-    if login:
-        authorization(page, who="admin")
-        base.switch_filial(name=filial_name)
+    authorization(page, who="admin")
+    base.switch_filial(name=filial_name)
 
     with allure.step("1 - Optimum sahifasini ochish"):
         base, _, rest = page.url.partition("#/")

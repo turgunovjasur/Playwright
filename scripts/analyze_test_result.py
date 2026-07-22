@@ -129,14 +129,6 @@ def _runner_test(item):
     match = re.search(r"(test_[A-Za-z0-9_]+)$", full_name)
     if match:
         return match.group(1)
-
-    name = str(item.get("name") or "").lower()
-    if "user setup runner" in name:
-        return "test_01_user_setup_runner"
-    if "a group runner" in name:
-        return "test_02_a_group_runner"
-    if "b group runner" in name:
-        return "test_03_b_group_runner"
     return ""
 
 
@@ -146,11 +138,15 @@ def _group_name(item, runner_test):
     source = str(item.get("source") or item.get("location") or "").lower()
     combined = " ".join([full_name, name, source, runner_test.lower()])
 
-    if "b_group" in combined or "b group" in combined or runner_test == "test_03_b_group_runner":
+    if "report_group" in combined or "report group" in combined:
+        return "Report group"
+    if "c_group" in combined or "c group" in combined:
+        return "C group"
+    if "b_group" in combined or "b group" in combined:
         return "B group"
-    if "a_group" in combined or "a group" in combined or runner_test == "test_02_a_group_runner":
+    if "a_group" in combined or "a group" in combined:
         return "A group"
-    if "setup" in combined or runner_test == "test_01_user_setup_runner":
+    if "setup" in combined:
         return "Setup"
     return ""
 
@@ -184,8 +180,7 @@ def _inner_source_from_trace(trace):
     locations = _trace_locations(trace)
     if not locations:
         return {}
-    non_runner = [item for item in locations if not item["path"].endswith("test_all_runner.py")]
-    return (non_runner or locations)[-1]
+    return locations[-1]
 
 
 def _failed_step_entries(steps, parent=()):

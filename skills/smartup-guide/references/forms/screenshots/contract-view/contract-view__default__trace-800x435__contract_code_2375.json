@@ -1,0 +1,17 @@
+{
+  "source": "test-results/traces/tests_smoke_test_all_runner.py__test_02_a_group_runner.zip",
+  "source_resource": "resources/page@7b36af94eedcd9b8f29f1cc36f4cde16-1784553619473.jpeg",
+  "captured_at": "2026-07-20T18:20:19+05:00",
+  "url_pattern": "*/anor/mkf/contract_view",
+  "trace_viewport": {
+    "width": 1440,
+    "height": 783
+  },
+  "archived_image": {
+    "width": 800,
+    "height": 435,
+    "format": "png"
+  },
+  "state": "default",
+  "notes": "Contract View main section; values are rendered as label + span.form-view, not readonly inputs."
+}

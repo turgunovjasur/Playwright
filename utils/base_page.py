@@ -421,6 +421,43 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    def confirm_biruni_if_visible(
+        self,
+        expected_text=None,
+        button_name="да",
+        timeout=BasePageTimeouts.SHORT_CHECK,
+    ):
+        """Biruni confirm ko'rinsa tasdiqlaydi, bo'lmasa ``False`` qaytaradi."""
+        confirm = self.page.locator("#biruniConfirm")
+        try:
+            expect(confirm).to_be_visible(timeout=timeout)
+        except (AssertionError, PlaywrightTimeoutError):
+            return False
+
+        if expected_text:
+            expect(confirm).to_contain_text(expected_text)
+        expect(confirm).to_have_css("opacity", "1")
+        confirm.get_by_role("button", name=button_name, exact=True).click()
+        confirm.wait_for(state="hidden")
+        return True
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def close_biruni_alert(self, *expected_text):
+        """Ko'rinadigan Biruni extended error alertini tekshiradi va yopadi."""
+        alert = self.page.locator("#biruniAlertExtended")
+        expect(alert).to_be_visible()
+        for value in expected_text:
+            if value:
+                expect(alert).to_contain_text(value)
+
+        close_button = alert.locator("button.close").first
+        expect(close_button).to_be_visible()
+        close_button.click()
+        alert.wait_for(state="hidden")
+
+    # ------------------------------------------------------------------------------------------------------------------
+
     def grid(
         self,
         text=None,
@@ -549,6 +586,81 @@ class BasePage:
         for value in values:
             if value:
                 expect(content).to_contain_text(value)
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def form_view(
+        self,
+        label,
+        *,
+        expect_value=_UNSET,
+        return_value=False,
+        remove_spaces=False,
+        index=0,
+        root=None,
+        timeout=BasePageTimeouts.TEXT,
+    ):
+        """View formadagi ``label + .form-view`` qiymatini tekshiradi yoki qaytaradi.
+
+        Smartup view sahifalarida read-only ko'rinadigan maydonlar ko'pincha
+        ``input[readonly]`` emas, ``<span class="form-view">...</span>`` bo'ladi.
+        ``index`` bir xil label/value juftliklari orasidan N-chisini tanlaydi.
+        ``remove_spaces=True`` assert va return qiymatida barcha whitespace'ni
+        olib tashlaydi (masalan UI'dagi ``7 000`` ni ``7000`` sifatida tekshiradi).
+        """
+        root = self._resolve_root(root)
+        labels = root.locator("label").filter(has_text=self._label_pattern(label))
+
+        matches = []
+        for label_index in range(labels.count()):
+            label_item = labels.nth(label_index)
+            try:
+                expect(label_item).to_be_visible(timeout=BasePageTimeouts.SHORT_CHECK)
+            except (AssertionError, PlaywrightTimeoutError):
+                continue
+
+            value = label_item.locator(
+                "xpath=following-sibling::*[contains(concat(' ', normalize-space(@class), ' '), ' form-view ')][1]"
+            )
+            if value.count() > 0:
+                matches.append(value.first)
+
+        if index >= len(matches):
+            translated_labels = root.locator("t").filter(has_text=self._label_pattern(label))
+            for label_index in range(translated_labels.count()):
+                label_item = translated_labels.nth(label_index)
+                try:
+                    expect(label_item).to_be_visible(timeout=BasePageTimeouts.SHORT_CHECK)
+                except (AssertionError, PlaywrightTimeoutError):
+                    continue
+
+                value = label_item.locator("xpath=../../span").first
+                if value.count() > 0:
+                    matches.append(value)
+
+        if index >= len(matches):
+            raise AssertionError(f"Form view field not found by label: {label} (index={index})")
+
+        value = matches[index]
+        expect(value).to_be_visible(timeout=timeout)
+        if expect_value is not _UNSET:
+            if remove_spaces:
+                if not isinstance(expect_value, str):
+                    raise TypeError(
+                        "form_view(remove_spaces=True): expect_value string bo'lishi kerak"
+                    )
+                normalized = re.sub(r"\s+", "", expect_value)
+                whitespace_agnostic = re.compile(
+                    r"^\s*" + r"\s*".join(re.escape(char) for char in normalized) + r"\s*$"
+                )
+                expect(value).to_have_text(whitespace_agnostic, timeout=timeout)
+            else:
+                expect(value).to_have_text(expect_value, timeout=timeout)
+
+        if return_value:
+            text = value.inner_text().strip()
+            return re.sub(r"\s+", "", text) if remove_spaces else text
+        return value
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -723,6 +835,8 @@ class BasePage:
     def _field_target(self, container, target):
         if target == "b-input":
             return container.locator("b-input:has(input[placeholder])").first
+        if target == "ui-select":
+            return container.locator(".ui-select-container").first
         if target == "switch":
             return container.locator("input[type='checkbox'], [role='switch']").first
         if target == "radio":
@@ -803,6 +917,8 @@ class BasePage:
 
         if target == "b-input":
             candidates = grid.locator("b-input:visible")
+        elif target == "ui-select":
+            candidates = grid.locator(".ui-select-container:visible")
         elif target == "input":
             candidates = grid.locator(
                 "input:visible:not([ng-model='g.searchValue']), textarea:visible"
@@ -842,6 +958,10 @@ class BasePage:
                 " and not(starts-with(@id,'focusser-'))][1]"
             ),
             "b-input": "following::b-input[.//input][1]",
+            "ui-select": (
+                "following::*[contains(concat(' ', normalize-space(@class), ' '),"
+                " ' ui-select-container ')][1]"
+            ),
             "switch": "following::input[@type='checkbox'][1]",
             "radio": "following::input[@type='radio'][1]",
         }[target]
@@ -943,11 +1063,12 @@ class BasePage:
                 else:
                     search.fill(query)
 
+            # b-input natijalari asinxron yuklanadi. ``count()`` bilan darhol
+            # fallback qilish dropdown javobi kelishidan oldin noto'g'ri
+            # locator tanlanishiga olib keladi. ``expect`` option DOMga kelib,
+            # ko'ringuncha auto-retry qiladi; has_text esa qo'shimcha ustun
+            # matnlari (ombor, narx turi va hokazo) bo'lsa ham mos tushadi.
             option = b_input.locator(".hint-item:visible").filter(has_text=option_text).first
-            if option.count() == 0:
-                option = b_input.locator("div.hint:visible").get_by_text(option_text, exact=exact).first
-            if option.count() == 0:
-                option = b_input.get_by_text(option_text, exact=exact).filter(visible=True).last
             expect(option).to_be_visible(timeout=timeout)
             option.click()
 
@@ -962,6 +1083,86 @@ class BasePage:
         if return_value:
             return search.input_value()
         return search
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def ui_select(
+        self,
+        label=None,
+        value=_UNSET,
+        *,
+        ng_model=None,
+        expect_value=_UNSET,
+        return_value=False,
+        search_text=None,
+        exact=True,
+        index=0,
+        root=None,
+        timeout=BasePageTimeouts.COMPONENT,
+    ):
+        """Angular UI Select komponentini tanlaydi, tekshiradi yoki qiymatini qaytaradi.
+
+        Fieldni ``label`` yoki ``ng_model`` orqali topadi. ``value`` berilsa
+        dropdownni ochib mos visible optionni tanlaydi; ``expect_value`` joriy
+        tanlangan matnni tekshiradi; ``return_value=True`` shu matnni qaytaradi.
+        Search yoqilgan ui-selectlar uchun ``search_text`` berish mumkin.
+        """
+        root = self._resolve_root(root)
+        if label is not None and ng_model is not None:
+            raise ValueError("ui_select(): label yoki ng_model dan faqat bittasini bering")
+        if label is not None:
+            ui_select = self._field_locator_by_label(
+                label,
+                index=index,
+                root=root,
+                target="ui-select",
+            )
+        elif ng_model is not None:
+            ui_select = root.locator(
+                f'.ui-select-container[ng-model="{ng_model}"]:visible'
+            ).nth(index)
+        else:
+            raise ValueError("ui_select(): label yoki ng_model berilishi kerak")
+
+        expect(ui_select).to_be_visible(timeout=timeout)
+        toggle = ui_select.locator(".ui-select-toggle").first
+        selected = ui_select.locator(".ui-select-match-text").first
+        expect(toggle).to_be_visible(timeout=timeout)
+
+        if value is not _UNSET:
+            option_text = str(value)
+            toggle.click()
+
+            if search_text is not None:
+                search = ui_select.locator(".ui-select-search:visible").first
+                expect(search).to_be_visible(timeout=timeout)
+                search.fill(str(search_text))
+
+            option_matcher = (
+                re.compile(rf"^\s*{re.escape(option_text)}\s*$")
+                if exact
+                else option_text
+            )
+            option = ui_select.locator(
+                ".ui-select-choices-row-inner:visible"
+            ).filter(has_text=option_matcher).first
+            expect(option).to_be_visible(timeout=timeout)
+            option.click()
+
+        expected = expect_value
+        if expected is _UNSET and value is not _UNSET:
+            expected = str(value)
+        if expected is not _UNSET:
+            expect(selected).to_be_visible(timeout=timeout)
+            if exact:
+                expect(selected).to_have_text(expected, timeout=timeout)
+            else:
+                expect(selected).to_contain_text(expected, timeout=timeout)
+
+        if return_value:
+            expect(selected).to_be_visible(timeout=timeout)
+            return " ".join(selected.inner_text().split())
+        return ui_select
 
     # ------------------------------------------------------------------------------------------------------------------
 

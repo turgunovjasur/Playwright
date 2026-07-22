@@ -2,13 +2,12 @@ import re
 
 import allure
 from playwright.sync_api import expect
-from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.flows.flow_order.flow_order_add import (
     auto_filled_order_dates,
     flow_order_final_page,
     flow_order_product_page,
 )
-from tests.smoke.flows.flow_order.flow_order_list import flow_open_order_list, flow_order_list
+from tests.smoke.flows.flow_order.flow_order_list import flow_order_list
 from utils.base_page import BasePage
 
 pytestmark = [allure.epic("C Group"), allure.feature("Marketing"), allure.story("Action")]
@@ -16,7 +15,7 @@ pytestmark = [allure.epic("C Group"), allure.feature("Marketing"), allure.story(
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def run_c_group_create_action(page, code, login=True):
+def run_c_group_create_action(page, code):
     """C-01: 10 dona olinganda 10% chegirma beruvchi aksiya yaratish.
 
     Qadamlar:
@@ -29,9 +28,6 @@ def run_c_group_create_action(page, code, login=True):
     """
     base = BasePage(page)
     action_name = f"Скидка 10% на 10 товаров pw{code}"
-
-    if login:
-        authorization(page, who="user", code=code)
 
     with allure.step("1 - Aksiyalar ro'yxatiga o'tish"):
         base.navigate_to(tab="Справочники", name="Акции")
@@ -94,19 +90,18 @@ def run_c_group_create_action(page, code, login=True):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def run_c_group_order_action_discount(page, code, login=True):
+def run_c_group_order_action_discount(page, code):
     """C-02: C-01 da yaratilgan aksiya orderda product tanlanganda ishlashini tekshirish.
 
     Old shart: setup'da room-pw{code} ga "Акция" narx turi prikrep qilingan va C-01 aksiyasi
     (shart producti product-pw{code}, 10 dona -> 10% skidka) yaratilgan bo'lishi kerak.
 
     Qadamlar:
-      1. User sifatida kirish.
-      2. Order yaratish: product-pw{code} x 10 (aksiya sharti = 10 dona).
-      3. "Акции" tabida aksiya ko'rinishini tekshirib, "Получить" bonusni yoqish.
-      4. "Товар" tabida Сумма скидки/наценки = -7 000 va ИТОГО = 63 000 (70 000 dan 10% skidka).
-      5. Final sahifada chegirma va ИТОГО 63 000 ni tekshirib, status Новый bilan saqlash.
-      6. View oynasida client, product, chegirma (-7 000) va 63 000 ni tekshirish.
+      1. Order yaratish: product-pw{code} x 10 (aksiya sharti = 10 dona).
+      2. "Акции" tabida aksiya ko'rinishini tekshirib, "Получить" bonusni yoqish.
+      3. "Товар" tabida Сумма скидки/наценки = -7 000 va ИТОГО = 63 000 (70 000 dan 10% skidka).
+      4. Final sahifada chegirma va ИТОГО 63 000 ni tekshirib, status Новый bilan saqlash.
+      5. View oynasida client, product, chegirma (-7 000) va 63 000 ni tekshirish.
     """
     base = BasePage(page)
     product = f"product-pw{code}"
@@ -114,13 +109,8 @@ def run_c_group_order_action_discount(page, code, login=True):
     discount = re.compile(r"-\s*7\s*000")
     total_with_discount = re.compile(r"63\s*000")
 
-    if login:
-        with allure.step("1 - User tizimga kiradi"):
-            authorization(page, who="user", code=code)
-            expect(page.get_by_role("heading", name="Trade")).to_be_visible()
-
-    with allure.step("2 - Order yaratish: main page (room/robot/client) va product x 10"):
-        flow_open_order_list(page)
+    with allure.step("1 - Order yaratish: main page (room/robot/client) va product x 10"):
+        base.navigate_to(tab="Продажа", name="Заказы")
         flow_order_list(page, add=True)
         page.wait_for_url(re.compile(r".*/order\+add"))
         auto_filled_order_dates(page)
@@ -138,7 +128,7 @@ def run_c_group_order_action_discount(page, code, login=True):
         page.get_by_role("button", name="Далее").click()
         flow_order_product_page(page, product=product, quantity="10", next_page=False)
 
-    with allure.step("3 - 'Акции' tabida aksiyani yoqish (Получить bonus)"):
+    with allure.step("2 - 'Акции' tabida aksiyani yoqish (Получить bonus)"):
         # 'Акции' tab order kontentida (#kt_content) bo'ladi; yuqori menyu 'Акции' #kt_header da.
         page.locator("#kt_content").get_by_role("link", name="Акции").first.click()
         expect(page.locator("#kt_content")).to_contain_text(action_name)
@@ -155,19 +145,19 @@ def run_c_group_order_action_discount(page, code, login=True):
         expect(get_toggle).to_be_checked()
         base.wait_for_loader()
 
-    with allure.step("4 - 'Товар' tabida chegirma qo'llanganini tekshirish"):
+    with allure.step("3 - 'Товар' tabida chegirma qo'llanganini tekshirish"):
         page.locator("#kt_content").get_by_role("link", name="Товар", exact=True).click()
         expect(page.locator("#kt_content")).to_contain_text(discount)
         expect(page.locator("#kt_content")).to_contain_text(total_with_discount)
         page.get_by_role("button", name="Далее").click()
 
-    with allure.step("5 - Final sahifada chegirma va ИТОГО 63 000 ni tekshirib saqlash"):
+    with allure.step("4 - Final sahifada chegirma va ИТОГО 63 000 ni tekshirib saqlash"):
         expect(page.locator("#kt_content")).to_contain_text(discount)
         expect(page.locator("#kt_content")).to_contain_text(total_with_discount)
         flow_order_final_page(page, status="Новый", save=True)
         expect(page).to_have_url(re.compile(r".*/order_list"))
 
-    with allure.step("6 - View oynasida chegirma tekshiriladi"):
+    with allure.step("5 - View oynasida chegirma tekshiriladi"):
         row = page.locator("b-grid .tbl-row").filter(has_text=f"natural_client-pw{code}").first
         expect(row).to_be_visible()
         if "open" not in (row.get_attribute("class") or "").split():

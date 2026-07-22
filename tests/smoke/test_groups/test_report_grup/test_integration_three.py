@@ -22,10 +22,10 @@ def _one_month_ago():
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def run_report_integration_three_check(page, code, login=True):
+def run_report_integration_three_check(page, code):
     """Report-02: Integration №3 (NEON) report — 3 ta sheet render bo'lishini tekshirish.
 
-    Login (login=True bo'lsa): admin login va test filialiga (filial-pw{code}) o'tish.
+    Test admin login va test filialiga (filial-pw{code}) o'tishdan boshlanadi.
 
     Qadamlar (Allure step):
       1. trade/rep/integration/integration_three sahifasini ochish (menyuda yo'q — URL orqali)
@@ -35,9 +35,8 @@ def run_report_integration_three_check(page, code, login=True):
       5. Hisobot iframe'ida 3 ta sheet (tab 1->#sheet1, 2->#sheet2, 3->#sheet3) ko'rinishini tekshirish
     """
     base = BasePage(page)
-    if login:
-        authorization(page, who="admin")  # ADMIN login (checklist preconditioniga ko'ra)
-        base.switch_filial(name=f"filial-pw{code}")
+    authorization(page, who="admin")  # ADMIN login (checklist preconditioniga ko'ra)
+    base.switch_filial(name=f"filial-pw{code}")
 
     with allure.step("1 - Integration №3 report sahifasini ochish"):
         base, _, rest = page.url.partition("#/")

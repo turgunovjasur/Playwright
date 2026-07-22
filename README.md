@@ -227,6 +227,7 @@ Bu buyruq macOS, Linux va Windowsda ishlaydi. `.env` ishlatilmaydi.
 | `all` | Default target. Setup + A + B + C + Report group ishlaydi. |
 | `setup` | Faqat setup runner ishlaydi. |
 | `company` | Faqat yangi company yaratish testi ishlaydi. |
+| `groups` | Setupni ishlatmasdan barcha group runnerlar ishlaydi. |
 | `group-a` | Faqat A group ishlaydi. |
 | `group-b` | Faqat B group ishlaydi. |
 | `group-c` | Faqat C group ishlaydi. |
@@ -240,7 +241,7 @@ Bu buyruq macOS, Linux va Windowsda ishlaydi. `.env` ishlatilmaydi.
 python scripts/run_tests.py --url <server_url> --company-code <company_code> --company-password <company_password>
 ```
 
-Nima qiladi: mavjud companyga `admin@<company_code>` login va `<company_password>` parol bilan kiradi, setup, A group va B group testlarini ishlatadi.
+Nima qiladi: mavjud companyga `admin@<company_code>` login va `<company_password>` parol bilan kiradi, setup hamda A/B/C/Report group testlarini ishlatadi.
 
 #### Yangi company yaratib full smoke
 
@@ -265,6 +266,14 @@ python scripts/run_tests.py setup --url <server_url> --company-code <company_cod
 ```
 
 Nima qiladi: faqat user setup zanjirini ishlatadi.
+
+#### Barcha grouplar, setupdan tashqari
+
+```bash
+python scripts/run_tests.py groups --url <server_url> --company-code <company_code> --company-password <company_password>
+```
+
+Nima qiladi: saqlangan setup data bilan A, B, C va Report group runnerlarini ishlatadi.
 
 #### Faqat A group
 
@@ -374,12 +383,13 @@ Default target `all`, ya'ni full suite.
 | `all` | `python scripts/run_tests.py --url <url> --company-code <code> --company-password <pass>` | Setup + A + B + C + Report group |
 | `setup` | `python scripts/run_tests.py setup --url <url> --company-code <code> --company-password <pass>` | Faqat user setup |
 | `company` | `python scripts/run_tests.py company --url <url> --create-company --head-email <email> --head-password <pass>` | Faqat company yaratish testi |
+| `groups` | `python scripts/run_tests.py groups --url <url> --company-code <code> --company-password <pass>` | Setupdan tashqari barcha grouplar |
 | `group-a` | `python scripts/run_tests.py group-a --url <url> --company-code <code> --company-password <pass>` | Faqat A group |
 | `group-b` | `python scripts/run_tests.py group-b --url <url> --company-code <code> --company-password <pass>` | Faqat B group |
 | `group-c` | `python scripts/run_tests.py group-c --url <url> --company-code <code> --company-password <pass>` | Faqat C group |
 | `group-report` | `python scripts/run_tests.py group-report --url <url> --company-code <code> --company-password <pass>` | Faqat Report group |
 
-`--create-company` faqat `all`, `setup`, `company` targetlari bilan ishlatiladi. Group targetlari uchun avval mavjud company va setup data kerak.
+`--create-company` faqat `all`, `setup`, `company` targetlari bilan ishlatiladi. `groups` va alohida group targetlari uchun avval mavjud company va setup data kerak.
 
 Code tanlovi `.env` dagi yagona `NEW_CODE` flagi bilan boshqariladi: `NEW_CODE=1` yangi 6 xonali code yaratadi, `NEW_CODE=0` esa `test-results/data/data_store.json` dagi mavjud code ni ishlatadi.
 
@@ -388,29 +398,41 @@ Code tanlovi `.env` dagi yagona `NEW_CODE` flagi bilan boshqariladi: `NEW_CODE=1
 Asosiy run uchun `scripts/run_tests.py` ishlatish tavsiya qilinadi. Debug uchun to'g'ridan-to'g'ri pytest yuritish mumkin:
 
 ```bash
-./.venv/bin/pytest tests/smoke/test_setup/test_setup_runner.py tests/smoke/test_all_runner.py --new-code --url <server_url> --company-code <company_code> --company-password <company_password> -v
+./.venv/bin/pytest \
+  tests/smoke/test_setup/test_setup_runner.py \
+  tests/smoke/test_groups/test_A_grup/test_a_group_runner.py \
+  tests/smoke/test_groups/test_B_grup/test_b_group_runner.py \
+  tests/smoke/test_groups/test_C_grup/test_c_group_runner.py \
+  tests/smoke/test_groups/test_report_grup/test_report_group_runner.py \
+  --new-code --url <server_url> --company-code <company_code> --company-password <company_password> -v
 ```
 
 Yangi company bilan:
 
 ```bash
-./.venv/bin/pytest tests/smoke/test_setup/test_setup_runner.py tests/smoke/test_all_runner.py --new-code --url <server_url> --create-company --head-email <head_email> --head-password <head_password> -v
+./.venv/bin/pytest \
+  tests/smoke/test_setup/test_setup_runner.py \
+  tests/smoke/test_groups/test_A_grup/test_a_group_runner.py \
+  tests/smoke/test_groups/test_B_grup/test_b_group_runner.py \
+  tests/smoke/test_groups/test_C_grup/test_c_group_runner.py \
+  tests/smoke/test_groups/test_report_grup/test_report_group_runner.py \
+  --new-code --url <server_url> --create-company --head-email <head_email> --head-password <head_password> -v
 ```
 
 ---
 
 > **Muhim:** User setup testlari bir-biriga bog'liq — har biri oldingi test yaratgan ma'lumotdan foydalanadi.
-> Shuning uchun full smoke uchun pytestga **`test_setup_runner.py` va `test_all_runner.py`** shu tartibda beriladi; faqat setup uchun `test_setup_runner.py` ishlatiladi. Oddiy `pytest` yoki directory collection duplicate flowlarni yurgizmasligi uchun runner bo'lmagan smoke testlar deselect qilinadi. Leaf testni debug qilish uchun uning fayl yo'lini pytestga aniq bering.
+> Full smoke setup runner, keyin A/B/C/Report runner fayllarini shu tartibda bitta pytest sessiyasida collect qiladi. Oddiy `pytest` yoki directory collection duplicate flowlarni yurgizmasligi uchun runner bo'lmagan smoke testlar deselect qilinadi. Leaf testni debug qilish uchun uning fayl yo'lini pytestga aniq bering.
 
 ---
 
 ## <a id="test-qamrovi"></a>Test qamrovi
 
-`tests/smoke/test_all_runner.py` — A, B, C va Report group runnerlarini saqlaydi. Full run undan oldin `tests/smoke/test_setup/test_setup_runner.py` ni collect qiladi.
+`scripts/run_tests.py` — full run uchun setup va A/B/C/Report runner fayllarini ketma-ket pytest targetlari sifatida beradi. Alohida outer `test_all_runner.py` ishlatilmaydi.
 
 `tests/smoke/test_setup/test_setup_runner.py` — user setup testlari **bitta browser sessiyasida** ketma-ket ishlaydi.
 
-Group runnerlar — har bir group boshida user sifatida bir marta login qiladi, group ichidagi testlar shu oynada davom etadi. Group tugaganda yoki failed bo'lganda oyna/context yopiladi; keyingi group yangi oyna va yangi login bilan boshlanadi.
+Group runnerlar — har bir case alohida pytest/Allure test. User grouplarida group boshida bir marta login qilinadi va testlar shu module-scoped oynada davom etadi; keyingi group yangi context/page bilan boshlanadi.
 
 ### <a id="setup-runner"></a>Setup runner
 
@@ -558,11 +580,11 @@ playwright codegen <server_url>/login.html
 python scripts/run_tests.py --url <server_url> --company-code <company_code> --company-password <company_password> --headless
 
 # Faqat muvaffaqiyatsiz testlarni qayta ishlatish
-./.venv/bin/pytest tests/smoke/test_setup/test_setup_runner.py tests/smoke/test_all_runner.py --url <server_url> --company-code <company_code> --company-password <company_password> --lf
+python scripts/run_tests.py --url <server_url> --company-code <company_code> --company-password <company_password> --lf
 
 # Xato bo'lganda darhol to'xtatish
-./.venv/bin/pytest tests/smoke/test_setup/test_setup_runner.py tests/smoke/test_all_runner.py --new-code --url <server_url> --company-code <company_code> --company-password <company_password> -x
+python scripts/run_tests.py --url <server_url> --company-code <company_code> --company-password <company_password> -x
 
 # Verbose + to'liq xato traceback
-./.venv/bin/pytest tests/smoke/test_setup/test_setup_runner.py tests/smoke/test_all_runner.py --new-code --url <server_url> --company-code <company_code> --company-password <company_password> -v --tb=long
+python scripts/run_tests.py --url <server_url> --company-code <company_code> --company-password <company_password> --tb=long
 ```

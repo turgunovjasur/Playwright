@@ -23,7 +23,7 @@ Fayl: `$ARGUMENTS`
 - [ ] `logger` xato loglash uchun to'g'ri ishlatilgan
 
 ### 2.1 BasePage-first (majburiy)
-- [ ] UI primitive uchun mos `BasePage` metodi avval ishlatilgan: `expect_page`, `save_and_expect_heading`, `grid`, `grid_controller`, `input`, `b_input`, `multiselect`, `checkbox`, `confirm_biruni`, `wait_for_loader`
+- [ ] UI primitive uchun mos `BasePage` metodi avval ishlatilgan: `expect_page`, `save_and_expect_heading`, `grid`, `grid_controller`, `text`, `form_view`, `input`, `b_input`, `multiselect`, `checkbox`, `confirm_biruni`, `confirm_biruni_if_visible`, `close_biruni_alert`, `wait_for_loader`
 - [ ] Mos `BasePage` metodi mavjud bo'lsa raw `page.locator()`, `page.get_by_role()` yoki local wrapper ishlatilmagan; raw locator faqat helper mavjud bo'lmagan UI harakati uchun qolgan
 
 ### 3. Locator sifati
