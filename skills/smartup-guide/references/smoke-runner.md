@@ -8,8 +8,8 @@ Tags: smoke, setup, runner, dependency, data-store, license, balance, tmc, room,
 Tags: smoke, setup, runner, balance, init-balance, structure
 - `Init Balance` moduli `tests/smoke/test_setup/test_init_balance.py` ga ko'chirildi.
 - `Balance` moduli `tests/smoke/test_setup/test_balance.py` ga ko'chirildi.
-- `test_setup_runner.py` ikkala `run_*` funksiyani yangi setup modullaridan import qiladi; `test_20_init_balance` va `test_21_balance` setup zanjiridagi o'rnini saqlaydi.
-- Ikkala modulning Allure feature qiymati `Setup`; setup runner collect-only tekshiruvida 22 test yig'ildi.
+- `test_setup_runner.py` ikkala `run_*` funksiyani yangi setup modullaridan import qiladi; hozirgi zanjirda ular `test_19_init_balance` va `test_20_balance`.
+- Ikkala modulning Allure feature qiymati `Setup`; hozirgi setup runner create rejimida 21, existing rejimida 20 test collect qiladi.
 
 ### 2026-05-25 Run Natijasi
 Tags: smoke, run-result, sandbox
@@ -27,26 +27,63 @@ Tags: smoke, entity, naming, run-result
 
 ### Runner Qoidasi
 Tags: smoke, setup, dependency, data-store
+- GitHub Actions `.github/workflows/daily-smoke.yml` va Telegram CI bot targetni
+  qat'iy `setup-report`ga mahkamlaydi: avval `test_setup_runner.py`, keyin
+  `test_report_group_runner.py` ishlaydi; A/B/C group testlari CI dispatchga
+  kiritilmaydi.
+- Telegram botda smoke/regression scope tanlovi yo'q. `/run`dan keyin faqat
+  `Online` (`smartup.online`) yoki `Xtrade` (`app3.greenwhite.uz/xtrade`)
+  tugmasi tanlanadi.
+- CI ikkala serverda ham `CREATE_COMPANY=0` va `DISABLE_LICENSE_POLICY=0`
+  existing-company rejimida ishlaydi; serverga mos company credentiallari
+  GitHub Secrets'dan olinadi.
+- Workflow eski, hali restart qilinmagan bot processlari yuboradigan
+  `target=all`ni compatibility input sifatida qabul qiladi, lekin uni
+  ishlatmaydi.
 - Full run `scripts/run_tests.py` orqali `test_setup_runner.py`, keyin A/B/C/Report group runner fayllarini shu tartibda bitta pytest sessiyasida collect qiladi.
 - `groups` target setupni ishlatmasdan faqat A/B/C/Report runner fayllarini collect qiladi; alohida `group-a`, `group-b`, `group-c`, `group-report` targetlari saqlanadi.
+- `CREATE_COMPANY=1` bilan setup alohida pytest sessiyasida tugagach, group
+  runnerni existing rejimda davom ettirish uchun `.env`da
+  `CREATE_COMPANY=0`, `DISABLE_LICENSE_POLICY=0`, `COMPANY_CODE=0` va
+  `NEW_CODE=0` beriladi. `COMPANY_CODE=0` sentinel qiymati
+  `data_store.json.company_code`ni, `NEW_CODE=0` esa alohida
+  `data_store.json.code`ni o'qiydi. Group yangi browser ochib
+  `user-pw{code}@{saved_company_code}` bilan login qiladi.
+- `scripts/run_tests.py group-a|groups` wrapperi `CREATE_COMPANY=1` group-only
+  kombinatsiyasini startupda ataylab bloklaydi; yuqoridagi existing/sentinel
+  rejimi direct pytest/PyCharm va wrapperning ikkalasida ishlaydi.
 - Har bir setup va group case runner faylida alohida `test_*` pytest item; outer `test_all_runner.py` va `run_*_group_chain` ishlatilmaydi.
 - `tests/smoke/test_setup/test_setup_runner.py` ichidagi testlar bitta `session_page` bilan ketma-ket ishlaydi; UI state va login holati testlar orasida saqlanadi.
-- `.env` ishlatilmaydi; `--url` har doim majburiy.
-- Mavjud company bilan run qilish uchun `--url <server_url> --company-code <code> --company-password <password>` beriladi; company testi suitega qo'shilmaydi.
-- Yangi company bilan run qilish uchun `--url <server_url> --create-company --head-email <email> --head-password <password>` beriladi; head profil credentiallari flag orqali majburiy beriladi.
-- `--create-company` bilan `--company-code` va `--company-password` berilmaydi; company code test tomonidan `autotest<code>` ko'rinishida yaratiladi.
+- Lokal `.env` mavjud bo'lsa `COMPANY_URL`, mode va credentiallar uchun yagona
+  source shu fayl; `.env` yo'q muhitda tegishli CLI flaglar ishlaydi.
+- `CREATE_COMPANY=0`: `COMPANY_CODE` va `COMPANY_PASSWORD` majburiy,
+  `test_00_company` collectiondan deselect qilinadi.
+- `CREATE_COMPANY=1`: `HEAD_ADMIN_EMAIL` va `HEAD_ADMIN_PASSWORD` majburiy,
+  `test_00_company` collectionda qoladi; company code test tomonidan
+  `autotest{code}` ko'rinishida yaratiladi.
 - Test user paroli kod ichida hardcode; head/company admin paroli bilan aralashtirilmaydi.
-- `00 - Company` suitega URLga qarab emas, explicit yangi company yaratish flagi orqali qo'shiladi.
-- Company testi run bo'lsa, `data_store.json`ga saqlangan `company_code` keyingi loginlarda `--company-code` o'rniga ishlatiladi; company testi run bo'lmasa stale `company_code` tozalanadi.
-- License policy yoqiq qolsa, yangi company license flow uchun head viewdagi `Активация для лицензии` shart emas; `Политика лицензирования` yoqiq bo'lishi yetarli va `Buy License` qadamida flow davom etishi kerak.
-- `--create-company --disable-license-policy` ishlatilsa yangi companyda license policy off qilinadi va setupdagi `Buy License` / `Attach License` qadamlari o'tkazib yuboriladi.
+- `00 - Company` suitega URLga qarab emas, `CREATE_COMPANY` orqali qo'shiladi.
+  Flag o'chiq bo'lsa item skip qilinmaydi, deselect qilinadi va Allure'da ko'rinmaydi.
+- Company testi run bo'lsa, `data_store.json`ga saqlangan `company_code`
+  `test_01_legal_person` va keyingi loginlarda ishlatiladi. Existing rejimida
+  oddiy `COMPANY_CODE=<code>` bevosita ishlatiladi; `COMPANY_CODE=0` bo'lsa
+  saqlangan `data_store.json.company_code` olinadi.
+- License policy yoqiq qolsa, yangi company license flowdan oldin head viewdagi
+  `Активация для лицензии` bajarilishi shart; faqat
+  `Политика лицензирования` yoqiq bo'lishi yetarli emas. Aks holda
+  `Buy License` `license_list` URLiga o'tadi, ammo
+  `Ошибка | Компания не активирована` bilan to'xtaydi.
+- `DISABLE_LICENSE_POLICY=1` faqat `CREATE_COMPANY=1` bilan ishlaydi; boshqa
+  kombinatsiya startup configuration error. Yoqilsa yangi companyda policy off
+  qilinadi va `Buy License` / `Attach License` qadamlari o'tkazib yuboriladi.
 - `--create-company` full runnerda A/B group loginlari ham yaratilgan `company_code`ni ishlatadi; setup zanjirida user/role/password/license kabi user login precondition qadamlari o'chirilgan bo'lsa `user-pw{code}@<company_code>` yaratilmaydi va group login `login.html`da qolib ketadi.
 - Har bir group boshida user bir marta login qiladi; group ichidagi test/flowlar shu oynada davom etadi va group tugaganda yoki failed/skip bo'lganda fixture oynani yopadi.
 - Har group runner module-scoped `group_session_page` bilan boshqa grouplardan alohida context/page oladi; user grouplari `group_user_page` orqali group boshida bir marta login qiladi.
 - B-group biznes logikasi `run_*` helperlarda saqlanadi; `test_b_group_runner.py` B-01–B-04 caselarni alohida pytest wrapperlar sifatida yig'adi.
 - `code` fixture faqat `NEW_CODE` bilan boshqariladi: `NEW_CODE=1` (yoki `.env` yo'q muhitda `--new-code`) yangi random 6 xonali qiymat beradi; `NEW_CODE=0` mavjud `test-results/data/data_store.json` dagi code ni o'qiydi. Alohida `REUSE_CODE`/`--reuse-code` yo'q.
 - `authorization`da `who` majburiy keyword-only parametr; har bir caller `who="admin"|"head"|"user"` rolini ochiq yozadi. Funksiya alohida code yaratmaydi yoki saqlangan code'ni o'qimaydi; user login uchun doim session `code` fixture qiymati `authorization(..., who="user", code=code)` orqali uzatiladi.
-- `test_01_authorization` `save_data("code", code)` orqali yangi code ni keyingi yakka/debug testlar uchun saqlaydi.
+- Alohida `test_01_authorization` yo'q. `test_01_legal_person` admin login qiladi
+  va `save_data("code", code)` orqali yangi code ni keyingi yakka/debug testlar uchun saqlaydi.
 - Smoke runner `data_store.json` ni tozalab qayta yaratmaydi; faqat `code` yozadi. Shu sabab group testlardan qolgan eski `contract_*` yoki `order_id` qiymatlarini smoke setupning hozirgi code qiymati bilan bir xil deb qabul qilmaslik kerak.
 
 ### 2026-07-15 setup runner structure fix
@@ -66,7 +103,9 @@ Tags: smoke, group, runner, allure, collection
 ### Allure'da setup bosqichlarini alohida test sifatida ko'rsatish
 Tags: smoke, setup, runner, allure, collection
 - `allure.step` faqat bitta pytest test ichidagi nested step yaratadi; Allure'da alohida test case chiqishi uchun har setup/group bosqichi pytest tomonidan alohida `test_*` item sifatida collect qilinishi shart.
-- Tavsiya etilgan model: `test_setup_runner.py` ichida `test_00_company`, `test_01_authorization` ... `test_21_balance` wrapperlari `session_page` bilan collect qilinadi va faqat tegishli `run_*` funksiyani chaqiradi. Moduldagi `pytest.mark.user_setup` barcha wrapperlarga tatbiq qilinadi.
+- Amaldagi model: `test_setup_runner.py` ichida optional `test_00_company`,
+  `test_01_legal_person` ... `test_20_balance` wrapperlari `session_page` bilan
+  collect qilinadi. Moduldagi `pytest.mark.user_setup` barcha wrapperlarga tatbiq qilinadi.
 - Mavjud `pytest_runtest_makereport`/`pytest_runtest_setup` mexanizmi alohida setup itemlar bilan mos: bir setup item fail bo'lsa `_USER_SETUP_FAILED=True`, keyingi setup itemlar va grouplar skip qilinadi; Allure har birini `passed`/`failed`/`skipped` sifatida alohida ko'rsatadi.
 - Full run bitta outer `test_01_user_setup_runner -> run_setup_chain(...)` ni yuritmasligi kerak; pytest targetlari setup runner fayli va group runner fayllarini birga collect qilishi kerak. Aks holda setup Allure'da yana bitta test bo'lib qoladi yoki ikki marta bajariladi.
 
@@ -77,7 +116,10 @@ Tags: smoke, setup, runner, allure, collection
 
 ### Smoke Credentiallari Majburiy
 Tags: setup, runner, credential
-- Qoida: mavjud company uchun `--company-code/--company-password` majburiy; yangi company yaratish uchun `--create-company --head-email/--head-password` majburiy. Yangi company code `autotest<code>`, admin login `admin@autotest<code>`, admin password test ichidagi default qiymat.
+- Qoida: existing rejimda `COMPANY_CODE/COMPANY_PASSWORD`; create rejimida
+  `HEAD_ADMIN_EMAIL/HEAD_ADMIN_PASSWORD` majburiy. Yangi company code
+  `autotest{code}`, keyingi admin login `admin@autotest{code}`, admin password
+  esa test belgilagan `COMPANY_PASSWORD`.
 
 ### Entity Naming
 Tags: smoke, entity, naming
@@ -102,35 +144,38 @@ Tags: smoke, entity, naming
 ### 00 Company
 Tags: company, setup, head, data-store
 - Fayl: `tests/smoke/test_setup/test_company.py`.
-- Ishga tushirish: faqat explicit yangi company yaratish flagi berilganda suitega qo'shiladi.
-- Guard: company yaratish URLga qarab avtomatik qo'shilmaydi; flag yo'q bo'lsa skip/deselect qilinadi.
-- Login: `--head-email` / `--head-password` orqali majburiy berilgan head profil credentiallari.
+- Ishga tushirish: faqat `CREATE_COMPANY=1` bo'lganda suitega qo'shiladi.
+- Guard: `CREATE_COMPANY=0` bo'lsa deselect qilinadi; Allure'da skipped bo'lib ko'rinmaydi.
+- Login: majburiy `HEAD_ADMIN_EMAIL` / `HEAD_ADMIN_PASSWORD`.
 - Navigation: `Главное` -> `Компании`.
 - Nima qiladi: `Код сервера` sifatida `autotest{code}` kiritadi, visible required maydonlarni minimal to'ldiradi, Products card ichida `trade` va child productlarni yoqadi, saqlaydi va listda code bo'yicha tekshiradi.
-- License activation: yangi company uchun license sotib olishdan oldin `Активация для лицензии` talab qilinmaydi; test bu tabni majburiy precondition sifatida ishlatmasin.
-- License policy: `--create-company --disable-license-policy` berilsa company viewdagi `Безопасность`/Security tabda `Политика лицензирования` off qilinadi va setupdagi license xaridi/ulash qadamlari o'tkazib yuboriladi; flag bo'lmasa default holatda qoldiriladi.
+- License activation: `DISABLE_LICENSE_POLICY=0` bo'lsa yangi company uchun
+  license sotib olishdan oldin `Активация для лицензии` majburiy. Bu bajarilmasa
+  `test_10_buy_license`da `Ошибка | Компания не активирована` chiqadi.
+- License policy: `CREATE_COMPANY=1` va `DISABLE_LICENSE_POLICY=1` bo'lsa
+  company viewdagi `Безопасность` tabda policy off qilinadi va setupdagi license
+  xaridi/ulash qadamlari o'tkazib yuboriladi.
 - Nima saqlaydi: `company_code`.
 
-### 01 Authorization
-Tags: authorization, data-store
-- Fayl/flow: `tests/smoke/test_setup/test_setup_runner.py`, `tests/smoke/flows/flow_authorization.py`.
-- Nima qiladi: admin sifatida login qiladi va `Trade` dashboard headingini kutadi.
-- Nima saqlaydi: session `code` qiymatini `data_store.json` ga yozadi; company setup ishlamagan bo'lsa stale `company_code`ni `null` qiladi.
-
-### 02 Legal Person
-Tags: legal-person, setup, owner, director, data-store
+### 01 Legal Person
+Tags: legal-person, setup, authorization, owner, director, data-store
 - Fayl: `tests/smoke/test_setup/test_legal_person.py`.
+- Birinchi qadam: admin sifatida login qilib `Trade` dashboard headingini kutadi.
+  Create rejimida suffix `test_00_company` saqlagan `company_code`, existing
+  rejimida `COMPANY_CODE`; parol har ikki rejimda `COMPANY_PASSWORD`.
 - Navigation: `Справочники` -> `Юридические лица`.
 - Smoke: minimal branch. Faqat `c_l_p_pw{code}` va `legal_person-pw{code}` uchun asosiy maydonlar to'ldiriladi, saqlanadi va listda `Код`, `Название`, `Активный` tekshiriladi.
 - Regression: to'liq branch. Avval `Собственник` (`cod_owner_lg_pw{code}`), Natural Person helper orqali `Руководитель` (`director_np_pw{code}`) va `contact_position_pw{code}` yaratiladi, so‘ng asosiy legal personga bog'lanadi. `Собственник`, `Руководитель`, `GPS`, bank, kontakt, qo'shimcha tablar to'ldiriladi.
 - GPS: map modalida `41.2994958,69.2400734` search qilib `d.latlng=41.2994958,69.2400734,12` saqlanadi.
 - Bank account: `МФО=00001` yozib `Tab` bosilganda bank auto-fill `Центр расчетов Центрального банка по г. Ташкенту`; valyuta `Узбекский сум`.
-- Data store: smoke rejimda `legal_person_code/name` va regression uchun owner/director/accountant, `tin`, `phone`, `email`, `region`, `gps`, bank account va contact person/lavozim qiymatlari saqlanadi (smoke branch uchun regression-only kalitlar nullga o'chiriladi).
+- Data store: session `code`, smoke rejimda `legal_person_code/name` va
+  regression uchun owner/director/accountant, `tin`, `phone`, `email`, `region`,
+  `gps`, bank account va contact person/lavozim qiymatlari saqlanadi.
 - Tekshiruv: smoke mode ro'yxatda `Код`, `Название`, `Активный`ni tekshiradi. Regression mode qo'shimcha:
   - ro'yxatda `Альтернативное название` ham ko'rinadi;
   - viewda `Основная информация`, `Дополнительная информация`, `Расчетный счет`, `Контактные лица` tablaridagi qo'shilgan qiymatlar tekshiriladi.
 
-### 03 Filial
+### 02 Filial
 Tags: filial, organization, legal-person
 - Fayl: `tests/smoke/test_setup/test_filial.py`.
 - Navigation: `Главное` -> `Организации`.
@@ -139,7 +184,7 @@ Tags: filial, organization, legal-person
 - Har ikki rejimda: ro'yxatda filial va legal person code ni tekshirib, reload + loader kutiladi.
 - Data store: `filial_name`, `filial_code`, `filial_currency`, `filial_legal_person_code`, va agar mavjud bo'lsa `filial_legal_person_name` saqlanadi.
 
-### 04 Room
+### 03 Room
 Tags: room, filial, work-zone
 - Fayl: `tests/smoke/test_setup/test_room.py`.
 - Precondition: `switch_filial(page, name=f"filial-pw{code}")`.
@@ -147,14 +192,14 @@ Tags: room, filial, work-zone
 - Nima yaratadi: `c_rm_pw{code}` / `room-pw{code}` ish zonasi.
 - Tekshiruv: saqlagandan keyin `Рабочие зоны` ro'yxatida code va nom ko'rinadi.
 
-### 05 Robot
+### 04 Robot
 Tags: robot, staff, room
 - Fayl: `tests/smoke/test_setup/test_robot.py`.
 - Navigation: `Справочники` -> `Штат`.
 - Nima yaratadi: `c_rb_pw{code}` / `robot-pw{code}` xodim.
 - Bog'lanish: `Админ` tanlanadi va `room-pw{code}` ish zonasi ulanadi.
 
-### 06 Natural Person
+### 05 Natural Person
 Tags: natural-person, employee
 - Fayl: `tests/smoke/test_setup/test_natural_person.py`.
 - Precondition: `filial-pw{code}` filialiga o'tadi.
@@ -164,7 +209,7 @@ Tags: natural-person, employee
 - Regression: birthday, passport, region, address/post address, phone, tin, telegram, email, web to'ldiriladi; viewda asosiy kiritilgan qiymatlar tekshiriladi.
 - Arxitektura: Natural Person helperlari shu test faylida turadi; Legal Person direktor yaratishda shu helperlarni import qiladi.
 
-### 07 User
+### 06 User
 Tags: user, robot, natural-person
 - Fayl: `tests/smoke/test_setup/test_user.py`.
 - Navigation: `Главное` -> `Пользователи`.
@@ -172,7 +217,7 @@ Tags: user, robot, natural-person
 - Bog'lanish: `robot-pw{code}` va `natural_person-pw{code}` ulanadi; password kod ichidagi test user default qiymati.
 - Tekshiruv: user ro'yxatida natural person va login ko'rinadi.
 
-### 08 User Attach Form
+### 07 User Attach Form
 Tags: user, permissions, forms
 - Fayl: `tests/smoke/test_setup/test_user.py`.
 - Nima qiladi: user view ichida `Формы` sahifasini ochib `Формы`, `Отчеты`, `Накладные`, `Внешние системы` tablaridagi mavjud elementlarni userga ulaydi.
@@ -180,20 +225,20 @@ Tags: user, permissions, forms
 - Qayta run: bo'limda `нет данных` bo'lsa attach qadam no-op bo'lib o'tadi; bu qadam mavjud companyda permissionlarni qayta qo'llash uchun idempotent bo'lishi kerak.
 - Tekshiruv: har bo'limda `Доступные` ro'yxati `нет данных` bo'lishi kerak.
 
-### 09 Role
+### 08 Role
 Tags: role, permissions
 - Fayl: `tests/smoke/test_setup/test_user.py`.
 - Navigation: `Пользователи` sahifasidan `Роли`.
 - Nima qiladi: `Админ` rolini edit qilib, `.switch span` ichidagi barcha `нет` switchlarni yoqadi.
 - Muhim pattern: onboarding launcher JS orqali yashiriladi; saqlashdan keyin loader 600s gacha kutiladi.
 
-### 10 Role Attach Form
+### 09 Role Attach Form
 Tags: role, forms, permissions
 - Fayl: `tests/smoke/test_setup/test_user.py`.
 - Nima qiladi: `Админ` rol viewidagi `Формы` bo'limida `Доступ ко всем формам` -> `Разрешить` qiladi.
 - Tekshiruv: `Доступные` ro'yxati `нет данных` bo'ladi.
 
-### 11 Buy License
+### 10 Buy License
 Tags: license, admin, balance
 - Fayl: `tests/smoke/test_setup/test_license.py`.
 - `--disable-license-policy` bo'lsa bu qadam real license flowga kirmaydi va Allure/logga skip sababini yozib davom etadi.
@@ -204,59 +249,59 @@ Tags: license, admin, balance
 - Debug note: payer/contract `b-input` bo'sh bo'lsa `.edit` clear icon `ng-hide` bo'ladi; optionlar ko'rinib turgan bo'lsa ham yashirin `.edit`ni bosish `Locator.click TimeoutError` beradi. `clear=True` helperlari `.edit` faqat visible bo'lsa bosishi kerak.
 - Log: balans musbat bo'lsa `Balans musbat — Success`, sotib olinsa `Litsenziya olindi`.
 
-### 12 Attach License
+### 11 Attach License
 Tags: license, user
 - Fayl: `tests/smoke/test_setup/test_license.py`.
 - `--disable-license-policy` bo'lsa bu qadam real attach flowga kirmaydi va Allure/logga skip sababini yozib davom etadi.
 - Nima qiladi: `Лицензии и документы` ichida `ERP users` license ochiladi, mavjud attached users bo'lsa ajratiladi, `natural_person-pw{code}` userga ulanadi.
 - Muhim pattern: `PlaywrightTimeoutError` orqali `нет данных` bo'lmasa hammasini select qilib `Открепить` qiladi.
 
-### 13 Change Password
+### 12 Change Password
 Tags: user, password
 - Fayl: `tests/smoke/test_setup/test_user.py`.
 - Nima qiladi: yangi `user-pw{code}@<active_company_code>` login bilan kiradi; majburiy password change alert chiqishini kutadi.
 - Amaliyot: current/new/rewrite password maydonlariga kod ichidagi test user default paroli kiritilib `Подтвердить` va confirm `да` bosiladi.
 
-### 14 Price Type
+### 13 Price Type
 Tags: price-type, room, nps
 - Fayl: `tests/smoke/test_setup/test_price_type.py`.
 - Nima qiladi: NPS Survey modal chiqsa 10 ball bilan yuboradi; `Справочники` -> `Цены` sahifasida UZB price type yaratadi.
 - Bog'lanish: `room-pw{code}` ish zonasi ulanadi; `Цена продажи` ko'rinishi tekshiriladi.
 - Tekshiruv: `Price Type UZB-pw{code}` searchdan keyin ro'yxatda ko'rinadi.
 
-### 15 Payment Type
+### 14 Payment Type
 Tags: payment-type, room-attachment
 - Fayl: `tests/smoke/test_setup/test_payment_type.py`.
 - Nima qiladi: `Цены` -> `Типы оплат` ichida `Прикрепление` orqali barcha 4 payment typeni tizimga ulaydi.
 - Tekshiruv: `Наличные деньги`, `Перечисление`, `Терминал`, `Чековая книжка` ro'yxatda ko'rinadi.
 
-### 16 Sector
+### 15 Sector
 Tags: tmc, sector, room
 - Fayl: `tests/smoke/test_setup/test_sector.py`.
 - Nima yaratadi: `Наборы ТМЦ` ichida `c_s_pw{code}` / `sector-pw{code}` TMC to'plami.
 - Bog'lanish: `room-pw{code}` tanlanadi.
 
-### 17 Product
+### 16 Product
 Tags: tmc, product, price
 - Fayl: `tests/smoke/test_setup/test_product.py`.
 - Nima yaratadi: `ТМЦ` ichida `c_p_pw{code}` / `product-pw{code}` mahsulot.
 - Bog'lanish: measure `шт`, product type `Товар`, sahifada `sector-pw{code}` ko'rinishi precondition sifatida tekshiriladi.
 - Qo'shimcha: `Установить цены` orqali gridga `7000` narx yozib saqlaydi.
 
-### 18 Natural Person For Client 1
+### 17 Natural Person For Client 1
 Tags: natural-person, client
 - Fayl: `tests/smoke/test_setup/test_natural_person.py`.
 - Nima yaratadi: `c_n_c_pw{code}` code va `natural_client-pw{code}` ko'rinadigan nomli jismoniy shaxs, `Клиент` belgisi yoqiladi.
 - Tekshiruv: avval `Физические лица` list va `Просмотр` viewda nom/status tekshiriladi, keyin `Клиенты` ro'yxatida ko'rinadi; regressionda natural person qo'shimcha maydonlari ham to'ldiriladi.
 
-### 19 Room Attachment
+### 18 Room Attachment
 Tags: room, payment-type, warehouse, cashbox, client
 - Fayl: `tests/smoke/test_setup/test_room.py`.
 - Nima qiladi: yangi user sifatida kirib `room-pw{code}` ish zonasi `Прикрепление` sahifasiga kiradi.
 - Bog'lanishlar: 4 payment type, 1 warehouse, 1 cashbox va `natural_client-pw{code}` client ish zonasiga ulanadi.
 - Tekshiruv: payment/warehouse/cashbox available listlari `нет данных`; client attached listida `natural_client-pw{code}` ko'rinadi.
 
-### 20 Init Balance
+### 19 Init Balance
 Tags: inventory, init-balance, product
 - Fayl: `tests/smoke/test_setup/test_init_balance.py`.
 - Nima qiladi: `authorization_user(page, code)` bilan user sifatida kiradi, `Склад` -> `Ввод начальных остатков ТМЦ` sahifasida boshlang'ich qoldiq hujjati yaratadi.
@@ -264,7 +309,7 @@ Tags: inventory, init-balance, product
 - Hujjat: number `{code}`, product `c_p_pw{code}`, quantity `100`, price `5000`.
 - Tekshiruv: hujjat o'tkazilgandan keyin `Проводки` popupida `100` va `500 000` borligi tekshiriladi.
 
-### 21 Balance
+### 20 Balance
 Tags: inventory, balance, product
 - Fayl: `tests/smoke/test_setup/test_balance.py`.
 - Navigation: `Склад` -> `Остатки ТМЦ`.

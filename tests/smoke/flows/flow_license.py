@@ -7,7 +7,9 @@ import allure
 
 def license_policy_disabled():
     """Companyda litsenziya siyosati o'chirilganini qaytaradi."""
-    return os.getenv("DISABLE_LICENSE_POLICY", "").strip().lower() in {"1", "true", "yes", "on"}
+    create_company = os.getenv("CREATE_COMPANY", "").strip().lower() in {"1", "true", "yes", "on"}
+    disable_policy = os.getenv("DISABLE_LICENSE_POLICY", "").strip().lower() in {"1", "true", "yes", "on"}
+    return create_company and disable_policy
 
 
 def attach_license_policy_skip_note(logger, step_name):

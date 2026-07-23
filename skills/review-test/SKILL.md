@@ -23,8 +23,16 @@ Fayl: `$ARGUMENTS`
 - [ ] `logger` xato loglash uchun to'g'ri ishlatilgan
 
 ### 2.1 BasePage-first (majburiy)
-- [ ] UI primitive uchun mos `BasePage` metodi avval ishlatilgan: `expect_page`, `save_and_expect_heading`, `grid`, `grid_controller`, `text`, `form_view`, `input`, `b_input`, `multiselect`, `checkbox`, `confirm_biruni`, `confirm_biruni_if_visible`, `close_biruni_alert`, `wait_for_loader`
-- [ ] Mos `BasePage` metodi mavjud bo'lsa raw `page.locator()`, `page.get_by_role()` yoki local wrapper ishlatilmagan; raw locator faqat helper mavjud bo'lmagan UI harakati uchun qolgan
+- [ ] Legacy AngularJS/Biruni formada `utils.base_page.BasePage`, yangi A2 Angular
+  formada `utils.angular_base_page.AngularBasePage` ishlatilgan; ikki DOM
+  kontraktining helperlari aralashtirilmagan
+- [ ] UI primitive uchun mos page-object metodi avval ishlatilgan:
+  `expect_page`, `grid`, `grid_controller`, `text`, `form_view`, `input`,
+  `select`/`b_input`, `switch`/`checkbox`, `confirm_biruni`,
+  `confirm_biruni_if_visible`, `close_biruni_alert`, `wait_for_loader`
+- [ ] Mos page-object metodi mavjud bo'lsa raw `page.locator()`,
+  `page.get_by_role()` yoki local wrapper ishlatilmagan; raw locator faqat helper
+  mavjud bo'lmagan UI harakati uchun qolgan
 
 ### 3. Locator sifati
 - [ ] `page.locator()` ishlatilgan (`find_element` emas)
@@ -61,3 +69,8 @@ Oxirida umumiy baho: `Yaxshi / O'rta / Qayta ko'rib chiqish kerak`
 
 ### Dalilga asoslangan review
 - Muammo sifatida faqat ko'rilgan kod, test natijasi yoki tegishli Smartup dossierida tasdiqlangan holatni yoz; boshqa testdan olingan taxminni fakt sifatida kiritma.
+
+### Legacy va A2 Angular page-object chegarasi
+- Hozirgi `BasePage` legacy formalar uchun aktual saqlanadi; A2 formalar
+  `AngularBasePage` bilan yoziladi. Yangi Angular selectorni legacy metodga
+  fallback sifatida qo'shib, bitta helper ichida ikki DOMni aralashtirma.

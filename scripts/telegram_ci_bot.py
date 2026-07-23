@@ -15,7 +15,7 @@ import requests
 DEFAULT_REPOSITORY = "turgunovjasur/Playwright"
 DEFAULT_WORKFLOW = "daily-smoke.yml"
 DEFAULT_REF = "main"
-DEFAULT_TARGET = "all"
+DEFAULT_TARGET = "setup-report"
 STATUS_POLL_INTERVAL_SECONDS = 30
 STATUS_POLL_ERROR_LIMIT = 5
 
@@ -220,7 +220,7 @@ def load_config():
     auto_run_request = RunRequest(
         server_key=auto_run_server_key,
         server_url=SERVERS[auto_run_server_key],
-        target=env_value("AUTO_RUN_TARGET", DEFAULT_TARGET),
+        target=DEFAULT_TARGET,
     )
 
     return BotConfig(
@@ -323,7 +323,6 @@ class GitHubActionsClient:
         url = f"https://api.github.com/repos/{self.repository}/actions/workflows/{self.workflow}/dispatches"
         inputs = {
             "server_url": request.server_url,
-            "target": request.target,
         }
         if telegram_progress_message_id is not None:
             inputs["telegram_progress_message_id"] = str(telegram_progress_message_id)
@@ -392,6 +391,7 @@ def help_text():
         "Bot avval serverni so'raydi.\n"
         "So'ngra parol so'raladi — to'g'ri parol kiritilsa test ishga tushadi.\n"
         "Company code/password GitHub Secrets'dan olinadi.\n"
+        "User setup testlaridan keyin faqat Report testlari ishlaydi; A/B/C group'lar CI'ga kiritilmaydi.\n"
         "Yakuniy test natijasini GitHub Actions workflow yuboradi.\n"
         "Test jarayonda bo'lsa yangi /run bloklanadi.\n"
         "Avto-run har soatda mustaqil ishga tushadi (run ketayotgan bo'lsa o'tkazib yuboriladi).\n\n"
@@ -409,7 +409,7 @@ def start_text(config):
         else "Avto-run hozir o'chirilgan."
     )
     return (
-        "👋 Salom! Bu — Playwright smoke testlarini GitHub Actions orqali ishga tushiradigan CI bot.\n"
+        "👋 Salom! Bu — Playwright Setup va Report testlarini GitHub Actions orqali ishga tushiradigan CI bot.\n"
         "\n"
         "📌 Nima qiladi:\n"
         "Testlarni GitHub Actions workflowda ishga tushiradi va natijani shu chatga yuboradi. "
@@ -425,8 +425,8 @@ def start_text(config):
         "🌐 Serverlar:\n"
         f"{servers}\n"
         "\n"
-        "🧪 Nima test qilinadi (target=all):\n"
-        "User setup → A group → B group → C group → Report group ketma-ket.\n"
+        "🧪 Nima test qilinadi:\n"
+        "User setup → Report testlari. A/B/C group testlari CI runiga kiritilmaydi.\n"
         "\n"
         "📊 Natija xabari:\n"
         "Status, hozirgi qadam, passed ro'yxati; failed bo'lsa Group / Runner test / "
@@ -443,9 +443,9 @@ def start_text(config):
 def server_keyboard(config):
     rows = []
     if "smartup" in config.allowed_server_keys:
-        rows.append([{"text": "smartup.online", "callback_data": "server:smartup"}])
+        rows.append([{"text": "Online", "callback_data": "server:smartup"}])
     if "app3" in config.allowed_server_keys:
-        rows.append([{"text": "app3.greenwhite.uz/xtrade", "callback_data": "server:app3"}])
+        rows.append([{"text": "Xtrade", "callback_data": "server:app3"}])
     return {"inline_keyboard": rows}
 
 
@@ -713,7 +713,8 @@ def monitor_run(
 
 
 def auto_run_label(request):
-    return f"{request.server_key} / {request.target}"
+    server_label = "online" if request.server_key == "smartup" else "xtrade"
+    return f"{server_label} / {request.target}"
 
 
 def trigger_auto_run(

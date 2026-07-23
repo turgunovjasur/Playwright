@@ -55,10 +55,6 @@ if (-not $env:AUTO_RUN_SERVER) {
     $env:AUTO_RUN_SERVER = "smartup"
 }
 
-if (-not $env:AUTO_RUN_TARGET) {
-    $env:AUTO_RUN_TARGET = "all"
-}
-
 $VenvPython = Join-Path $RepoRoot ".venv\Scripts\python.exe"
 if (Test-Path $VenvPython) {
     & $VenvPython "scripts\telegram_ci_bot.py"

@@ -1,0 +1,10 @@
+{
+  "form": "company",
+  "state": "save-template-selection-not-committed",
+  "captured_at": "2026-07-23T16:47:48+05:00",
+  "source_test": "tests/smoke/test_setup/test_setup_runner.py::test_00_company",
+  "url_pattern": "/a2/biruni/md/company_add",
+  "viewport_css_pixels": "1440x783",
+  "screenshot_pixels": "800x435",
+  "observation": "After Save, a transient 'Маркировка: ДА' toast appears while UZ Marking is visible in the select input. No confirmation dialog or save request is created. The screenshot proves a Marking-related client-side stop, but does not by itself prove why the selection model was rejected."
+}

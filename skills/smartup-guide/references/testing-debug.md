@@ -70,6 +70,21 @@ Tags: setup, group, dependency
 - A-group testlari `tests/smoke/test_groups/test_A_grup/` ichida.
 - Group ichidagi testlar bir-biriga bog'liq bo'lmasa `pytest.mark.smoke_group("X", independent=True)` ishlatiladi — bitta test failed bo'lsa ham qolganlar skip qilinmaydi. Report group shu sababli `independent=True` bilan belgilangan.
 
+### Company Mode Va Birinchi Authorization
+Tags: setup, company, authorization, env, data-store, collection
+- `.env`dagi `CREATE_COMPANY=1` bo'lsa `test_00_company` collectionda qoladi;
+  `0` bo'lsa deselect qilinadi va Allure'da skipped test sifatida ko'rinmaydi.
+- Create rejimida `HEAD_ADMIN_EMAIL` va `HEAD_ADMIN_PASSWORD` majburiy;
+  `DISABLE_LICENSE_POLICY` faqat shu rejimda ishlaydi.
+- Alohida Authorization pytest item yo'q. `test_01_legal_person` boshida
+  `authorization(who="admin")` bajariladi va session `code` data storega yoziladi.
+- Create rejimida admin suffix faqat `test_00_company` saqlagan
+  `data_store.json.company_code`dan olinadi; existing rejimida oddiy
+  `COMPANY_CODE` ishlatiladi, `COMPANY_CODE=0` esa saqlangan
+  `data_store.json.company_code`ni qayta ishlatish sentinelidir. Admin
+  credentiali har ikki holatda
+  `admin@<current_company_code>` + `COMPANY_PASSWORD`.
+
 ### Report Group
 Tags: report, group, integration, download
 - Report testlar: `tests/smoke/test_groups/test_report_grup/` — CisLink, Integration Three, SalesWork, Optimum, Spot 2d, Integration Two.

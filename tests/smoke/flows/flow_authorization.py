@@ -19,55 +19,70 @@ def _create_company_enabled():
     return os.getenv("CREATE_COMPANY", "").strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _saved_company_code():
+    try:
+        if not DATA_STORE_PATH.exists():
+            return ""
+        data = json.loads(DATA_STORE_PATH.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return ""
+    if not isinstance(data, dict):
+        return ""
+    value = data.get("company_code")
+    return _normalize_company_code(str(value)) if value else ""
+
+
 def company_url():
     value = os.getenv("COMPANY_URL", "").strip().rstrip("/")
     if not value:
-        raise AssertionError("--url majburiy. Testni scripts/run_tests.py --url <server_url> orqali ishga tushiring.")
+        raise AssertionError("COMPANY_URL yoki --url majburiy.")
     return value
 
 
 def company_password():
     value = os.getenv("COMPANY_PASSWORD", "").strip()
     if not value:
-        raise AssertionError(
-            "--company-password majburiy yoki --create-company orqali yangi company admin paroli set qilingan bo'lishi kerak."
-        )
+        raise AssertionError("COMPANY_PASSWORD majburiy.")
     return value
 
 
 def current_company_code():
-    if _create_company_enabled() and DATA_STORE_PATH.exists():
-        try:
-            data = json.loads(DATA_STORE_PATH.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
-            data = {}
-        company_code = data.get("company_code") if isinstance(data, dict) else None
+    if _create_company_enabled():
+        company_code = _saved_company_code()
         if company_code:
-            return _normalize_company_code(str(company_code))
-    value = os.getenv("COMPANY_CODE", "").strip()
-    if not value:
+            return company_code
         raise AssertionError(
-            "--company-code majburiy yoki --create-company orqali yangi company yaratilgan bo'lishi kerak."
+            "CREATE_COMPANY=1, lekin test_00_company saqlagan company_code topilmadi."
         )
+
+    value = os.getenv("COMPANY_CODE", "").strip()
+    if value == "0":
+        company_code = _saved_company_code()
+        if company_code:
+            return company_code
+        raise AssertionError(
+            "COMPANY_CODE=0, lekin data_store.json ichida saqlangan company_code topilmadi."
+        )
+    if not value:
+        raise AssertionError("CREATE_COMPANY=0 uchun COMPANY_CODE majburiy.")
     return _normalize_company_code(value)
+
 
 def company_suffix():
     return f"@{current_company_code()}"
 
+
 def admin_email():
-    value = os.getenv("ADMIN_EMAIL", "").strip()
-    if value:
-        return value
     return f"admin{company_suffix()}"
 
+
 def admin_password():
-    value = os.getenv("ADMIN_PASSWORD", "").strip()
-    if value:
-        return value
     return company_password()
+
 
 def user_email_for(code):
     return f"user-pw{code}{company_suffix()}"
+
 
 def user_password():
     value = os.getenv("USER_PASSWORD", "").strip()
@@ -103,7 +118,7 @@ def logout(page):
 
 def login(page, email=None, password=None):
     email = email or admin_email()
-    password = password or company_password()
+    password = password or admin_password()
     page.goto(f"{company_url()}/login.html")
     page.get_by_placeholder("Логин@компания").fill(email)
     page.get_by_role("textbox", name="Пароль").fill(password)
@@ -120,7 +135,7 @@ def authorization(page, *, who, code=None):
     """Rolga qarab tizimga kiradi.
 
     who:
-        "admin" → ADMIN_EMAIL / admin@{company} + ADMIN_PASSWORD / company parol
+        "admin" → admin@{current_company_code} + COMPANY_PASSWORD
         "head"  → HEAD_ADMIN_EMAIL + HEAD_ADMIN_PASSWORD (company yaratish uchun)
         "user"  → user-pw{code}@{company} + USER_PASSWORD / USER_PASS
 

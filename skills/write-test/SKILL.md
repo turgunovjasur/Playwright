@@ -20,7 +20,7 @@ Quyidagi qoidalarga qat'iy rioya qil:
 
 Har bir test fayl IKKI funksiyadan iborat (test_legal_person / test_filial / test_room / test_robot real namunalari):
 
-- **`run_<nomi>(page, code, ...)`** — qayta ishlatiladigan biznes logika; setup/group runner zanjiri shuni chaqiradi. `page` ni **allaqachon login qilingan** deb qabul qiladi (auth ichida chaqirilmaydi). Raqamlangan docstring testcase + `with allure.step("N - ...")` bloklari.
+- **`run_<nomi>(page, code, ...)`** — qayta ishlatiladigan biznes logika; setup/group runner zanjiri shuni chaqiradi. Odatda `page` ni **allaqachon login qilingan** deb qabul qiladi. Istisno: setupning birinchi umumiy itemi `run_legal_person` create/existing modega mos admin loginni o'zi bajaradi. Raqamlangan docstring testcase + `with allure.step("N - ...")` bloklari.
 - **`test_<nomi>(page, code, ...)`** — `@allure.title(...)` bilan pytest entry; alohida/debug run uchun. `authorization(...)` (+ forma faqat filialda ko'rinsa `base.switch_filial(...)`) qilib, so'ng `run_<nomi>(...)` ni chaqiradi. Kerakli fixturalarni (`save_data`/`load_data`) qabul qilib `run_` ga uzatadi.
 
 ```python
@@ -78,7 +78,10 @@ def test_<nomi>(page, code, save_data):
 - **allure.step raqamlari docstring qadamlari bilan mantiqan mos** kelsin; step nomi qisqa va professional.
 - **Test data** — `run_` boshida lokal `f"...{code}"` o'zgaruvchilar; downstream testga kerak bo'lsa oxirgi stepda `save_data(...)`.
 - **Entity name/code patterni** — yangi yoki refactor qilinayotgan setup entitylarda `entity_name = f"<entity>-pw{code}"`, `entity_code = f"c_<qisqa_entity_alias>_pw{code}"` ishlatilsin (masalan Natural Person `c_n_p_pw{code}`); code qiymati uzun entity nomini takrorlamasin. Oldindan downstream bog'liqligi tasdiqlangan biznes hujjat formatlari alohida saqlanadi.
-- **`run_` auth qilmaydi** (page login qilingan deb keladi). Istisno: rolni almashtirish kerak bo'lsa `run_` ichida boshqa rol bilan kiriladi (masalan `run_room_attachment` `authorization(who="user"...)` qiladi).
+- **`run_` odatda auth qilmaydi** (page login qilingan deb keladi).
+  Istisnolar: setup chainning birinchi umumiy itemi `run_legal_person`
+  `authorization(who="admin")` qiladi; rol almashtiradigan flowlar ham
+  `run_` ichida kiradi (masalan `run_room_attachment` userga o'tadi).
 - **Takroriy `switch_filial` qo'yma**: setup zanjiri bitta `session_page` ni bo'lishadi, shuning uchun filial konteksti `run_` lar orasida saqlanadi. Zanjirda filialga BIR MARTA o'tiladi (birinchi kerak bo'lgan `run_` — masalan `run_room` filial-pw{code} ga o'tadi), keyingi `run_` lar (robot, natural_person, ...) o'sha filialni meros qilib oladi va QAYTA `switch_filial` qilmaydi (ortiqcha kod). Standalone/debug run uchun `switch_filial` ni `test_` wrapper'ga qo'y (run_ ichiga emas) — shunda zanjirda takrorlanmaydi, alohida run'da esa default filialdan to'g'ri filialga o'tadi.
 - **Verifikatsiya zanjiri**: save → `base.expect_page(list heading)` → (ro'yxatda topish uchun kerak bo'lsa) `grid_controller(search=...)` → `grid(code, name, "Активный")`.
 - **Lokal helper** faqat haqiqiy biznes/flow murakkabligini yashirsa va shu faylda ishlatilsa faylda `_` prefiksi bilan qoladi; bir nechta testda kerak bo'lsa `flows/` yoki `BasePage` ga chiqariladi. 1 qatorlik wrapper yozilmaydi.
@@ -118,7 +121,21 @@ def test_XX_<nomi>(session_page: Page, code):
 
 ### Runner config va dinamik qiymatlar
 - Repo rootda `.env` mavjud bo'lsa direct `pytest`/PyCharm run konfiguratsiyasi undan olinadi; `.env` yo'q bo'lsa terminal/CI flaglari ishlaydi.
-- Har bir run uchun `--url` va company mode majburiy: mavjud company uchun `--company-code/--company-password`, yangi company uchun `--create-company --head-email/--head-password`.
+- Lokal `.env` bo'lsa `COMPANY_URL` va company mode credentiallari o'sha yerdan
+  olinadi; `.env` yo'q muhitda mos `--url`, `--company-code/--company-password`
+  yoki `--create-company --head-email/--head-password` CLI flaglari ishlaydi.
+- `.env`dagi `CREATE_COMPANY=1` bo'lsa setup runnerdagi `test_00_company`
+  collectionda qoladi; aks holda `pytest_collection_modifyitems` uni deselect
+  qiladi. Runtime `pytest.skip(...)` ishlatilmaydi, shu sabab Company testi
+  Allure'da skipped test sifatida ko'rinmaydi.
+- `CREATE_COMPANY=1` uchun `HEAD_ADMIN_EMAIL` va `HEAD_ADMIN_PASSWORD`
+  majburiy; `DISABLE_LICENSE_POLICY` ham faqat shu rejimda ishlaydi.
+- Setup authorization alohida test emas: `test_01_legal_person` boshida admin
+  login qilinadi. Create rejimida admin company kodi `test_00_company`
+  `data_store.json`ga saqlagan `company_code`dan, existing rejimida esa
+  `COMPANY_CODE`dan olinadi. Existing rejimdagi `COMPANY_CODE=0`
+  `data_store.json`dagi saqlangan `company_code`ni qayta ishlatadi; har ikki
+  rejimda parol `COMPANY_PASSWORD`.
 - Dinamik email va shunga o'xshash qiymatlar test/flow ichida active company code bilan quriladi:
   ```python
   user_email = f"user-pw{code}@{active_company_code}"
@@ -132,6 +149,18 @@ def test_XX_<nomi>(session_page: Page, code):
 
 ### Tanlov holatini tekshirish
 - Radio, checkbox yoki select option uchun faqat label/matn ko'rinishini emas, tanlangan holatini ham (`expect(...).to_be_checked()` yoki mos value assert) tekshir.
+
+### Test ichidagi Allure step va helper uslubi
+- Bitta testga xos create/view/security kabi ketma-ket UI qadamlari local helperga
+  ajratilmaydi; ular `run_*` ichidagi tegishli `with allure.step(...)` blokida
+  ochiq yoziladi. Project helper chaqiruvining parametrlari bitta qatorda yoziladi;
+  alohida helper faqat qayta ishlatiladigan yoki haqiqatan murakkab flow uchun qoladi.
+- Label qabul qiladigan project helper chaqiruvlarida qiymat positional berilmaydi;
+  aniq `label="..."` keyword parametri bilan yoziladi.
+- Accessible button/tab nomini qabul qiladigan project helperlarda ham qiymat
+  positional berilmaydi; aniq `name="..."` keyword parametri bilan yoziladi.
+- Project helperning default parametr qiymati testda qayta yozilmaydi; parametr
+  faqat default xatti-harakatni o'zgartirish kerak bo'lsa beriladi.
 
 ### `expect_page` heading scope
 - Heading aniq konteyner ichida tekshirilishi kerak bo'lsa `base.expect_page(heading=..., root="<selector>")` ishlat; `root` berilmasa heading butun sahifadan qidiriladi, loader esa har ikki holatda global tekshiriladi.
@@ -201,7 +230,9 @@ def test_XX_<nomi>(session_page: Page, code):
 - Yangi test yozishda u setup bosqichigami yoki qaysi mustaqil groupga tegishli ekanini aniq ajrat.
 - `tests/smoke/test_setup/test_setup_runner.py` ichidagi mavjud barcha testlar user setup testlari hisoblanadi; runner setup testlari bilan bir papkada turadi va ular yozib bo'lingan.
 - **user_setup yakunlangan**: `tests/smoke/test_setup/` ga YANGI test QO'SHILMAYDI. Yangi testlar `tests/smoke/test_life_cycle/` yoki yangi group (`tests/smoke/test_groups/test_<X>_grup/`) ichida yoziladi.
-- **authorization har test boshida chaqirilmaydi**: login faqat sessiya boshida (setup `session_page` chain) yoki group boshida bir marta (`group_user_page`/group chain wrapperi) bajariladi; `run_*` biznes funksiyalari `page` ni allaqachon login qilingan deb qabul qiladi.
+- **authorization har test boshida chaqirilmaydi**: setup chain admin logini
+  `test_01_legal_person` boshida, user group logini `group_user_page`da bir marta
+  bajariladi; keyingi `run_*` funksiyalar page holatini meros qiladi.
 - **Yangi test ma'lumotlari `data_store.json` dan olinadi**: setup yaratgan entity nom/kodlari `load_data(...)` yoki `code` fixture orqali olinadi; test ichiga literal qiymat (`autotest`, `product-pw5963` kabi) hardcode qilinmaydi.
 - A-groupning birinchi testi UZS contract yaratadi; order yaratish uning keyingi downstream testdagi maqsadi bo'lsa ham, test nomiga `order` qo'shilmaydi.
 - A-group testlari `tests/smoke/test_groups/test_A_grup/` papkasiga yozib boriladi; contract testlari alohida `test_create_contract.py` va `test_create_contract_with_payment_type.py` fayllarida saqlanadi.

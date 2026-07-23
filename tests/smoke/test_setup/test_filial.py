@@ -9,11 +9,7 @@ FILIAL_SAVE_LOADER_TIMEOUT = 60_000
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def run_filial(page, code,
-    legal_person_code=None,
-    legal_person_name=None,
-    save_data=None,
-):
+def run_filial(page, code, load_data=None, save_data=None):
     """Testcase: yangi filial (tashkilot / Организация) yaratish.
 
     1. Главное -> Организации ro'yxatini ochish.
@@ -25,7 +21,8 @@ def run_filial(page, code,
     """
     base = BasePage(page)
     filial_name = f"filial-pw{code}"
-    legal_person_code = legal_person_code or f"c_l_p_pw{code}"
+    legal_person_code = f"c_l_p_pw{code}"
+    legal_person_name = load_data("legal_person_name")
     filial_currency = "Узбекский сум"
 
     with allure.step("1 - Tashkilotlar ro'yxatiga o'tish"):
@@ -71,8 +68,4 @@ def run_filial(page, code,
 @allure.title("Filial (tashkilot) yaratish")
 def test_filial(page, code, load_data, save_data):
     authorization(page, who='admin')
-    run_filial(page, code,
-                legal_person_code=load_data("legal_person_code"),
-                legal_person_name=load_data("legal_person_name"),
-                save_data=save_data
-               )
+    run_filial(page, code, load_data, save_data)

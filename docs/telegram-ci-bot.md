@@ -2,6 +2,10 @@
 
 Telegram bot GitHub Actions workflow `.github/workflows/daily-smoke.yml`ni
 ishga tushiradi. Workflow avtomatik ravishda har soat `00` daqiqada ham yuradi.
+CI va Telegram bot runlari `setup-report` targetini ishlatadi: avval User setup,
+keyin Report testlari yuradi. A/B/C group testlari workflowga kiritilmaydi.
+`smartup.online` va `app3.greenwhite.uz/xtrade` serverlarining ikkalasida ham
+mavjud company ishlatiladi (`CREATE_COMPANY=0`).
 
 ## Bot Flow
 
@@ -14,14 +18,8 @@ Telegramda:
 Bot server tanlatadi:
 
 ```text
-[smartup.online]
-[app3.greenwhite.uz/xtrade]
-```
-
-Keyin scope tanlatadi:
-
-```text
-[smoke] [regression]
+[Online]
+[Xtrade]
 ```
 
 Bot GitHub Actions run boshlaydi. Workflow shu xabarning o'zini edit qilib
@@ -29,7 +27,7 @@ progress ko'rsatadi:
 
 ```text
 Test boshlandi
-Smoke scope tanlangan
+Setup + Report
 Status: requirements o'rnatilyapti
 ```
 
@@ -37,13 +35,13 @@ Keyin:
 
 ```text
 Test boshlandi
-Smoke scope tanlangan
+Setup + Report
 Status: testlar ishlayapti
-Hozir: test_02_legal_person
+Hozir: test_01_legal_person
 
 Passed:
-test_company [PASSED]
-test_01_authorization [PASSED]
+test_01_legal_person [PASSED]
+test_02_filial [PASSED]
 ```
 
 Testlar o'tgan sari `Passed` ro'yxatiga qo'shilib boradi. Failed bo'lsa shu
@@ -51,10 +49,10 @@ progress xabarda alohida block chiqadi:
 
 ```text
 Failed:
-Group: B group
-Runner test: test_03_b_group_runner
-Ichki test: B-04 - Custom invoice report template yaratish va orderda tekshirish
-Step: B-04 - Custom invoice report template yaratish va orderda tekshirish -> 4 - User order listda Счет-фактуры custom template downloadini tekshiradi
+Group: Setup
+Runner test: test_setup_runner.py
+Ichki test: 10 - Buy License
+Step: Buy License -> Лицензии sahifasini ochish
 Error turi: TimeoutError
 ```
 
@@ -105,6 +103,9 @@ Actions secrets orqali olinadi:
 smartup.online -> SMARTUP_COMPANY_CODE / SMARTUP_COMPANY_PASSWORD
 app3.greenwhite.uz/xtrade -> APP3_COMPANY_CODE / APP3_COMPANY_PASSWORD
 ```
+
+Botda smoke/regression scope tanlovi yo'q. `/run`dan keyin faqat server
+tanlanadi; ikkala server ham existing-company rejimida ishlaydi.
 
 AI xulosa uchun GitHub repository secrets ichida quyidagisi bo'lishi kerak:
 

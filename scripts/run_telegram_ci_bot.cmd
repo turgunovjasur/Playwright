@@ -37,7 +37,6 @@ if not defined ALLOWED_SERVER_URLS set "ALLOWED_SERVER_URLS=https://smartup.onli
 if not defined AUTO_RUN_ENABLED set "AUTO_RUN_ENABLED=true"
 if not defined AUTO_RUN_INTERVAL_SECONDS set "AUTO_RUN_INTERVAL_SECONDS=3600"
 if not defined AUTO_RUN_SERVER set "AUTO_RUN_SERVER=smartup"
-if not defined AUTO_RUN_TARGET set "AUTO_RUN_TARGET=all"
 
 set "VENV_PYTHON=%REPO_ROOT%\.venv\Scripts\python.exe"
 if exist "%VENV_PYTHON%" (

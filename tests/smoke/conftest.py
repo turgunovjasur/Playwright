@@ -216,13 +216,15 @@ def pytest_addoption(parser):
 def pytest_collection_modifyitems(config, items):
     """Directory/default collectionda faqat mos runnerlar qolsin, duplicate business flowlar yurmasin."""
     if not _company_setup_enabled(config):
-        skip_company = pytest.mark.skip(
-            reason="Company setup faqat --create-company flagi bilan ishlaydi"
-        )
-        for item in items:
-            path_name = Path(str(item.path)).name
-            if path_name == "test_company.py" or item.name == "test_00_company":
-                item.add_marker(skip_company)
+        company_items = [
+            item
+            for item in items
+            if Path(str(item.path)).name == "test_setup_runner.py"
+            and item.name == "test_00_company"
+        ]
+        if company_items:
+            items[:] = [item for item in items if item not in company_items]
+            config.hook.pytest_deselected(items=company_items)
 
     if _explicit_file_args(config):
         return
@@ -383,13 +385,20 @@ def pytest_configure(config):
     if create_company:
         company_code = "" if _LOCAL_DOTENV_EXISTS else _cli_option(config, "--company-code").lstrip("@")
         company_password = "" if _LOCAL_DOTENV_EXISTS else _cli_option(config, "--company-password")
-        head_email = _option_or_env(config, "--head-email", "HEAD_ADMIN_EMAIL", "HEAD_EMAIL")
-        head_password = _option_or_env(config, "--head-password", "HEAD_ADMIN_PASSWORD", "HEAD_PASSWORD")
+        head_email = _option_or_env(config, "--head-email", "HEAD_ADMIN_EMAIL")
+        head_password = _option_or_env(config, "--head-password", "HEAD_ADMIN_PASSWORD")
     else:
         company_code = _option_or_env(config, "--company-code", "COMPANY_CODE").lstrip("@")
         company_password = _option_or_env(config, "--company-password", "COMPANY_PASSWORD")
         head_email = ""
         head_password = ""
+        if company_code == "0":
+            saved_company_code = _load_data_file().get("company_code")
+            if not saved_company_code:
+                raise pytest.UsageError(
+                    "COMPANY_CODE=0, lekin data_store.json ichida saqlangan company_code topilmadi"
+                )
+            company_code = str(saved_company_code).strip().lstrip("@")
 
     if not company_url:
         raise pytest.UsageError("--url majburiy. Masalan: --url https://app3.greenwhite.uz/xtrade")
@@ -401,9 +410,9 @@ def pytest_configure(config):
         if company_password:
             raise pytest.UsageError("--company-password --create-company bilan berilmaydi; yangi company admin paroli test ichidagi default qiymat")
         if not head_email:
-            raise pytest.UsageError("--head-email majburiy: --create-company uchun head profil emailini bering")
+            raise pytest.UsageError("CREATE_COMPANY=1 uchun HEAD_ADMIN_EMAIL majburiy")
         if not head_password:
-            raise pytest.UsageError("--head-password majburiy: --create-company uchun head profil parolini bering")
+            raise pytest.UsageError("CREATE_COMPANY=1 uchun HEAD_ADMIN_PASSWORD majburiy")
         os.environ["CREATE_COMPANY"] = "1"
         os.environ["COMPANY_PASSWORD"] = CREATED_COMPANY_PASSWORD
         os.environ["HEAD_ADMIN_EMAIL"] = head_email
@@ -413,9 +422,9 @@ def pytest_configure(config):
         if head_email or head_password:
             raise pytest.UsageError("--head-email/--head-password faqat --create-company bilan ishlaydi")
         if not company_code:
-            raise pytest.UsageError("--company-code majburiy yoki --create-company flagini bering")
+            raise pytest.UsageError("CREATE_COMPANY=0 uchun COMPANY_CODE majburiy")
         if not company_password:
-            raise pytest.UsageError("--company-password majburiy yoki --create-company flagini bering")
+            raise pytest.UsageError("CREATE_COMPANY=0 uchun COMPANY_PASSWORD majburiy")
         os.environ.pop("CREATE_COMPANY", None)
         os.environ["COMPANY_CODE"] = company_code
         os.environ["COMPANY_PASSWORD"] = company_password
@@ -425,7 +434,7 @@ def pytest_configure(config):
     disable_license_policy = _option_flag_or_env(config, "--disable-license-policy", "DISABLE_LICENSE_POLICY")
     if disable_license_policy:
         if not create_company:
-            raise pytest.UsageError("--disable-license-policy faqat --create-company bilan ishlaydi")
+            raise pytest.UsageError("DISABLE_LICENSE_POLICY faqat CREATE_COMPANY=1 bilan ishlaydi")
         os.environ["DISABLE_LICENSE_POLICY"] = "1"
     else:
         os.environ.pop("DISABLE_LICENSE_POLICY", None)
@@ -561,13 +570,6 @@ def page(browser, request):
     context.tracing.stop(path=os.path.join(TRACE_DIR, f"{safe_name}.zip"))
     page_obj.close()
     context.close()
-
-# ----------------------------------------------------------------------------------------------------------------------
-
-@pytest.fixture(scope="session")
-def company_setup_enabled(request):
-    """Company setup --create-company bilan yoqilgan-yoqilmaganini qaytaradi."""
-    return _company_setup_enabled(request.config)
 
 # ----------------------------------------------------------------------------------------------------------------------
 

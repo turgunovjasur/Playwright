@@ -7,7 +7,9 @@ Tags: legal-person, setup, form, navigation
 - Navigation: `Справочники` -> `Юридические лица` -> `Создать`.
 - URL pattern: `/anor/mr/person/legal_person+add`.
 - Test fayli: `tests/smoke/test_setup/test_legal_person.py`.
-- Runner: `tests/smoke/test_setup/test_setup_runner.py`, step `02 - Legal Person`.
+- Runner: `tests/smoke/test_setup/test_setup_runner.py`, step `01 - Legal Person`.
+- Setup chainda alohida Authorization testi yo'q: `run_legal_person` birinchi
+  qadamda joriy company admini bilan login qiladi.
 
 ## Screenshotlar
 
@@ -75,6 +77,7 @@ Tags: legal-person, view, assert
 
 ### Saqlanadigan qiymatlar
 Tags: legal-person, data-store
+- Session `code`
 - `legal_person_code`, `legal_person_name`
 - `legal_person_owner_code`, `legal_person_owner_name` (regression-only)
 - `legal_person_director_code`, `legal_person_director_name` (regression-only)

@@ -2,11 +2,16 @@
 
 Tags: a2, migrated-forms, filial, menu, navigation, error, url, new_forms
 
-Smartup yangi formalari (React/modern app) eski AngularJS Biruni app ustiga qo'shilgan. Ular
+Smartup yangi formalari (yangi Angular/modern app) eski AngularJS Biruni app ustiga qo'shilgan. Ular
 `new_forms.md` (repo root) da ro'yxatlangan va URL'да **`a2`** prefiksi bilan ajraladi.
 
 ## Arxitektura
 
+- **Page-object chegarasi:** legacy AngularJS/Biruni formalar
+  `utils/base_page.py::BasePage` bilan, yangi A2 Angular formalar
+  `utils/angular_base_page.py::AngularBasePage` bilan yoziladi. Legacy class
+  mavjud eski formalar tugamaguncha aktual saqlanadi; ikki DOM selectorlari bitta
+  helperga fallback qilib aralashtirilmaydi.
 - **Alohida app.** Eski menyudan a2 forma bosilganda `{base}/a2/{path}` ga **to'liq sahifa** navigatsiya bo'ladi
   (SPA hash-route emas). `base` = `company_url()`:
   - smartup.online: `https://smartup.online/a2/{path}`
@@ -18,6 +23,31 @@ Smartup yangi formalari (React/modern app) eski AngularJS Biruni app ustiga qo's
   - `Страница не найдена` — 404 (forma yo'q).
   - `Нет доступа к форме {name}` / `Не удалось загрузить` / `Что-то пошло не так` — ruxsat yo'q yoki load error.
   - `+edit`/`_view`/`_details` yakka URL bilan ochilmaydi — id (record) kerak; title shell'da qoladi.
+
+## Yangi Angular component kontrakti (Company'da live tasdiqlangan, 2026-07-23)
+
+- Forma maydoni: `smt-control`; oddiy input: `smt-input` ichidagi native
+  `input`/`textarea`; select: `smt-data-select` → `smt-select-trigger`.
+- Select optionlari `.cdk-overlay-container` ichidagi `smt-select-dropdown li`
+  sifatida portal qilinadi. Ular legacy `b-input .hint-item` yoki
+  `.ui-select-choices-row-inner` emas. Option clickdan keyin dropdown ochiq
+  qolishi mumkin; tashqi sahifa nuqtasini bosib overlay yopiladi va backdrop
+  yo'qolgani kutiladi.
+- List: `smt-data-table`/`smt-table`; data qatori `.smt-data-row`; ustunlar
+  `[data-smt-col-key="..."]`; search native `input[type="search"]`.
+- List yuklanayotgan paytda `.smt-skeleton` qatorlari ko'rinadi;
+  `.block-ui-overlay` bo'lmasligi mumkin. URL/title yangilanishi component mount
+  bo'lishidan oldin sodir bo'lishi mumkin, shu sabab stabil component yoki
+  skeleton yo'qolishi alohida kutiladi.
+- A2 ichki menyusi CDK overlay'da `[role="menu"]` va `[role="menuitem"]`
+  bilan ishlaydi. A2 filial selectorida
+  `data-testid="shell-project-filial--project-list"` /
+  `data-testid="shell-project-filial--filial-list"` va `[role="option"]` bor.
+  Legacy `.pt-3.px-2` va `a.menu-link...` selektorlari faqat eski shell'dan A2
+  formaga kirish bosqichida ishlaydi; A2 ichida qayta ishlatilmaydi.
+- A2 save errorlari `role=dialog`/CDK overlay'da chiqishi mumkin. Save helperi
+  target page readiness va error dialogni bir vaqtda kutadi; error chiqsa uzoq URL
+  timeoutini kutmasdan dialog matni bilan fail qiladi.
 
 ## Menyu FILIALга bog'liq (eng muhim kuzatuv, 2026-07-07)
 

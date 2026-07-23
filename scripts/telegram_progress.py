@@ -24,6 +24,7 @@ TASHKENT_TZ = timezone(timedelta(hours=5))
 TARGET_LABELS = {
     "all": "All",
     "setup": "Setup",
+    "setup-report": "Setup + Report",
     "company": "Company",
     "groups": "Groups",
     "group-a": "Group A",
@@ -107,7 +108,7 @@ def target_label(target):
 
 
 def title_line(state):
-    name = "Smoke CI"
+    name = "Setup + Report CI"
     result = str(state.get("result") or "").upper()
     if result == "PASSED":
         return f"✅ {name} — PASSED"

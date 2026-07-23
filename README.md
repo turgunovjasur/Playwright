@@ -226,6 +226,7 @@ Bu buyruq macOS, Linux va Windowsda ishlaydi. `.env` ishlatilmaydi.
 | `--dry-run` | Testni ishga tushirmaydi, faqat pytest commandni ko'rsatadi. |
 | `all` | Default target. Setup + A + B + C + Report group ishlaydi. |
 | `setup` | Faqat setup runner ishlaydi. |
+| `setup-report` | CI targeti: Setup, keyin Report runner; A/B/C ishlamaydi. |
 | `company` | Faqat yangi company yaratish testi ishlaydi. |
 | `groups` | Setupni ishlatmasdan barcha group runnerlar ishlaydi. |
 | `group-a` | Faqat A group ishlaydi. |
@@ -382,6 +383,7 @@ Default target `all`, ya'ni full suite.
 |--------|------------------|---------------|
 | `all` | `python scripts/run_tests.py --url <url> --company-code <code> --company-password <pass>` | Setup + A + B + C + Report group |
 | `setup` | `python scripts/run_tests.py setup --url <url> --company-code <code> --company-password <pass>` | Faqat user setup |
+| `setup-report` | `python scripts/run_tests.py setup-report --url <url> --company-code <code> --company-password <pass>` | User setup + Report group; CI/bot shu targetni ishlatadi |
 | `company` | `python scripts/run_tests.py company --url <url> --create-company --head-email <email> --head-password <pass>` | Faqat company yaratish testi |
 | `groups` | `python scripts/run_tests.py groups --url <url> --company-code <code> --company-password <pass>` | Setupdan tashqari barcha grouplar |
 | `group-a` | `python scripts/run_tests.py group-a --url <url> --company-code <code> --company-password <pass>` | Faqat A group |
@@ -391,7 +393,16 @@ Default target `all`, ya'ni full suite.
 
 `--create-company` faqat `all`, `setup`, `company` targetlari bilan ishlatiladi. `groups` va alohida group targetlari uchun avval mavjud company va setup data kerak.
 
+CI/Telegram botdagi `setup-report` targeti `CREATE_COMPANY=0` bilan ishlaydi:
+serverga mos company code/password GitHub Secrets'dan olinadi.
+
 Code tanlovi `.env` dagi yagona `NEW_CODE` flagi bilan boshqariladi: `NEW_CODE=1` yangi 6 xonali code yaratadi, `NEW_CODE=0` esa `test-results/data/data_store.json` dagi mavjud code ni ishlatadi.
+
+Company tanlovi alohida boshqariladi: existing rejimda `COMPANY_CODE=0`
+berilsa `test-results/data/data_store.json` dagi oxirgi saqlangan
+`company_code` ishlatiladi. Bu alohida tugagan `CREATE_COMPANY=1` setup
+sessiyasidan keyin group runnerlarni o'sha company va `NEW_CODE=0` bilan
+davom ettirish uchun ishlatiladi.
 
 ### <a id="pytest-orqali-debug"></a>Pytest Orqali Debug
 

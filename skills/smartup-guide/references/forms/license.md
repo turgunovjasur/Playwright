@@ -4,7 +4,12 @@ Litsenziya 2 ta alohida funksiya: `run_buy_license` va `run_attach_license`.
 
 ## Skip sharti
 
-`DISABLE_LICENSE_POLICY` env var = `1/true/yes/on` bo'lsa — **ikkala funksiya ham o'tkazib yuboriladi** (Allure attach bilan). `--disable-license-policy` flag berilganda shu env set qilinadi. Ikkala test ishlatadigan policy tekshiruvi va skip xabari `tests/smoke/flows/flow_license.py` ichida; test fayllari bir-birining private helperlarini import qilmaydi.
+Faqat `CREATE_COMPANY=1` va `DISABLE_LICENSE_POLICY=1/true/yes/on` birga
+bo'lsa — **ikkala funksiya ham o'tkazib yuboriladi** (Allure attach bilan).
+`CREATE_COMPANY=0` bilan `DISABLE_LICENSE_POLICY=1` invalid konfiguratsiya va
+pytest startupda xato beradi. Ikkala test ishlatadigan policy tekshiruvi va skip
+xabari `tests/smoke/flows/flow_license.py` ichida; test fayllari bir-birining
+private helperlarini import qilmaydi.
 
 ## run_buy_license — sotib olish
 
@@ -15,6 +20,21 @@ switch_filial("Администрирование")
 → navigate_to(tab="Главное", name="Лицензии")
 → expect_page(heading="Лицензии")
 ```
+
+### Yangi company uchun activation precondition
+Tags: license, company, activation, setup, error
+- `CREATE_COMPANY=1` va `DISABLE_LICENSE_POLICY=0` bo'lsa, yangi company license
+  flowga kirishdan oldin Company Viewdagi `Активация для лицензии` jarayoni
+  bajarilgan bo'lishi shart.
+- Activation bajarilmasa navigation baribir `/biruni/kl/license_list` URLiga
+  o'tadi, lekin `Лицензии` headingi o'rniga `Ошибка` /
+  `Компания не активирована` modali chiqadi. Bu locator, timeout yoki
+  `navigate_to()` xatosi emas; server qaytargan business precondition xatosi.
+- 2026-07-23 setup runnerda tasdiqlangan screenshot:
+  `references/forms/screenshots/license/license__company-not-activated-error__desktop-1440x783.png`.
+- `DISABLE_LICENSE_POLICY=1` bo'lsa company setup policy'ni off qiladi va
+  `Buy License` / `Attach License` real license flowga kirmaydi; activation
+  precondition ham qo'llanmaydi.
 
 **Balans tekshiruvi:** `p.text-success[ng-if="q.balance > 0"]` — 5s timeout bilan `base.text(root=page.locator(...), timeout=5_000)`. MCP live (2026-07-13): selector 1 ta, visible va musbat balans matnini ko'rsatadi. `BasePage.text()` avval root locator visibleligini tekshiradi, keyin (berilsa) matnlarni tekshiradi; shu sabab dinamik balans qiymatini hardcode qilmasdan faqat element ko'rinishini assert qilish mumkin.
 - screenshot: `references/forms/screenshots/license/license__list-balance-mcp-20260713__desktop-1440x1000.png`

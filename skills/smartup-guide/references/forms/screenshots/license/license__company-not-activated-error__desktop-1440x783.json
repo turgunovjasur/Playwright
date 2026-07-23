@@ -1,0 +1,10 @@
+{
+  "form": "license",
+  "state": "company-not-activated-error",
+  "captured_at": "2026-07-23T16:23:08+05:00",
+  "source_test": "tests/smoke/test_setup/test_setup_runner.py::test_10_buy_license",
+  "url_pattern": "/biruni/kl/license_list",
+  "viewport_css_pixels": "1440x783",
+  "screenshot_pixels": "2880x1566",
+  "observation": "Navigation reached license_list, but Smartup replaced the list with the Error / Company not activated modal because the newly created company had not completed license activation."
+}
