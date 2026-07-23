@@ -27,9 +27,9 @@ def run_report_spot_check(page, code):
     base.switch_filial(name=f"filial-pw{code}")
 
     with allure.step("1 - Spot sahifasini ochish"):
-        base, _, rest = page.url.partition("#/")
+        base_url, _, rest = page.url.partition("#/")
         session_token = rest.split("/", 1)[0]
-        page.goto(f"{base}#/{session_token}/trade/rep/integration/spot")
+        page.goto(f"{base_url}#/{session_token}/trade/rep/integration/spot")
         expect(page.get_by_role("button", name="Шаблоны")).to_be_visible()
 
     with allure.step("2 - Yangi shablon yaratish"):

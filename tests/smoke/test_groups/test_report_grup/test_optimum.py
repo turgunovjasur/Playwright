@@ -41,9 +41,9 @@ def run_report_optimum_check(page, code):
     base.switch_filial(name=filial_name)
 
     with allure.step("1 - Optimum sahifasini ochish"):
-        base, _, rest = page.url.partition("#/")
+        base_url, _, rest = page.url.partition("#/")
         session_token = rest.split("/", 1)[0]
-        page.goto(f"{base}#/{session_token}/trade/rep/integration/optimum")
+        page.goto(f"{base_url}#/{session_token}/trade/rep/integration/optimum")
         expect(page.get_by_role("button", name="Настройки")).to_be_visible()
 
     with allure.step("2 - Настройки: product group va 8 ta prefiks -> saqlash"):

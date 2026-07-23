@@ -29,9 +29,9 @@ def run_report_cislink_check(page, code):
     base.switch_filial(name=f"filial-pw{code}")
 
     with allure.step("1 - CisLink integration report sahifasini ochish"):
-        base, _, rest = page.url.partition("#/")
+        base_url, _, rest = page.url.partition("#/")
         session_token = rest.split("/", 1)[0]
-        page.goto(f"{base}#/{session_token}/trade/rep/integration/cislink")
+        page.goto(f"{base_url}#/{session_token}/trade/rep/integration/cislink")
         expect(page.get_by_role("heading").filter(has_text="CisLink")).to_be_visible()
 
     with allure.step("2 - Настройки modalini ochish"):

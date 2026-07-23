@@ -27,9 +27,9 @@ def run_report_saleswork_check(page, code):
     base.switch_filial(name=f"filial-pw{code}")
 
     with allure.step("1 - SalesWork sahifasini ochish"):
-        base, _, rest = page.url.partition("#/")
+        base_url, _, rest = page.url.partition("#/")
         session_token = rest.split("/", 1)[0]
-        page.goto(f"{base}#/{session_token}/trade/rep/integration/saleswork")
+        page.goto(f"{base_url}#/{session_token}/trade/rep/integration/saleswork")
         expect(page.get_by_role("button", name="Шаблоны")).to_be_visible()
 
     with allure.step("2 - Yangi shablon yaratish"):

@@ -13,6 +13,7 @@ SETTING_CHECKBOXES = ["d.edit_person", "d.ignore_updated_deals", "d.show_owner_p
 OPTIONAL_ALERT_TIMEOUT = 1_500
 ALERT_CLOSE_TIMEOUT = 10_000
 SETTINGS_BUTTON_TIMEOUT = 60_000
+ACCESS_DENIED_TEXT = "Нет доступа к форме Интеграция с системой монолит"
 
 # (exchange_mode value, yuklanadigan fayl prefiksi, begin_date kerakmi)
 EXCHANGE_MODES = [
@@ -64,10 +65,15 @@ def run_report_integration_two_check(page, code, load_data):
 
     with allure.step("1 - Администрирование filialiga o'tib Integration Two sahifasini ochish"):
         base.switch_filial(name="Администрирование")
-        base, _, rest = page.url.partition("#/")
+        base_url, _, rest = page.url.partition("#/")
         session_token = rest.split("/", 1)[0]
-        page.goto(f"{base}#/{session_token}/trade/rep/integration/integration_two")
-        expect(page.locator('button[ng-click="q.show_setting = true"]')).to_be_visible(timeout=SETTINGS_BUTTON_TIMEOUT)
+        page.goto(f"{base_url}#/{session_token}/trade/rep/integration/integration_two")
+        settings_button = page.locator('button[ng-click="q.show_setting = true"]')
+        access_denied = page.locator("#biruniAlertExtended").get_by_text(ACCESS_DENIED_TEXT, exact=True)
+        expect(settings_button.or_(access_denied).first).to_be_attached(timeout=SETTINGS_BUTTON_TIMEOUT)
+        if access_denied.count() > 0:
+            pytest.skip(f"Integration Two forma accessi yo'q: {ACCESS_DENIED_TEXT}")
+        expect(settings_button).to_be_visible()
 
     with allure.step("2 - Настройки: filtrlar va checkboxlar -> saqlash"):
         page.locator('button[ng-click="q.show_setting = true"]').click()

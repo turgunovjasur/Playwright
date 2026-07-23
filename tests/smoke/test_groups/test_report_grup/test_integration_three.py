@@ -39,9 +39,9 @@ def run_report_integration_three_check(page, code):
     base.switch_filial(name=f"filial-pw{code}")
 
     with allure.step("1 - Integration №3 report sahifasini ochish"):
-        base, _, rest = page.url.partition("#/")
+        base_url, _, rest = page.url.partition("#/")
         session_token = rest.split("/", 1)[0]
-        page.goto(f"{base}#/{session_token}/trade/rep/integration/integration_three")
+        page.goto(f"{base_url}#/{session_token}/trade/rep/integration/integration_three")
         expect(page.get_by_role("button", name="Настройки")).to_be_visible()
 
     with allure.step("2 - Настройки rejimi va sozlamani saqlash"):

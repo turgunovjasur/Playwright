@@ -5,6 +5,8 @@ Bu fayl Report group'dagi integration reportlarni jamlaydi. Ular **menyuda yo'q*
 
 Alohida dossierlar: [cislink.md](cislink.md), [integration-three.md](integration-three.md).
 
+Report flowlarda `BasePage` obyekti `base` nomida saqlanadi. URL ajratishda shu nomni qayta ishlatish mumkin emas: `base_url, _, rest = page.url.partition("#/")` yoziladi. Aks holda keyingi `base.input()`/`base.wait_for_loader()` chaqirig'i URL string ustida ishlashga urinib, `'str' object has no attribute ...` bilan yiqiladi.
+
 ## b-input tanlash (umumiy)
 
 `select_b_input_option(page, name, option)`: `b-input[name="..."]` → Поиск'ni bos → fill(option) → `.hint-body, div.hint` ichidan `get_by_text(option, exact=True)` ni bos. Option container `.hint-body` yoki `div.hint` bo'lishi mumkin (b-input konfiguratsiyasiga qarab).
@@ -36,6 +38,9 @@ Alohida dossierlar: [cislink.md](cislink.md), [integration-three.md](integration
 - Settings: `d.company_id`, `d.user_name`*, `d.url`*, `d.unit_of_quant_measurement`*, `d.unit_of_box_measurement`* (checklistda yo'q, lekin majburiy!), `price_types`* , `product_groups`* (Характеристика ТМЦ); checkboxlar `d.edit_person`/`d.ignore_updated_deals`/`d.show_owner_person_code`/`d.send_all_deals`.
 - Exchange mode radiolari `input[ng-model="d.exchange_mode"][value="..."]`: **CRMOrder**=import_order, **CRMDespatch**=export_order, **CRMOrderStatus**=import_order_status, **CRMInput**=export_input (CRMWhBalance=4 commentlangan, CRMMovement=6).
 - ⚠️ **SKIP sababi (muhit)**: `integration_two` report **filial-pw5963'da yoqilmagan** (faqat company default filialida ochiladi — switch_filial qilinsa sahifa "Дашборд"da qolib yuklanmaydi). Lekin `Price Type UZB-pw5963` faqat filial-pw5963'da. Default filialda price_types server-search bilan ishlaydi va mos data yo'q. Test kodi `test_integration_two.py` da tayyor — `integration_two` yoqilgan va price-type/data mos filialli muhitda ishlaydi.
+- 2026-07-23 Xtrade verification: `Администрирование` filialida URL ochiladi, lekin server `Пользователь не авторизован` / `Нет доступа к форме Интеграция с системой монолит` modalini qaytaradi. Extended Biruni alert avtomatik yopilishi mumkin, shuning uchun test `#biruniAlertExtended` ichidagi aniq matn DOM'ga biriktirilganini tekshirib environment skip qiladi; `Настройки` DOM'ga biriktirilsa to'liq 4 XML flow davom etadi.
+- Screenshot: `skills/smartup-guide/references/forms/screenshots/integration-reports/integration-two__access-denied__desktop-2880x1566.png`.
+- 2026-07-23 yakuniy Xtrade report runner natijasi: Integration Three, SalesWork, Optimum va Spot passed; CisLink deployment migratsiyasi sabab oldindan skip; Integration Two aniq access-denied javobi sabab environment skip; failed test yo'q.
 
 ## Eslatmalar
 
