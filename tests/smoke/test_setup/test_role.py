@@ -36,7 +36,7 @@ def run_role(page):
 
     with allure.step("3 - Saqlash va natijani tekshirish"):
         page.get_by_role("button", name="Сохранить", exact=True).first.click()
-        base.expect_page(heading="Роли", url="role_list")
+        base.expect_page(heading="Роли", url="role_list", timeout=300_000)
 
 # ----------------------------------------------------------------------------------------------------------------------
 

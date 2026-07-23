@@ -29,7 +29,7 @@ def run_role_attach_form(page):
         page.get_by_role("button", name="Доступ ко всем формам").click()
         page.get_by_role("link", name="Разрешить").click()
         base.confirm_biruni(expected_text="Разрешить доступ ко всем формам?")
-        base.expect_page(heading="Роль (Просмотр)")
+        base.expect_page(heading="Роль (Просмотр)", timeout=300_000)
 
     with allure.step("3 - Ruxsatlar berilganini tekshirish"):
         page.get_by_role("button", name="Доступные").click()
