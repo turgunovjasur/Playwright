@@ -37,6 +37,7 @@ Tags: locator, heading, get_by_role, navigation, url
 
 ### View (Просмотр) label→value olish — exact match
 Tags: locator, order-view, label, xpath
+- Order list row action tugmasi hozir `Просмотр`, eski deploymentlarda `Просмотреть`; `flow_order_list(..., view=True)` ikkala variantni regex bilan qabul qiladi va tugmani row ichida scope qiladi.
 - `BasePage.form_view(...)` ikkala eski Smartup view DOMini qo'llaydi: `label + .form-view` va order viewdagi exact `<t>` labelning `../../span` qiymati. `flow_order_view` ham shu helperdan foydalanadi.
 - Formatlangan amountlarda `form_view(label=..., expect_value="7000", remove_spaces=True)` ishlatiladi: UI'dagi `7 000` kabi barcha whitespace assertda e'tiborsiz qilinadi; `return_value=True` bilan ham whitespace'siz qiymat qaytadi. Default `remove_spaces=False`, shuning uchun ism/status kabi qiymatlarda probellar tekshirilishda davom etadi.
 - `contains(text(),"{key}")` ISHLATMA: ilova label'larga yangi uzun matn qo'shsa (masalan `Статус` yoniga `Статус заказов, которые более 90 (дней)` tooltip/label qo'shilgan — 2026-06-21), `contains` ikkala `<t>` ga mos kelib strict mode violation beradi. Aniq (`normalize-space()=`) moslik shart.

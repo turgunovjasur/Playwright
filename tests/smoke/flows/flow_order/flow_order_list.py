@@ -1,7 +1,11 @@
+import re
+
 import allure
 
 from tests.smoke.flows import flow_modal
 from utils.base_page import BasePage
+
+ORDER_VIEW_BUTTON_NAME = re.compile(r"^Просмотр(?:еть)?$")
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -25,7 +29,7 @@ def flow_order_list(page, add=False, find_row=None, search=True, view=False, edi
 
     if view:
         with allure.step("Order List: 'Просмотр' button click"):
-            row.get_by_role("button", name="Просмотр", exact=True).click()
+            row.get_by_role("button", name=ORDER_VIEW_BUTTON_NAME).click()
 
     if edit:
         with allure.step("Order List: 'Редактировать' button click"):

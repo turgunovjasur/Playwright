@@ -68,7 +68,7 @@
 - Save: `#anor279-button-next_step` matni "СОХРАНИТЬ" (`nextStep()`), `save_and_expect_heading(..., exact_button=False)`.
 
 ### Konsignatsiya kartasi (consignment enabled bo'lsa)
-- Faqat `Главное > Настройки системы > Заказ` da `Разрешить выдачу консигнации` yoqilgan bo'lsa ko'rinadi.
+- Faqat `Главное > Настройки системы > Заказ` da `Разрешить консигнацию` yoqilgan bo'lsa ko'rinadi (`Разрешить выдачу консигнации` — eski UI matni).
 - Inputlar: `item.consignment_date` (label "Дата оплаты по консигнации", placeholder "Выбрать дату"),
   `item.consignment_amount` (label "Сумма консигнации"). `+` qo'shish: `button[ng-click="addConsignment()"]`.
 - Split rowlar dinamik `ng-repeat` bilan yaratiladi; bir nechta rowda qiymat kiritish/tekshirish uchun `BasePage.input(ng_model="item.consignment_date", index=...)` va `BasePage.input(ng_model="item.consignment_amount", index=...)` ishlatiladi. Labeldan `following input` topish save requestda faqat oxirgi row qolishiga olib kelgan holat trace orqali tasdiqlangan.

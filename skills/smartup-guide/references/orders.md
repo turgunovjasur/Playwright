@@ -60,7 +60,7 @@ Tags: order, edit, a-group, status
 ### Consignment Order Case
 Tags: order, consignment, settings, view
 - Qayerda: `Главное > Настройки системы > Заказ`.
-- Sozlama DOMida label tarjimasi deploymentga qarab o'zgarishi mumkin; switch `BasePage.checkbox(ng_model="d.consignment_allow", ...)`, limit esa `BasePage.input(ng_model="d.consignment_day_limit", ...)` bilan boshqariladi. Bu raw click/fill emas, BasePage'ning qo'llab-quvvatlanadigan field strategiyasi.
+- Sozlama switchining hozirgi UI matni `Разрешить консигнацию`, eski deploymentlarda `Разрешить выдачу консигнации`; label tarjimasi o'zgarishi mumkin. Shu sabab switch `BasePage.checkbox(ng_model="d.consignment_allow", ...)`, limit esa `BasePage.input(ng_model="d.consignment_day_limit", ...)` bilan boshqariladi. Bu raw click/fill emas, BasePage'ning qo'llab-quvvatlanadigan field strategiyasi.
 - Fresh DB qoida: konsignatsiya default o'chirilgan bo'ladi; B-group konsignatsiya testi order yaratishdan oldin shu settingni yoqib, limitni `30` qilib saqlashi kerak.
 - Qoida: limit `30` saqlansa, order add final/3-formasida `Дата оплаты по консигнации` va `Сумма консигнации` kartasi ko'rinadi.
 - Create test maqsadi keyingi edit case uchun precondition ham yaratadi: quantity `5`, total/konsignatsiya `35 000` bo'lsin; quantity `1` bilan keyingi testda totalni kamaytirib bo'lmaydi.
@@ -68,6 +68,11 @@ Tags: order, consignment, settings, view
 - View assert: order viewda `Консигнация` tabi bosilib, `b-pg-grid[name="consignments"]` ichidagi sana/summa qatori `BasePage.grid(..., root=...)` bilan tekshiriladi.
 - B-group order helper fayli: `tests/smoke/test_groups/test_B_grup/order_helpers.py`.
 - B-group leaf testlari tartib raqamisiz alohida fayllarda turadi: `test_create_order_with_consignment_limit.py`, `test_edit_order_with_consignment_limit.py`, `test_order_invoice_reports.py`, `test_invoice_report_template.py`; har bir faylda faqat bitta pytest test bo'ladi. `B-01`...`B-04` tartibi faqat runnerda beriladi.
+
+### Order list view tugmasi
+Tags: order, order-list, view, locator
+- Hozirgi UI row action tugmasini `Просмотр` deb ko'rsatadi; eski deploymentlarda `Просмотреть` bo'lishi mumkin.
+- Testda ishlatish: amount cellni qo'lda bosib global tugma qidirmang. `flow_order_list(page, find_row=<unique client>, view=True)` ishlating; flow ikkala matn variantini qabul qiladi va tugmani tanlangan row ichida qidiradi.
 
 ### Consignment Edit And Split Case
 Tags: order, consignment, edit, validation, split
