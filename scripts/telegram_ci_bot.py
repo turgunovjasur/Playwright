@@ -15,7 +15,7 @@ import requests
 DEFAULT_REPOSITORY = "turgunovjasur/Playwright"
 DEFAULT_WORKFLOW = "daily-smoke.yml"
 DEFAULT_REF = "main"
-DEFAULT_TARGET = "setup-report"
+DEFAULT_TARGET = "setup-a2-admin"
 STATUS_POLL_INTERVAL_SECONDS = 30
 STATUS_POLL_ERROR_LIMIT = 5
 
@@ -391,7 +391,7 @@ def help_text():
         "Bot avval serverni so'raydi.\n"
         "So'ngra parol so'raladi — to'g'ri parol kiritilsa test ishga tushadi.\n"
         "Company code/password GitHub Secrets'dan olinadi.\n"
-        "User setup testlaridan keyin faqat Report testlari ishlaydi; A/B/C group'lar CI'ga kiritilmaydi.\n"
+        "User setup testlaridan keyin faqat A2 admin formalar testi ishlaydi; A/B/C va Report group'lar CI'ga kiritilmaydi.\n"
         "Yakuniy test natijasini GitHub Actions workflow yuboradi.\n"
         "Test jarayonda bo'lsa yangi /run bloklanadi.\n"
         "Avto-run har soatda mustaqil ishga tushadi (run ketayotgan bo'lsa o'tkazib yuboriladi).\n\n"
@@ -409,7 +409,7 @@ def start_text(config):
         else "Avto-run hozir o'chirilgan."
     )
     return (
-        "👋 Salom! Bu — Playwright Setup va Report testlarini GitHub Actions orqali ishga tushiradigan CI bot.\n"
+        "👋 Salom! Bu — Playwright Setup va A2 Admin Forms testlarini GitHub Actions orqali ishga tushiradigan CI bot.\n"
         "\n"
         "📌 Nima qiladi:\n"
         "Testlarni GitHub Actions workflowda ishga tushiradi va natijani shu chatga yuboradi. "
@@ -426,7 +426,7 @@ def start_text(config):
         f"{servers}\n"
         "\n"
         "🧪 Nima test qilinadi:\n"
-        "User setup → Report testlari. A/B/C group testlari CI runiga kiritilmaydi.\n"
+        "User setup → A2 admin formalar testi. A/B/C va Report group testlari CI runiga kiritilmaydi.\n"
         "\n"
         "📊 Natija xabari:\n"
         "Status, hozirgi qadam, passed ro'yxati; failed bo'lsa Group / Runner test / "

@@ -28,9 +28,13 @@ Tags: smoke, entity, naming, run-result
 ### Runner Qoidasi
 Tags: smoke, setup, dependency, data-store
 - GitHub Actions `.github/workflows/daily-smoke.yml` va Telegram CI bot targetni
-  qat'iy `setup-report`ga mahkamlaydi: avval `test_setup_runner.py`, keyin
-  `test_report_group_runner.py` ishlaydi; A/B/C group testlari CI dispatchga
-  kiritilmaydi.
+  qat'iy `setup-a2-admin`ga mahkamlaydi: avval `test_setup_runner.py`, keyin
+  `test_a2_admin_forms.py` ishlaydi; A/B/C va Report group testlari CI
+  dispatchga kiritilmaydi. `setup-report` faqat lokal runner targeti sifatida
+  saqlangan.
+- 2026-07-23 collection verifikatsiyasi: `setup-a2-admin` existing-company
+  rejimida 20 ta Setup case va bitta `test_a2_admin_forms`ni tanladi
+  (`21 selected`, `test_00_company` esa skip emas, deselect).
 - Telegram botda smoke/regression scope tanlovi yo'q. `/run`dan keyin faqat
   `Online` (`smartup.online`) yoki `Xtrade` (`app3.greenwhite.uz/xtrade`)
   tugmasi tanlanadi.

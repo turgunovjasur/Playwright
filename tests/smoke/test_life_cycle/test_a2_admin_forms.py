@@ -20,12 +20,18 @@ Hali qamralmagan admin formalar (Компании, Логи, Объявлени�
 import re
 
 import allure
+import pytest
 from playwright.sync_api import expect, TimeoutError as PlaywrightTimeoutError
 
 from tests.smoke.flows.flow_authorization import authorization, company_url
 from tests.smoke.flows.flow_navigate import navigate_to_a2
 
-pytestmark = [allure.epic("Smoke"), allure.feature("A2 New Forms"), allure.story("Menyu orqali ochilish (admin)")]
+pytestmark = [
+    pytest.mark.smoke_group("A2 Admin Forms"),
+    allure.epic("Smoke"),
+    allure.feature("A2 New Forms"),
+    allure.story("Menyu orqali ochilish (admin)"),
+]
 
 ADMIN_FILIAL = "Администрирование"
 A2_ADMIN_FORM_TIMEOUT = 60_000

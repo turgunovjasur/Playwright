@@ -226,7 +226,8 @@ Bu buyruq macOS, Linux va Windowsda ishlaydi. `.env` ishlatilmaydi.
 | `--dry-run` | Testni ishga tushirmaydi, faqat pytest commandni ko'rsatadi. |
 | `all` | Default target. Setup + A + B + C + Report group ishlaydi. |
 | `setup` | Faqat setup runner ishlaydi. |
-| `setup-report` | CI targeti: Setup, keyin Report runner; A/B/C ishlamaydi. |
+| `setup-report` | Lokal target: Setup, keyin Report runner; A/B/C ishlamaydi. |
+| `setup-a2-admin` | CI/bot targeti: Setup, keyin `test_a2_admin_forms`; A/B/C/Report ishlamaydi. |
 | `company` | Faqat yangi company yaratish testi ishlaydi. |
 | `groups` | Setupni ishlatmasdan barcha group runnerlar ishlaydi. |
 | `group-a` | Faqat A group ishlaydi. |
@@ -383,7 +384,8 @@ Default target `all`, ya'ni full suite.
 |--------|------------------|---------------|
 | `all` | `python scripts/run_tests.py --url <url> --company-code <code> --company-password <pass>` | Setup + A + B + C + Report group |
 | `setup` | `python scripts/run_tests.py setup --url <url> --company-code <code> --company-password <pass>` | Faqat user setup |
-| `setup-report` | `python scripts/run_tests.py setup-report --url <url> --company-code <code> --company-password <pass>` | User setup + Report group; CI/bot shu targetni ishlatadi |
+| `setup-report` | `python scripts/run_tests.py setup-report --url <url> --company-code <code> --company-password <pass>` | User setup + Report group; lokal target |
+| `setup-a2-admin` | `python scripts/run_tests.py setup-a2-admin --url <url> --company-code <code> --company-password <pass>` | User setup + A2 admin formalar; CI/bot shu targetni ishlatadi |
 | `company` | `python scripts/run_tests.py company --url <url> --create-company --head-email <email> --head-password <pass>` | Faqat company yaratish testi |
 | `groups` | `python scripts/run_tests.py groups --url <url> --company-code <code> --company-password <pass>` | Setupdan tashqari barcha grouplar |
 | `group-a` | `python scripts/run_tests.py group-a --url <url> --company-code <code> --company-password <pass>` | Faqat A group |
@@ -393,7 +395,7 @@ Default target `all`, ya'ni full suite.
 
 `--create-company` faqat `all`, `setup`, `company` targetlari bilan ishlatiladi. `groups` va alohida group targetlari uchun avval mavjud company va setup data kerak.
 
-CI/Telegram botdagi `setup-report` targeti `CREATE_COMPANY=0` bilan ishlaydi:
+CI/Telegram botdagi `setup-a2-admin` targeti `CREATE_COMPANY=0` bilan ishlaydi:
 serverga mos company code/password GitHub Secrets'dan olinadi.
 
 Code tanlovi `.env` dagi yagona `NEW_CODE` flagi bilan boshqariladi: `NEW_CODE=1` yangi 6 xonali code yaratadi, `NEW_CODE=0` esa `test-results/data/data_store.json` dagi mavjud code ni ishlatadi.

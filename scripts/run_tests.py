@@ -29,6 +29,7 @@ GROUP_RUNNER_PATHS = (
     "tests/smoke/test_groups/test_C_grup/test_c_group_runner.py",
     "tests/smoke/test_groups/test_report_grup/test_report_group_runner.py",
 )
+A2_ADMIN_FORMS_PATH = "tests/smoke/test_life_cycle/test_a2_admin_forms.py"
 
 TARGETS = {
     "all": (
@@ -43,6 +44,13 @@ TARGETS = {
         (
             "tests/smoke/test_setup/test_setup_runner.py",
             GROUP_RUNNER_PATHS[3],
+        ),
+        "--new-code",
+    ),
+    "setup-a2-admin": (
+        (
+            "tests/smoke/test_setup/test_setup_runner.py",
+            A2_ADMIN_FORMS_PATH,
         ),
         "--new-code",
     ),
@@ -183,8 +191,8 @@ def parse_args():
         nargs="?",
         default="all",
         help=(
-            "Default: all. CI uchun: setup-report. Debug uchun: setup, company, groups, group-a, group-b, "
-            "group-c, group-report yoki pytest target path."
+            "Default: all. CI uchun: setup-a2-admin. Debug uchun: setup, setup-report, company, groups, "
+            "group-a, group-b, group-c, group-report yoki pytest target path."
         ),
     )
     parser.add_argument("--url", help="Server URL; lokal .env bo'lsa COMPANY_URL ishlatiladi.")
@@ -249,8 +257,8 @@ def main():
             file=sys.stderr,
         )
         return 2
-    if create_company and args.target == "setup-report":
-        print("setup-report CI targeti faqat CREATE_COMPANY=0 bilan ishlaydi", file=sys.stderr)
+    if create_company and args.target in {"setup-report", "setup-a2-admin"}:
+        print(f"{args.target} targeti faqat CREATE_COMPANY=0 bilan ishlaydi", file=sys.stderr)
         return 2
     if args.target == "company" and not create_company:
         print("company target faqat CREATE_COMPANY=1 bilan ishlaydi", file=sys.stderr)

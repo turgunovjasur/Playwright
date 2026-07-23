@@ -1,4 +1,4 @@
-name: Daily Setup and Report Tests
+name: Daily Setup and A2 Admin Forms Tests
 
 on:
   schedule:
@@ -11,9 +11,9 @@ on:
         default: https://smartup.online/
         type: string
       target:
-        description: Compatibility only; this workflow always runs setup-report
+        description: Compatibility only; this workflow always runs setup-a2-admin
         required: false
-        default: setup-report
+        default: setup-a2-admin
         type: string
       ai_summary:
         description: Add Gemini AI conclusion
@@ -36,7 +36,7 @@ jobs:
     timeout-minutes: 90
     env:
       TEST_SERVER_URL: ${{ github.event.inputs.server_url || 'https://smartup.online/' }}
-      TEST_TARGET: setup-report
+      TEST_TARGET: setup-a2-admin
       CREATE_COMPANY: "0"
       DISABLE_LICENSE_POLICY: "0"
       TEST_AI_SUMMARY: ${{ github.event.inputs.ai_summary || 'false' }}
@@ -122,7 +122,7 @@ jobs:
           [ -n "$SELECTED_COMPANY_PASSWORD" ] && echo "::add-mask::$SELECTED_COMPANY_PASSWORD"
           [ -n "$GEMINI_API_KEY" ] && echo "::add-mask::$GEMINI_API_KEY"
 
-      - name: Run setup and report tests
+      - name: Run setup and A2 admin forms tests
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}

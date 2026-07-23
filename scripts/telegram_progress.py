@@ -25,6 +25,7 @@ TARGET_LABELS = {
     "all": "All",
     "setup": "Setup",
     "setup-report": "Setup + Report",
+    "setup-a2-admin": "Setup + A2 Admin Forms",
     "company": "Company",
     "groups": "Groups",
     "group-a": "Group A",
@@ -32,7 +33,7 @@ TARGET_LABELS = {
     "group-c": "Group C",
     "group-report": "Report Group",
 }
-GROUP_ORDER = ["Setup", "A group", "B group", "C group", "Report group"]
+GROUP_ORDER = ["Setup", "A2 Admin Forms group", "A group", "B group", "C group", "Report group"]
 STATUS_MARK = {"PASSED": "✅", "FAILED": "❌", "SKIPPED": "⏭"}
 
 
@@ -108,7 +109,7 @@ def target_label(target):
 
 
 def title_line(state):
-    name = "Setup + Report CI"
+    name = f"{target_label(str(state.get('target') or 'all'))} CI"
     result = str(state.get("result") or "").upper()
     if result == "PASSED":
         return f"✅ {name} — PASSED"

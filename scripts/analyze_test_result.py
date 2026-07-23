@@ -138,6 +138,8 @@ def _group_name(item, runner_test):
     source = str(item.get("source") or item.get("location") or "").lower()
     combined = " ".join([full_name, name, source, runner_test.lower()])
 
+    if "test_a2_admin_forms" in combined or "a2 admin forms" in combined:
+        return "A2 Admin Forms"
     if "report_group" in combined or "report group" in combined:
         return "Report group"
     if "c_group" in combined or "c group" in combined:

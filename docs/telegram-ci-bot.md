@@ -2,8 +2,9 @@
 
 Telegram bot GitHub Actions workflow `.github/workflows/daily-smoke.yml`ni
 ishga tushiradi. Workflow avtomatik ravishda har soat `00` daqiqada ham yuradi.
-CI va Telegram bot runlari `setup-report` targetini ishlatadi: avval User setup,
-keyin Report testlari yuradi. A/B/C group testlari workflowga kiritilmaydi.
+CI va Telegram bot runlari `setup-a2-admin` targetini ishlatadi: avval User
+setup, keyin `test_a2_admin_forms` yuradi. A/B/C va Report group testlari
+workflowga kiritilmaydi.
 `smartup.online` va `app3.greenwhite.uz/xtrade` serverlarining ikkalasida ham
 mavjud company ishlatiladi (`CREATE_COMPANY=0`).
 
@@ -27,7 +28,7 @@ progress ko'rsatadi:
 
 ```text
 Test boshlandi
-Setup + Report
+Setup + A2 Admin Forms
 Status: requirements o'rnatilyapti
 ```
 
@@ -35,7 +36,7 @@ Keyin:
 
 ```text
 Test boshlandi
-Setup + Report
+Setup + A2 Admin Forms
 Status: testlar ishlayapti
 Hozir: test_01_legal_person
 
