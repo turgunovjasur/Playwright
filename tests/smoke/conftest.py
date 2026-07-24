@@ -12,7 +12,6 @@ from playwright.sync_api import expect, sync_playwright
 from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.progress import emit_progress_event
 from utils.logger import write_failure_log, get_logger
-from utils.timeouts import PlaywrightTimeouts
 
 TRACE_DIR = "test-results/traces"
 DATA_DIR = "test-results/data"
@@ -377,7 +376,7 @@ def _write_data_file(data, file_name="data_store"):
 
 def pytest_configure(config):
     """Allure hisoboti uchun environment, categories, executor va history tayyorlaydi."""
-    expect.set_options(timeout=PlaywrightTimeouts.ACTION)
+    expect.set_options(timeout=10_000)
     company_url = _option_or_env(config, "--url", "COMPANY_URL", "URL", normalize=_normalized_url)
     run_mode = _run_mode_from_cli_or_env(config)
     create_company = run_mode == "create"
@@ -508,8 +507,8 @@ def session_browser(request):
 def session_context(session_browser, request):
     """Barcha smoke testlar uchun yagona context. Bitta trace yoziladi."""
     context = session_browser.new_context(**_browser_context_options(request.config))
-    context.set_default_timeout(PlaywrightTimeouts.ACTION)
-    context.set_default_navigation_timeout(PlaywrightTimeouts.NAVIGATION)
+    context.set_default_timeout(10_000)
+    context.set_default_navigation_timeout(20_000)
     context.tracing.start(screenshots=True, snapshots=True, sources=True)
     yield context
     os.makedirs(TRACE_DIR, exist_ok=True)
@@ -531,8 +530,8 @@ def session_page(session_context):
 def group_session_page(session_browser, request, code):
     """Bitta group runner moduli uchun bitta context/page."""
     context = session_browser.new_context(**_browser_context_options(request.config))
-    context.set_default_timeout(PlaywrightTimeouts.ACTION)
-    context.set_default_navigation_timeout(PlaywrightTimeouts.NAVIGATION)
+    context.set_default_timeout(10_000)
+    context.set_default_navigation_timeout(20_000)
     context.tracing.start(screenshots=True, snapshots=True, sources=True)
     page_obj = context.new_page()
 
@@ -557,8 +556,8 @@ def group_user_page(group_session_page, code):
 def page(browser, request):
     """Har bir test uchun yangi sahifa, to'liq ekran (no_viewport + --start-maximized). Trace yoziladi."""
     context = browser.new_context(**_browser_context_options(request.config))
-    context.set_default_timeout(PlaywrightTimeouts.ACTION)
-    context.set_default_navigation_timeout(PlaywrightTimeouts.NAVIGATION)
+    context.set_default_timeout(10_000)
+    context.set_default_navigation_timeout(20_000)
 
     context.tracing.start(screenshots=True, snapshots=True, sources=True)
     page_obj = context.new_page()

@@ -35,6 +35,15 @@ TARGET_LABELS = {
 }
 GROUP_ORDER = ["Setup", "A2 Admin Forms group", "A group", "B group", "C group", "Report group"]
 STATUS_MARK = {"PASSED": "✅", "FAILED": "❌", "SKIPPED": "⏭"}
+ELEMENT_STATE_LABELS = {
+    "ambiguous": "bir nechta element",
+    "hidden": "element yashirin",
+    "disabled": "element faol emas",
+    "unstable": "element beqaror",
+    "blocked": "element to'silgan",
+    "resolved": "element topilgan",
+    "not_found": "element topilmagan",
+}
 
 
 def env_value(name):
@@ -125,6 +134,14 @@ def first_failed_result(state):
     return {}
 
 
+def first_message_line(value):
+    for line in str(value or "").splitlines():
+        text = line.strip()
+        if text:
+            return text
+    return ""
+
+
 def truncate_message(text):
     if len(text) <= MAX_MESSAGE_LENGTH:
         return text
@@ -173,23 +190,47 @@ def failed_block(state):
     failed = first_failed_result(state)
     if not failed:
         return []
-    reason = failed.get("reason") or failed.get("message")
+
+    group = str(failed.get("group") or "").strip()
+    test_name = str(failed.get("display") or failed.get("title") or failed.get("inner_test") or "").strip()
+    test_context = " → ".join(value for value in (group, test_name) if value)
+    step = str(failed.get("failed_step") or failed.get("step") or "").strip()
+    if step == test_name:
+        step = ""
+
+    reason = str(failed.get("reason") or "").strip()
+    if not reason:
+        reason = first_message_line(failed.get("message"))
+
+    technical = []
+    error_type = str(failed.get("error_type") or "").strip()
+    timeout = str(failed.get("timeout") or "").strip()
+    element_state = str(failed.get("element_state") or "").strip()
+    target = str(failed.get("target") or "").strip()
+    if error_type:
+        technical.append(error_type)
+    if timeout:
+        technical.append(timeout)
+    if element_state:
+        technical.append(ELEMENT_STATE_LABELS.get(element_state, element_state))
+    if target:
+        technical.append(target)
+
     pairs = [
-        ("Group", failed.get("group")),
-        ("Runner", failed.get("runner")),
-        ("Test", failed.get("inner_test") or failed.get("display") or failed.get("title")),
-        ("Step", failed.get("failed_step") or failed.get("step")),
-        ("Page", failed.get("before_page")),
-        ("Action", failed.get("action")),
-        ("Expected", failed.get("expected")),
-        ("Actual", failed.get("actual")),
-        ("UI error", failed.get("ui_error")),
-        ("Error", failed.get("error_type")),
-        ("Reason", reason),
-        ("Location", failed.get("location")),
-        ("Next", failed.get("next_action")),
+        ("Test", test_context),
+        ("Qadam", step),
+        ("Sahifa", failed.get("before_page")),
+        ("Amal", failed.get("action")),
+        ("Kutilgan", failed.get("expected")),
+        ("Haqiqiy", failed.get("actual")),
+        ("UI xabari", failed.get("ui_error")),
+        ("Muammo", reason),
+        ("Texnik", " · ".join(technical)),
+        ("Kod", failed.get("location")),
+        ("Ta'sir", failed.get("impact")),
+        ("Yechim", failed.get("next_action")),
     ]
-    lines = ["", "❌ Failed:"]
+    lines = ["", "❌ Xato tafsiloti:"]
     for label, value in pairs:
         text = str(value or "").strip()
         if text:
@@ -379,6 +420,10 @@ def failed_details_from_system_summary():
         "expected": str(first.get("expected") or ""),
         "actual": str(first.get("actual") or ""),
         "ui_error": str(first.get("ui_error") or ""),
+        "target": str(first.get("target") or ""),
+        "element_state": str(first.get("element_state") or ""),
+        "timeout": str(first.get("timeout") or ""),
+        "impact": str(first.get("impact") or ""),
     }
 
 

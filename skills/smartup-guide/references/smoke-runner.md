@@ -90,6 +90,13 @@ Tags: smoke, setup, dependency, data-store
   va `save_data("code", code)` orqali yangi code ni keyingi yakka/debug testlar uchun saqlaydi.
 - Smoke runner `data_store.json` ni tozalab qayta yaratmaydi; faqat `code` yozadi. Shu sabab group testlardan qolgan eski `contract_*` yoki `order_id` qiymatlarini smoke setupning hozirgi code qiymati bilan bir xil deb qabul qilmaslik kerak.
 
+### Telegram failure diagnostikasi
+Tags: smoke, telegram, failure, playwright, locator, summary
+- Final failure bloki `Test → Qadam → Muammo → Texnik → Kod → Ta'sir → Yechim` tartibida chiqadi; bir xil ma'nodagi `Runner`, `Test` va `Step` qatorlari takrorlanmaydi.
+- Playwright call log holati deterministik ajratiladi: `locator resolved to` bilan birga `element is not visible` chiqsa element topilgan, lekin yashirin; bu holat "element topilmadi" deb yozilmasin.
+- `hidden`, `disabled`, `unstable`, pointer-event bilan `blocked` va haqiqiy `not_found` holatlari alohida sabab hamda keyingi amaliy harakatga ega.
+- 2026-07-24 CI runida Room setup `BasePage.switch_filial()` ichidagi `.pt-3.px-2` elementini topgan, ammo u yashirin bo'lgani uchun click 10 sekundda timeout bergan; summary aynan shu faktni ko'rsatishi kerak.
+
 ### 2026-07-15 setup runner structure fix
 Tags: smoke, setup, runner, collection, allure, fix
 - `test_setup_runner.py` ichida `test_00_company` va `test_01_authorization`–`test_21_balance` wrapperlari tiklandi; collect-only natijasi `22 tests collected`.

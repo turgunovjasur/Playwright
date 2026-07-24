@@ -3,8 +3,6 @@ import re
 from playwright.sync_api import expect
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
-from utils.timeouts import BasePageTimeouts
-
 
 _UNSET = object()
 
@@ -44,7 +42,7 @@ class AngularBasePage:
         *,
         index=0,
         root="main",
-        timeout=BasePageTimeouts.COMPONENT,
+        timeout=10_000,
     ):
         """``label`` bo'yicha ko'rinadigan ``smt-control``ni qaytaradi."""
         root = self._resolve_root(root)
@@ -62,7 +60,7 @@ class AngularBasePage:
         for control_index in range(controls.count()):
             candidate = controls.nth(control_index)
             try:
-                expect(candidate).to_be_visible(timeout=BasePageTimeouts.FIELD_PROBE)
+                expect(candidate).to_be_visible(timeout=500)
             except (AssertionError, PlaywrightTimeoutError):
                 continue
             visible_controls.append(candidate)
@@ -87,7 +85,7 @@ class AngularBasePage:
         exact=True,
         index=0,
         root="main",
-        timeout=BasePageTimeouts.COMPONENT,
+        timeout=10_000,
         expect_visible=True,
     ):
         """A2 buttonni semantic role/name bo'yicha topadi va ixtiyoriy bosadi."""
@@ -109,7 +107,7 @@ class AngularBasePage:
         exact=True,
         index=0,
         root="main",
-        timeout=BasePageTimeouts.COMPONENT,
+        timeout=10_000,
     ):
         """A2 ``smt-tab-button`` yoki semantic tab/buttonni topadi."""
         root = self._resolve_root(root)
@@ -139,7 +137,7 @@ class AngularBasePage:
         root="main",
         clear=True,
         press_tab=False,
-        timeout=BasePageTimeouts.COMPONENT,
+        timeout=10_000,
     ):
         """A2 ``smt-input`` ichidagi native input/textarea bilan ishlaydi."""
         root = self._resolve_root(root)
@@ -196,7 +194,7 @@ class AngularBasePage:
         exact=True,
         index=0,
         root="main",
-        timeout=BasePageTimeouts.COMPONENT,
+        timeout=10_000,
     ):
         """A2 ``smt-data-select``dan option tanlaydi yoki joriy qiymatni tekshiradi."""
         root = self._resolve_root(root)
@@ -267,7 +265,7 @@ class AngularBasePage:
         role,
         index=0,
         root="main",
-        timeout=BasePageTimeouts.COMPONENT,
+        timeout=10_000,
     ):
         root = self._resolve_root(root)
         pattern = self._label_pattern(label)
@@ -306,7 +304,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def _set_toggle(self, toggle, checked, *, timeout=BasePageTimeouts.COMPONENT):
+    def _set_toggle(self, toggle, checked, *, timeout=10_000):
         role = toggle.get_attribute("role")
         if role in {"switch", "checkbox", "radio"}:
             current = (toggle.get_attribute("aria-checked") or "").lower() == "true"
@@ -342,7 +340,7 @@ class AngularBasePage:
         return_value=False,
         index=0,
         root="main",
-        timeout=BasePageTimeouts.COMPONENT,
+        timeout=10_000,
     ):
         """A2 ``role=switch`` controlini label yoki tayyor locator bilan boshqaradi."""
         if (locator is None) == (label is None):
@@ -395,7 +393,7 @@ class AngularBasePage:
         return_value=False,
         index=0,
         root="main",
-        timeout=BasePageTimeouts.COMPONENT,
+        timeout=10_000,
     ):
         """A2 ``role=checkbox`` controlini label yoki tayyor locator bilan boshqaradi."""
         if (locator is None) == (label is None):
@@ -447,7 +445,7 @@ class AngularBasePage:
         return_value=False,
         index=0,
         root="main",
-        timeout=BasePageTimeouts.COMPONENT,
+        timeout=10_000,
     ):
         """A2 semantic radio controlini tanlaydi va holatini tekshiradi."""
         radio = self._toggle_by_label(
@@ -471,7 +469,7 @@ class AngularBasePage:
         *,
         index=0,
         root="main",
-        timeout=BasePageTimeouts.COMPONENT,
+        timeout=10_000,
     ):
         """``smt-control`` ichidagi segmented button optionni tanlaydi."""
         control = self.control(label, index=index, root=root, timeout=timeout)
@@ -482,7 +480,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def text(self, *values, root="main", timeout=BasePageTimeouts.TEXT):
+    def text(self, *values, root="main", timeout=10_000):
         content = self._resolve_root(root)
         expect(content).to_be_visible(timeout=timeout)
         for value in values:
@@ -501,7 +499,7 @@ class AngularBasePage:
         remove_spaces=False,
         index=0,
         root="main",
-        timeout=BasePageTimeouts.TEXT,
+        timeout=10_000,
     ):
         """A2 view'dagi readonly ``smt-input`` qiymatini tekshiradi yoki qaytaradi."""
         field = self.input(
@@ -556,9 +554,9 @@ class AngularBasePage:
 
     def wait_for_loader(
         self,
-        timeout=BasePageTimeouts.LOADER,
+        timeout=30_000,
         *,
-        appear_timeout=BasePageTimeouts.LOADER_APPEAR,
+        appear_timeout=2_000,
         root="main",
     ):
         """A2 skeleton/busy holati paydo bo'lsa, to'liq tugashini kutadi."""
@@ -584,7 +582,7 @@ class AngularBasePage:
         url=None,
         title=None,
         ready=None,
-        timeout=BasePageTimeouts.UI_TRANSITION,
+        timeout=30_000,
         check_unblocked=True,
         root="main",
     ):
@@ -633,7 +631,7 @@ class AngularBasePage:
         checkbox=None,
         is_empty=False,
         is_visible=False,
-        timeout=BasePageTimeouts.COMPONENT,
+        timeout=10_000,
     ):
         """A2 ``smt-data-table`` qatorlarini boshqaradi."""
         if checkbox not in (None, "row", "all"):
@@ -686,7 +684,7 @@ class AngularBasePage:
         search=None,
         expand=None,
         root="main",
-        timeout=BasePageTimeouts.UI_TRANSITION,
+        timeout=30_000,
     ):
         """A2 list search va page-size controlini boshqaradi."""
         if (search is None) == (expand is None):
@@ -736,7 +734,7 @@ class AngularBasePage:
         name=None,
         path=None,
         root="header",
-        timeout=BasePageTimeouts.UI_TRANSITION,
+        timeout=30_000,
     ):
         """A2 shell menu tabidan menuitem orqali boshqa A2 formani ochadi."""
         if (name is None) == (path is None):
@@ -770,7 +768,7 @@ class AngularBasePage:
         *,
         project="TRADE",
         root="header",
-        timeout=BasePageTimeouts.UI_TRANSITION,
+        timeout=30_000,
     ):
         """A2 shell filial selectori orqali filialni almashtiradi."""
         root = self._resolve_root(root)
@@ -804,7 +802,7 @@ class AngularBasePage:
         *,
         button_name=re.compile(r"^\s*(да|yes)\s*$", re.IGNORECASE),
         root="body",
-        timeout=BasePageTimeouts.COMPONENT,
+        timeout=10_000,
     ):
         """Legacy Biruni yoki A2/CDK confirm dialogini tasdiqlaydi."""
         root = self._resolve_root(root)
@@ -830,7 +828,7 @@ class AngularBasePage:
         *,
         button_name=re.compile(r"^\s*(да|yes)\s*$", re.IGNORECASE),
         root="body",
-        timeout=BasePageTimeouts.SHORT_CHECK,
+        timeout=1_000,
     ):
         root = self._resolve_root(root)
         confirm = root.locator(
@@ -854,7 +852,7 @@ class AngularBasePage:
         self,
         *expected_text,
         root="body",
-        timeout=BasePageTimeouts.COMPONENT,
+        timeout=10_000,
     ):
         """A2/legacy ko'rinadigan error alertini tekshiradi va yopadi."""
         alert = self._visible_error_locator(root=root)
@@ -886,8 +884,8 @@ class AngularBasePage:
         confirm_text=None,
         button_name="Сохранить",
         root="main",
-        confirm_timeout=BasePageTimeouts.COMPONENT,
-        timeout=BasePageTimeouts.UI_TRANSITION,
+        confirm_timeout=10_000,
+        timeout=30_000,
     ):
         """A2 formani saqlaydi, confirmni yopadi va target UI transitionni kutadi."""
         self.button(

@@ -5,8 +5,6 @@ from datetime import date as calendar_date, datetime, timedelta
 from playwright.sync_api import expect
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
-from utils.timeouts import BasePageTimeouts
-
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +63,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def _visible_error_text(self, timeout=BasePageTimeouts.SHORT_CHECK):
+    def _visible_error_text(self, timeout=1_000):
         selectors = (
             "#biruniAlertExtended",
             "#biruniAlert",
@@ -125,7 +123,7 @@ class BasePage:
         confirm_text=None,
         button_name="Сохранить",
         exact_button=True,
-        timeout=BasePageTimeouts.UI_TRANSITION,
+        timeout=30_000,
         location_hint="",
     ):
         before = before_state or self._current_heading_text()
@@ -138,7 +136,7 @@ class BasePage:
         self.wait_for_loader(timeout=timeout)
 
         expected = expected_state or f"{expected_heading} heading ochilishi"
-        ui_error = self._visible_error_text(timeout=BasePageTimeouts.SHORT_CHECK)
+        ui_error = self._visible_error_text(timeout=1_000)
         if ui_error:
             actual = f"still on {self._current_heading_text() or before or 'unknown'}"
             raise AssertionError(
@@ -163,7 +161,7 @@ class BasePage:
                     expected=expected,
                     before_state=before,
                     actual_state=actual,
-                    ui_error=self._visible_error_text(timeout=BasePageTimeouts.FIELD_PROBE),
+                    ui_error=self._visible_error_text(timeout=500),
                     location_hint=location_hint,
                 )
             ) from exc
@@ -261,7 +259,7 @@ class BasePage:
 
         def reached():
             try:
-                expect(cb).to_be_checked(timeout=BasePageTimeouts.SHORT_CHECK) if checked else expect(cb).not_to_be_checked(timeout=BasePageTimeouts.SHORT_CHECK)
+                expect(cb).to_be_checked(timeout=1_000) if checked else expect(cb).not_to_be_checked(timeout=1_000)
                 return True
             except (AssertionError, PlaywrightTimeoutError):
                 return False
@@ -311,7 +309,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def wait_for_loader(self, timeout=BasePageTimeouts.LOADER):
+    def wait_for_loader(self, timeout=30_000):
         """
         Loader (overlay) paydo bo'lishini va keyin yo'qolishini kutadi.
         Sahifa settled bo'lsa True qaytaradi; loader timeout ichida
@@ -319,7 +317,7 @@ class BasePage:
         """
         overlay = self.page.locator(".block-ui-overlay")
         try:
-            overlay.wait_for(state="visible", timeout=BasePageTimeouts.LOADER_APPEAR)
+            overlay.wait_for(state="visible", timeout=2_000)
         except Exception:
             # Loader qisqa detection oralig'ida chiqmasa, jarayon tugagan yoki juda tez o'tgan.
             return True
@@ -333,7 +331,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def navigate_to(self, tab="Главное", name="Организации", timeout=BasePageTimeouts.UI_TRANSITION):
+    def navigate_to(self, tab="Главное", name="Организации", timeout=30_000):
         self.page.locator("a.menu-link.menu-toggle", has_text=tab).click()
         self.page.locator("a.menu-link.menu-link-title").get_by_text(name, exact=True).click()
 
@@ -347,7 +345,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def expect_page(self, heading=None, url=None, timeout=BasePageTimeouts.UI_TRANSITION, check_unblocked=True, root=None):
+    def expect_page(self, heading=None, url=None, timeout=30_000, check_unblocked=True, root=None):
         """Sahifaning URL va heading holatini tekshiradi.
 
         ``root`` berilsa, heading faqat shu CSS selector yoki Locator ichidan qidiriladi.
@@ -391,7 +389,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def switch_filial(self, name, timeout=BasePageTimeouts.UI_TRANSITION):
+    def switch_filial(self, name, timeout=30_000):
         self.page.locator(".pt-3.px-2").click()
         option = self.page.get_by_role("link", name=name, exact=True)
         expect(option).to_be_visible()
@@ -425,7 +423,7 @@ class BasePage:
         self,
         expected_text=None,
         button_name="да",
-        timeout=BasePageTimeouts.SHORT_CHECK,
+        timeout=1_000,
     ):
         """Biruni confirm ko'rinsa tasdiqlaydi, bo'lmasa ``False`` qaytaradi."""
         confirm = self.page.locator("#biruniConfirm")
@@ -576,7 +574,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def text(self, *values, root="b-page", timeout=BasePageTimeouts.TEXT):
+    def text(self, *values, root="b-page", timeout=10_000):
         """Ko'rinadigan root ichida berilgan matnlar borligini tekshiradi.
 
         ``values`` berilmasa, faqat root locator UI'da ko'rinishini tekshiradi.
@@ -598,7 +596,7 @@ class BasePage:
         remove_spaces=False,
         index=0,
         root=None,
-        timeout=BasePageTimeouts.TEXT,
+        timeout=10_000,
     ):
         """View formadagi ``label + .form-view`` qiymatini tekshiradi yoki qaytaradi.
 
@@ -615,7 +613,7 @@ class BasePage:
         for label_index in range(labels.count()):
             label_item = labels.nth(label_index)
             try:
-                expect(label_item).to_be_visible(timeout=BasePageTimeouts.SHORT_CHECK)
+                expect(label_item).to_be_visible(timeout=1_000)
             except (AssertionError, PlaywrightTimeoutError):
                 continue
 
@@ -630,7 +628,7 @@ class BasePage:
             for label_index in range(translated_labels.count()):
                 label_item = translated_labels.nth(label_index)
                 try:
-                    expect(label_item).to_be_visible(timeout=BasePageTimeouts.SHORT_CHECK)
+                    expect(label_item).to_be_visible(timeout=1_000)
                 except (AssertionError, PlaywrightTimeoutError):
                     continue
 
@@ -671,7 +669,7 @@ class BasePage:
         *,
         index=0,
         root=None,
-        timeout=BasePageTimeouts.COMPONENT,
+        timeout=10_000,
     ):
         """Label orqali Bootstrap datepickerdan berilgan sanani tanlaydi.
 
@@ -744,7 +742,7 @@ class BasePage:
         index=0,
         close=True,
         exact=True,
-        timeout=BasePageTimeouts.COMPONENT,
+        timeout=10_000,
         root=None,
     ):
         """Multi-select b-input ("N Выбранных") bilan ishlash.
@@ -873,7 +871,7 @@ class BasePage:
         for label_index in range(label_locator.count()):
             label_item = label_locator.nth(label_index)
             try:
-                expect(label_item).to_be_visible(timeout=BasePageTimeouts.SHORT_CHECK)
+                expect(label_item).to_be_visible(timeout=1_000)
             except (AssertionError, PlaywrightTimeoutError):
                 continue
 
@@ -910,7 +908,7 @@ class BasePage:
             raise AssertionError(f"Grid header not found by label: {label}")
 
         header = headers.nth(index)
-        expect(header).to_be_visible(timeout=BasePageTimeouts.SHORT_CHECK)
+        expect(header).to_be_visible(timeout=1_000)
         header_box = header.bounding_box()
         if header_box is None:
             raise AssertionError(f"Grid header has no bounding box: {label}")
@@ -970,7 +968,7 @@ class BasePage:
         for label_index in range(label_locator.count()):
             label_item = label_locator.nth(label_index)
             try:
-                expect(label_item).to_be_visible(timeout=BasePageTimeouts.SHORT_CHECK)
+                expect(label_item).to_be_visible(timeout=1_000)
             except (AssertionError, PlaywrightTimeoutError):
                 continue
 
@@ -997,7 +995,7 @@ class BasePage:
 
             if target not in {"switch", "radio"}:
                 try:
-                    expect(field.first).to_be_visible(timeout=BasePageTimeouts.FIELD_PROBE)
+                    expect(field.first).to_be_visible(timeout=500)
                 except (AssertionError, PlaywrightTimeoutError):
                     continue
 
@@ -1026,10 +1024,10 @@ class BasePage:
         clear=False,
         exact=True,
         server_search=False,
-        delay=BasePageTimeouts.TYPE_DELAY,
+        delay=50,
         index=0,
         root=None,
-        timeout=BasePageTimeouts.COMPONENT,
+        timeout=10_000,
     ):
         root = self._resolve_root(root)
         if label is not None and ng_model is not None:
@@ -1098,7 +1096,7 @@ class BasePage:
         exact=True,
         index=0,
         root=None,
-        timeout=BasePageTimeouts.COMPONENT,
+        timeout=10_000,
     ):
         """Angular UI Select komponentini tanlaydi, tekshiradi yoki qiymatini qaytaradi.
 

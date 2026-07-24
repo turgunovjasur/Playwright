@@ -98,8 +98,27 @@ def _waited_target(message):
     return ""
 
 
-def _is_technical_target(target):
-    return target.startswith(("locator(", "get_by_", "page.", "expect("))
+def _element_state(message):
+    lowered = message.lower()
+    if "strict mode violation" in lowered:
+        return "ambiguous"
+    if "element is not visible" in lowered:
+        return "hidden"
+    if "element is not enabled" in lowered or "element is disabled" in lowered:
+        return "disabled"
+    if "element is not stable" in lowered:
+        return "unstable"
+    if "intercepts pointer events" in lowered:
+        return "blocked"
+    if "locator resolved to" in lowered:
+        return "resolved"
+    if "waiting for locator" in lowered or "waiting for get_by_" in lowered:
+        return "not_found"
+    return ""
+
+
+def _target_text(target):
+    return f" Maqsad: {target}." if target else ""
 
 
 def _error_type(message):
@@ -271,26 +290,57 @@ def _human_reason(message):
 
     timeout = _timeout_text(message)
     target = _waited_target(message)
-    if target and not _is_technical_target(target):
-        target_text = f" Kutgan element: {target}."
-    elif target:
-        target_text = " Kutgan element topilmadi."
-    else:
-        target_text = ""
+    target_text = _target_text(target)
+    element_state = _element_state(message)
     if "Locator.click: Timeout" in message:
+        if element_state == "hidden":
+            return (
+                f"Element topildi, ammo ko'rinmagani uchun {timeout} ichida bosilmadi."
+                f"{target_text} Locator yashirin/dublikat elementga tushgan yoki sahifa headeri hali ochilmagan."
+            )
+        if element_state == "disabled":
+            return (
+                f"Element topildi, ammo faol bo'lmagani uchun {timeout} ichida bosilmadi."
+                f"{target_text} Elementni yoqadigan precondition yoki loader tugashi kutilmagan."
+            )
+        if element_state == "unstable":
+            return (
+                f"Element animatsiya yoki joylashuv o'zgarishi sabab {timeout} davomida barqarorlashmadi."
+                f"{target_text}"
+            )
+        if element_state == "blocked":
+            return (
+                f"Elementni boshqa UI qatlami to'sib turgani uchun {timeout} ichida bosilmadi."
+                f"{target_text} Overlay, modal yoki loader clickni ushlab qolgan."
+            )
+        if element_state == "not_found":
+            return (
+                f"Element DOM ichida topilmagani uchun {timeout} ichida bosilmadi."
+                f"{target_text} Sahifa holati yoki locator UI bilan mos emas."
+            )
         return (
-            f"Test sahifadagi elementni {timeout} ichida bosa olmadi."
-            f"{target_text} Bu odatda sahifa kerakli holatga kelmaganini yoki locator eskirganini bildiradi."
+            f"Element {timeout} ichida bosilmadi."
+            f"{target_text} Playwright call logdagi element holatini tekshirish kerak."
         )
     if "Locator.fill: Timeout" in message:
+        if element_state == "hidden":
+            return (
+                f"Input topildi, ammo ko'rinmagani uchun {timeout} ichida to'ldirilmadi."
+                f"{target_text} Locator yashirin inputga tushgan bo'lishi mumkin."
+            )
+        if element_state == "not_found":
+            return (
+                f"Input DOM ichida topilmagani uchun {timeout} ichida to'ldirilmadi."
+                f"{target_text} Forma yoki locator UI bilan mos emas."
+            )
         return (
-            f"Test input maydonini {timeout} ichida topib to'ldirolmadi."
-            f"{target_text} Forma to'liq ochilmagan yoki locator UI bilan mos emas."
+            f"Input maydoni {timeout} ichida to'ldirilmadi."
+            f"{target_text} Element holati va forma yuklanishini tekshirish kerak."
         )
     if "Locator" in message and "Timeout" in message:
         return (
-            f"Test kerakli elementni {timeout} ichida topa olmadi."
-            f"{target_text} Sahifa holati, data yoki locator tekshirilishi kerak."
+            f"UI amali {timeout} ichida tugamadi."
+            f"{target_text} Element holati, sahifa yoki locator tekshirilishi kerak."
         )
     if "Page.goto: Timeout" in message:
         return (
@@ -310,6 +360,17 @@ def _human_next_action(message):
         if structured.get("ui_error"):
             return "Save bosilgan formadagi Biruni/UI error textni tekshir; test keyingi list/view kutishdan oldin shu error sabab to'xtagan."
         return "Save bosilgandan keyingi transitionni tekshir: forma yopildimi, confirm bosildimi, loader tugadimi va expected list/view ochildimi."
+    element_state = _element_state(message)
+    if element_state == "hidden":
+        return "Locatorni ko'rinadigan elementga aniqlashtir; clickdan oldin header/menyu ochilgani va loader tugaganini kut."
+    if element_state == "disabled":
+        return "Element enabled bo'lishi uchun kerakli preconditionni bajar va clickdan oldin enabled holatini kut."
+    if element_state == "unstable":
+        return "Animatsiya/layout tugashini kutib, keyin elementning barqaror holatiga click qil."
+    if element_state == "blocked":
+        return "Clickni to'sayotgan overlay/modal/loaderni aniqlab, u yopilgandan keyin elementni bos."
+    if element_state == "not_found":
+        return "Sahifa to'g'ri ochilganini tekshir va locatorni joriy UI atributi yoki role/name bilan yangila."
     if "Timeout" in message and "Locator" in message:
         return "Allure screenshot/trace orqali sahifa to'g'ri ochilganini tekshir; element nomi o'zgargan bo'lsa locatorni yangila yoki kerakli kutishni qo'sh."
     if "Page.goto: Timeout" in message:
@@ -331,7 +392,8 @@ def _human_impact(item, skipped_count):
 def _humanize_failure(item, skipped_count):
     message = str(item.get("message") or "")
     trace = str(item.get("trace") or "")
-    structured = _structured_failure_details(f"{message}\n{trace}")
+    failure_text = f"{message}\n{trace}"
+    structured = _structured_failure_details(failure_text)
     trace_source = _inner_source_from_trace(trace)
     step_info = _failed_step_info(item)
     runner_test = _runner_test(item)
@@ -353,9 +415,12 @@ def _humanize_failure(item, skipped_count):
         "expected": structured.get("expected") or "",
         "actual": structured.get("actual") or "",
         "ui_error": structured.get("ui_error") or "",
-        "reason": _human_reason(f"{message}\n{trace}"),
+        "target": _waited_target(failure_text),
+        "element_state": _element_state(failure_text),
+        "timeout": _timeout_text(failure_text) if "Timeout" in failure_text else "",
+        "reason": _human_reason(failure_text),
         "impact": _human_impact(item, skipped_count),
-        "next_action": _human_next_action(f"{message}\n{trace}"),
+        "next_action": _human_next_action(failure_text),
     }
 
 
