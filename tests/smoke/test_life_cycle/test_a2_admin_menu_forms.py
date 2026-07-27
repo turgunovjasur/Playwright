@@ -278,7 +278,7 @@ FORM_TIMEOUT = 10_000
 
 
 def _first_operational_filial(page):
-    """Filial dropdownidan birinchi ``Администрирование`` bo'lmagan nomni oladi."""
+    """Legacy filial ro'yxatidan birinchi ``Администрирование`` bo'lmagan nomni oladi."""
     locations = (
         page.locator(".header-logo.custom-dropdown:visible")
         .filter(has=page.locator(".dropdown-locations-custom"))
@@ -290,7 +290,9 @@ def _first_operational_filial(page):
 
     menu = locations.locator(".dropdown-menu")
     expect(menu).to_be_visible(timeout=FORM_TIMEOUT)
-    options = menu.get_by_role("link")
+    filial_list = menu.locator(".filial-list")
+    expect(filial_list).to_be_visible(timeout=FORM_TIMEOUT)
+    options = filial_list.get_by_role("link")
     names = [name.strip() for name in options.all_inner_texts() if name.strip()]
 
     trigger.click(timeout=FORM_TIMEOUT)

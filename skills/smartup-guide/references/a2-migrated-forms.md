@@ -231,6 +231,27 @@ Smartup yangi formalari (yangi Angular/modern app) eski AngularJS Biruni app ust
   - action va marking stocktaking konstruktorlari `page_links` orqali parent
     formadan ochiladi.
 
+### Legacy dropdown linklarini filial deb qabul qilish regressiyasi (2026-07-27)
+Tags: a2, filial, project, menu, ci, locator, regression
+- GitHub Actions run `30264090893` failure screenshot/trace'ida A2 selector ikki
+  alohida ro'yxat ekanligi tasdiqlandi: chapdagi `TRADE`/`Финансы` —
+  `shell-project-filial--project-list` loyihalari, o'ngdagi
+  `Администрирование`/`filial-pw{code}` — haqiqiy
+  `shell-project-filial--filial-list` tashkilot/filiallari.
+- `test_a2_admin_menu_forms.py::_first_operational_filial()` legacy
+  `.dropdown-menu` ichidagi barcha `role=link` elementlarni olgani sabab birinchi
+  `Администрирование` bo'lmagan matn sifatida `Trade` loyiha nomini qaytargan.
+- Keyingi `AngularBasePage.switch_filial(name="Trade")` haqiqiy filial
+  ro'yxatidan `Trade` optionini qidirib 30 soniyada `element(s) not found` bilan
+  yiqilgan. Bu setup yaratgan filial, server yoki A2 formaning ochilish xatosi
+  emas; operatsion filialni topish bosqichidagi project/filial klassifikatsiya
+  xatosi.
+- Tuzatish: `_first_operational_filial()` optionlarni umumiy `.dropdown-menu`
+  ichidan emas, faqat `.filial-list` ichidan oladi; so'ng
+  `Администрирование`ni chiqarib, qolgan birinchi haqiqiy filialni qaytaradi.
+- Tuzatishdan keyingi standalone headless run: barcha 22 forma ochildi,
+  `1 passed in 122.26s`.
+
 ## Diagnostika natijasi (2026-07-07, app3.greenwhite.uz/xtrade — 2 passed, 0 muammo)
 
 - **ADMIN profil (admin@red_test):** 30/30 muvaffaqiyatli (28 direct OCHILDI + 1 via_list edit OCHILDI + 1 skip[ker/setting+edit]).
