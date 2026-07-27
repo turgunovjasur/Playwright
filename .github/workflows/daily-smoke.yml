@@ -180,17 +180,11 @@ jobs:
                   print(str(code))
           PY
           )
-          COMPANY_SUFFIX="${TEST_COMPANY_CODE#@}"
-          if [ -n "$RUN_CODE" ] && [ -n "$COMPANY_SUFFIX" ]; then
-            USER_LOGIN="user-pw${RUN_CODE}@${COMPANY_SUFFIX}"
-          else
-            USER_LOGIN="not found"
-          fi
 
           python scripts/telegram_progress.py finish \
             --result "$JOB_STATUS" \
             --run-url "$RUN_URL" \
-            --user-login "$USER_LOGIN" \
+            --run-code "$RUN_CODE" \
             --summary "$SUMMARY"
 
           if [ "$JOB_STATUS" != "success" ]; then

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import os
 import subprocess
@@ -142,13 +143,15 @@ def first_message_line(value):
     return ""
 
 
-def truncate_message(text):
-    if len(text) <= MAX_MESSAGE_LENGTH:
+def truncate_message(text, limit=MAX_MESSAGE_LENGTH):
+    if len(text) <= limit:
         return text
     lines = text.splitlines()
-    while lines and len("\n".join(lines) + "\n...") > MAX_MESSAGE_LENGTH:
+    while lines and len("\n".join(lines) + "\n...") > limit:
         lines.pop(-1)
-    return "\n".join(lines) + "\n..."
+    if lines:
+        return "\n".join(lines) + "\n..."
+    return text[: max(0, limit - 3)] + "..."
 
 
 def grouped_result_lines(state):
@@ -198,9 +201,7 @@ def failed_block(state):
     if step == test_name:
         step = ""
 
-    reason = str(failed.get("reason") or "").strip()
-    if not reason:
-        reason = first_message_line(failed.get("message"))
+    error_message = first_message_line(failed.get("message"))
 
     technical = []
     error_type = str(failed.get("error_type") or "").strip()
@@ -218,17 +219,15 @@ def failed_block(state):
 
     pairs = [
         ("Test", test_context),
-        ("Qadam", step),
+        ("Allure step", step),
         ("Sahifa", failed.get("before_page")),
         ("Amal", failed.get("action")),
         ("Kutilgan", failed.get("expected")),
         ("Haqiqiy", failed.get("actual")),
         ("UI xabari", failed.get("ui_error")),
-        ("Muammo", reason),
+        ("Xato", error_message),
         ("Texnik", " · ".join(technical)),
         ("Kod", failed.get("location")),
-        ("Ta'sir", failed.get("impact")),
-        ("Yechim", failed.get("next_action")),
     ]
     lines = ["", "❌ Xato tafsiloti:"]
     for label, value in pairs:
@@ -236,6 +235,47 @@ def failed_block(state):
         if text:
             lines.append(f"{label}: {text}")
     return lines
+
+
+def a2_forms_line(state):
+    metrics = state.get("a2_admin_forms")
+    if not isinstance(metrics, dict) or "checked" not in metrics:
+        return ""
+    try:
+        checked = int(metrics.get("checked") or 0)
+    except (TypeError, ValueError):
+        return ""
+    if checked < 0:
+        return ""
+    return f"🧾 A2 Admin Forms: {checked} ta forma tekshirildi"
+
+
+def render_html_message(main_lines, expandable_lines=None, footer_lines=None):
+    main = "\n".join(str(line) for line in main_lines).strip()
+    expandable = "\n".join(str(line) for line in (expandable_lines or [])).strip()
+    footer = "\n".join(str(line) for line in (footer_lines or [])).strip()
+
+    separators = 2 * sum(bool(part) for part in (expandable, footer))
+    fixed_length = len(main) + len(footer) + separators
+    if expandable:
+        expandable = truncate_message(
+            expandable,
+            limit=max(3, MAX_MESSAGE_LENGTH - fixed_length),
+        )
+    elif fixed_length > MAX_MESSAGE_LENGTH:
+        main = truncate_message(
+            main,
+            limit=max(3, MAX_MESSAGE_LENGTH - len(footer) - separators),
+        )
+
+    sections = [html.escape(main, quote=False)]
+    if expandable:
+        sections.append(
+            f"<blockquote expandable>{html.escape(expandable, quote=False)}</blockquote>"
+        )
+    if footer:
+        sections.append(html.escape(footer, quote=False))
+    return "\n\n".join(section for section in sections if section)
 
 
 def render_message(state):
@@ -255,9 +295,9 @@ def render_message(state):
         if duration:
             bits.append(duration)
         if bits:
-            lines.append("🕒 " + " · ".join(bits) + " (+5)")
+            lines.append("🕒 " + " · ".join(bits))
     elif started_at:
-        lines.append(f"🕒 Started: {started_at} (+5)")
+        lines.append(f"🕒 Started: {started_at}")
 
     lines.append(
         f"🖥 {server_host(str(state.get('server') or ''))}"
@@ -273,25 +313,30 @@ def render_message(state):
         if status:
             lines.append(f"Status: {status}")
 
-    lines.extend(grouped_result_lines(state))
-    lines.extend(failed_block(state))
+    forms_line = a2_forms_line(state)
+    if forms_line:
+        lines.append(forms_line)
 
+    expandable = []
+    if not finished:
+        lines.extend(grouped_result_lines(state))
+    elif str(state.get("result") or "").upper() == "FAILED":
+        expandable.extend(grouped_result_lines(state))
+        expandable.extend(failed_block(state))
+
+    footer = []
     if finished:
-        footer = []
-        user_login = str(state.get("user_login") or "").strip()
+        run_code = str(state.get("run_code") or "").strip()
         run_url = str(state.get("run_url") or "").strip()
-        if user_login and user_login != "not found":
-            footer.append(f"👤 {user_login}")
+        if run_code and run_code != "not found":
+            footer.append(f"🆔 Code: {run_code}")
         if run_url:
             footer.append(f"🔗 {run_url}")
-        if footer:
-            lines.append("")
-            lines.extend(footer)
         ai = str(state.get("ai_conclusion") or "").strip()
-        if ai:
-            lines.extend(["", "🤖 AI:", ai])
+        if ai and str(state.get("result") or "").upper() == "FAILED":
+            expandable.extend(["", "🤖 AI:", ai])
 
-    return truncate_message("\n".join(lines))
+    return render_html_message(lines, expandable, footer)
 
 
 def edit_progress(state):
@@ -304,6 +349,7 @@ def edit_progress(state):
             "chat_id": env_value("TELEGRAM_CHAT_ID"),
             "message_id": str(message_id),
             "text": render_message(state),
+            "parse_mode": "HTML",
             "disable_web_page_preview": "true",
         },
     )
@@ -336,6 +382,7 @@ def command_start(args):
             {
                 "chat_id": env_value("TELEGRAM_CHAT_ID"),
                 "text": render_message(state),
+                "parse_mode": "HTML",
                 "disable_web_page_preview": "true",
             },
         )
@@ -411,9 +458,9 @@ def failed_details_from_system_summary():
         "runner": str(first.get("runner_test") or ""),
         "inner_test": str(first.get("inner_test") or ""),
         "failed_step": str(first.get("failed_step") or ""),
+        "message": str(first.get("message") or ""),
         "error_type": str(first.get("error_type") or ""),
         "reason": str(first.get("reason") or ""),
-        "next_action": str(first.get("next_action") or ""),
         "location": str(first.get("location") or ""),
         "before_page": str(first.get("before_page") or ""),
         "action": str(first.get("action") or ""),
@@ -423,8 +470,19 @@ def failed_details_from_system_summary():
         "target": str(first.get("target") or ""),
         "element_state": str(first.get("element_state") or ""),
         "timeout": str(first.get("timeout") or ""),
-        "impact": str(first.get("impact") or ""),
     }
+
+
+def sync_summary_metrics(state):
+    if not SYSTEM_SUMMARY_JSON.exists():
+        return
+    try:
+        data = json.loads(SYSTEM_SUMMARY_JSON.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return
+    metrics = data.get("a2_admin_forms") if isinstance(data, dict) else None
+    if isinstance(metrics, dict) and metrics:
+        state["a2_admin_forms"] = metrics
 
 
 def enrich_failed_result_from_summary(state):
@@ -478,10 +536,11 @@ def command_run(args):
         edit_progress(state)
 
     exit_code = process.wait()
+    sync_summary_metrics(state)
     if exit_code:
         enrich_failed_result_from_summary(state)
-        save_state(state)
-        edit_progress(state)
+    save_state(state)
+    edit_progress(state)
     return exit_code
 
 
@@ -528,14 +587,15 @@ def command_finish(args):
 
     if args.run_url:
         state["run_url"] = args.run_url
-    if args.user_login:
-        state["user_login"] = args.user_login
+    if args.run_code:
+        state["run_code"] = args.run_code
 
     summary = (args.summary or "").strip() or derive_summary(state)
     state["summary"] = summary
 
     if result == "FAILED":
         enrich_failed_result_from_summary(state)
+    sync_summary_metrics(state)
 
     ai_conclusion = read_ai_conclusion()
     if ai_conclusion:
@@ -581,7 +641,7 @@ def parse_args():
     finish = subparsers.add_parser("finish")
     finish.add_argument("--result", required=True)
     finish.add_argument("--run-url", default="")
-    finish.add_argument("--user-login", default="")
+    finish.add_argument("--run-code", default="")
     finish.add_argument("--summary", default="")
 
     subparsers.add_parser("delete")

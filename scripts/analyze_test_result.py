@@ -21,6 +21,8 @@ AI_SUMMARY_MD = ROOT / "test-results" / "ai-summary.md"
 AI_SUMMARY_JSON = ROOT / "test-results" / "ai-summary.json"
 DEFAULT_MODEL = "gemini-2.5-flash"
 FAILED_STATUSES = {"failed", "broken"}
+A2_ADMIN_FORMS_TEST = "test_a2_admin_menu_forms"
+A2_FORM_STEP_PATTERN = re.compile(r"^\d{2}\s+[—-]\s+")
 
 
 def parse_args():
@@ -238,7 +240,7 @@ def _failed_step_entries(steps, parent=()):
 
 
 def _step_path_text(path):
-    return " -> ".join(item for item in path if item)
+    return " → ".join(item for item in path if item)
 
 
 def _failed_step_info(item):
@@ -365,47 +367,7 @@ def _human_reason(message):
     return "Xato sababi logda aniq ko'rinmadi. Allure trace va screenshotni tekshirish kerak."
 
 
-def _human_next_action(message):
-    structured = _structured_failure_details(message)
-    if structured:
-        if structured.get("ui_error"):
-            return "Save bosilgan formadagi Biruni/UI error textni tekshir; test keyingi list/view kutishdan oldin shu error sabab to'xtagan."
-        return "Save bosilgandan keyingi transitionni tekshir: forma yopildimi, confirm bosildimi, loader tugadimi va expected list/view ochildimi."
-    if "using Playwright Sync API inside the asyncio loop" in message:
-        return (
-            "Bitta session-scoped Sync Playwright runtime ishlat; fresh page kerak bo'lsa yangi "
-            "Playwright emas, mavjud session browseridan alohida context/page yarat."
-        )
-    element_state = _element_state(message)
-    if element_state == "hidden":
-        return "Locatorni ko'rinadigan elementga aniqlashtir; clickdan oldin header/menyu ochilgani va loader tugaganini kut."
-    if element_state == "disabled":
-        return "Element enabled bo'lishi uchun kerakli preconditionni bajar va clickdan oldin enabled holatini kut."
-    if element_state == "unstable":
-        return "Animatsiya/layout tugashini kutib, keyin elementning barqaror holatiga click qil."
-    if element_state == "blocked":
-        return "Clickni to'sayotgan overlay/modal/loaderni aniqlab, u yopilgandan keyin elementni bos."
-    if element_state == "not_found":
-        return "Sahifa to'g'ri ochilganini tekshir va locatorni joriy UI atributi yoki role/name bilan yangila."
-    if "Timeout" in message and "Locator" in message:
-        return "Allure screenshot/trace orqali sahifa to'g'ri ochilganini tekshir; element nomi o'zgargan bo'lsa locatorni yangila yoki kerakli kutishni qo'sh."
-    if "Page.goto: Timeout" in message:
-        return "Server URL ochilishini va GitHub Actions runnerdan serverga ulanish borligini tekshir."
-    if "AssertionError" in message:
-        return "Testdagi expected qiymat va UI/API qaytargan actual qiymatni solishtir."
-    return "Failure log va trace artifactni ochib, shu qadamdagi UI holatini tekshir."
-
-
-def _human_impact(item, skipped_count):
-    name = f"{item.get('name', '')} {item.get('fullName', '')}".lower()
-    if "setup" in name and skipped_count:
-        return f"Setup tugamagani uchun keyingi {skipped_count} ta test skip bo'lgan."
-    if skipped_count:
-        return f"Bu xatodan keyin {skipped_count} ta test skip bo'lgan."
-    return "Shu test shu qadamda to'xtagan."
-
-
-def _humanize_failure(item, skipped_count):
+def _humanize_failure(item):
     message = str(item.get("message") or "")
     trace = str(item.get("trace") or "")
     failure_text = f"{message}\n{trace}"
@@ -435,8 +397,6 @@ def _humanize_failure(item, skipped_count):
         "element_state": _element_state(failure_text),
         "timeout": _timeout_text(failure_text) if "Timeout" in failure_text else "",
         "reason": _human_reason(failure_text),
-        "impact": _human_impact(item, skipped_count),
-        "next_action": _human_next_action(failure_text),
     }
 
 
@@ -464,6 +424,7 @@ def collect_allure_results(results_dir, started_at):
                 "message": status_details.get("message") or "",
                 "trace": _truncate(trace, 5000),
                 "failed_steps": _failed_step_entries(data.get("steps")),
+                "a2_form_steps": _a2_form_steps(data),
                 "start": data.get("start"),
                 "stop": data.get("stop"),
             }
@@ -492,6 +453,63 @@ def collect_failure_logs(logs_dir, started_at):
     return logs
 
 
+def _iter_steps(steps):
+    if not isinstance(steps, list):
+        return
+    for step in steps:
+        if not isinstance(step, dict):
+            continue
+        yield step
+        yield from _iter_steps(step.get("steps"))
+
+
+def _is_a2_admin_forms_result(item):
+    identity = " ".join(
+        (
+            str(item.get("name") or ""),
+            str(item.get("fullName") or ""),
+        )
+    ).lower()
+    return A2_ADMIN_FORMS_TEST in identity or "a2 admin formalar" in identity
+
+
+def _a2_form_steps(item):
+    if not _is_a2_admin_forms_result(item):
+        return []
+    return [
+        {
+            "name": str(step.get("name") or "").strip(),
+            "status": str(step.get("status") or "").lower(),
+        }
+        for step in _iter_steps(item.get("steps"))
+        if A2_FORM_STEP_PATTERN.match(str(step.get("name") or "").strip())
+    ]
+
+
+def _a2_admin_forms_summary(results):
+    counts = {"checked": 0, "passed": 0, "failed": 0, "skipped": 0}
+    found = False
+    for item in results:
+        if not _is_a2_admin_forms_result(item):
+            continue
+        found = True
+        form_steps = item.get("a2_form_steps")
+        if not isinstance(form_steps, list):
+            form_steps = _a2_form_steps(item)
+        for step in form_steps:
+            if not isinstance(step, dict):
+                continue
+            counts["checked"] += 1
+            status = str(step.get("status") or "").lower()
+            if status == "passed":
+                counts["passed"] += 1
+            elif status in FAILED_STATUSES:
+                counts["failed"] += 1
+            elif status == "skipped":
+                counts["skipped"] += 1
+    return counts if found else {}
+
+
 def build_deterministic_summary(exit_code, results):
     counts = {}
     for item in results:
@@ -507,7 +525,8 @@ def build_deterministic_summary(exit_code, results):
         "counts": counts,
         "failed_count": len(failed),
         "skipped_count": skipped_count,
-        "failed_tests": [_humanize_failure(item, skipped_count) for item in failed],
+        "failed_tests": [_humanize_failure(item) for item in failed],
+        "a2_admin_forms": _a2_admin_forms_summary(results),
     }
 
 
@@ -540,6 +559,11 @@ def build_local_summary(deterministic):
         "summary": summary,
         "failed_tests": failed_tests if isinstance(failed_tests, list) else [],
         "skipped": {"count": skipped_count, "reason": "Oldingi xato sabab skip bo'lishi mumkin." if skipped_count else ""},
+        "a2_admin_forms": (
+            deterministic.get("a2_admin_forms")
+            if isinstance(deterministic.get("a2_admin_forms"), dict)
+            else {}
+        ),
         "confidence": confidence,
         "provider_status": "system",
         "deterministic_summary": deterministic,
@@ -683,8 +707,6 @@ def render_markdown(
                     f"- Error type: `{item.get('error_type', 'unknown')}`",
                     f"- Location: `{item.get('location', 'unknown')}`",
                     f"- Reason: {item.get('reason', '')}",
-                    f"- Impact: {item.get('impact', '')}",
-                    f"- Next action: {item.get('next_action', '')}",
                 ]
             )
     skipped = summary.get("skipped")
