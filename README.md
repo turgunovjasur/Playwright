@@ -221,13 +221,13 @@ Bu buyruq macOS, Linux va Windowsda ishlaydi. `.env` ishlatilmaydi.
 | `--open-report` / `OPEN_REPORT=1` | Testdan keyin Allure reportni generate qilib ochadi. `OPEN_REPORT=1` shell env yoki repo `.env` ichida berilishi mumkin. |
 | `--headless` | Browserni ko'rsatmasdan ishlatadi. |
 | `--regression` | Testlarni regression scope bilan ishlatadi. |
-| `--show-trace` | Testdan keyin oxirgi Playwright trace viewerini ochadi. |
+| `--show-trace` / `SHOW_TRACE=1` | Testdan keyin oxirgi Playwright trace viewerini ochadi. `SHOW_TRACE=1` shell env yoki repo `.env` ichida berilishi mumkin. |
 | `--ai-summary` | Gemini orqali qo'shimcha AI xulosa yozadi. Default: off. |
 | `--dry-run` | Testni ishga tushirmaydi, faqat pytest commandni ko'rsatadi. |
 | `all` | Default target. Setup + A + B + C + Report group ishlaydi. |
 | `setup` | Faqat setup runner ishlaydi. |
 | `setup-report` | Lokal target: Setup, keyin Report runner; A/B/C ishlamaydi. |
-| `setup-a2-admin` | CI/bot targeti: Setup, keyin `test_a2_admin_forms`; A/B/C/Report ishlamaydi. |
+| `setup-a2-admin` | CI/bot targeti: Setup, keyin `test_a2_admin_menu_forms`; A/B/C/Report ishlamaydi. |
 | `company` | Faqat yangi company yaratish testi ishlaydi. |
 | `groups` | Setupni ishlatmasdan barcha group runnerlar ishlaydi. |
 | `group-a` | Faqat A group ishlaydi. |

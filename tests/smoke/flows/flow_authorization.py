@@ -6,7 +6,6 @@ from playwright.sync_api import expect
 from utils.base_page import BasePage
 
 USER_PASS = "123456789"
-DASHBOARD_TIMEOUT = 120_000
 
 DATA_STORE_PATH = Path("test-results/data/data_store.json")
 
@@ -117,17 +116,20 @@ def logout(page):
 # ----------------------------------------------------------------------------------------------------------------------
 
 def login(page, email=None, password=None):
+    base = BasePage(page)
+
     email = email or admin_email()
     password = password or admin_password()
     page.goto(f"{company_url()}/login.html")
-    page.get_by_placeholder("Логин@компания").fill(email)
-    page.get_by_role("textbox", name="Пароль").fill(password)
+    base.input(placeholder="Логин@компания", value=email)
+    base.input(placeholder="Пароль", value=password)
     page.get_by_role("button", name="Войти").click()
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def dashboard(page, timeout=DASHBOARD_TIMEOUT):
-    expect(page.get_by_role("heading", name="Trade")).to_be_visible(timeout=timeout)
+def dashboard(page):
+    base = BasePage(page)
+    base.expect_page(heading="Trade", url="dashboard", timeout=120_000)
 
 # ----------------------------------------------------------------------------------------------------------------------
 

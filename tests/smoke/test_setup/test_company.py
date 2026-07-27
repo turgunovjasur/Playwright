@@ -45,7 +45,7 @@ def run_company(page, code, save_data):
 
     with allure.step("5 - Majburiy maydonlarni to'ldirish"):
         angular.input(label="Код сервера", value=company_code)
-        angular.input(label="Ф.И.О.", value=f"Autotest company {code}")
+        angular.input(label="Название", value=f"Autotest company {code}")
         angular.select(label="Язык", expect_value="Русский")
 
     with allure.step("6 - Majburiy shablonlarni tanlash"):

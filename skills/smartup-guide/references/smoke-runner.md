@@ -29,11 +29,11 @@ Tags: smoke, entity, naming, run-result
 Tags: smoke, setup, dependency, data-store
 - GitHub Actions `.github/workflows/daily-smoke.yml` va Telegram CI bot targetni
   qat'iy `setup-a2-admin`ga mahkamlaydi: avval `test_setup_runner.py`, keyin
-  `test_a2_admin_forms.py` ishlaydi; A/B/C va Report group testlari CI
+  `test_a2_admin_menu_forms.py` ishlaydi; A/B/C va Report group testlari CI
   dispatchga kiritilmaydi. `setup-report` faqat lokal runner targeti sifatida
   saqlangan.
-- 2026-07-23 collection verifikatsiyasi: `setup-a2-admin` existing-company
-  rejimida 20 ta Setup case va bitta `test_a2_admin_forms`ni tanladi
+- 2026-07-27 collection verifikatsiyasi: `setup-a2-admin` existing-company
+  rejimida 20 ta Setup case va bitta `test_a2_admin_menu_forms`ni tanladi
   (`21 selected`, `test_00_company` esa skip emas, deselect).
 - Telegram botda smoke/regression scope tanlovi yo'q. `/run`dan keyin faqat
   `Online` (`smartup.online`) yoki `Xtrade` (`app3.greenwhite.uz/xtrade`)
@@ -83,6 +83,10 @@ Tags: smoke, setup, dependency, data-store
 - `--create-company` full runnerda A/B group loginlari ham yaratilgan `company_code`ni ishlatadi; setup zanjirida user/role/password/license kabi user login precondition qadamlari o'chirilgan bo'lsa `user-pw{code}@<company_code>` yaratilmaydi va group login `login.html`da qolib ketadi.
 - Har bir group boshida user bir marta login qiladi; group ichidagi test/flowlar shu oynada davom etadi va group tugaganda yoki failed/skip bo'lganda fixture oynani yopadi.
 - Har group runner module-scoped `group_session_page` bilan boshqa grouplardan alohida context/page oladi; user grouplari `group_user_page` orqali group boshida bir marta login qiladi.
+- Barcha fixturelar bitta session-scoped Sync Playwright browser runtimeidan
+  foydalanadi. `page` fresh context/page beradi, lekin ikkinchi
+  `sync_playwright()` runtime ochmaydi; aks holda Setup session browseri faol
+  turgan paytda keyingi standalone/A2 test fixture setupda yiqiladi.
 - B-group biznes logikasi `run_*` helperlarda saqlanadi; `test_b_group_runner.py` B-01–B-04 caselarni alohida pytest wrapperlar sifatida yig'adi.
 - `code` fixture faqat `NEW_CODE` bilan boshqariladi: `NEW_CODE=1` (yoki `.env` yo'q muhitda `--new-code`) yangi random 6 xonali qiymat beradi; `NEW_CODE=0` mavjud `test-results/data/data_store.json` dagi code ni o'qiydi. Alohida `REUSE_CODE`/`--reuse-code` yo'q.
 - `authorization`da `who` majburiy keyword-only parametr; har bir caller `who="admin"|"head"|"user"` rolini ochiq yozadi. Funksiya alohida code yaratmaydi yoki saqlangan code'ni o'qimaydi; user login uchun doim session `code` fixture qiymati `authorization(..., who="user", code=code)` orqali uzatiladi.
@@ -95,7 +99,7 @@ Tags: smoke, telegram, failure, playwright, locator, summary
 - Final failure bloki `Test → Qadam → Muammo → Texnik → Kod → Ta'sir → Yechim` tartibida chiqadi; bir xil ma'nodagi `Runner`, `Test` va `Step` qatorlari takrorlanmaydi.
 - Playwright call log holati deterministik ajratiladi: `locator resolved to` bilan birga `element is not visible` chiqsa element topilgan, lekin yashirin; bu holat "element topilmadi" deb yozilmasin.
 - `hidden`, `disabled`, `unstable`, pointer-event bilan `blocked` va haqiqiy `not_found` holatlari alohida sabab hamda keyingi amaliy harakatga ega.
-- 2026-07-24 CI runida Room setup `BasePage.switch_filial()` ichidagi `.pt-3.px-2` elementini topgan, ammo u yashirin bo'lgani uchun click 10 sekundda timeout bergan; summary aynan shu faktni ko'rsatishi kerak.
+- 2026-07-24 CI runida Room setup `BasePage.switch_filial()` ichidagi `.pt-3.px-2` elementini topgan, ammo u yashirin bo'lgani uchun click 10 sekundda timeout bergan; summary aynan shu faktni ko'rsatgan. Root cause dekorativ strelkani target qilish bo'lgan. Helper ko'rinadigan `.dropdown-locations-custom:visible` trigger va uning ochilgan `.dropdown-menu` optioniga o'tkazildi.
 
 ### 2026-07-15 setup runner structure fix
 Tags: smoke, setup, runner, collection, allure, fix

@@ -345,6 +345,106 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    def navigate_to_form(
+        self,
+        *,
+        navbar_tab,
+        menu_column,
+        menu_item,
+        page_links=None,
+        timeout=60_000,
+    ):
+        """Navbar menyusi orqali formani ochadi.
+
+        ``navbar_tab`` yuqori navbar elementi, ``menu_column`` ochilgan mega-menu
+        ustuni, ``menu_item`` esa shu ustundagi forma linkidir. Ustunsiz kichik
+        menyuda ``menu_column=None`` beriladi va item bevosita flyout ichidan
+        qidiriladi. ``page_links`` berilsa, menu formasi ochilgach sahifa
+        yuqorisidagi linklar tartib bilan bosiladi. Forma heading va URL
+        tekshiruvi chaqiruvchi kodda alohida ``expect_page(...)`` bilan qilinadi.
+        """
+        links = [] if page_links is None else [page_links] if isinstance(page_links, str) else list(page_links)
+
+        tab = (
+            self.page.locator("a.menu-link.menu-toggle")
+            .filter(has_text=navbar_tab)
+            .filter(visible=True)
+        )
+        try:
+            expect(tab).to_have_count(1, timeout=timeout)
+            expect(tab).to_be_visible(timeout=timeout)
+        except (AssertionError, PlaywrightTimeoutError) as exc:
+            raise AssertionError(
+                f"navigate_to_form: navbar_tab='{navbar_tab}' yagona ko'rinadigan element sifatida topilmadi"
+            ) from exc
+        tab.click()
+
+        flyout = (
+            tab.locator("xpath=ancestor::li[contains(@class, 'menu-item-submenu')][1]")
+            .locator(".menu-submenu")
+            .filter(visible=True)
+        )
+        expect(flyout).to_have_count(1, timeout=timeout)
+        expect(flyout).to_be_visible(timeout=timeout)
+
+        column = flyout
+        if menu_column is not None:
+            column_heading = (
+                flyout.locator("h3.menu-heading")
+                .filter(has_text=menu_column)
+                .filter(visible=True)
+            )
+            try:
+                expect(column_heading).to_have_count(1, timeout=timeout)
+                expect(column_heading).to_be_visible(timeout=timeout)
+            except (AssertionError, PlaywrightTimeoutError) as exc:
+                raise AssertionError(
+                    f"navigate_to_form: '{navbar_tab}' menyusida "
+                    f"menu_column='{menu_column}' topilmadi"
+                ) from exc
+
+            column = column_heading.locator(
+                "xpath=ancestor::li[contains(@class, 'menu-item')][1]"
+            )
+        item = (
+            column.locator("a.menu-link.menu-link-title")
+            .filter(has_text=menu_item)
+            .filter(visible=True)
+        )
+        try:
+            expect(item).to_have_count(1, timeout=timeout)
+            expect(item).to_be_visible(timeout=timeout)
+        except (AssertionError, PlaywrightTimeoutError) as exc:
+            menu_scope = (
+                f"{navbar_tab} → {menu_column}"
+                if menu_column is not None
+                else navbar_tab
+            )
+            raise AssertionError(
+                f"navigate_to_form: '{menu_scope}' ichida "
+                f"menu_item='{menu_item}' topilmadi"
+            ) from exc
+        item.click()
+
+        for page_link in links:
+            link = (
+                self.page.get_by_role("link")
+                .filter(has_text=page_link)
+                .filter(visible=True)
+            )
+            try:
+                expect(link).to_have_count(1, timeout=timeout)
+                expect(link).to_be_visible(timeout=timeout)
+            except (AssertionError, PlaywrightTimeoutError) as exc:
+                raise AssertionError(
+                    f"navigate_to_form: '{menu_item}' formasida page_link='{page_link}' topilmadi"
+                ) from exc
+            link.click()
+
+        return item
+
+    # ------------------------------------------------------------------------------------------------------------------
+
     def expect_page(self, heading=None, url=None, timeout=30_000, check_unblocked=True, root=None):
         """Sahifaning URL va heading holatini tekshiradi.
 
@@ -390,10 +490,20 @@ class BasePage:
     # ------------------------------------------------------------------------------------------------------------------
 
     def switch_filial(self, name, timeout=30_000):
-        self.page.locator(".pt-3.px-2").click()
-        option = self.page.get_by_role("link", name=name, exact=True)
-        expect(option).to_be_visible()
-        option.click()
+        locations = (
+            self.page.locator(".header-logo.custom-dropdown:visible")
+            .filter(has=self.page.locator(".dropdown-locations-custom"))
+            .first
+        )
+        trigger = locations.locator(".dropdown-locations-custom")
+        expect(trigger).to_be_visible(timeout=timeout)
+        trigger.click(timeout=timeout)
+
+        menu = locations.locator(".dropdown-menu")
+        expect(menu).to_be_visible(timeout=timeout)
+        option = menu.get_by_role("link", name=name, exact=True)
+        expect(option).to_be_visible(timeout=timeout)
+        option.click(timeout=timeout)
 
         try:
             self.wait_for_loader(timeout=timeout)
@@ -403,7 +513,9 @@ class BasePage:
                 f"yo'qolmadi, url={self.page.url}"
             ) from exc
 
-        expect(self.page.get_by_role("paragraph").filter(has_text=name)).to_be_visible()
+        current_filial = trigger.locator(".project-filial p").nth(1)
+        expect(current_filial).to_have_text(name, timeout=timeout)
+        return option
 
     # ------------------------------------------------------------------------------------------------------------------
 

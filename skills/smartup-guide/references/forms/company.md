@@ -32,6 +32,9 @@
   — list to'liq render bo'lgan, lekin `heading` role mavjud bo'lmagan failure holati.
 - `references/forms/screenshots/company/company__add-initial__desktop-1440x783.png`
   — yangi company formasining boshlang'ich, maydonlar hali to'ldirilmagan holati.
+- `references/forms/screenshots/company/company__add-name-label__desktop-1680x933.png`
+  — 2026-07-27 app3 holati: company nomi maydoni `Ф.И.О.` o'rniga `Название`
+  labeli bilan render bo'lgan failure diagnostikasi.
 - `references/forms/screenshots/company/company__save-duplicate-template-error__desktop-2880x1566.png`
   — formani to'ldirish va confirmdan keyin backend qaytargan duplicate template
   nomi xatosi.
@@ -63,6 +66,15 @@ company_code = f"autotest{code}".lower()  # masalan: autotest7576
 | Код сервера / Server code | `smt-control` label filter | `autotest{code}` |
 | Название / Company name | `smt-control` label filter | `Autotest company {code}` |
 | Язык | — | `Русский` (default, tekshiriladi) |
+
+### Company name label o'zgargan
+Tags: company, setup, locator, app3, ui-change
+- 2026-07-20 arxiv screenshotida company name labeli `Ф.И.О.` bo'lgan.
+- 2026-07-27 app3 (`/a2/biruni/md/company_add`) trace va failure screenshotida
+  ayni maydon `Название` bo'lib render bo'ldi; forma va `#companyForm` to'liq
+  yuklangan, `Код сервера` muvaffaqiyatli to'ldirilgan.
+- `Ф.И.О.` exact labelini kutadigan test locator shu UI o'zgarishidan keyin
+  element topmaydi; bu sahifa yuklanishi yoki `HEADLESS`/trace muammosi emas.
 
 ### Majburiy shablonlar (Шаблоны card)
 

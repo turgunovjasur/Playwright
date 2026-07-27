@@ -105,3 +105,7 @@ Yechim: <nima qilish kerak>
 - AI xulosa `test-results/ai-summary.md/json` fayllariga yoziladi va Allure report ichida alohida `AI Test Summary` card sifatida attachment qilinadi; bu card test pass/fail statusini o'zgartirmaydi.
 - Telegramdagi asosiy natija xabari AIga bog'liq bo'lmasin; xom Gemini API error, uzun stacktrace yoki locator logini asosiy xabar sifatida yuborma.
 - Group runnerlarda har case alohida pytest/Allure test; Telegram va system summary failed runner testi bilan birga uning ichki failed step/source qiymatini ko'rsatishi shart.
+
+### Lokal Allure server lifecycle
+- `scripts/open_allure_report.py` har run uchun yangi orphan process yaratmasligi kerak: reportga tegishli state + health-check orqali ishlayotgan lokal server qayta ishlatiladi, stale state esa yangi server bilan almashtiriladi.
+- PyCharm direct run tugaganda `pytest_sessionfinish` ochgan Allure helper parent runnerdan ajratilmasa, helper state yaratgach browserni ochmasdan o'lishi va stale JSON qoldirishi mumkin; `Popen` alohida session hamda parentdan mustaqil stdout/stderr bilan ishga tushirilishi kerak.

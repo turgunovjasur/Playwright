@@ -157,7 +157,12 @@ def _group_name(item, runner_test):
     source = str(item.get("source") or item.get("location") or "").lower()
     combined = " ".join([full_name, name, source, runner_test.lower()])
 
-    if "test_a2_admin_forms" in combined or "a2 admin forms" in combined:
+    if (
+        "test_a2_admin_menu_forms" in combined
+        or "test_a2_admin_forms" in combined
+        or "a2 admin menu forms" in combined
+        or "a2 admin forms" in combined
+    ):
         return "A2 Admin Forms"
     if "report_group" in combined or "report group" in combined:
         return "Report group"
@@ -288,6 +293,12 @@ def _human_reason(message):
             reason += f" UI error: {ui_error}"
         return _truncate(reason, 500)
 
+    if "using Playwright Sync API inside the asyncio loop" in message:
+        return (
+            "Pytest fixture yangi Sync Playwright runtime ochishga urindi, lekin shu sessiyadagi "
+            "boshqa Sync Playwright runtime hali faol edi. Test UI qadamlariga yetib bormagan."
+        )
+
     timeout = _timeout_text(message)
     target = _waited_target(message)
     target_text = _target_text(target)
@@ -360,6 +371,11 @@ def _human_next_action(message):
         if structured.get("ui_error"):
             return "Save bosilgan formadagi Biruni/UI error textni tekshir; test keyingi list/view kutishdan oldin shu error sabab to'xtagan."
         return "Save bosilgandan keyingi transitionni tekshir: forma yopildimi, confirm bosildimi, loader tugadimi va expected list/view ochildimi."
+    if "using Playwright Sync API inside the asyncio loop" in message:
+        return (
+            "Bitta session-scoped Sync Playwright runtime ishlat; fresh page kerak bo'lsa yangi "
+            "Playwright emas, mavjud session browseridan alohida context/page yarat."
+        )
     element_state = _element_state(message)
     if element_state == "hidden":
         return "Locatorni ko'rinadigan elementga aniqlashtir; clickdan oldin header/menyu ochilgani va loader tugaganini kut."

@@ -15,6 +15,18 @@ Tags: timeout, playwright, base-page, conftest, debug
 - `BasePage.expect_page(url=...)` URL mosligini kutadi, lekin hozirgi implementatsiyada loader `check_unblocked` tekshiruvi faqat `heading` branchida ishlaydi; URL-only chaqiruv loader kutishi deb qabul qilinmaydi. Menyu flowida loaderni `BasePage.navigate_to()`, standalone URL tekshiruvida esa alohida `BasePage.wait_for_loader()` kutadi.
 - `requests`/`urllib` HTTP timeoutlari sekundlarda va UI kutishlaridan boshqa mas'uliyatga ega; ular ham tegishli request funksiyasi yonida turadi.
 
+### Bitta pytest sessiyasida yagona Sync Playwright runtime
+Tags: playwright, fixture, session-browser, asyncio, ci
+- `sync_playwright()` bir threadda ichma-ich ochilmaydi. Session-scoped runtime faol
+  paytda function-scoped fixture yana `sync_playwright()` ochsa Playwright
+  `using Playwright Sync API inside the asyncio loop` xatosini beradi; bu testning
+  async yozilganini yoki A2 UI xatosini anglatmaydi.
+- `session_browser` pytest sessiyasi uchun yagona Sync Playwright runtime/browserni
+  yaratadi. `session_context`, `group_session_page` va fresh `page` fixturelari
+  shu browserdan alohida context/page yaratadi.
+- Xato fixture setupda chiqsa test UI qadamlariga yetmagan bo'ladi; screenshot/trace
+  locator diagnostikasi emas, fixture dependency va runtime lifecycle tekshiriladi.
+
 ### Code Fixture
 Tags: code, data-store
 - Session `code` setupda yaratiladi.

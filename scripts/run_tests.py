@@ -29,7 +29,7 @@ GROUP_RUNNER_PATHS = (
     "tests/smoke/test_groups/test_C_grup/test_c_group_runner.py",
     "tests/smoke/test_groups/test_report_grup/test_report_group_runner.py",
 )
-A2_ADMIN_FORMS_PATH = "tests/smoke/test_life_cycle/test_a2_admin_forms.py"
+A2_ADMIN_FORMS_PATH = "tests/smoke/test_life_cycle/test_a2_admin_menu_forms.py"
 
 TARGETS = {
     "all": (
@@ -151,6 +151,10 @@ def generate_report(env, open_report, dry_run):
 
 def show_trace(env, dry_run):
     playwright = shutil.which("playwright")
+    if not playwright:
+        venv_playwright = Path(sys.executable).with_name("playwright")
+        if venv_playwright.is_file():
+            playwright = str(venv_playwright)
     if not playwright or not TRACE_DIR.exists():
         return
 
@@ -365,7 +369,7 @@ def main():
     )
 
     generate_report(env, open_report=args.open_report or env_flag(env, "OPEN_REPORT"), dry_run=args.dry_run)
-    if args.show_trace:
+    if args.show_trace or env_flag(env, "SHOW_TRACE"):
         show_trace(env, dry_run=args.dry_run)
 
     return test_exit

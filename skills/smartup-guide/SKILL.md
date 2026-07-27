@@ -46,6 +46,8 @@ Biznes formalar:
 - [order-list.md](references/forms/order-list.md) — Order ro'yxati, row selection va action tugmalari
 - [order-add.md](references/forms/order-add.md) — Order yaratish
 - [contract-view.md](references/forms/contract-view.md) — Kontrakt ko'rish
+- [company-client.md](references/forms/company-client.md) — Kompaniya OAuth2 klientlari, A2/filial konteksti
+- [pnl.md](references/forms/pnl.md) — PnL menyu yo'li va legacy/A2 migratsiya holati
 - [init-balance.md](references/forms/init-balance.md) — Boshlang'ich TMC qoldiq hujjati
 - [action.md](references/forms/action.md) — Акция (aksiya/chegirma)
 - [cislink.md](references/forms/cislink.md) — CIS link integratsiya

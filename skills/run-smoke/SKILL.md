@@ -73,7 +73,7 @@ allure serve test-results/allure-results
 ## Muhim
 
 - Asosiy runner cross-platform: `python scripts/run_tests.py --url <server_url> --company-code <code> --company-password <password>`; Mac/Linux uchun `./run_tests.sh ...` wrapper ham bor.
-- `.env` mavjud bo'lsa direct `pytest`/PyCharm runlar undan foydalanadi; `.env` yo'q muhitlarda terminal/CI flaglari majburiy.
+- Precedence qat'iy: repo rootda `.env` mavjud bo'lsa u yagona asosiy konfiguratsiya hisoblanadi; terminaldagi inline env va CLI flaglar berilgan bo'lsa ham `.env` qiymatlari ishlaydi. `.env` bo'lmasa terminal/CI CLI flaglari va shell env ishlaydi.
 - Mavjud company bilan run qilish uchun `--company-code` va `--company-password` majburiy.
 - Yangi company yaratish uchun `--create-company`, `--head-email` va `--head-password` majburiy.
 - `--create-company` bilan `--company-code` va `--company-password` berilmaydi; company code test ichida `autotest<code>` ko'rinishida yaratiladi.

@@ -1,0 +1,16 @@
+{
+  "url": "https://app3.greenwhite.uz/xtrade/a2/biruni/kauth/company_client_list",
+  "form_slug": "company-client",
+  "state": "list-loaded",
+  "viewport": {
+    "width": 1440,
+    "height": 783
+  },
+  "created_at": "2026-07-27",
+  "browser": "Chromium",
+  "dynamic_areas": [
+    "OAuth2 client rows and identifiers",
+    "current filial name"
+  ],
+  "source": "Playwright trace from menu-based A2 smoke run"
+}

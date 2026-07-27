@@ -92,6 +92,8 @@ Smartup yangi formalari (yangi Angular/modern app) eski AngularJS Biruni app ust
   bilan ham tutadi — noto'g'ri).
 - Leaf bosilganда a2 ga to'liq sahifa navigatsiya. Keyingi formaga o'tish uchun `page.go_back()` — eski dashboard
   menyusi bilan tiklanadi (2026-07-08 MCP tasdiqlangan: go_back'dan keyin tablar/leaflar qayta ishlaydi).
+- Explicit menu-track testning yangi oqimida `page.go_back()` ishlatilmaydi:
+  forma ochilgach joriy sahifadagi navbar orqali keyingi forma ochiladi.
 - **Flow helper:** `navigate_to_a2(page, tab, path)` (flows/flow_navigate.py) — tab bosadi, leaf ko'rinishini kutadi,
   bosadi, URL `/a2/{path}` ga o'tguncha va `document.title` "Smartup Online" (shell) dan forma nomiga aylanguncha kutadi.
   Sub-kategoriya (`h3.menu-heading`) ni ochish SHART EMAS — tab bosilganda flyout barcha leaflarni ko'rsatadi.
@@ -104,11 +106,15 @@ Smartup yangi formalari (yangi Angular/modern app) eski AngularJS Biruni app ust
 
 ## Filial switcher DOM
 
-- Ochish: `.pt-3.px-2` (kichik viewport'да ko'rinmasligi mumkin — testда 1920x1080).
+- Ochish: `.dropdown-locations-custom:visible`. Ichki `.pt-3.px-2` faqat dekorativ
+  strelka bo'lib, 1920x1080 CI viewportida ham hidden nusxaga tushishi mumkin;
+  uni click target sifatida ishlatma.
 - Optionlar: `.filial-list a.ng-binding` (matn = filial nomi), `href=""` (bo'sh) — shuning uchun **role=link**,
-  ya'ni `get_by_role("link", name=filial, exact=True)` ishlaydi (flow_navigate `switch_filial` shu asosда).
+  ya'ni ochilgan locations containerining `.dropdown-menu` qismida
+  `get_by_role("link", name=filial, exact=True)` ishlaydi (`BasePage.switch_filial`
+  shu asosda).
   `.project-list a.ng-binding` — bu proyektlar (Trade/Финансы), filiallar emas.
-- `switch_filial(page, name)` (flows/flow_navigate.py) filialга o'tadi va dashboard qayta yuklanadi.
+- `BasePage(page).switch_filial(name)` filialga o'tadi va dashboard qayta yuklanadi.
 - `test_a2_admin_forms.py` code/data_store'ga bog'lanmaydi: operatsion filial sifatida angular session modelidagi
   "Администрирование" bo'lmagan birinchi filial tanlanadi va `switch_filial(page, name=<shu filial>)` qilinadi.
 - URL diagnostika testlarida operatsion filial nomini aniqlash: avval `filial-pw{code}` ({code} data_store.json dan),
@@ -137,6 +143,10 @@ Smartup yangi formalari (yangi Angular/modern app) eski AngularJS Biruni app ust
   filial bo'yicha guruhlangan hisobot beradi. **Barcha angular-menyu a2 formalar ADMIN** — alohida head test YO'Q;
   hali live tasdiqlanmagan admin formalar (`md/*`, `announcement`, `client_list`, `security_settings`,
   `operational_dashboard`, ...) shu SHU faylga qo'shib boriladi.
+  - Har bir qamralgan forma yozuvida `new_forms.md` bilan bir xil to'liq user
+    track saqlanadi. Track Allure step nomi bo'ladi va yakuniy `HISOBOT`da har
+    forma ostida `Track:` qatori sifatida chiqadi. `LEAF`, `SIBLING`,
+    `company_client+add` va `company_client+edit` tracklari majburiy.
   - **Menyudan ochiladigan admin formalar (red_test, 2026-07-08 live tasdiqlangan):**
     - birinchi "Администрирование" bo'lmagan operatsion filialda 19 ta: `external_settings`, `visit_list`, `user_locations`, `user_tracking`,
       `commercial_dashboard`, `rep/mbi/tvt/visit`, `logistics_list`, `mkw/{movement,purchase_request,purchase,input,writeoff}`,
@@ -160,6 +170,66 @@ Smartup yangi formalari (yangi Angular/modern app) eski AngularJS Biruni app ust
     `company_audit_info_audit(+details)` — kompaniya «История изменений» tugmasidan ochilishi mumkin (tekshirilmagan).
   - **Standalone run:** `test_a2_admin_forms.py` uchun `code` fixture kerak emas; `.env` faqat login/server
     credentiallariga (`COMPANY_URL`, `COMPANY_CODE`, `COMPANY_PASSWORD`) ta'sir qiladi.
+  - Setup bilan bir sessiyada collect qilinganda test fresh `page` contextida
+    ishlaydi, ammo u Setupning faol `session_browser` runtimeini qayta ishlatadi;
+    alohida `sync_playwright()` ochilmaydi.
+
+### Explicit menu-track test (2026-07-27)
+
+- `test_a2_admin_menu_forms.py` module docstringi kelajak backlogi sifatida
+  `A2_FORMS`dagi barcha 53 formani profile → filial bo'yicha saqlaydi. Har
+  yozuvda status (`✅ YOZILGAN`/`⬜ QOLGAN`), mode, path, title, parent (kerak
+  bo'lsa) va mavjud user trace bor. Yangi menu-track qo'shilganda shu yozuvning
+  statusi va yuqoridagi jami hisoblari ham yangilansin.
+- `tests/smoke/test_life_cycle/test_a2_admin_menu_forms.py` formalarni route
+  ro'yxati bo'yicha loop qilmaydi: har bir forma keyword parametrlar bilan
+  alohida chaqiriladi.
+- Parametrlar real UI ma'nosida: `navbar_tab` — yuqori navbar,
+  `menu_column` — mega-menu ustuni, `menu_item` — ustundagi forma,
+  `page_links` — parent forma ochilgach bosiladigan yuqori linklar.
+- Lokal `_check_form(...)` faqat click navigatsiyasini bajaradi. Legacy
+  dashboarddan birinchi forma `BasePage.navigate_to_form(...)` bilan ochiladi;
+  undan keyingi A2 menu qadamlari `AngularBasePage.navigate_to(...)` bilan
+  bajariladi. Har bir A2 formadan keyin title va URL alohida
+  `AngularBasePage.expect_page(title=..., url=...)` bilan tekshiriladi.
+- Allure ierarxiyasi: filial parent step → raqamlangan forma step → `Yo'l: ...`
+  navigatsiya stepi + kutilgan title va URL qiymatlari aniq yozilgan tekshiruv
+  stepi. Generic `Tekshiruv: title va URL` ishlatilmaydi; reportda nima
+  tekshirilgani stepni ochmasdan ko'rinishi kerak. Navigatsiya yoki
+  `expect_page()` yiqilsa aynan tegishli forma qizil ko'rinadi.
+- A2 filial switchi ham A2 sahifada
+  `AngularBasePage.switch_filial(name=operational_filial)` bilan qilinadi;
+  legacy `BasePage.switch_filial()` A2 shell selectorlariga mos emas.
+- 2026-07-27 live natija: **20/20 passed**. Keyin PnL foydalanuvchi
+  tasdiqlagan exact `menu_item="PnL"` bilan qayta qo'shildi, ammo foydalanuvchi
+  ko'rsatmasiga ko'ra bu o'zgarishdan keyin test run qilinmadi.
+- Keyin `biruni/kauth/company_client_list` ham foydalanuvchi tasdiqlagan real
+  track bilan qayta qo'shildi; bu o'zgarishdan keyin ham test run qilinmadi.
+- Kelishilgan execution tartibi:
+  1. login'dan keyin `dashboard()` heading va URLni tasdiqlaydi;
+  2. `switch_filial(name="Администрирование")`;
+  3. ochilgan filial ro'yxatidan birinchi `Администрирование` bo'lmagan nom
+     `operational_filial`ga saqlanadi;
+  4. real menu track orqali `company_client_list` ochilib, alohida
+     `expect_page()` bilan tasdiqlanadi;
+  5. ortga qaytmasdan shu sahifadan
+     `switch_filial(name=operational_filial)` qilinadi;
+  6. operatsion filialdagi direct menu formalar, keyin `page_links` orqali
+     ochiladigan formalar ketma-ket tekshiriladi.
+- Joriy refaktorda 22 forma bor: 1 ta admin list, 19 ta operatsion direct va
+  2 ta `page_links` formasi. 2026-07-27 live run:
+  **22/22 passed, 123.45s**.
+- Live title farqlari: PnL formasi title'i aynan `PnL`; shelf-share title'i
+  aynan `Конструктор отчётов по доле на полке`; mkw/mfm report konstruktorlari
+  `Конструктор отчетов по ...` ko'rinishida.
+- Hozircha keyinga qoldirilgan 2 forma:
+  `biruni/kauth/company_client+add`, `biruni/kauth/company_client+edit`.
+- Real menu farqlari:
+  - shelf-share: `Торговый маркетинг → Отчеты → Конструктор отчётов по доле на полке`;
+  - Plugin Marketplace ustunsiz kichik flyout: `Плагин → Plugin Marketplace`,
+    shuning uchun `menu_column=None`;
+  - action va marking stocktaking konstruktorlari `page_links` orqali parent
+    formadan ochiladi.
 
 ## Diagnostika natijasi (2026-07-07, app3.greenwhite.uz/xtrade — 2 passed, 0 muammo)
 

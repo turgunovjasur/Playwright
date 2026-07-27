@@ -18,7 +18,18 @@ Tags: locator, angular
 
 ### MCP bilan Smartup'ni Haydash — locator manbasi, snapshot iqtisodi
 Tags: mcp, playwright, locator, snapshot, workflow
-- Qoida: MCP (`mcp__playwright__*`) bilan Smartup'ni jonli haydashda har qadamda `browser_snapshot` OLMA. Avval locatorni shu guide'dan va flow fayllaridan ol: `flow_navigate.py` (login/filial/menu — `.pt-3.px-2`, `a.menu-link.menu-toggle`, `a.menu-link.menu-link-title`), `flow_authorization.py`, `forms/<slug>.md` dossierlari, hamda yuqoridagi afzal helper/role locatorlar. Ular bilan to'g'ridan-to'g'ri CSS/role selector orqali `browser_click`/`browser_type` qil.
+- Qoida: MCP (`mcp__playwright__*`) bilan Smartup'ni jonli haydashda har qadamda `browser_snapshot` OLMA. Avval locatorni shu guide'dan va helper/flow fayllaridan ol: `BasePage.switch_filial()` (`.dropdown-locations-custom:visible`), `flow_navigate.py` (`a.menu-link.menu-toggle`, `a.menu-link.menu-link-title`), `flow_authorization.py`, `forms/<slug>.md` dossierlari, hamda yuqoridagi afzal helper/role locatorlar. Ular bilan to'g'ridan-to'g'ri CSS/role selector orqali `browser_click`/`browser_type` qil.
+
+### Legacy shell filial switcher
+
+- Filial menyusini ichki dekorativ strelka `.pt-3.px-2` orqali ochma. 2026-07-24 CI
+  trace'da bu locator elementni topgan, lekin u hidden bo'lgan.
+- Ko'rinadigan trigger: `.dropdown-locations-custom:visible`. Barqaror helper
+  `BasePage.switch_filial()` avval `.header-logo.custom-dropdown:visible` locations
+  containerini topadi, triggerni bosadi va optionni faqat shu container ichidagi
+  ko'rinadigan `.dropdown-menu` orqali tanlaydi.
+- Tanlash tugagach aynan trigger ichidagi `.project-filial p` filial nomi bilan
+  yangilangani tekshiriladi.
 - `browser_snapshot` faqat: (a) locator hujjatlanmagan/noma'lum bo'lsa (yangi forma), (b) kutilmagan holatni aniqlash uchun. Olsang ham `target`/`depth` bilan cheklab ol, butun sahifani emas.
 - Grid/natija tekshirish uchun butun snapshot o'rniga `browser_evaluate` bilan aniq elementni target qilib olish yengilroq (masalan `b-grid .tbl-row` matnlarini `innerText` orqali). 2026-07-02 da user grid login ustunini shu yo'l bilan tekshirdim.
 - Sabab: har `browser_snapshot` yuzlab qator YAML qaytaradi va kontekstni behuda to'ldiradi; locator allaqachon guide/flow'da bo'lsa snapshot ortiqcha.
@@ -183,3 +194,32 @@ Tags: order, locator, error
 - Qayerda: `order+add`/`order+edit` wizard, 3-step (Завершение). Tugma: `#anor279-button-next_step` — step 1-2 da "Далее", oxirgi stepda "Сохранить" ko'rsatadi.
 - Qoida: tugma ichida `<i class="fa fa-save">` ikonka bor; FontAwesome `::before` glyph accessible name'ga qo'shiladi, shuning uchun `get_by_role("button", name="Сохранить", exact=True)` 0 ta element topadi ("element(s) not found"). Exact'siz (substring) qidiruv topadi.
 - Testda ishlatish: order final page save uchun `save_and_expect_heading(..., exact_button=False)` ishlatilsin. Oddiy toolbar save tugmalari (setup/contract formalari, `b-toolbar` ichidagi matnli tugma) ikonkasiz — ularda default `exact_button=True` ishlayveradi.
+
+## Loyiha Xususiyatlari
+
+### Legacy Navbar → Forma Navigatsiyasi
+
+- Umumiy primitive `BasePage.navigate_to_form(...)`: `navbar_tab → menu_column
+  → menu_item → page_links`.
+- Bu primitive faqat navigatsiya qiladi. Forma ochilganini tasdiqlash chaqiruvchi
+  testda alohida bajariladi; URL/title tekshiruvi `navigate_to_form()` ichiga
+  yashirilmaydi.
+- `BasePage.navigate_to_form()` faqat legacy dashboarddan birinchi A2 formaga
+  o'tish uchun. Joriy sahifa A2 bo'lsa keyingi menu navigatsiya
+  `AngularBasePage.navigate_to(tab=..., name=...)`, filial almashtirish
+  `AngularBasePage.switch_filial(...)`, forma tasdig'i esa
+  `AngularBasePage.expect_page(title=..., url=...)` bilan bajariladi.
+- A2 listlarda ko'rinadigan forma nomi semantik `role=heading` bo'lmasligi
+  mumkin. `company_client_list`da `BasePage.expect_page(heading=...)` false
+  failure bergan, holbuki URL, `document.title` va `smt-data-table` to'g'ri
+  yuklangan. A2 uchun legacy heading assertion ishlatilmaydi.
+- Kichik flyoutda ustun heading bo'lmasa `menu_column=None` beriladi va
+  `menu_item` bevosita ochilgan flyout ichidan qidiriladi; `Плагин → Plugin
+  Marketplace` 2026-07-27 live tasdiqlangan misol.
+- Menu matni real DOM bilan aynan yozilsin: `е` va `ё` farqi locator uchun
+  muhim. Shelf-share leaf matni `Конструктор отчётов по доле на полке`.
+- Parent forma ichidagi bir yoki bir nechta yuqori linklar `page_links`ga
+  bosilish tartibida beriladi.
+- Foydalanuvchi bergan visual namunalar:
+  `forms/screenshots/menu-navigation/menu-navigation__navbar-and-column__1036x448.png`
+  va `forms/screenshots/menu-navigation/menu-navigation__page-link__361x131.png`.

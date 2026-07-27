@@ -17,6 +17,7 @@ TRACE_DIR = "test-results/traces"
 DATA_DIR = "test-results/data"
 ALLURE_RESULTS_DIR = "test-results/allure-results"
 ALLURE_REPORT_DIR = "test-results/allure-report"
+ALLURE_SERVER_LOG = "test-results/logs/allure-report-server.log"
 CREATED_COMPANY_PASSWORD = "greenwhite"
 ROOT_DIR = Path(__file__).resolve().parents[2]
 
@@ -483,19 +484,9 @@ def pytest_configure(config):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-@pytest.fixture
-def browser(request):
-    """Bitta browser instance, to'liq ekranda ochiladi."""
-    with sync_playwright() as p:
-        browser_obj = p.chromium.launch(**_browser_launch_options(request.config))
-        yield browser_obj
-        browser_obj.close()
-
-# ----------------------------------------------------------------------------------------------------------------------
-
 @pytest.fixture(scope="session")
 def session_browser(request):
-    """Butun sessiya uchun bitta browser (setup/group runnerlar uchun)."""
+    """Butun pytest sessiyasi uchun yagona Sync Playwright runtime va browser."""
     with sync_playwright() as p:
         browser_obj = p.chromium.launch(**_browser_launch_options(request.config))
         yield browser_obj
@@ -553,9 +544,9 @@ def group_user_page(group_session_page, code):
 # ----------------------------------------------------------------------------------------------------------------------
 
 @pytest.fixture
-def page(browser, request):
-    """Har bir test uchun yangi sahifa, to'liq ekran (no_viewport + --start-maximized). Trace yoziladi."""
-    context = browser.new_context(**_browser_context_options(request.config))
+def page(session_browser, request):
+    """Har test uchun yangi context/page; sessiondagi yagona Sync Playwright browserini ishlatadi."""
+    context = session_browser.new_context(**_browser_context_options(request.config))
     context.set_default_timeout(10_000)
     context.set_default_navigation_timeout(20_000)
 
@@ -737,11 +728,34 @@ def pytest_runtest_logreport(report):
 
 @pytest.hookimpl(trylast=True)
 def pytest_sessionfinish(session, exitstatus):
-    """Direct pytest/PyCharm run tugaganda OPEN_REPORT=1 bo'lsa Allure reportni ochadi.
+    """Direct pytest/PyCharm run tugaganda report va trace viewerlarni ochadi.
 
-    scripts/run_tests.py o'zi report generate/open qiladi, shuning uchun u orqali kelgan runlarda bu hook skip bo'ladi.
+    scripts/run_tests.py o'zi ularni ochadi, shuning uchun u orqali kelgan runlarda bu hook skip bo'ladi.
     """
-    if not _env_flag("OPEN_REPORT") or _env_flag("SMARTUP_RUNNER"):
+    if _env_flag("SMARTUP_RUNNER"):
+        return
+
+    if _env_flag("SHOW_TRACE"):
+        playwright_bin = shutil.which("playwright")
+        if not playwright_bin:
+            venv_playwright = Path(sys.executable).with_name("playwright")
+            if venv_playwright.is_file():
+                playwright_bin = str(venv_playwright)
+        trace_dir = ROOT_DIR / TRACE_DIR
+        traces = (
+            sorted(trace_dir.glob("*.zip"), key=lambda item: item.stat().st_mtime, reverse=True)
+            if trace_dir.exists()
+            else []
+        )
+        if not playwright_bin:
+            print("\n[TRACE] SHOW_TRACE=1, lekin playwright CLI topilmadi")
+        elif not traces:
+            print("\n[TRACE] SHOW_TRACE=1, lekin trace fayli topilmadi")
+        else:
+            print(f"\n[TRACE] Trace ochilmoqda: {traces[0]}")
+            subprocess.Popen([playwright_bin, "show-trace", str(traces[0])], cwd=ROOT_DIR)
+
+    if not _env_flag("OPEN_REPORT"):
         return
 
     allure_bin = shutil.which("allure")
@@ -772,6 +786,31 @@ def pytest_sessionfinish(session, exitstatus):
         return
 
     print("[ALLURE] Report ochilmoqda...")
-    subprocess.Popen(open_command, cwd=ROOT_DIR)
+    server_log_path = ROOT_DIR / ALLURE_SERVER_LOG
+    server_log_path.parent.mkdir(parents=True, exist_ok=True)
+    detach_options = (
+        {"start_new_session": True}
+        if os.name == "posix"
+        else {
+            "creationflags": (
+                subprocess.CREATE_NEW_PROCESS_GROUP
+                | subprocess.DETACHED_PROCESS
+            )
+        }
+    )
+    try:
+        with server_log_path.open("a", encoding="utf-8") as server_log:
+            subprocess.Popen(
+                open_command,
+                cwd=ROOT_DIR,
+                stdout=server_log,
+                stderr=subprocess.STDOUT,
+                close_fds=True,
+                **detach_options,
+            )
+    except OSError as exc:
+        print(f"[ALLURE] Lokal serverni ishga tushirib bo'lmadi: {exc}")
+        return
+    print(f"[ALLURE] Server log: {server_log_path}")
 
 # ----------------------------------------------------------------------------------------------------------------------

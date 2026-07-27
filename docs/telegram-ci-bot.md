@@ -3,7 +3,7 @@
 Telegram bot GitHub Actions workflow `.github/workflows/daily-smoke.yml`ni
 ishga tushiradi. Workflow avtomatik ravishda har soat `00` daqiqada ham yuradi.
 CI va Telegram bot runlari `setup-a2-admin` targetini ishlatadi: avval User
-setup, keyin `test_a2_admin_forms` yuradi. A/B/C va Report group testlari
+setup, keyin `test_a2_admin_menu_forms` yuradi. A/B/C va Report group testlari
 workflowga kiritilmaydi.
 `smartup.online` va `app3.greenwhite.uz/xtrade` serverlarining ikkalasida ham
 mavjud company ishlatiladi (`CREATE_COMPANY=0`).
