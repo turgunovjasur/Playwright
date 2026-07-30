@@ -26,11 +26,11 @@ Maqsad: har suhbatda bir xil xatoni takrorlamaslik.
 - Test turi: Smoke testlar — `tests/smoke/`
 - User setup runner: `tests/smoke/test_setup/test_setup_runner.py` — setup testlarini ketma-ket ishlatadi
 - Group runnerlar: `tests/smoke/test_groups/**/test_*_group_runner.py` — har bir group case alohida pytest testi
-- Full script: `run_tests.sh` — setup va barcha group runner fayllarini bitta pytest sessiyasida Allure bilan ishlatadi
+- Asosiy cross-platform runner: `python scripts/run_tests.py`; `run_tests.sh` — Mac/Linux wrapper
 - `code` fixture: session uchun unikal 6 xonali son, runner da yangi, yakka testda `data_store.json` dan o'qiladi
 - Agar repo rootda `.env` mavjud bo'lsa, direct `pytest`/PyCharm run konfiguratsiyasi undan olinadi; `.env` yo'q bo'lsa terminal/CI flaglari ishlaydi
 - Mavjud company: `--url <server_url> --company-code <code> --company-password <password>`
-- Yangi company: `--url <server_url> --create-company`; yangi company admin paroli kod ichidagi default qiymat
+- Yangi company: `--url <server_url> --create-company --head-email <email> --head-password <password>`; yangi company admin paroli kod ichidagi default qiymat
 - User password test ichida hardcode, lekin qoida fayllarida literal qiymat yozilmaydi
 
 [//]: # (## Suhbat Oxirida Majburiy — Skills Yangilash)

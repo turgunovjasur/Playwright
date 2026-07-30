@@ -5,8 +5,10 @@ formaga ``BasePage``, A2 shell ichidagi keyingi formalarga ``AngularBasePage``
 orqali o'tiladi. Menu ichidan ochilgan parent forma yuqorisidagi linklar
 ``page_links`` orqali ketma-ket bosiladi. Har bir navigatsiyadan keyin title va
 URL test ichidagi alohida ``AngularBasePage.expect_page`` bilan tekshiriladi.
-Allure'da filial parent step, uning ichida har bir forma raqamlangan step bo'ladi;
-navigatsiya yo'li va title/URL tekshiruvi shu forma ostida alohida ko'rinadi.
+Allure'da filial parent step, uning ichida har bir forma raqamlangan step bo'ladi.
+Forma stepida filial, tab, menu va forma; ichki steplarda navigatsiya yo'li,
+kutilgan URL va haqiqiy URL ko'rinadi. Terminal yakunida ham shu maydonlar bilan
+22 qatorli summary chiqariladi.
 
 A2 FORMALAR INVENTARI — kelajakdagi menu-track testlar uchun
 ==============================================================
@@ -258,9 +260,19 @@ HEAD profil → operatsion filial (1 ta)
 
 import allure
 import pytest
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import expect
 
-from tests.smoke.flows.flow_authorization import authorization, dashboard
+from tests.smoke.flows.flow_authorization import authorization
+from tests.smoke.test_forms.flow import (
+    build_form_result,
+    finish_form_results,
+    first_operational_filial,
+    form_navigation_track,
+    form_step_title,
+    format_form_result,
+    print_form_result,
+)
 from utils.angular_base_page import AngularBasePage
 from utils.base_page import BasePage
 
@@ -277,124 +289,176 @@ FORM_TIMEOUT = 10_000
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def _first_operational_filial(page):
-    """Legacy filial ro'yxatidan birinchi ``Администрирование`` bo'lmagan nomni oladi."""
-    locations = (
-        page.locator(".header-logo.custom-dropdown:visible")
-        .filter(has=page.locator(".dropdown-locations-custom"))
-        .first
-    )
-    trigger = locations.locator(".dropdown-locations-custom")
-    expect(trigger).to_be_visible(timeout=FORM_TIMEOUT)
-    trigger.click(timeout=FORM_TIMEOUT)
-
-    menu = locations.locator(".dropdown-menu")
-    expect(menu).to_be_visible(timeout=FORM_TIMEOUT)
-    filial_list = menu.locator(".filial-list")
-    expect(filial_list).to_be_visible(timeout=FORM_TIMEOUT)
-    options = filial_list.get_by_role("link")
-    names = [name.strip() for name in options.all_inner_texts() if name.strip()]
-
-    trigger.click(timeout=FORM_TIMEOUT)
-    expect(menu).to_be_hidden(timeout=FORM_TIMEOUT)
-
-    for name in names:
-        if name and name != "Администрирование":
-            return name
-    raise AssertionError(
-        "A2 admin test uchun 'Администрирование' bo'lmagan operatsion filial topilmadi. "
-        f"Ko'ringan filiallar: {names}"
-    )
-
-
 def _check_form(
     page,
     *,
+    number,
+    filial,
     navbar_tab,
     menu_column,
     menu_item,
     page_links=None,
+    report=True,
 ):
     """Joriy legacy/A2 shell menyusidan click qiladi; sahifani tekshirmaydi."""
     links = [] if page_links is None else list(page_links)
-    track_parts = [navbar_tab]
-    if menu_column is not None:
-        track_parts.append(menu_column)
-    track = " → ".join([*track_parts, menu_item, *links])
-
-    with allure.step(f"Yo'l: {track}"):
-        print(f"\n[FORMA] {track}")
-        if "/a2/" in page.url:
-            AngularBasePage(page).navigate_to(
-                tab=navbar_tab,
-                name=menu_item,
-                timeout=FORM_TIMEOUT,
-            )
-            for page_link in links:
-                link = page.get_by_role(
-                    "link",
-                    name=page_link,
-                    exact=True,
-                ).filter(visible=True).first
-                expect(link).to_be_visible(timeout=FORM_TIMEOUT)
-                link.click()
-        else:
-            BasePage(page).navigate_to_form(
-                navbar_tab=navbar_tab,
-                menu_column=menu_column,
-                menu_item=menu_item,
-                page_links=links or None,
-                timeout=FORM_TIMEOUT,
-            )
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-def _expect_form_page(angular, *, title, url, ready=None):
-    """Allure stepida tekshirilayotgan title va URL qiymatlarini aniq ko'rsatadi."""
-    with allure.step(
-        f'Tekshiruv: title ichida "{title}"; URL ichida "{url}"'
-    ):
-        angular.expect_page(
+    title = links[-1] if links else menu_item
+    track = form_navigation_track(
+        navbar_tab=navbar_tab,
+        menu_column=menu_column,
+        menu_item=menu_item,
+        page_links=links,
+    )
+    step_name = (
+        form_step_title(
+            number=number,
+            filial=filial,
+            navbar_tab=navbar_tab,
+            menu_column=menu_column,
             title=title,
-            url=url,
-            ready=ready,
         )
+        if report
+        else f"A2 shellga kirish | Yo'l: {track}"
+    )
+
+    with allure.step(step_name):
+        with allure.step(f"Navigatsiya | Yo'l: {track}"):
+            if "/a2/" in page.url:
+                AngularBasePage(page).navigate_to(
+                    tab=navbar_tab,
+                    name=menu_item,
+                    timeout=FORM_TIMEOUT,
+                )
+                for page_link in links:
+                    link = page.get_by_role(
+                        "link",
+                        name=page_link,
+                        exact=True,
+                    ).filter(visible=True).first
+                    expect(link).to_be_visible(timeout=FORM_TIMEOUT)
+                    link.click()
+            else:
+                BasePage(page).navigate_to_form(
+                    navbar_tab=navbar_tab,
+                    menu_column=menu_column,
+                    menu_item=menu_item,
+                    page_links=links or None,
+                    timeout=FORM_TIMEOUT,
+                )
+
+    return {
+        "number": number,
+        "filial": filial,
+        "navbar_tab": navbar_tab,
+        "menu_column": menu_column,
+        "menu_item": menu_item,
+        "page_links": links,
+    }
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def run_a2_admin_menu_forms(page):
+def _expect_form_page(angular, *, report, results, title, url, ready=None):
+    """A2 formani tekshiradi va terminal/Allure uchun tushunarli natija yozadi."""
+    try:
+        with allure.step(
+            f'Tekshiruv | Forma: "{title}" | Kutilgan URL: "{url}"'
+        ):
+            angular.expect_page(
+                title=title,
+                url=url,
+                ready=ready,
+            )
+    except (AssertionError, PlaywrightTimeoutError) as exc:
+        result = build_form_result(
+            **report,
+            title=title,
+            expected_path=url,
+            actual_url=angular.page.url,
+            ok=False,
+            detail=" ".join(str(exc).split()),
+        )
+        results.append(result)
+        allure.attach(
+            format_form_result(result),
+            name=f"{report['number']:03d} | {title} | xato tafsilotlari",
+            attachment_type=allure.attachment_type.TEXT,
+        )
+        try:
+            allure.attach(
+                angular.page.screenshot(full_page=True),
+                name=f"{report['number']:03d}-{title}-failure",
+                attachment_type=allure.attachment_type.PNG,
+            )
+        except Exception:
+            pass
+        print_form_result(result)
+        raise
+    else:
+        result = build_form_result(
+            **report,
+            title=title,
+            expected_path=url,
+            actual_url=angular.page.url,
+            ok=True,
+        )
+        results.append(result)
+        with allure.step(f"Natija: OCHILDI | Haqiqiy URL: {angular.page.url}"):
+            pass
+        print_form_result(result)
+        return result
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def run_a2_admin_menu_forms(page, *, terminal_reporter=None):
     """Testcase: admin formalarni real va ma'noli UI qadamlari orqali ochish.
 
-    1. ``Администрирование`` filialiga o'tib, birinchi operatsion filial nomini saqlash.
+    1. Legacy va A2 shellni ``Администрирование`` filialiga sinxronlash.
     2. OAuth2 list formani tekshirish va shu formadan operatsion filialga o'tish.
     3. Operatsion filialdagi formalarni ortga qaytmasdan ketma-ket tekshirish.
     4. Parent forma yuqorisidagi page link orqali ochiladigan formalarni tekshirish.
+    5. Filial, tab, menu, forma va URLlar bilan terminal/Allure summary chiqarish.
 
     OAuth2 add/edit formalar hozircha bu testga kiritilmagan:
     ular alohida qo'lda tekshirilib, aniq sabab tasdiqlangach qo'shiladi.
     """
     base = BasePage(page)
     angular = AngularBasePage(page)
+    results = []
 
     with allure.step("1 - 'Администрирование' filialidagi OAuth2 list forma"):
-        authorization(page, who="admin")
-        dashboard(page)
         base.switch_filial(name="Администрирование")
-        operational_filial = _first_operational_filial(page)
+        operational_filial = first_operational_filial(page)
 
         with allure.step("01 — Клиенты OAuth2 сервера для компании"):
             _check_form(
                 page,
+                number=1,
+                filial="Администрирование",
                 navbar_tab="Главное",
                 menu_column="Дополнительное",
                 menu_item="Клиенты OAuth2 сервера для компании",
+                report=False,
             )
+            with allure.step(
+                "A2 filial: 'Администрирование' bilan sinxronlash va formani qayta ochish"
+            ):
+                angular.switch_filial(name="Администрирование")
+                report = _check_form(
+                    page,
+                    number=1,
+                    filial="Администрирование",
+                    navbar_tab="Главное",
+                    menu_column="Дополнительное",
+                    menu_item="Клиенты OAuth2 сервера для компании",
+                )
             _expect_form_page(
                 angular,
+                report=report,
+                results=results,
                 title="Клиенты OAuth2 сервера для компании",
                 url="biruni/kauth/company_client_list",
                 ready="app-company-client-list",
@@ -404,256 +468,334 @@ def run_a2_admin_menu_forms(page):
         angular.switch_filial(name=operational_filial)
 
         with allure.step("02 — Настройки интеграции со сторонним ПО"):
-            _check_form(
+            report = _check_form(
                 page,
+                number=2,
+                filial=operational_filial,
                 navbar_tab="Главное",
                 menu_column="Дополнительное",
                 menu_item="Настройки интеграции со сторонним ПО",
             )
             _expect_form_page(
                 angular,
+                report=report,
+                results=results,
                 title="Настройки интеграции со сторонним ПО",
                 url="trade/txs/external_settings",
             )
 
         with allure.step("03 — Визиты"):
-            _check_form(
+            report = _check_form(
                 page,
+                number=3,
+                filial=operational_filial,
                 navbar_tab="Продажа",
                 menu_column="Визиты",
                 menu_item="Визиты",
             )
             _expect_form_page(
                 angular,
+                report=report,
+                results=results,
                 title="Визиты",
                 url="trade/tvt/visit_list",
             )
 
         with allure.step("04 — Отслеживание пользователей"):
-            _check_form(
+            report = _check_form(
                 page,
+                number=4,
+                filial=operational_filial,
                 navbar_tab="Продажа",
                 menu_column="Визиты",
                 menu_item="Отслеживание пользователей",
             )
             _expect_form_page(
                 angular,
+                report=report,
+                results=results,
                 title="Отслеживание пользователей",
                 url="trade/tvt/user_locations",
             )
 
         with allure.step("05 — Отслеживание мобильных представителей"):
-            _check_form(
+            report = _check_form(
                 page,
+                number=5,
+                filial=operational_filial,
                 navbar_tab="Продажа",
                 menu_column="Визиты",
                 menu_item="Отслеживание мобильных представителей",
             )
             _expect_form_page(
                 angular,
+                report=report,
+                results=results,
                 title="Отслеживание мобильных представителей",
                 url="trade/tph/user_tracking",
             )
 
         with allure.step("06 — Коммерческий дашборд"):
-            _check_form(
+            report = _check_form(
                 page,
+                number=6,
+                filial=operational_filial,
                 navbar_tab="Продажа",
                 menu_column="Отчеты по продажам",
                 menu_item="Коммерческий дашборд",
             )
             _expect_form_page(
                 angular,
+                report=report,
+                results=results,
                 title="Коммерческий дашборд",
                 url="trade/tdeal/commercial_dashboard",
             )
 
         with allure.step("07 — Конструктор отчётов по визитам"):
-            _check_form(
+            report = _check_form(
                 page,
+                number=7,
+                filial=operational_filial,
                 navbar_tab="Продажа",
                 menu_column="Отчеты по визитам",
                 menu_item="Конструктор отчётов по визитам",
             )
             _expect_form_page(
                 angular,
+                report=report,
+                results=results,
                 title="Конструктор отчётов по визитам",
                 url="trade/rep/mbi/tvt/visit",
             )
 
         with allure.step("08 — Логистика"):
-            _check_form(
+            report = _check_form(
                 page,
+                number=8,
+                filial=operational_filial,
                 navbar_tab="Склад",
                 menu_column="Справочники",
                 menu_item="Логистика",
             )
             _expect_form_page(
                 angular,
+                report=report,
+                results=results,
                 title="Логистика",
                 url="trade/tdeal/logistics_list",
             )
 
         with allure.step("09 — Конструктор отчетов по внутр. перемещениям"):
-            _check_form(
+            report = _check_form(
                 page,
+                number=9,
+                filial=operational_filial,
                 navbar_tab="Склад",
                 menu_column="Отчеты",
                 menu_item="Конструктор отчетов по внутр. перемещениям",
             )
             _expect_form_page(
                 angular,
+                report=report,
+                results=results,
                 title="Конструктор отчетов по внутр. перемещениям",
                 url="anor/rep/mbi/mkw/movement",
             )
 
         with allure.step("10 — Конструктор отчетов по запросам на закуп"):
-            _check_form(
+            report = _check_form(
                 page,
+                number=10,
+                filial=operational_filial,
                 navbar_tab="Склад",
                 menu_column="Отчеты",
                 menu_item="Конструктор отчетов по запросам на закуп",
             )
             _expect_form_page(
                 angular,
+                report=report,
+                results=results,
                 title="Конструктор отчетов по запросам на закуп",
                 url="anor/rep/mbi/mkw/purchase_request",
             )
 
         with allure.step("11 — Конструктор отчетов по закупкам"):
-            _check_form(
+            report = _check_form(
                 page,
+                number=11,
+                filial=operational_filial,
                 navbar_tab="Склад",
                 menu_column="Отчеты",
                 menu_item="Конструктор отчетов по закупкам",
             )
             _expect_form_page(
                 angular,
+                report=report,
+                results=results,
                 title="Конструктор отчетов по закупкам",
                 url="anor/rep/mbi/mkw/purchase",
             )
 
         with allure.step("12 — Конструктор отчетов по поступлениям"):
-            _check_form(
+            report = _check_form(
                 page,
+                number=12,
+                filial=operational_filial,
                 navbar_tab="Склад",
                 menu_column="Отчеты",
                 menu_item="Конструктор отчетов по поступлениям",
             )
             _expect_form_page(
                 angular,
+                report=report,
+                results=results,
                 title="Конструктор отчетов по поступлениям",
                 url="anor/rep/mbi/mkw/input",
             )
 
         with allure.step("13 — Конструктор отчетов по списанию"):
-            _check_form(
+            report = _check_form(
                 page,
+                number=13,
+                filial=operational_filial,
                 navbar_tab="Склад",
                 menu_column="Отчеты",
                 menu_item="Конструктор отчетов по списанию",
             )
             _expect_form_page(
                 angular,
+                report=report,
+                results=results,
                 title="Конструктор отчетов по списанию",
                 url="anor/rep/mbi/mkw/writeoff",
             )
 
         with allure.step("14 — Конструктор отчетов по запросам на межорг. перемещения"):
-            _check_form(
+            report = _check_form(
                 page,
+                number=14,
+                filial=operational_filial,
                 navbar_tab="Склад",
                 menu_column="Отчеты",
                 menu_item="Конструктор отчетов по запросам на межорг. перемещения",
             )
             _expect_form_page(
                 angular,
+                report=report,
+                results=results,
                 title="Конструктор отчетов по запросам на межорг. перемещения",
                 url="anor/rep/mbi/mfm/movement_request",
             )
 
         with allure.step("15 — Конструктор отчетов по межорг. перемещениям"):
-            _check_form(
+            report = _check_form(
                 page,
+                number=15,
+                filial=operational_filial,
                 navbar_tab="Склад",
                 menu_column="Отчеты",
                 menu_item="Конструктор отчетов по межорг. перемещениям",
             )
             _expect_form_page(
                 angular,
+                report=report,
+                results=results,
                 title="Конструктор отчетов по межорг. перемещениям",
                 url="anor/rep/mbi/mfm/movement",
             )
 
         with allure.step("16 — Конструктор отчетов по финансам"):
-            _check_form(
+            report = _check_form(
                 page,
+                number=16,
+                filial=operational_filial,
                 navbar_tab="Финансы",
                 menu_column="Отчеты",
                 menu_item="Конструктор отчетов по финансам",
             )
             _expect_form_page(
                 angular,
+                report=report,
+                results=results,
                 title="Конструктор отчетов по финансам",
                 url="anor/rep/mbi/mkcs/operation",
             )
 
         with allure.step("17 — PnL"):
-            _check_form(
+            report = _check_form(
                 page,
+                number=17,
+                filial=operational_filial,
                 navbar_tab="Финансы",
                 menu_column="Отчеты",
                 menu_item="PnL",
             )
             _expect_form_page(
                 angular,
+                report=report,
+                results=results,
                 title="PnL",
                 url="anor/rep/mkr/pnl",
             )
 
         with allure.step("18 — Конструктор отчётов по доле на полке"):
-            _check_form(
+            report = _check_form(
                 page,
+                number=18,
+                filial=operational_filial,
                 navbar_tab="Торговый маркетинг",
                 menu_column="Отчеты",
                 menu_item="Конструктор отчётов по доле на полке",
             )
             _expect_form_page(
                 angular,
+                report=report,
+                results=results,
                 title="Конструктор отчётов по доле на полке",
                 url="trade/rep/mbi/tmcg/shelf_share",
             )
 
         with allure.step("19 — Конструктор отчетов по заявкам на оборудование"):
-            _check_form(
+            report = _check_form(
                 page,
+                number=19,
+                filial=operational_filial,
                 navbar_tab="Оборудование",
                 menu_column="Дополнительное",
                 menu_item="Конструктор отчетов по заявкам на оборудование",
             )
             _expect_form_page(
                 angular,
+                report=report,
+                results=results,
                 title="Конструктор отчетов по заявкам на оборудование",
                 url="anor/rep/mbi/mqpf/request",
             )
 
         with allure.step("20 — Plugin Marketplace"):
-            _check_form(
+            report = _check_form(
                 page,
+                number=20,
+                filial=operational_filial,
                 navbar_tab="Плагин",
                 menu_column=None,
                 menu_item="Plugin Marketplace",
             )
             _expect_form_page(
                 angular,
+                report=report,
+                results=results,
                 title="Plugin Marketplace",
                 url="biruni/plg/plugin_catalog",
             )
 
     with allure.step("3 - Parent forma yuqorisidagi page link orqali ochiladigan formalar"):
         with allure.step("21 — Конструктор отчетов по акциям"):
-            _check_form(
+            report = _check_form(
                 page,
+                number=21,
+                filial=operational_filial,
                 navbar_tab="Справочники",
                 menu_column="Маркетинг",
                 menu_item="Акции",
@@ -661,13 +803,17 @@ def run_a2_admin_menu_forms(page):
             )
             _expect_form_page(
                 angular,
+                report=report,
+                results=results,
                 title="Конструктор отчетов по акциям",
                 url="anor/rep/mbi/mcg/action",
             )
 
         with allure.step("22 — Инвентаризация КМ"):
-            _check_form(
+            report = _check_form(
                 page,
+                number=22,
+                filial=operational_filial,
                 navbar_tab="Склад",
                 menu_column="Документы",
                 menu_item="Инвентаризации",
@@ -675,14 +821,25 @@ def run_a2_admin_menu_forms(page):
             )
             _expect_form_page(
                 angular,
+                report=report,
+                results=results,
                 title="Инвентаризация КМ",
                 url="anor/mkw/marking_stocktaking/marking_stocktaking_list",
             )
+
+    with allure.step("4 - 22 ta A2 forma natijalarini jamlash"):
+        finish_form_results(results, terminal_reporter=terminal_reporter)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 
 @allure.title("A2 admin formalar — aniq menyu qadamlari orqali ochilish smoke")
-def test_a2_admin_menu_forms(page):
-    run_a2_admin_menu_forms(page)
+def test_a2_admin_menu_forms(page, pytestconfig):
+    authorization(page, who="admin")
+    run_a2_admin_menu_forms(
+        page,
+        terminal_reporter=pytestconfig.pluginmanager.get_plugin(
+            "terminalreporter"
+        ),
+    )

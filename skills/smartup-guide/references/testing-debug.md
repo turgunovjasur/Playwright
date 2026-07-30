@@ -1,12 +1,24 @@
 # Testing And Debug
 
+## Mundarija
+
+- [Playwright runtime](#bitta-pytest-sessiyasida-yagona-sync-playwright-runtime)
+- [Code fixture](#code-fixture)
+- [Setup va group model](#setup-va-group-model)
+- [Company mode](#company-mode-va-birinchi-authorization)
+- [Report group](#report-group)
+- [Runner va debug helper qoidalari](#runner-va-debug-helper-qoidalari)
+- [Screenshot debug workflow](#screenshot-debug-workflow)
+- [Test results retention](#test-results-retention)
+
 ## Qidiruv Kalitlari
 
-Tags: debug, data-store, setup, screenshot, dependency, smoke, regression
+Tags: debug, data-store, setup, screenshot, dependency, smoke
 
 ### Timeoutlar funksiya ichida saqlanadi
 Tags: timeout, playwright, base-page, conftest, debug
 - Loyiha qoidasi: alohida `utils/timeouts.py`, umumiy timeout klassi yoki markaziy timeout registri bo'lmaydi.
+  <!-- kb-allow-missing: utils/timeouts.py -->
 - Har bir helper o'z timeoutini funksiya signature'ida (`timeout=...`) yoki aynan shu amal yonidagi Playwright chaqiruvida saqlaydi. Qiymatni tushunish uchun boshqa faylga o'tish talab qilinmasin.
 - `tests/smoke/conftest.py` Playwright context uchun `set_default_timeout(10_000)` va `set_default_navigation_timeout(20_000)` qiymatlarini fixture yaratiladigan joyning o'zida beradi.
 - `BasePage` va `AngularBasePage` helperlari component, loader, transition, probe va typing delay qiymatlarini o'z funksiyalari ichida saqlaydi.
@@ -36,6 +48,16 @@ Tags: code, data-store
   - `robot-pw{code}`
   - `product-pw{code}`
 - Yakka testlarda `code` `test-results/data/data_store.json` dan olinadi.
+
+### Admin-only runnerda ortiqcha `code` dependency
+Tags: code, data-store, fixture, admin, forms
+- `group_session_page` browser context/page lifecycle fixture'i bo'lib,
+  `code`ni qabul qilmaydi.
+- User login uchun `code` kerak bo'lsa uni `group_user_page`, test data uchun
+  kerak bo'lsa tegishli test wrapper o'zi so'raydi.
+- Admin-only Forms runner `group_session_page` orqali ishlaydi. Umumiy fixture
+  `code`ga bog'lansa, `data_store.json` yo'q yakka run UI qadamlarigacha
+  yetmasdan `pytest.exit` bilan to'xtaydi.
 
 ### Yakka testda user login code'i
 Tags: authorization, user, code, data-store, debug
@@ -108,13 +130,27 @@ Tags: report, group, integration, download
 ### Runner Va Debug Helper Qoidalari
 Tags: runner, debug, modal, data-store
 - Runnerlar hech qachon boshqa moduldagi pytest `test_*` funksiyani import qilib chaqirmaydi; umumiy bajariladigan body `run_*` funksiyalarda turadi, pytest entrypointlar esa thin wrapper bo'ladi.
-- `run_*` funksiyalari global test mode parametrini qabul qilishi kerak; runner wrapper mode qiymatini pastga uzatadi, leaf test esa default smoke yoki explicit regression bilan ishlaydi.
+- Global smoke/regression mode parametri olib tashlangan. `run_*` funksiyasiga
+  ishlatilmaydigan `scope`/`mode` parametrini qo'shma; coverage farqi alohida
+  testcase yoki runner targeti bilan ifodalansin.
 - Group `run_*` funksiyalarida `login=True/login=False` mode parametri ishlatilmaydi. User group runnerlari login qilingan `group_user_page` uzatadi; fresh `page` bilan standalone pytest wrapper `run_*` chaqiruvidan oldin o'zi login qiladi. B-04 va Report kabi admin preconditionli caselar esa kerakli admin loginni `run_*` ichida parametrsiz bajaradi.
 - `BasePage.confirm_biruni(expected_text=None)` `#biruniConfirm` uchun text, opacity `1`, scoped `да`, hidden kutishni bitta joyda bajaradi.
 - `logger.fail(..., raise_error=True)` false-pass bo'lmasligi uchun kerakli joyda real `AssertionError` ko'taradi.
 - `save_data/load_data` corrupt JSON holatini yashirmaydi; required precondition uchun `require_data` fixture ishlatiladi.
 - CI/Telegram failure xabari faqat `TimeoutError` yoki locator call log bilan cheklanmasin; xabardan qaysi test, qaysi biznes step, sahifa/form holati, kutilgan action va tekshiriladigan keyingi joy aniq ko'rinishi kerak.
 - Save transition xatolarida list/view timeoutini root cause deb ko'rsatma; avval add/edit formdagi `Сохранить` actionidan keyingi Biruni/UI error, actual heading va expected transition yozilsin.
+
+### Forms runner terminal va Allure hisoboti
+Tags: forms, report, terminal, allure, filial, menu, url
+- `tests/smoke/test_forms/flow.py` legacy va A2 formalar uchun yagona report
+  modelini ishlatadi: filial, tab, menu, menyu formasi, destination forma,
+  action/page-link, to'liq user yo'li, kutilgan URL va haqiqiy URL.
+- Allure forma step nomida `Filial | Forma | Tab | Menu`, ichki steplarda
+  to'liq navigatsiya, kutilgan URL va haqiqiy URL ko'rinadi; yakunda bir xil
+  summary text attachment qilinadi.
+- Oddiy `print()` pass testda pytest capture ichida qoladi. Forms summary
+  `terminalreporter` queue'iga yozilib, `tests/smoke/conftest.py`dagi
+  `pytest_terminal_summary` hookida capture tugagach chiqariladi.
 
 ### Screenshot Debug Workflow
 Tags: screenshot, debug

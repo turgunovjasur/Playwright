@@ -1,0 +1,4 @@
+interface:
+  display_name: "Create Reusable UI Flow"
+  short_description: "Build reusable Smartup Playwright UI flows"
+  default_prompt: "Use $new-flow to extract this repeated UI sequence into a project-compliant flow."

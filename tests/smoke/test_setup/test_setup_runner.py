@@ -1,7 +1,9 @@
 import allure
 import pytest
 
+from tests.smoke.flows.flow_modal import fill_nps_survey
 from tests.smoke.test_setup.test_balance import run_balance
+from tests.smoke.test_setup.test_currency import run_currency
 from tests.smoke.test_setup.test_init_balance import run_init_balance
 from tests.smoke.test_setup.test_payment_type import run_payment_type
 from tests.smoke.test_setup.test_product import run_product
@@ -13,7 +15,7 @@ from tests.smoke.test_setup.test_buy_license import run_buy_license
 from tests.smoke.test_setup.test_attach_license import run_attach_license
 from tests.smoke.test_setup.test_natural_person import run_natural_person
 from tests.smoke.test_setup.test_natural_person_for_client_1 import run_natural_person_for_client_1
-from tests.smoke.test_setup.test_price_type import run_price_type_uzb
+from tests.smoke.test_setup.test_price_type import run_price_type_uzb, run_price_type_usa
 from tests.smoke.test_setup.test_room import run_room
 from tests.smoke.test_setup.test_room_attachment import run_room_attachment
 from tests.smoke.test_setup.test_sector import run_sector
@@ -100,7 +102,10 @@ def test_12_change_password(session_page, code):
 
 @allure.title("13 - Price Type")
 def test_13_price_type(session_page, code, logger, save_data):
-    run_price_type_uzb(session_page, code, logger, save_data)
+    fill_nps_survey(session_page, logger)
+    run_price_type_uzb(session_page, code, save_data)
+    run_price_type_usa(session_page, code, save_data)
+    run_currency(session_page, logger)
 
 
 @allure.title("14 - Payment Type")

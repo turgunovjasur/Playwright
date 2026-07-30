@@ -16,12 +16,15 @@ Tags: filial, add-form, fields
 - `Название` input: `ng-model="d.name"`; test qiymati `filial-pw{code}`.
 - `Юридическое лицо` b-input: `ng-model="d.person_name"`; shu run ichida yangi yaratilgan `legal_person_code` orqali qidiriladi.
 - `Базовая валюта` b-input: `ng-model="d.base_currency_name"`; `Узбекский сум` tanlanadi va `Продолжить?` confirm bosiladi.
-- `Часовой пояс` b-input: `ng-model="d.timezone_name"`; regressionda `Ташкент` search qilib `Asia/Tashkent` option tanlanadi.
-- `Порядковый номер` input: `ng-model="d.order_no"`; regressionda run `code` soni yoziladi.
+- `Часовой пояс` b-input: `ng-model="d.timezone_name"`; joriy smoke test
+  default qiymatni o'zgartirmaydi.
+- `Порядковый номер` input: `ng-model="d.order_no"`; joriy smoke test
+  to'ldirmaydi.
 - `Статус` switch: `ng-model="d.state"`; default `Активный`, o'chirilmaydi.
-- `НДС` switch: `ng-model="d.vat_enabled"`; regressionda yoqiladi.
-- `НДС` yoqilganda `Ставка НДС (%)` required input paydo bo'ladi: `ng-model="d.vat_percent"`; regressionda `12` yoziladi.
-- `Акциз` switch: `ng-model="d.excise_enabled"`; regressionda yoqiladi.
+- `НДС` switch: `ng-model="d.vat_enabled"`; joriy smoke test o'zgartirmaydi.
+- `НДС` yoqilganda `Ставка НДС (%)` required input paydo bo'ladi:
+  `ng-model="d.vat_percent"`.
+- `Акциз` switch: `ng-model="d.excise_enabled"`; joriy smoke test o'zgartirmaydi.
 
 ## List Va View Tekshiruv
 
@@ -48,14 +51,11 @@ Tags: filial, view, products, modules
 Tags: filial, run-result, screenshot
 - Field discovery screenshot: `references/forms/screenshots/filial/filial__add-default__desktop-1920x1080.png`.
 - Field discovery JSON: `references/forms/screenshots/filial/filial__add-fields.json`.
-- `test_01_authorization + test_02_legal_person + test_03_filial --scope=regression --new-code -q -s` passed: 3 passed in 89.35s.
 - Switch discovery JSON: `references/forms/screenshots/filial/filial__add-switches.json`.
 - VAT/Excise enabled discovery JSON: `references/forms/screenshots/filial/filial__add-fields-after-switches.json`.
-- `test_01_authorization + test_03_filial` saqlangan code (`NEW_CODE=0`) va regression scope bilan, `d.vat_percent=12` to'ldirilgach passed: 2 passed in 21.42s.
 - View main screenshot: `references/forms/screenshots/filial/filial__view-main__desktop-1920x1080.png`.
 - Product tab screenshot: `references/forms/screenshots/filial/filial__view-products__desktop-1920x1080.png`.
 - View discovery JSON: `references/forms/screenshots/filial/filial__view-state.json`.
-- Main card va product module checked assertlari qo'shilgandan keyin `test_01_authorization + test_02_legal_person + test_03_filial --scope=regression --new-code -q -s` passed: 3 passed in 93.76s.
 
 ### 2026-06-29 checkbox API konsolidatsiyasi
 Tags: filial, switch, checkbox, refactor, locator

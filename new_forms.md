@@ -5,7 +5,7 @@ ga to'liq sahifa ochiladi.
 
 > **ASOSIY QOIDA:** Eski **angular menyu orqali ochiladigan a2 formalar — barchasi ADMIN formalar.**
 > Ular uchun alohida "head" profil / alohida head test KERAK EMAS. Hammasi bitta admin test'da
-> (`tests/smoke/test_life_cycle/test_a2_admin_menu_forms.py`) yig'iladi.
+> (`tests/smoke/test_forms/test_a2_admin_menu_forms.py`) yig'iladi.
 
 Bu fayl har formani **qaysi filial** (operatsion `filial-pw{code}` vs "Администрирование") va **real user qanday
 yo'l bilan** ochishini guruhlab ko'rsatadi.

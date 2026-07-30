@@ -1,7 +1,6 @@
 ---
 name: run-smoke
-description: Smoke testlarni ishga tushirish va natijalarni ko'rsatish. "testlarni ishga tushir", "smoke run", "pytest ishga tushir" so'ralganda ishlatiladi.
-allowed-tools: Bash, Read, Glob
+description: Smartup smoke testlarini scripts/run_tests.py yoki pytest orqali ishga tushiradi, natija/log/trace/Allure artefaktlarini tahlil qiladi. "testlarni ishga tushir", "smoke run", "pytest run", aniq setup/group/forms targetini run qilish so'ralganda ishlat.
 ---
 
 # Smoke Testlarni Ishga Tushirish
@@ -20,11 +19,6 @@ Headless run:
 python scripts/run_tests.py --url <server_url> --company-code <company_code> --company-password <company_password> --headless
 ```
 
-Regression:
-```bash
-python scripts/run_tests.py --url <server_url> --company-code <company_code> --company-password <company_password> --regression
-```
-
 Yangi company yaratish:
 ```bash
 python scripts/run_tests.py --url <server_url> --create-company --head-email <head_email> --head-password <head_password>
@@ -38,18 +32,20 @@ python scripts/run_tests.py group-a --url <server_url> --company-code <company_c
 python scripts/run_tests.py group-b --url <server_url> --company-code <company_code> --company-password <company_password>
 python scripts/run_tests.py group-c --url <server_url> --company-code <company_code> --company-password <company_password>
 python scripts/run_tests.py group-report --url <server_url> --company-code <company_code> --company-password <company_password>
+python scripts/run_tests.py forms --url <server_url> --company-code <company_code> --company-password <company_password>
+python scripts/run_tests.py setup-forms --url <server_url> --company-code <company_code> --company-password <company_password>
 ```
 
 Browser ochilishi kerak bo'lsa `HEADLESS=1` yoki `--headless` ishlatma; `--headless` berilsa browser ko'rinmasligi to'g'ri holat.
 
 ### Bitta test fayl:
 ```bash
-pytest tests/smoke/test_setup/test_<nomi>.py -v
+python -m pytest tests/smoke/test_setup/test_<nomi>.py -v
 ```
 
 ### Bitta test funksiya:
 ```bash
-pytest tests/smoke/test_setup/test_setup_runner.py::test_<nomi> -v
+python -m pytest tests/smoke/test_setup/test_setup_runner.py::test_<nomi> -v
 ```
 
 Repo rootda `.env` mavjud bo'lsa direct pytest/PyCharm run konfiguratsiyasi undan olinadi; `.env` yo'q bo'lsa terminal/CI flaglari ishlaydi.
@@ -85,30 +81,6 @@ allure serve test-results/allure-results
 - `scripts/run_tests.py` trace viewerini faqat `--show-trace` bo'lsa ochadi.
 - Directory/default collectionda runner bo'lmagan smoke testlar duplicate flow bo'lmasligi uchun deselect qilinadi; leaf testni debug qilish uchun uning fayl yo'lini pytestga aniq ber.
 - Full run setup runner va barcha group runner fayllarini bitta pytest sessiyasida collect qiladi; har bir setup/group case Allure'da alohida test bo'lib ko'rinadi.
-
-## Loyiha Xususiyatlari
-
-### Telegram CI bot
-- Telegram CI botda bir vaqtning o'zida faqat bitta test run faol bo'ladi; run tugaguncha yangi `/run` bloklanadi.
-- Telegram CI workflow har soat `00` daqiqada avtomatik smoke run qiladi.
-- Telegram CI progress xabari bitta edit-in-place message bo'ladi: `Test boshlandi`, `<Scope> scope tanlangan`, status, `Hozir`, `Passed` ro'yxati va failed bo'lsa `Group/Runner test/Ichki test/Step/Error turi`; workflow final xabar yuborgandan keyin progress message o'chiriladi.
-- Telegram CI progress eventlari `conftest.py` pytest hooklaridan avtomatik chiqadi; real-time ko'rinishi uchun GitHub Actions pytestni `-s` bilan, progress processni esa `python -u` bilan ishlatadi.
-- Telegram CI final xabarida login yoki password emas, faqat `test-results/data/data_store.json` ichidagi `code` qiymati `Code: <code>` ko'rinishida ko'rsatiladi.
-- Telegram CI final xabarida xatolik bo'lmasa faqat qisqa xulosa ko'rsatiladi; xatolik bo'lsa failure tafsilotlari `expandable blockquote` ichida yopiq holatda yuborilib, foydalanuvchi bosganda yoyiladi.
-- `A2 Admin Forms` final xulosasida Allure'dagi raqamlangan forma step'laridan hisoblangan haqiqiy tekshirilgan formalar soni ko'rsatiladi; run oldinroq yiqilsa faqat o'sha paytgacha bajarilgan forma step'lari sanaladi.
-- Telegram CI final failure blokida Allure'dagi to'liq nested step yo'li aynan `Allure step` sifatida ko'rsatiladi; `Ta'sir` va `Yechim` kabi heuristik/hardcode xulosalar chiqarilmaydi, faqat log va Allure'dan olingan faktlar beriladi.
-- Telegram CI bot GitHub run statusini olishdagi vaqtinchalik network/API xatolarini retry qiladi; faqat ketma-ket 5 marta status olinmasa Telegramga xato yuboradi.
-- Botdan hamma foydalana oladi (chat_id allow-list yo'q); `/run` -> server -> scope tanlangach bot parol so'raydi. Faqat to'g'ri `TELEGRAM_RUN_PASSWORD` (hmac.compare_digest) kiritilsa test ishga tushadi; parol xabari qabul qilingach chatdan o'chiriladi, noto'g'ri bo'lsa qayta urinish mumkin (`PendingRunStore`).
-- `/start` hammага to'liq qo'llanma (server/scope/parol qadami), `/help` qisqa eslatma; `TELEGRAM_RUN_PASSWORD` env majburiy (kodda literal yo'q).
-- `TELEGRAM_CHAT_ID` endi faqat soatlik avto-run xabari boradigan chatni belgilaydi (ixtiyoriy); avto-run parolsiz ishlaydi.
-
-### Telegram bot — Windows server deploy
-- Bot Windows serverda CMD uchun rootdagi `run_telegram_ci_bot.bat` yoki `scripts\run_telegram_ci_bot.cmd`, PowerShell uchun `scripts/run_telegram_ci_bot.ps1`, yoki to'g'ridan-to'g'ri `.venv\Scripts\python.exe scripts\telegram_ci_bot.py` bilan ishga tushadi; to'g'ridan-to'g'ri python varianti har ikkala shellda (CMD/PowerShell) ishlaydi va kod default'lari (repo/workflow/ref/serverlar) yetarli.
-- `.ps1` faylni CMD ishga tushira olmaydi (faqat ochadi); CMD uchun rootdagi `run_telegram_ci_bot.bat` yoki `scripts\run_telegram_ci_bot.cmd` ishlatiladi.
-- Windows PowerShell 5.1 `.ps1` faylni system ANSI codepage bilan o'qiydi; faylda non-ASCII belgi (masalan uzun tire `—`) bo'lsa "missing terminating quote / missing }" parser xatosini beradi. `.ps1` fayllar faqat ASCII bo'lsin.
-- Maxfiy env'lar (`TELEGRAM_BOT_TOKEN`, `GITHUB_TOKEN`/`GITHUB_PAT`, `TELEGRAM_RUN_PASSWORD`) `User` darajada saqlanadi; bot accept qiladigan GitHub token `GITHUB_TOKEN` yoki `GITHUB_PAT` nomida bo'lishi mumkin.
-- Doimiy ishlashi uchun Task Scheduler: action `D:\Playwright\.venv\Scripts\python.exe`, args `scripts\telegram_ci_bot.py`, "Рабочая папка" `D:\Playwright`; "Останавливать дольше" belgisini olib tashlash kerak (bot doim ishlaydi).
-- Task Scheduler "вне зависимости от регистрации" parol so'raydi va xato bersa, "только для зарегистрированных пользователей" variantini ishlatish parol talab qilmaydi (sessiya ochiq turganda ishlaydi); env'lar `User` darajada bo'lgani uchun task ham shu user nomidan ishlasin.
 
 ## Test dependency modeli
 

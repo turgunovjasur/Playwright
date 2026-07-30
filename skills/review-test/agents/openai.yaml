@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Smoke Test"
+  short_description: "Review Smartup tests, runners, and flows"
+  default_prompt: "Use $review-test to perform an evidence-based senior QA review of this test code."

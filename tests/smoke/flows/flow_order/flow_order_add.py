@@ -49,8 +49,7 @@ def flow_order_main_page(
     next_page=True,
 ):
     base = BasePage(page)
-    base.expect_page(url=re.compile(r".*/order\+(add|edit)"))
-    base.text(re.compile(r"Заказ \((создание|изменение)\)"), root="#kt_content")
+    base.expect_page(heading="Заказ (создание)", url="order+add")
 
     if check_form:
         with allure.step("Main Page: Auto fill bo'lganini tekshirish"):

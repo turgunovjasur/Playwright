@@ -1,0 +1,4 @@
+interface:
+  display_name: "Run Smoke Tests"
+  short_description: "Run and analyze Smartup smoke test targets"
+  default_prompt: "Use $run-smoke to run the requested Smartup smoke target and summarize the result."

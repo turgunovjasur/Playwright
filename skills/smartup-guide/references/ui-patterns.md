@@ -1,5 +1,18 @@
 # UI Patterns
 
+## Mundarija
+
+- [Locator tanlash](#locator-tanlash)
+- [Heading va sahifa tekshirish](#heading--sahifa-tekshirish--expect_page-helper)
+- [Form field discovery](#form-field-discovery)
+- [b-input](#b-input)
+- [UI select](#ui-select)
+- [Masked inputs](#masked-dateamount-inputs)
+- [Biruni confirm va error](#biruni-confirm)
+- [List va grid setting](#list-va-grid-setting)
+- [Screenshot arxivi](#screenshot-arxivi)
+- [Umumiy forma helperlari](#umumiy-forma-helperlari-dry)
+
 ## Qidiruv Kalitlari
 
 Tags: locator, b-input, grid, modal, biruni, screenshot, list
@@ -41,6 +54,7 @@ Tags: locator, heading, get_by_role, navigation, url
 - **Ko'p heading muammosi:** wizard yoki ko'p bo'limli formalarda bir vaqtda bir nechta ko'rinadigan heading bo'ladi (masalan Акция create: `Акция (создание)`, `Главное`, `Условия`). Bunda `expect(page.get_by_role("heading")).to_contain_text(X)` — kerakli matn ulardan birida bo'lsa ham — **FAIL bo'ladi** (2026-06-29 sintetik isbotlangan: locator 2+ elementga to'g'ri kelsa, scalar `to_contain_text` to'g'ri matnda ham yiqiladi). Ya'ni to'g'ri sahifada turib ham false-negative beradi.
 - **Afzal yechim — `base.expect_page(heading=None, url=None, timeout=...)`** (`base.navigate_to(...)` dan keyin chaqiriladi; `navigate_to` o'zi faqat navigatsiya qiladi, tekshirmaydi):
   - `base.expect_page(heading="Цены")` — `heading` str (substring, registrga befarq) yoki `re.compile(...)` bo'lishi mumkin (masalan `re.compile(r"Комп|Comp")`). Ichida `get_by_role("heading").filter(has_text=...).first` + `to_be_visible()` ishlatiladi: ortiqcha heading bo'lsa ham mosini tanlaydi, `.first` strict-mode'dan saqlaydi, retry qiladi.
+  - `root` faqat to'liq sahifa uchun emas: modal headingini `base.expect_page(heading="Добавить курс", root=page.get_by_role("dialog"))` kabi scoped tekshirish mumkin.
   - `base.expect_page(url="price_type_list")` — `url` bo'lagi (substring) yoki regex. **URL slug eng ishonchli signal**: locale'ga bog'liq emas, har sahifada unikal.
   - `base.expect_page(heading="...", url="...")` — ikkalasi birga, eng kuchli tekshiruv.
 - Barqaror URL slug'lar: `price_type_list`, `payment_type_list`, `filial_list`, `inventory_list` (ТМЦ), `action_list` (Акции), `order_list`, `anor/mkf/contract_list`, `template_list`.
@@ -105,6 +119,9 @@ Tags: b-input, multiselect, helper, selected-chip
 Tags: input, mask, date, amount
 - Qoida: date/amount mask inputlarda qiymatni almashtirishdan oldin focus + `ControlOrMeta+A` + `Backspace` qiling; faqat `fill(new_value)` ba'zan eski invalid qiymatga append qiladi.
 - Testda ishlatish: label/text helperlar inputni label orqali topsin, keyin clear-and-fill patternini bajarsin va `Tab` bilan mask formatini yakunlasin.
+- `BasePage.date_picker(..., auto_fill=True)` date inputda hisoblangan target sana avvaldan turganini tekshiradi va kalendarni ochmaydi; default `False` real datepicker kunini tanlaydi.
+- `date_picker()` boshqa oyga o'tishda calendar `data-day` qiymatlarini markaziy `resolve_date()` bilan parse qiladi; `BasePage` ichida import qilinmagan `datetime.strptime()` ishlatilmaydi. Bu branch target kun joriy calendar viewda bo'lmagandagina bajariladi.
+- Dinamik sana matni uchun `BasePage.date(...)` ishlatiladi: today/yesterday/tomorrow, first_day/month_start, last_day/month_end, `days=±N`, common input formatlar va `date_format` output formatini qo'llaydi. Hisob Asia/Tashkent sanasiga tayangan; `conftest.py`ga date fixture qo'shilmaydi.
 
 ### Biruni Confirm
 Tags: biruni, confirm, modal
@@ -149,19 +166,23 @@ Tags: screenshot, debug, url
   - `test-results/allure-results/` — faqat pytest/Allure failure attachment outputi; forma bilim arxivi sifatida ishlatilmaydi.
   - `test-results/screens/smartup/` — ishlatilmasin, chunki run output tozalanishi mumkin va skill bilim manbasi emas.
 - Naming: `<form-slug>__<state>__<viewport>__<stable-id>.png`.
-  - Misol: `contract-view__default__desktop-1440x783__contract_code_4986.png`
+  - Misol: `contract-view__default__desktop-1440x783__current.png`
   - URL asosida saqlash kerak bo'lsa: `<form-slug>__url-<sanitized-url-hash>__<viewport>.png`
 - Metadata: har screenshot bilan bir xil arxiv papkasida `.json` saqlansin:
   - URL
   - form slug
   - state
   - viewport
-  - code/session id
-  - entity id/code/name
+  - parametrik entity patterni (`product-pw{code}` kabi), real session qiymati emas
   - created_at
   - browser
   - dynamic areas yoki mask kerak bo'lishi mumkin bo'lgan joylar
-- Qoida: yangi formaga kirilganda yoki URL/form state sezilarli o'zgarganda skill arxividagi screenshotni yangilab bor.
+- Qoida: yangi formaga kirilganda yoki URL/form state sezilarli o'zgarganda
+  skill arxividagi screenshotni yangila; bir xil form/state/viewport uchun
+  vizual farqsiz dublikat yaratma.
+- Retention: joriy locator/debug uchun kerakli current screenshot va muhim
+  historical evidence saqlanadi. Eski artefaktni o'chirishdan oldin dossier
+  linklari va tarixiy qiymatini tekshir; avtomatik bulk delete qilma.
 - Debug tartibi: muammo chiqqanda avval mavjud screenshotlardan qaraladi; kerakli screen yo'q bo'lsa UI ochilib yangi screenshot olinadi.
 - Release visual check qo'shilganda current screenshot baseline bilan solishtiriladi; shuning uchun screenshotlar random modal/loader/dropdown ochiq holda emas, barqaror UI state’da olinishi kerak.
 
@@ -181,11 +202,18 @@ Tags: locator, form, helper, setup
 - Qoida: **forma checkbox/switch — `BasePage.checkbox(...)`; grid checkbox — `BasePage.grid(checkbox="row"/"all")`** (rollar 2026-07-10 da ajratildi). `checkbox()` endi faqat page/forma checkbox+switch bilan ishlaydi. Topish strategiyalari (faqat bittasi): `label="НДС"` (asosiy), `ng_model="d.vat_enabled"`, `locator` (positional). Amal: `checked=True/False` (idempotent set+assert), `expect_checked=` (faqat assert), `return_value=True` (bool), `index=`, `root=` (modal locator). Grid'ga oid eski `check_all`/`first_visible`/`grid_name` parametrlari **`checkbox()` dan olib tashlandi** — grid checkbox endi `grid(checkbox=...)` orqali. Fizik click ikkovi uchun umumiy private `_toggle_checkbox(cb, checked)` da (opacity:0 cascade). Eski `set_checkbox`, `set_checkall`, `click_first_visible_checkbox`, `switch_by_label` va `flow_form.set_checkbox` ham olib tashlangan (2026-06-29).
 - Qoida: **forma radio — `BasePage.radio(label, expect_checked=True/False)`**. U nested `<label class="radio"><input type="radio">...` strukturadan radio inputni label orqali topib, tanlangan holatini tekshiradi; raw `get_by_label(...).to_be_checked()` testda yozilmaydi.
 - DOM fakti (2026-06-29 `filial+add` da jonli): Smartup form switch tuzilishi `<label class="switch"> <input type=checkbox opacity:0 ng-model=...> <span>holat matni</span></label>`. `<input>` ko'rinmas (raw click overlay tomonidan ushlanishi mumkin) — shuning uchun `checkbox()` click'ni DOIM ko'rinadigan `label`/grid-cell/wrapper ustiga cascade qiladi (funksiya ichida). Modalda `label.checkbox`. `ng-true-value`/`ng-false-value` string ('Y'/'N', 'A'/'P') bo'lsa ham `is_checked()` to'g'ri bool qaytaradi. Switch ichidagi `<span>` matni holatga qarab o'zgaradi — switch'ni **field label** orqali topish kerak, span matni orqali emas.
-- **Switch-label wrapper resolution bug + fix (MCP `filial-pw608492`/`filial-pw940898`, 2026-07-02):** counterparty toggle'lari tuzilishi `<label class="checkbox"><input type=checkbox ng-model=d.is_client><t>Клиент</t></label>` — ya'ni **`<label>` ning O'ZI** field matnini ("Клиент") tutadi. `_field_locator_by_label(target="switch")` `label, t, span` elementlarini filter qiladi va `<label>` DOM'da eng birinchi mos keladi. Eski kod `ancestor::label[1]//input[checkbox]` ishlatardi — lekin `ancestor::` **self'ni hisobga olmaydi**, shuning uchun `<label>` element uchun count 0 bo'lib `following::input[checkbox][1]` fallback'ga tushib, **keyingi** qatordagi checkbox'ni tanlardi (Клиент→Сотрудник, Активный→Поставщик, Поставщик→Клиент, Сотрудник→chat-widget `a.feedback.anonymous` — MCP'da 4-ta toggle'ning HAMMASI 1 ga siljigan). `checked=` va `expect_checked=` bir xil noto'g'ri elementга tushgani uchun assertion "yashil" bo'lardi (bug maskalanardi), faqat vizual/`Клиенты` list tekshiruvi ochib berardi. **Tuzatish:** `(ancestor-or-self::label[1]//input[@type='checkbox'])[1]` — label element o'zi bo'lsa self, `<t>`/`<span>` bo'lsa o'rovchi label topiladi; wrapping label bo'lmasa (guruh label, masalan "Статус") count 0 → `following::` fallback saqlanadi. `base_page.py:521`. Tasdiq: `test_18_natural_person_for_client_1` yangi kod bilan 5 passed (Клиенты list qadami is_client'ni isbotladi).
+- **Switch-label wrapper resolution bug + fix (MCP, 2026-07-02):**
+  counterparty toggle'lari `<label class="checkbox"><input type=checkbox
+  ng-model=d.is_client><t>Клиент</t></label>` ko'rinishida. Eski
+  `ancestor::label[1]` self'ni hisobga olmagani uchun helper keyingi checkboxga
+  siljigan va bir xil noto'g'ri elementdagi assertion bugni yashirgan.
+  **Tuzatish:** `(ancestor-or-self::label[1]//input[@type='checkbox'])[1]`;
+  wrapping label bo'lmasa `following::` fallback saqlanadi.
 - Qoida: **grid checkbox — `base.grid(checkbox="row"/"all")`** (2026-07-10). `"row"` → matn bo'yicha topilgan qator checkbox'i; `"all"` → ko'rinadigan grid tepasidagi select-all (`input[bcheckall]`, fallback birinchi checkbox), bu holda `text` kerak emas. Migratsiya: `checkbox(check_all=True)` → `grid(checkbox="all")`; ma'lum grid uchun `grid(checkbox="all", root='b-grid[name="..."]')`; `checkbox(first_visible=True)` ham `grid(checkbox="all")` (grid'ning 1-checkbox'i doim select-all).
 - Qoida: **bo'sh grid holati — `base.grid(is_empty=True, root='b-grid[name="..."]')`**. Helper ko'rinadigan grid ichidagi aniq `"нет данных"` matni ko'rinsa `True`, ma'lumot bo'lsa `False` qaytaradi; branch uchun ishlatiladi va qator/checkbox amallari bilan birga berilmaydi. Eski assertion-semantikadagi `empty=True` olib tashlangan.
 - `grid(is_empty=True)` va `grid(..., is_visible=True)` bir martalik holatni o'qiydi, tab/filter transitionini o'zi kutmaydi. Gridni almashtiruvchi actiondan keyin avval `base.wait_for_loader()`, keyin boolean helper chaqirilsin; aks holda eski grid state branchni noto'g'ri tanlatishi mumkin.
 - Qoida: **grid qatori ko'rinishi — `base.grid("row text", is_visible=True, root='b-grid[name="..."]')`**. Helper ko'rinadigan grid ichida target `.tbl-row` ko'rinsa `True`, topilmasa `False` qaytaradi; conditional Available/Attached flowlarda raw `.tbl-row.filter(...).is_visible()` o'rniga ishlatiladi.
+- `BasePage.grid()` default `remove_spaces=True`: row qidirish va `contains` assertlari oddiy/non-breaking whitespace'ni e'tiborsiz qoldiradi (`"10000"` UI'dagi `"10 000"`ga mos keladi). Whitespace aynan tekshirilishi kerak bo'lsa `remove_spaces=False` beriladi.
 - DOM fakti (2026-07-10 MCP `red_test` user attach form jonli): **(1)** attach/tabli sahifada **8 ta `b-grid`, faqat 1 tasi ko'rinadi** — DOM'dagi birinchisi (`user_audits`) yashirin; shuning uchun `grid(checkbox="all")` `.filter(visible=True).first` ishlatadi (oddiy `b-grid.first` noto'g'ri yashirin grid'ni oladi). **(2)** Grid'ning birinchi checkbox'i = `input[bcheckall]` (select-all), `.tbl-header-cell.tbl-checkbox-cell` ichida; row checkbox `.tbl-checkbox-cell` ichida — ikkovi ham `opacity:0`. **(3)** Header katak baland (87px) va checkbox uning **tepasida** turadi: katak markaziga (`y=height/2`) oddiy `.click()` checkbox'ni chetlab o'tib **toggle QILMAYDI** (MCP'da isbotlangan). Ishlaydigan usul — `label.x + min(10, label.w/2)`, `cb.y + cb.h/2` koordinatasiga `page.mouse.click`; shuning uchun `_toggle_checkbox` label ko'rinmas (h:0) bo'lganda shu koordinatali click'ni ishlatadi. Tasdiq: yangi `grid(checkbox="all")` `form_table` grid'ni tanlab bcheckall'ni belgiladi va 50 qator select bo'ldi.
 - Testda ishlatish: input qiymatini tekshirishda `input_value(...) != x` deb raise qilish o'rniga `base.input(label="Код", expect_value=x)` ishlatilsin — auto-retry bo'ladi.
 

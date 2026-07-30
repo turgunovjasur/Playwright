@@ -1,40 +1,41 @@
 # Smoke Runner Setup Chain
 
+## Mundarija
+
+- [Qidiruv kalitlari](#qidiruv-kalitlari)
+- [Runner qoidasi](#runner-qoidasi)
+- [Telegram failure diagnostikasi](#telegram-failure-diagnostikasi)
+- [Smoke credentiallari](#smoke-credentiallari-majburiy)
+- [Entity naming](#entity-naming)
+- [Testlar tartibi va vazifasi](#testlar-tartibi-va-vazifasi)
+
 ## Qidiruv Kalitlari
 
 Tags: smoke, setup, runner, dependency, data-store, license, balance, tmc, room, user
 
 ### 2026-07-20 Balance testlari setup papkasiga ko'chirildi
 Tags: smoke, setup, runner, balance, init-balance, structure
+Status: code-confirmed
+Verified: 2026-07-30
+Source: `tests/smoke/test_setup/test_setup_runner.py`; `tests/smoke/test_setup/test_init_balance.py`; `tests/smoke/test_setup/test_balance.py`
 - `Init Balance` moduli `tests/smoke/test_setup/test_init_balance.py` ga ko'chirildi.
 - `Balance` moduli `tests/smoke/test_setup/test_balance.py` ga ko'chirildi.
 - `test_setup_runner.py` ikkala `run_*` funksiyani yangi setup modullaridan import qiladi; hozirgi zanjirda ular `test_19_init_balance` va `test_20_balance`.
 - Ikkala modulning Allure feature qiymati `Setup`; hozirgi setup runner create rejimida 21, existing rejimida 20 test collect qiladi.
 
-### 2026-05-25 Run Natijasi
-Tags: smoke, run-result, sandbox
-- Buyruq: `./.venv/bin/pytest tests/smoke/test_all_runner.py -v --tb=short`
-- Natija: 21 passed, 0 failed, umumiy vaqt 196.22s.
-- Session code: `1384`; `test_01_authorization` `test-results/data/data_store.json` ichidagi `code` qiymatini yangiladi.
-- `data_store.json` ichidagi A-group `contract_*` va `order_id` qiymatlari bu runnerda yangilanmadi; ular avvalgi run code qiymatlariga tegishli bo'lishi mumkin.
-- Trace: `test-results/traces/smoke_trace.zip` saqlandi.
-- Eslatma: sandbox ichida Chromium Crashpad permission xatosi bilan browser ochilmadi; sandboxdan tashqarida xuddi shu runner passed bo'ldi.
-
-### 2026-07-14 qisqa entity code verifikatsiyasi
-Tags: smoke, entity, naming, run-result
-- Fresh `--new-code --headless` setup chainda Legal Person `c_l_p`, Room `c_rm`, Robot `c_rb`, Natural Person `c_n_p`, Price Type `c_p_t`, Sector `c_s`, Product `c_p` va Natural Client `c_n_c` code'lari bilan step 02–19 muvaffaqiyatli o'tdi.
-- Runner step 20 `Init Balance`da product tanlashga yetmasdan `Склад -> Основной склад` optioni topilmagani sabab to'xtadi; bu compact entity code namingdan alohida precondition/UI muammosi.
-
 ### Runner Qoidasi
 Tags: smoke, setup, dependency, data-store
+Status: code-confirmed
+Verified: 2026-07-30
+Source: `scripts/run_tests.py`; `tests/smoke/test_setup/test_setup_runner.py`; `tests/smoke/conftest.py`
 - GitHub Actions `.github/workflows/daily-smoke.yml` va Telegram CI bot targetni
-  qat'iy `setup-a2-admin`ga mahkamlaydi: avval `test_setup_runner.py`, keyin
-  `test_a2_admin_menu_forms.py` ishlaydi; A/B/C va Report group testlari CI
-  dispatchga kiritilmaydi. `setup-report` faqat lokal runner targeti sifatida
-  saqlangan.
-- 2026-07-27 collection verifikatsiyasi: `setup-a2-admin` existing-company
-  rejimida 20 ta Setup case va bitta `test_a2_admin_menu_forms`ni tanladi
-  (`21 selected`, `test_00_company` esa skip emas, deselect).
+  qat'iy `setup-forms`ga mahkamlaydi: avval `test_setup_runner.py`, keyin
+  `test_forms_runner.py` ishlaydi; A/B/C va Report group testlari CI dispatchga
+  kiritilmaydi. `setup-report` va `setup-a2-admin` lokal runner targetlari
+  sifatida saqlangan.
+- `setup-forms` existing-company rejimida 20 ta Setup case va Forms runnerdagi
+  `Справочники` hamda A2 admin formalar testlarini tanlaydi; `test_00_company`
+  skip emas, collectiondan deselect qilinadi.
 - Telegram botda smoke/regression scope tanlovi yo'q. `/run`dan keyin faqat
   `Online` (`smartup.online`) yoki `Xtrade` (`app3.greenwhite.uz/xtrade`)
   tugmasi tanlanadi.
@@ -44,7 +45,13 @@ Tags: smoke, setup, dependency, data-store
 - Workflow eski, hali restart qilinmagan bot processlari yuboradigan
   `target=all`ni compatibility input sifatida qabul qiladi, lekin uni
   ishlatmaydi.
-- Full run `scripts/run_tests.py` orqali `test_setup_runner.py`, keyin A/B/C/Report group runner fayllarini shu tartibda bitta pytest sessiyasida collect qiladi.
+- Full run `scripts/run_tests.py` orqali `test_setup_runner.py`, keyin A/B/C/Report
+  group runnerlari va `test_forms/test_forms_runner.py`ni shu tartibda bitta
+  pytest sessiyasida collect qiladi.
+- `setup-forms` setupdan keyin Forms runnerni, `forms` esa setupni
+  ishlatmasdan faqat Forms runnerni collect qiladi. Forms runner hozir
+  `Справочники` va ko'chirilgan A2 admin formalarini alohida pytest item
+  sifatida chaqiradi.
 - `groups` target setupni ishlatmasdan faqat A/B/C/Report runner fayllarini collect qiladi; alohida `group-a`, `group-b`, `group-c`, `group-report` targetlari saqlanadi.
 - `CREATE_COMPANY=1` bilan setup alohida pytest sessiyasida tugagach, group
   runnerni existing rejimda davom ettirish uchun `.env`da
@@ -101,20 +108,6 @@ Tags: smoke, telegram, failure, playwright, locator, summary
 - `hidden`, `disabled`, `unstable`, pointer-event bilan `blocked` va haqiqiy `not_found` holatlari alohida sabab hamda keyingi amaliy harakatga ega.
 - 2026-07-24 CI runida Room setup `BasePage.switch_filial()` ichidagi `.pt-3.px-2` elementini topgan, ammo u yashirin bo'lgani uchun click 10 sekundda timeout bergan; summary aynan shu faktni ko'rsatgan. Root cause dekorativ strelkani target qilish bo'lgan. Helper ko'rinadigan `.dropdown-locations-custom:visible` trigger va uning ochilgan `.dropdown-menu` optioniga o'tkazildi.
 
-### 2026-07-15 setup runner structure fix
-Tags: smoke, setup, runner, collection, allure, fix
-- `test_setup_runner.py` ichida `test_00_company` va `test_01_authorization`–`test_21_balance` wrapperlari tiklandi; collect-only natijasi `22 tests collected`.
-- `test_all_runner.py` dagi outer `test_01_user_setup_runner -> run_setup_chain(...)` olib tashlandi; u `4 tests collected` (A/B/C/Report). Full target ikkala fayl bilan jami `26 tests collected` qiladi.
-- `scripts/run_tests.py` `all` targetida setup runnerni birinchi, group runnerni ikkinchi target sifatida uzatadi; `setup` va `company` targetlari ham haqiqiy collectable testlarga yo'naladi. Uchala target dry-run bilan exit `0` berdi.
-- Ishlatilmaydigan global scope konfiguratsiyasi olib tashlandi; suite smoke testlar sifatida ishlaydi.
-
-### 2026-07-21 group runnerlar alohida Allure testlarga o'tkazildi
-Tags: smoke, group, runner, allure, collection
-- A/B/C/Report runner fayllaridagi har bir case alohida pytest testga aylantirildi; full collection jami 39 item: Setup 22, A 5, B 4, C 2, Report 6.
-- `test_all_runner.py` outer-chain olib tashlandi; `scripts/run_tests.py all` setup va to'rtta group runner faylini bevosita collect qiladi, `groups` target esa faqat group runnerlarni ishlatadi.
-- Module-level `user_setup` va `smoke_group("A"|"B"|"C"|"Report")` markerlari fayldagi barcha testlarga tatbiq qilinadi; Allure har caseni alohida status/duration bilan ko'rsatadi.
-- Runner wrapperlarida title faqat `@allure.title(...)` orqali bir marta yoziladi; Telegram started/passed/failed/skipped eventlari `conftest.py` pytest hooklari tomonidan shu title, marker va runner pathdan avtomatik yaratiladi.
-
 ### Allure'da setup bosqichlarini alohida test sifatida ko'rsatish
 Tags: smoke, setup, runner, allure, collection
 - `allure.step` faqat bitta pytest test ichidagi nested step yaratadi; Allure'da alohida test case chiqishi uchun har setup/group bosqichi pytest tomonidan alohida `test_*` item sifatida collect qilinishi shart.
@@ -127,7 +120,10 @@ Tags: smoke, setup, runner, allure, collection
 - Setup zanjiri buzilsa keyingi testlar ham precondition yo'qligi sabab yiqilishi mumkin; yakka testdan oldin to'liq runner yoki mos precondition ma'lumotlari kerak.
 - Directory/default collection duplicate business flow yurmasligi uchun faqat mos runner fayllarini qoldiradi; leaf testni debug qilish uchun uning fayl yo'li pytestga aniq beriladi.
 - Cross-platform asosiy run: `python scripts/run_tests.py --url {server_url} --company-code {code} --company-password {password}` yoki `python scripts/run_tests.py --url {server_url} --create-company --head-email {email} --head-password {password}`; Mac/Linux wrapper: `./run_tests.sh ...`.
-- Runner debug mode'lari: `all`, `setup`, `company`, `group-a`, `group-b`; foydalanuvchi odatda bo'laklarga bo'lib run qilmaydi, normal run doim full suite.
+- Runner targetlari: `all`, `setup`, `setup-report`, `setup-a2-admin`,
+  `setup-forms`, `company`, `groups`, `group-a`, `group-b`, `group-c`,
+  `group-report`, `forms`; foydalanuvchi odatda bo'laklarga bo'lib run qilmaydi,
+  normal lokal run `all`, CI targeti `setup-forms`.
 
 ### Smoke Credentiallari Majburiy
 Tags: setup, runner, credential
@@ -140,11 +136,8 @@ Tags: setup, runner, credential
 Tags: smoke, entity, naming
 - Company server code: `autotest{code}`; login suffix sifatida `@autotest{code}` ishlatiladi.
 - Legal person: `c_l_p_pw{code}` / Faker company name + `legal_person-pw{code}` suffix.
-- Legal person owner: `cod_owner_lg_pw{code}` / Faker company name + `legal_owner-pw{code}` suffix.
-- Legal person director: `director_np_pw{code}` natural person, Faker F.I.O.; Legal Person regression buni Natural Person helper orqali yaratadi.
 - Employee natural person code: `c_n_p_pw{code}`; ko'rinadigan nom: `natural_person-pw{code}`.
 - Client natural person code: `c_n_c_pw{code}`; ko'rinadigan nom: `natural_client-pw{code}`.
-- Legal person contact position: `contact_position_pw{code}` / `Директор по развитию-pw{code}`.
 - Filial/organization: `filial-pw{code}`; yuridik shaxs `c_l_p_pw{code}` ga ulanadi.
 - Room/work zone: `c_rm_pw{code}` / `room-pw{code}`.
 - Robot/staff: `c_rb_pw{code}` / `robot-pw{code}`.
@@ -179,24 +172,17 @@ Tags: legal-person, setup, authorization, owner, director, data-store
   Create rejimida suffix `test_00_company` saqlagan `company_code`, existing
   rejimida `COMPANY_CODE`; parol har ikki rejimda `COMPANY_PASSWORD`.
 - Navigation: `Справочники` -> `Юридические лица`.
-- Smoke: minimal branch. Faqat `c_l_p_pw{code}` va `legal_person-pw{code}` uchun asosiy maydonlar to'ldiriladi, saqlanadi va listda `Код`, `Название`, `Активный` tekshiriladi.
-- Regression: to'liq branch. Avval `Собственник` (`cod_owner_lg_pw{code}`), Natural Person helper orqali `Руководитель` (`director_np_pw{code}`) va `contact_position_pw{code}` yaratiladi, so‘ng asosiy legal personga bog'lanadi. `Собственник`, `Руководитель`, `GPS`, bank, kontakt, qo'shimcha tablar to'ldiriladi.
-- GPS: map modalida `41.2994958,69.2400734` search qilib `d.latlng=41.2994958,69.2400734,12` saqlanadi.
-- Bank account: `МФО=00001` yozib `Tab` bosilganda bank auto-fill `Центр расчетов Центрального банка по г. Ташкенту`; valyuta `Узбекский сум`.
-- Data store: session `code`, smoke rejimda `legal_person_code/name` va
-  regression uchun owner/director/accountant, `tin`, `phone`, `email`, `region`,
-  `gps`, bank account va contact person/lavozim qiymatlari saqlanadi.
-- Tekshiruv: smoke mode ro'yxatda `Код`, `Название`, `Активный`ni tekshiradi. Regression mode qo'shimcha:
-  - ro'yxatda `Альтернативное название` ham ko'rinadi;
-  - viewda `Основная информация`, `Дополнительная информация`, `Расчетный счет`, `Контактные лица` tablaridagi qo'shilgan qiymatlar tekshiriladi.
+- `c_l_p_pw{code}` va `legal_person-pw{code}` uchun asosiy maydonlar
+  to'ldiriladi, saqlanadi va listda `Код`, `Название`, `Активный` tekshiriladi.
+- Data store: session `code`, `legal_person_code` va `legal_person_name`.
 
 ### 02 Filial
 Tags: filial, organization, legal-person
 - Fayl: `tests/smoke/test_setup/test_filial.py`.
 - Navigation: `Главное` -> `Организации`.
-- Smoke: minimal branch. `filial-pw{code}` tashkilot yaratiladi, valyuta `Узбекский сум` va `c_l_p_pw{code}` yuridik shaxs bilan ulanadi.
-- Regression: qo'shimcha tekshiruv: row click + `Просмотреть` orqali view ochiladi; viewda filial nomi, valyuta, status (`Активный`) va legal person code ko'riladi; agar `legal_person_name` data-store’da bo'lsa u ham tekshiriladi.
-- Har ikki rejimda: ro'yxatda filial va legal person code ni tekshirib, reload + loader kutiladi.
+- `filial-pw{code}` tashkilot yaratiladi, valyuta `Узбекский сум` va
+  `c_l_p_pw{code}` yuridik shaxs bilan ulanadi.
+- Ro'yxatda filial va legal person code tekshirilib, reload + loader kutiladi.
 - Data store: `filial_name`, `filial_code`, `filial_currency`, `filial_legal_person_code`, va agar mavjud bo'lsa `filial_legal_person_name` saqlanadi.
 
 ### 03 Room
@@ -220,9 +206,10 @@ Tags: natural-person, employee
 - Precondition: `filial-pw{code}` filialiga o'tadi.
 - Navigation: `Справочники` -> `Физические лица`.
 - Nima yaratadi: xodim uchun `c_n_p_pw{code}` code va `natural_person-pw{code}` ko'rinadigan nomli jismoniy shaxs.
-- Smoke: majburiy `d.first_name`, `d.code` va `Активный` minimal path; list va viewda nom/status tekshiriladi.
-- Regression: birthday, passport, region, address/post address, phone, tin, telegram, email, web to'ldiriladi; viewda asosiy kiritilgan qiymatlar tekshiriladi.
-- Arxitektura: Natural Person helperlari shu test faylida turadi; Legal Person direktor yaratishda shu helperlarni import qiladi.
+- Majburiy `d.first_name`, `d.code` va `Активный` minimal path; list va viewda
+  nom/status tekshiriladi.
+- Arxitektura: reusable create/view oqimlari
+  `tests/smoke/flows/flow_natural_person.py`da turadi.
 
 ### 06 User
 Tags: user, robot, natural-person
@@ -255,7 +242,7 @@ Tags: role, forms, permissions
 
 ### 10 Buy License
 Tags: license, admin, balance
-- Fayl: `tests/smoke/test_setup/test_license.py`.
+- Fayl: `tests/smoke/test_setup/test_buy_license.py`.
 - `--disable-license-policy` bo'lsa bu qadam real license flowga kirmaydi va Allure/logga skip sababini yozib davom etadi.
 - Nima qiladi: logout qilib admin sifatida qayta kiradi, `Администрирование` filialiga o'tadi, `Главное` -> `Лицензии` sahifasida balans musbatligini tekshiradi va `Smartup ERP` uchun kerakli license sotib oladi.
 - Oyning boshida yoki shu oy uchun birinchi xaridda `Smartup ERP: Базовый пользователь (Обязательный)` alohida row chiqadi; bu rowda quantity `5` disabled/auto-filled bo'ladi, avval shu majburiy license olinadi, keyin oddiy `Smartup ERP: Базовый пользователь` rowdan 1 ta license olinadi. Shu oy keyingi runlarda majburiy row chiqmasligi mumkin.
@@ -266,7 +253,7 @@ Tags: license, admin, balance
 
 ### 11 Attach License
 Tags: license, user
-- Fayl: `tests/smoke/test_setup/test_license.py`.
+- Fayl: `tests/smoke/test_setup/test_attach_license.py`.
 - `--disable-license-policy` bo'lsa bu qadam real attach flowga kirmaydi va Allure/logga skip sababini yozib davom etadi.
 - Nima qiladi: `Лицензии и документы` ichida `ERP users` license ochiladi, mavjud attached users bo'lsa ajratiladi, `natural_person-pw{code}` userga ulanadi.
 - Muhim pattern: `PlaywrightTimeoutError` orqali `нет данных` bo'lmasa hammasini select qilib `Открепить` qiladi.
@@ -307,7 +294,8 @@ Tags: tmc, product, price
 Tags: natural-person, client
 - Fayl: `tests/smoke/test_setup/test_natural_person.py`.
 - Nima yaratadi: `c_n_c_pw{code}` code va `natural_client-pw{code}` ko'rinadigan nomli jismoniy shaxs, `Клиент` belgisi yoqiladi.
-- Tekshiruv: avval `Физические лица` list va `Просмотр` viewda nom/status tekshiriladi, keyin `Клиенты` ro'yxatida ko'rinadi; regressionda natural person qo'shimcha maydonlari ham to'ldiriladi.
+- Tekshiruv: avval `Физические лица` list va `Просмотр` viewda nom/status
+  tekshiriladi, keyin `Клиенты` ro'yxatida ko'rinadi.
 
 ### 18 Room Attachment
 Tags: room, payment-type, warehouse, cashbox, client

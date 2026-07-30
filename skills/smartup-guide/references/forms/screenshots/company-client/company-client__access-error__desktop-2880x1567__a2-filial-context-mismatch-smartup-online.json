@@ -1,0 +1,13 @@
+{
+  "captured_at": "2026-07-29",
+  "url": "https://smartup.online/a2/biruni/kauth/company_client_list",
+  "state": "access-error",
+  "viewport_pixels": "2880x1567",
+  "source": "Forms runner Allure failure attachment",
+  "observations": [
+    "A2 header shows an operational filial instead of Администрирование",
+    "Page displays Нет доступа к форме Клиенты OAuth2 сервера для компании",
+    "Document title remains Smartup Online",
+    "company_client_list:model returned HTTP 403 with the operational filial context"
+  ]
+}

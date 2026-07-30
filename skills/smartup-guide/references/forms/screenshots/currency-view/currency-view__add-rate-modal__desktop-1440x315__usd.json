@@ -1,0 +1,24 @@
+{
+  "url": "https://app3.greenwhite.uz/xtrade/#/!ct6oxdkj/anor/mk/currency_view?currency_id=588",
+  "form_slug": "currency-view",
+  "state": "add-rate-modal",
+  "viewport": {
+    "width": 1440,
+    "height": 315,
+    "device_pixel_ratio": 2
+  },
+  "code_session_id": null,
+  "entity": {
+    "currency_id": 588,
+    "currency_code": "USD",
+    "currency_name": "Доллар США"
+  },
+  "created_at": "2026-07-28T11:55:43+05:00",
+  "browser": "Chrome",
+  "dynamic_areas": [
+    "current exchange-rate grid data",
+    "current date",
+    "filial name",
+    "support chat widget"
+  ]
+}

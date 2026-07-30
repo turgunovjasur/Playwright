@@ -1,6 +1,9 @@
 # Order List
 
 Tags: order, order-list, grid, row-action, locator, screenshot
+Status: trace-confirmed
+Verified: 2026-07-21
+Source: `tests/smoke/flows/flow_order/flow_order_list.py`; `tests/smoke/test_groups/test_A_grup/test_a_group_runner.py`; `references/forms/screenshots/order-list/order-list__row-actions-open__desktop-2880x1566__20260720.json`
 
 ## Quick Lookup
 
@@ -36,4 +39,7 @@ Tags: order, order-list, grid, row-action, locator, screenshot
 - Failure screenshotda `Просмотр`, `Редактировать`, `Изменить статус` actionlari ko'ringan; test esa exact `Просмотреть` kutgani uchun 10 soniyada element topmagan.
 - Order save muvaffaqiyatli bo'lgan: URL `*/order_list`, gridda yangi draft row va `7 000` summa mavjud.
 - 2026-07-20 fix verificationning birinchi A-group rerunida A-03 va A-04 passed; A-05 shu action panelidagi eski `Изменить` locatorini ochib berdi. UI screenshotiga mos `Редактировать` locator ishlatiladi.
-- 2026-07-20 yakuniy verification: `tests/smoke/test_all_runner.py::test_02_a_group_runner` to'liq passed (`1 passed`); `Просмотр` va `Редактировать` row actionlari A-03/A-04/A-05 zanjirida tasdiqlandi.
+- 2026-07-21 yakuniy verification:
+  `tests/smoke/test_groups/test_A_grup/test_a_group_runner.py`dagi A-03/A-04/A-05
+  pytest caselari orqali `Просмотр` va `Редактировать` row actionlari
+  tasdiqlandi.

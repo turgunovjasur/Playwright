@@ -224,16 +224,18 @@ Bu buyruq macOS, Linux va Windowsda ishlaydi. `.env` ishlatilmaydi.
 | `--show-trace` / `SHOW_TRACE=1` | Testdan keyin oxirgi Playwright trace viewerini ochadi. `SHOW_TRACE=1` shell env yoki repo `.env` ichida berilishi mumkin. |
 | `--ai-summary` | Gemini orqali qo'shimcha AI xulosa yozadi. Default: off. |
 | `--dry-run` | Testni ishga tushirmaydi, faqat pytest commandni ko'rsatadi. |
-| `all` | Default target. Setup + A + B + C + Report group ishlaydi. |
+| `all` | Default target. Setup + A + B + C + Report + Forms runner ishlaydi. |
 | `setup` | Faqat setup runner ishlaydi. |
 | `setup-report` | Lokal target: Setup, keyin Report runner; A/B/C ishlamaydi. |
-| `setup-a2-admin` | CI/bot targeti: Setup, keyin `test_a2_admin_menu_forms`; A/B/C/Report ishlamaydi. |
+| `setup-a2-admin` | Lokal target: Setup, keyin faqat `test_a2_admin_menu_forms`; A/B/C/Report ishlamaydi. |
+| `setup-forms` | CI/bot targeti: Setup, keyin barcha form-opening testlar ishlaydi. |
 | `company` | Faqat yangi company yaratish testi ishlaydi. |
 | `groups` | Setupni ishlatmasdan barcha group runnerlar ishlaydi. |
 | `group-a` | Faqat A group ishlaydi. |
 | `group-b` | Faqat B group ishlaydi. |
 | `group-c` | Faqat C group ishlaydi. |
 | `group-report` | Faqat Report group ishlaydi. |
+| `forms` | Setupni ishlatmasdan faqat Forms runner ishlaydi. |
 
 ### <a id="asosiy-run-yollari"></a>Asosiy run yo'llari
 
@@ -382,20 +384,22 @@ Default target `all`, ya'ni full suite.
 
 | Target | Buyruq namunasi | Nima ishlaydi |
 |--------|------------------|---------------|
-| `all` | `python scripts/run_tests.py --url <url> --company-code <code> --company-password <pass>` | Setup + A + B + C + Report group |
+| `all` | `python scripts/run_tests.py --url <url> --company-code <code> --company-password <pass>` | Setup + A + B + C + Report + Forms runner |
 | `setup` | `python scripts/run_tests.py setup --url <url> --company-code <code> --company-password <pass>` | Faqat user setup |
 | `setup-report` | `python scripts/run_tests.py setup-report --url <url> --company-code <code> --company-password <pass>` | User setup + Report group; lokal target |
-| `setup-a2-admin` | `python scripts/run_tests.py setup-a2-admin --url <url> --company-code <code> --company-password <pass>` | User setup + A2 admin formalar; CI/bot shu targetni ishlatadi |
+| `setup-a2-admin` | `python scripts/run_tests.py setup-a2-admin --url <url> --company-code <code> --company-password <pass>` | User setup + faqat A2 admin formalar; lokal target |
+| `setup-forms` | `python scripts/run_tests.py setup-forms --url <url> --company-code <code> --company-password <pass>` | User setup + barcha form-opening testlar; CI/bot shu targetni ishlatadi |
 | `company` | `python scripts/run_tests.py company --url <url> --create-company --head-email <email> --head-password <pass>` | Faqat company yaratish testi |
 | `groups` | `python scripts/run_tests.py groups --url <url> --company-code <code> --company-password <pass>` | Setupdan tashqari barcha grouplar |
 | `group-a` | `python scripts/run_tests.py group-a --url <url> --company-code <code> --company-password <pass>` | Faqat A group |
 | `group-b` | `python scripts/run_tests.py group-b --url <url> --company-code <code> --company-password <pass>` | Faqat B group |
 | `group-c` | `python scripts/run_tests.py group-c --url <url> --company-code <code> --company-password <pass>` | Faqat C group |
 | `group-report` | `python scripts/run_tests.py group-report --url <url> --company-code <code> --company-password <pass>` | Faqat Report group |
+| `forms` | `python scripts/run_tests.py forms --url <url> --company-code <code> --company-password <pass>` | Faqat Forms runner |
 
-`--create-company` faqat `all`, `setup`, `company` targetlari bilan ishlatiladi. `groups` va alohida group targetlari uchun avval mavjud company va setup data kerak.
+`--create-company` `all`, `setup`, `setup-forms` va `company` targetlari bilan ishlatiladi. `groups`, `forms` va alohida group targetlari uchun avval mavjud company va setup data kerak.
 
-CI/Telegram botdagi `setup-a2-admin` targeti `CREATE_COMPANY=0` bilan ishlaydi:
+CI/Telegram botdagi `setup-forms` targeti `CREATE_COMPANY=0` bilan ishlaydi:
 serverga mos company code/password GitHub Secrets'dan olinadi.
 
 Code tanlovi `.env` dagi yagona `NEW_CODE` flagi bilan boshqariladi: `NEW_CODE=1` yangi 6 xonali code yaratadi, `NEW_CODE=0` esa `test-results/data/data_store.json` dagi mavjud code ni ishlatadi.

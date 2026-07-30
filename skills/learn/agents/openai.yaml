@@ -1,0 +1,4 @@
+interface:
+  display_name: "Capture Project Knowledge"
+  short_description: "Save project knowledge with evidence status"
+  default_prompt: "Use $learn to record this project-specific lesson with the correct evidence status."

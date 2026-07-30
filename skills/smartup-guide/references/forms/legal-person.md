@@ -1,5 +1,14 @@
 # Legal Person Add Form
 
+## Mundarija
+
+- [URL va navigation](#url-va-navigation)
+- [Screenshotlar](#screenshotlar)
+- [Field bilimlari](#field-bilimlari)
+- [List va view tekshiruv](#list-va-view-tekshiruv)
+- [Data store](#data-store)
+- [Debug notes](#debug-notes)
+
 ## URL Va Navigation
 
 ### Legal person add
@@ -58,10 +67,8 @@ Tags: legal-person, tabs, note, leadership
 ### Legal person list
 Tags: legal-person, list, grid, assert
 - List URL/search: `Справочники` -> `Юридические лица`, global `Поиск`ga `legal_person_code` yoziladi.
-- Regression setupda director natural person Natural Person helper orqali yaratiladi va `Физические лица` listida global `Поиск`ga director code yozib tekshiriladi; listda ko'p qator bo'lsa row assert ko'rinadigan F.I.O. qismlariga tayanadi.
 - Default grid ustunlari ichida `Код`, `Название`, `Альтернативное название`, `Статус` ko'rinadi.
-- Smoke mode: listda faqat `code`, `name`, `Активный` ni tekshiriladi.
-- Regression mode: listda `short_name` ham tekshiriladi.
+- Joriy smoke test listda `code`, `name`, `Активный` ni tekshiradi.
 - View tugmasi: row tanlangandan keyin `Просмотреть`.
 
 ### Legal person view
@@ -79,13 +86,6 @@ Tags: legal-person, view, assert
 Tags: legal-person, data-store
 - Session `code`
 - `legal_person_code`, `legal_person_name`
-- `legal_person_owner_code`, `legal_person_owner_name` (regression-only)
-- `legal_person_director_code`, `legal_person_director_name` (regression-only)
-- `legal_person_accountant_name` (regression-only)
-- `legal_person_tin`, `legal_person_phone`, `legal_person_email`, `legal_person_region`, `legal_person_gps` (regression-only)
-- `legal_person_bank_mfo`, `legal_person_bank_name`, `legal_person_bank_account_code`, `legal_person_bank_account_name` (regression-only)
-- `legal_person_contact_name`, `legal_person_contact_phone`, `legal_person_contact_position_code`, `legal_person_contact_position_name` (regression-only)
-- Smoke rejimida regression kalitlari null bo'lib tozalanadi.
 
 ## Debug Notes
 

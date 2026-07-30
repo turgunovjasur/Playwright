@@ -1,7 +1,17 @@
 # Order Add Wizard (order+add / order+edit)
 
 3 qadamli order yaratish/o'zgartirish wizard'i. MCP bilan jonli tekshirilgan
-(`autotest@smartup.online`, `user-pw{code}`, 2026-06-12).
+(`user-pw{code}@<company>`, 2026-06-12).
+
+## Mundarija
+
+- [URL va navigation](#url--navigation)
+- [Modul ID](#anor279-modul-id)
+- [Step 1](#step-1--main-page)
+- [Step 2](#step-2--product-page)
+- [Step 3](#step-3--final-page)
+- [Flow/helper/test fayllari](#ishlatiladigan-flowhelpertest-fayllari)
+- [Known issues](#known-issues--debug-notes)
 
 ## URL / Navigation
 - Navigation: `Продажа > Заказы` → `Создать` (yoki list `flow_order_list(page, add=True)`).

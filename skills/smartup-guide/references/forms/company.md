@@ -1,5 +1,16 @@
 # Компания (Company) — yaratish va sozlash
 
+## Mundarija
+
+- [Navigatsiya](#navigatsiya)
+- [Screenshotlar](#screenshotlar)
+- [Company code](#company-code)
+- [Forma tuzilmasi](#forma-tuzilmasi-companyform-smt-control-elementlar)
+- [Saqlash](#saqlash)
+- [Security sozlamalar](#company-viewda-security-sozlamalar-har-doim)
+- [Loyiha xususiyatlari](#loyiha-xususiyatlari-tasdiqlangan)
+- [Test](#test)
+
 ## Navigatsiya
 
 - `CREATE_COMPANY=1` rejimida majburiy `HEAD_ADMIN_EMAIL` /
@@ -43,11 +54,19 @@
   `Маркировка: ДА` toast chiqqan holat. Screenshot Marking bilan bog'liq
   validation muammosini ko'rsatadi, lekin model commit bo'lmaganining aniq
   texnik sababini o'zi isbotlamaydi.
+- `references/forms/screenshots/company/company__license-activation__desktop-1920x1080.png`
+  — company viewdagi license activation holati.
+- `references/forms/screenshots/company/company__list-search-missing__desktop-1920x1080.png`
+  — listda kutilgan search boshqaruvi ko'rinmagan diagnostika holati.
+- `references/forms/screenshots/company/company__products-after-trade__desktop-1920x1080.png`
+  — `trade` tanlangandan keyingi Products card holati.
+- `references/forms/screenshots/company/company__view-selected__desktop-1920x1080.png`
+  — listdan company tanlangandan keyingi view holati.
 
 ## Company code
 
 ```python
-company_code = f"autotest{code}".lower()  # masalan: autotest7576
+company_code = f"autotest{code}".lower()
 ```
 
 - Generated company code inputda ham, A2 list DOMida ham uzluksiz

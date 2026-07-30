@@ -1,7 +1,6 @@
 ---
 name: new-flow
-description: Yangi flow funksiya yaratish (tests/smoke/flows/ papkasida). UI harakatlar ketma-ketligini flow sifatida ajratish kerak bo'lganda ishlatiladi.
-allowed-tools: Read, Glob, Grep, Edit, Write
+description: tests/smoke/flows ichida qayta ishlatiladigan Playwright UI flow yaratadi yoki mavjud flow'ni ajratadi. Bir xil UI ketma-ketligi bir nechta testda takrorlanganda, flow/helper ajratish yoki order flow yozish so'ralganda ishlat.
 ---
 
 # Yangi Flow Funksiya Yaratish
@@ -15,35 +14,40 @@ Masalan: `authorization`, `navigate_to_menu`, `open_modal` va hokazo.
 
 ## Joylashuv
 
-`tests/smoke/flows/flow_<nomi>.py`
+Default: `tests/smoke/flows/flow_<nomi>.py`.
+
+Bir domain uchun bir nechta flow bo'lsa mavjud pattern bo'yicha
+`tests/smoke/flows/flow_<domain>/flow_<action>.py` ishlat.
 
 ## Shablon
 
 ```python
 import allure
-from playwright.sync_api import Page, expect
+from playwright.sync_api import Page
+from utils.base_page import BasePage
 
 
 def <nomi>(page: Page, **kwargs) -> None:
-    """
-    <Qisqacha tavsif>.
+    """<Qisqacha tavsif>."""
+    base = BasePage(page)
 
-    Args:
-        page: Playwright page instance
-        **kwargs: Qo'shimcha parametrlar (code, data va h.k.)
-    """
     with allure.step("1 - <Qadam>"):
-        page.locator("<selector>").click()
+        base.navigate_to(tab="<Tab>", name="<Menyu>")
 
     with allure.step("2 - <Qadam>"):
-        expect(page.locator("<selector>")).to_be_visible()
+        base.expect_page(heading="<Heading>", url="<stable-url-slug>")
 ```
 
 ## Qoidalar
 
 - Funksiya `Page` ni birinchi argument sifatida qabul qilsin
 - Har bir muhim qadam `allure.step` bilan o'ralsin
-- `expect()` bilan holatni tekshir, `assert` emas
+- Legacy AngularJS/Biruni forma uchun `BasePage`, A2 Angular forma uchun
+  `AngularBasePage` ishlat; ikki DOM kontraktini bitta helperda aralashtirma.
+- Mavjud page-object primitive'ini raw locator yoki local wrapper bilan
+  takrorlama. Raw locator faqat mos helper bo'lmagan maxsus action uchun qoladi.
+- Holatni page-object asserti yoki Playwright `expect()` bilan tekshir; Python
+  `assert` bilan UI holatini tekshirma.
 - Flow faqat UI harakatlarni bajarsin — ma'lumot saqlash/o'qish test ichida qolsin
 - Funksiya nomi `flow_` prefiksi emas, tavsifli ism bo'lsin: `authorization`, `create_room`
 
@@ -59,6 +63,7 @@ def <nomi>(page: Page, **kwargs) -> None:
 
 1. `$ARGUMENTS` ni o'qi — qanday flow kerak?
 2. O'xshash mavjud flow larni ko'r (`tests/smoke/flows/`)
-3. Yangi `flow_<nomi>.py` fayl yarat
-4. Flow funksiyasini yoz
-5. Qaysi testlarda ishlatish kerakligini ko'rsat
+3. Legacy yoki A2 DOM kontraktini aniqlab, mos page-objectni tanla
+4. Default yoki domain papkasida flow faylini yarat
+5. Eng tor consumer testda ishlatib tekshir
+6. Qaysi testlarda ishlatilishini ko'rsat

@@ -27,14 +27,24 @@ TARGET_LABELS = {
     "setup": "Setup",
     "setup-report": "Setup + Report",
     "setup-a2-admin": "Setup + A2 Admin Forms",
+    "setup-forms": "Setup + Forms",
     "company": "Company",
     "groups": "Groups",
     "group-a": "Group A",
     "group-b": "Group B",
     "group-c": "Group C",
     "group-report": "Report Group",
+    "forms": "Forms",
 }
-GROUP_ORDER = ["Setup", "A2 Admin Forms group", "A group", "B group", "C group", "Report group"]
+GROUP_ORDER = [
+    "Setup",
+    "A2 Admin Forms group",
+    "A group",
+    "B group",
+    "C group",
+    "Report group",
+    "Forms group",
+]
 STATUS_MARK = {"PASSED": "✅", "FAILED": "❌", "SKIPPED": "⏭"}
 ELEMENT_STATE_LABELS = {
     "ambiguous": "bir nechta element",

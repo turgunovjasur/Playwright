@@ -1,0 +1,4 @@
+interface:
+  display_name: "Write Smoke Test"
+  short_description: "Write project-compliant Playwright smoke tests"
+  default_prompt: "Use $write-test to implement this Smartup Playwright smoke test with the project conventions."

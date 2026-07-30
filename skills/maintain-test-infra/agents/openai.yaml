@@ -1,0 +1,4 @@
+interface:
+  display_name: "Maintain Test Infrastructure"
+  short_description: "Maintain Telegram CI, Allure, and summaries"
+  default_prompt: "Use $maintain-test-infra to diagnose and update the Smartup test execution infrastructure."

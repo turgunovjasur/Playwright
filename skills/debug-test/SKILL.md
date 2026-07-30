@@ -1,7 +1,6 @@
 ---
 name: debug-test
-description: Muvaffaqiyatsiz testni tahlil qilib sabab topish va tuzatish. Test xatosi, timeout, locator muammolari haqida so'ralganda ishlatiladi.
-allowed-tools: Read, Glob, Grep, Bash
+description: Muvaffaqiyatsiz Playwright/pytest testini log, trace va Allure dalillari orqali tahlil qiladi. Test xatosi, timeout, locator, fixture yoki session-state muammosi so'ralganda ishlat; foydalanuvchi faqat sababni so'rasa kodni o'zgartirma, tuzatishni ham so'rasa fix va qayta run qil.
 ---
 
 # Muvaffaqiyatsiz Testni Debug Qilish
@@ -27,34 +26,35 @@ Avval `test-results/logs/` dagi tegishli log faylni o'qi.
 | `StrictModeViolation` | Bir nechta element topildi | Locator aniqroq qil |
 | `ElementNotFound` | Element yo'q | Page state tekshir, flow tartibini ko'r |
 | `AssertionError` | Qiymat mos kelmayapti | Kutilgan vs haqiqiy qiymatni solishtir |
-| `JSONDecodeError` | data_store.json buzilgan | Faylni o'chirib qayta run qil |
+| `JSONDecodeError` | `data_store.json` buzilgan | Faylni backup qilib, keyin runner orqali qayta yarat |
 | `pytest.exit` | `code` fixture topilmadi | Avval `test_setup_runner.py` yoki `run_tests.sh` ishlatilsin |
 
-### 3. Locator muammolari
+### 3. Smartup kontekstini o'qi
 
-Locator ishlayotganini tekshirish uchun Playwright konsolda:
-```js
-document.querySelectorAll('<selector>')
-```
+- Aniq forma bo'lsa avval `skills/smartup-guide/references/forms/<slug>.md` dossierini o'qi.
+- Locator/modal/grid muammosi uchun `skills/smartup-guide/references/ui-patterns.md`ni o'qi.
+- Fixture, runner va data-store muammosi uchun `skills/smartup-guide/references/testing-debug.md`ni o'qi.
+- Dossierdagi tasdiqlangan helper yoki locator mavjud bo'lsa, qayta ixtiro qilma.
 
-Yaxshi locator tartibi:
-1. `data-testid` atributi (eng ishonchli)
-2. `role` + `name` kombinatsiyasi
-3. Matn orqali: `page.get_by_text()`
-4. CSS selektor (oxirgi chora)
+### 4. Xavfsiz diagnostika
 
-### 4. Session state muammolari
+- Avval read-only tekshiruvlar bilan sababni isbotla.
+- Buzilgan `test-results/data/data_store.json`ni darhol o'chirma. Uni
+  `data_store.corrupt-<timestamp>.json` nomiga backup qilgandan keyingina runner
+  orqali yangi fayl yarat.
+- `session_page` yoki group page ishlatilsa oldingi testdan modal, route yoki
+  filial state qolganini tekshir.
+- Precondition qiymati data-store'da mavjud bo'lsa, muammoga aloqasiz upstream
+  entityni qayta yaratma.
 
-`session_page` ishlatilganda testlar ketma-ket ishlaydi. Agar oldingi test muvaffaqiyatsiz bo'lsa:
-- `data_store.json` ni tekshir
-- `code` fixture qiymati to'g'ri saqlanganmi
+### 5. Natija yoki tuzatish
 
-### 5. Tuzatish
-
-1. Xato sababini aniq ko'rsat
-2. Tuzatilgan kodni ko'rsat (faqat zarur qator)
-3. Qayta test ishga tushirish buyrug'ini ber
-4. Agar tizim muammosi bo'lsa (server, env) — foydalanuvchiga ayт
+1. Xato sababini dalil bilan ko'rsat.
+2. Faqat diagnostika so'ralgan bo'lsa shu yerda to'xta.
+3. Tuzatish ham so'ralgan bo'lsa minimal kod o'zgarishini qil.
+4. Eng tor relevant testni qayta ishga tushir.
+5. Tizim muammosi bo'lsa (server, env, credential, dependency) kodni taxminiy
+   o'zgartirma; muammoni aniq ajratib ko'rsat.
 
 ## Chiqish formati
 
@@ -65,47 +65,8 @@ Sabab: <nima bo'ldi>
 Yechim: <nima qilish kerak>
 ```
 
-## Loyiha Xususiyatlari
+## Bilimni yangilash
 
-### #biruniConfirm modal (Bootstrap fade animatsiyasi)
-- `да` tugmani bosishdan **oldin** modal opacity `1` bo'lishini kutish shart, aks holda click register bo'lmaydi:
-  ```python
-  expect(page.locator("#biruniConfirm")).to_have_css("opacity", "1")
-  page.get_by_role("button", name="да", exact=True).click()
-  page.locator("#biruniConfirm").wait_for(state="hidden")
-  ```
-  (`wait_for_function` emas — loyihada standart pattern `to_have_css`, `test_room.py` da ham shunday)
-- `да` bosilgandan keyin modal **darhol** yopiladi, keyin loader (`wait_for_loader`) ishlaydi — `wait_for(state="hidden")` uchun uzun timeout kerak emas
-- `да` tugmani har doim `#biruniConfirm` ga scope qilish kerak — `page.get_by_role("button", name="да")` butun sahifada qidiradi va animatsiya davomida noto'g'ri elementni bosishi mumkin
-
-### session_page va domino effekti
-- `session_page` barcha testlar uchun umumiy — bitta test fail bo'lib modal qolsa, keyingi barcha testlar ham fail bo'ladi
-- `--maxfail=3` pytest.ini da sozlangan — 3 fail dan keyin sessiya to'xtatiladi
-- Test yozish/debug iteratsiyasida precondition entity `data_store.json` da mavjud bo'lsa, masalan contract yaratilgan va code/name saqlangan bo'lsa, keyingi order xatosini tekshirish uchun contract testni qayta run qilish shart emas; mavjud qiymatdan foydalan.
-
-### Form screenshot arxivi
-- Smartup formalarini debug qilganda avval `skills/smartup-guide/references/forms/screenshots/<form-slug>/` ichida shu forma uchun screenshot bor-yo'qligini tekshir.
-- Agar kerakli screenshot bo'lmasa yoki UI o'zgargan bo'lsa, formani ochib skill arxiviga saqla: `skills/smartup-guide/references/forms/screenshots/<form-slug>/<form-slug>__<state>__desktop-1920x1080.png`.
-- `test-results/screens/smartup/` forma/debug screenshot arxivi uchun ishlatilmasin; `test-results/allure-results` faqat pytest/Allure failure attachment outputi.
-- Yangi formaga kirilganda yoki URL/form state o'zgarganda screenshotni skill arxivida yangilab borish keyingi locator/debug ishlari uchun majburiy odat bo'lsin.
-
-### to_contain_text() da exact parametri yo'q
-- `expect(locator).to_contain_text("text", exact=True)` — **xato**, bu parametr mavjud emas
-- To'liq mos kelish uchun `to_have_text("text")` ishlatiladi
-
-### Orderda product chiqmasa
-- Order add product qadamida tovar/product topilmasa, zaxira/balans yo'qligi yoki product bron qilingan orderlarda bandligi ehtimolini tekshir.
-- Balans kerak bo'lsa setupdagi `test_20_init_balance` ni run qilib product balansini qo'shib kelish mumkin.
-- Agar product bron qilingan bo'lsa, order listdagi bron qilingan orderlarni `Canceled/Отменен` statusga o'tkazish kerak.
-
-### AI test summary
-- Test run tugagandan keyingi xulosa uchun OpenAI emas, Gemini API ishlatiladi; default model `gemini-2.5-flash`, key esa faqat `GEMINI_API_KEY` environment variable orqali olinadi va repo/chat/logga yozilmaydi.
-- `System summary` AI emas va har doim yoziladi: `test-results/system-summary.md/json`, Allure ichida `System Test Summary`; failed test, ichki Allure step, kod joyi, error turi, sabab va ta'sirni tizim o'zi chiqaradi.
-- AI summary default holatda off; faqat `scripts/run_tests.py ... --ai-summary` flagi berilganda ishlaydi va faqat 1-2 gaplik qo'shimcha xulosa yozadi.
-- AI xulosa `test-results/ai-summary.md/json` fayllariga yoziladi va Allure report ichida alohida `AI Test Summary` card sifatida attachment qilinadi; bu card test pass/fail statusini o'zgartirmaydi.
-- Telegramdagi asosiy natija xabari AIga bog'liq bo'lmasin; xom Gemini API error, uzun stacktrace yoki locator logini asosiy xabar sifatida yuborma.
-- Group runnerlarda har case alohida pytest/Allure test; Telegram va system summary failed runner testi bilan birga uning ichki failed step/source qiymatini ko'rsatishi shart.
-
-### Lokal Allure server lifecycle
-- `scripts/open_allure_report.py` har run uchun yangi orphan process yaratmasligi kerak: reportga tegishli state + health-check orqali ishlayotgan lokal server qayta ishlatiladi, stale state esa yangi server bilan almashtiriladi.
-- PyCharm direct run tugaganda `pytest_sessionfinish` ochgan Allure helper parent runnerdan ajratilmasa, helper state yaratgach browserni ochmasdan o'lishi va stale JSON qoldirishi mumkin; `Popen` alohida session hamda parentdan mustaqil stdout/stderr bilan ishga tushirilishi kerak.
+Yangi, tasdiqlangan Smartup xatti-harakati topilsa `learn` qoidasi bo'yicha mos
+dossier/reference'ga provenance bilan yoz. Vaqtinchalik failure, taxmin yoki
+konkret session qiymatini doimiy qoida sifatida saqlama.

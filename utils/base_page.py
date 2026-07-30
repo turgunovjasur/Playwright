@@ -1,9 +1,10 @@
 import logging
 import re
-from datetime import date as calendar_date, datetime, timedelta
 
 from playwright.sync_api import expect
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
+from utils.date_utils import format_date, resolve_date
 
 
 logger = logging.getLogger(__name__)
@@ -11,9 +12,44 @@ logger = logging.getLogger(__name__)
 _UNSET = object()
 
 
+def _whitespace_agnostic_pattern(value, *, exact=False):
+    """Matndagi barcha whitespace'ni ixtiyoriy qiladigan regex qaytaradi."""
+    if isinstance(value, re.Pattern):
+        return value
+    normalized = re.sub(r"\s+", "", str(value))
+    body = r"\s*".join(re.escape(char) for char in normalized)
+    return re.compile(rf"^\s*{body}\s*$" if exact else body)
+
+
 class BasePage:
     def __init__(self, page):
         self.page = page
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    @staticmethod
+    def date(value="today", *, days=0, date_format="%d.%m.%Y"):
+        """Testlarda ishlatish uchun hisoblangan sanani matn ko'rinishida qaytaradi.
+        value:
+            Hisoblash uchun boshlang'ich sana. Quyidagilarni qabul qiladi:
+
+            - ``"today"`` — bugungi sana;
+            - ``"yesterday"`` / ``"previous_day"`` — kechagi sana;
+            - ``"tomorrow"`` / ``"next_day"`` — ertangi sana;
+            - ``"first_day"`` / ``"month_start"`` — joriy oyning boshi;
+            - ``"last_day"`` / ``"month_end"`` — joriy oyning oxiri;
+            - ``date`` yoki ``datetime`` obyekti;
+            - ``DD.MM.YYYY``, ``YYYY-MM-DD``, ``DD/MM/YYYY`` yoki
+              ``DD-MM-YYYY`` formatidagi sana matni.
+        days:
+            Boshlang'ich sanaga qo'shiladigan kunlar soni. Musbat qiymat
+            keyingi, manfiy qiymat oldingi sanani qaytaradi.
+        date_format:
+            Natija formati. Python ``strftime`` formati yoki
+            ``DD.MM.YYYY``, ``YYYY-MM-DD``, ``DD/MM/YYYY``,
+            ``DD-MM-YYYY`` aliaslaridan biri.
+        """
+        return format_date(value, days=days, date_format=date_format)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -377,13 +413,13 @@ class BasePage:
             raise AssertionError(
                 f"navigate_to_form: navbar_tab='{navbar_tab}' yagona ko'rinadigan element sifatida topilmadi"
             ) from exc
-        tab.click()
-
         flyout = (
             tab.locator("xpath=ancestor::li[contains(@class, 'menu-item-submenu')][1]")
             .locator(".menu-submenu")
-            .filter(visible=True)
         )
+        if flyout.filter(visible=True).count() == 0:
+            tab.click()
+        flyout = flyout.filter(visible=True)
         expect(flyout).to_have_count(1, timeout=timeout)
         expect(flyout).to_be_visible(timeout=timeout)
 
@@ -406,11 +442,11 @@ class BasePage:
             column = column_heading.locator(
                 "xpath=ancestor::li[contains(@class, 'menu-item')][1]"
             )
-        item = (
-            column.locator("a.menu-link.menu-link-title")
-            .filter(has_text=menu_item)
-            .filter(visible=True)
-        )
+        item = column.get_by_role(
+            "link",
+            name=menu_item,
+            exact=True,
+        ).filter(visible=True)
         try:
             expect(item).to_have_count(1, timeout=timeout)
             expect(item).to_be_visible(timeout=timeout)
@@ -577,6 +613,7 @@ class BasePage:
         checkbox=None,
         is_empty=False,
         is_visible=False,
+        remove_spaces=True,
     ):
         """`text` bo'yicha grid qatorini topadi, ko'rinishini va (berilgan bo'lsa)
         `contains` dagi har bir matnni (nom, status va h.k.) o'z ichiga olishini tekshiradi.
@@ -587,10 +624,14 @@ class BasePage:
             checkbox'ini belgilaydi (bu holda `text` kerak emas)
           - is_empty=True: ko'rinadigan grid bo'sh bo'lsa True, aks holda False qaytaradi
           - is_visible=True: `text` qatori ko'rinsa True, aks holda False qaytaradi
+          - remove_spaces=True: row qidirish va contains assertlarda barcha
+            whitespace'ni avtomatik e'tiborsiz qoldiradi
 
         Grid checkbox'lari `opacity:0`; belgilash `_toggle_checkbox` orqali bajariladi."""
         if checkbox not in (None, "row", "all"):
             raise ValueError('grid(checkbox=...): "row" yoki "all" bo\'lishi kerak')
+        if not isinstance(remove_spaces, bool):
+            raise TypeError("grid(remove_spaces=...): bool bo'lishi kerak")
         if is_empty and (text is not None or contains or click or checkbox is not None or is_visible):
             raise ValueError("grid(is_empty=True) boshqa qator amallari bilan birga ishlatilmaydi")
         if is_visible and text is None:
@@ -603,11 +644,6 @@ class BasePage:
             no_data = grid.get_by_text("нет данных", exact=True)
             return no_data.is_visible()
 
-        if is_visible:
-            grid = self.page.locator(root).filter(visible=True).first
-            row = grid.locator(".tbl-row").filter(has_text=text).first
-            return row.is_visible()
-
         if checkbox == "all":
             self.wait_for_loader()
             grid = self.page.locator(root).filter(visible=True).first
@@ -618,11 +654,19 @@ class BasePage:
             self._toggle_checkbox(cb, True)
             return cb
 
+        row_text = _whitespace_agnostic_pattern(text) if remove_spaces else text
+
+        if is_visible:
+            grid = self.page.locator(root).filter(visible=True).first
+            row = grid.locator(".tbl-row").filter(has_text=row_text).first
+            return row.is_visible()
+
         grid = self.page.locator(root)
-        row = grid.locator(".tbl-row").filter(has_text=text).first
+        row = grid.locator(".tbl-row").filter(has_text=row_text).first
         expect(row).to_be_visible()
         for value in contains:
-            expect(row).to_contain_text(value)
+            expected = _whitespace_agnostic_pattern(value) if remove_spaces else value
+            expect(row).to_contain_text(expected)
         if checkbox == "row":
             self._toggle_checkbox(row.locator("input[type='checkbox']").first, True)
         if click:
@@ -760,9 +804,7 @@ class BasePage:
                         "form_view(remove_spaces=True): expect_value string bo'lishi kerak"
                     )
                 normalized = re.sub(r"\s+", "", expect_value)
-                whitespace_agnostic = re.compile(
-                    r"^\s*" + r"\s*".join(re.escape(char) for char in normalized) + r"\s*$"
-                )
+                whitespace_agnostic = _whitespace_agnostic_pattern(normalized, exact=True)
                 expect(value).to_have_text(whitespace_agnostic, timeout=timeout)
             else:
                 expect(value).to_have_text(expect_value, timeout=timeout)
@@ -779,41 +821,35 @@ class BasePage:
         label,
         date="today",
         *,
+        auto_fill=False,
         index=0,
         root=None,
         timeout=10_000,
     ):
         """Label orqali Bootstrap datepickerdan berilgan sanani tanlaydi.
 
-        ``date``: ``"today"``, ``"first_day"``, ``"last_day"`` yoki
-        ``"DD.MM.YYYY"``. Sana typing bilan emas, datepickerning o'zidagi kun
-        tugmasi bilan tanlanadi.
+        ``date``: relative keyword, ``date``/``datetime`` yoki qo'llab-
+        quvvatlanadigan sana matni. ``auto_fill=True`` bo'lsa inputda shu sana
+        avvaldan mavjudligi tekshiriladi va kalendar ochilmaydi. Aks holda sana
+        typing bilan emas, datepickerning o'zidagi kun tugmasi bilan tanlanadi.
         """
-        today = calendar_date.today()
-        if date == "today":
-            target_date = today
-        elif date == "first_day":
-            target_date = today.replace(day=1)
-        elif date == "last_day":
-            target_date = (today.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
-        elif isinstance(date, str):
-            try:
-                target_date = datetime.strptime(date, "%d.%m.%Y").date()
-            except ValueError as exc:
-                raise ValueError(
-                    'date_picker(): date "today", "first_day", "last_day" yoki "DD.MM.YYYY" bo\'lishi kerak'
-                ) from exc
-        else:
-            raise TypeError("date_picker(): date satr bo'lishi kerak")
+        if not isinstance(auto_fill, bool):
+            raise TypeError("date_picker(): auto_fill bool bo'lishi kerak")
 
+        target_date = resolve_date(date)
+        target_value = target_date.strftime("%d.%m.%Y")
         root = self._resolve_root(root)
         input_el = self._field_locator_by_label(label, index=index, root=root, target="input")
-        expect(input_el).to_be_visible()
+        expect(input_el).to_be_visible(timeout=timeout)
+
+        if auto_fill:
+            expect(input_el).to_have_value(target_value, timeout=timeout)
+            return input_el
+
         input_el.click()
 
         picker = self.page.locator(".bootstrap-datetimepicker-widget:visible").last
         expect(picker).to_be_visible(timeout=timeout)
-        target_value = target_date.strftime("%d.%m.%Y")
 
         for _ in range(241):
             day = picker.locator(f'[data-action="selectDay"][data-day="{target_value}"]').first
@@ -826,7 +862,7 @@ class BasePage:
 
             shown_days = picker.locator('[data-action="selectDay"]')
             shown_dates = [
-                datetime.strptime(shown_days.nth(day_index).get_attribute("data-day"), "%d.%m.%Y").date()
+                resolve_date(shown_days.nth(day_index).get_attribute("data-day"))
                 for day_index in range(shown_days.count())
             ]
             if not shown_dates:

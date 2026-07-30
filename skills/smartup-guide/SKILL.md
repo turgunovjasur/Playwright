@@ -7,13 +7,68 @@ description: Smartup ilovasiga xos biznes bilimlar, UI joylashuvlari, contract/o
 
 Bu skill Smartup bo'yicha bilimlarni tez topish uchun index vazifasini bajaradi. Batafsil bilimlar `references/` ichida domainlarga bo'lingan.
 
+## Mundarija
+
+- [Qidirish tartibi](#qidirish-tartibi)
+- [Ishonchlilik modeli](#ishonchlilik-modeli)
+- [Skill chegarasi](#skill-chegarasi)
+- [Reference xarita](#reference-xarita)
+- [Form dossier ro'yxati](#form-dossier-royxati-toliq)
+- [Form dossier qoidasi](#form-dossier-qoidasi)
+- [Bilim qo'shish formati](#bilim-qoshish-formati)
+- [Tekshirish](#tekshirish)
+- [Asosiy eslatma](#asosiy-eslatma)
+
 ## Qidirish Tartibi
 
 1. User so'rovidagi domainni aniqlash: contract, order, list/grid, Biruni error, setup/debug.
 2. Agar so'rov aniq forma haqida bo'lsa, avval `references/forms/<form-slug>.md` dossier faylini o'qi.
-3. Forma rasmi kerak bo'lsa, avval shu skill ichidagi `references/forms/screenshots/<form-slug>/` papkasidan ol; `test-results` vaqtinchalik output bo'lgani uchun doimiy bilim manbasi sifatida ishlatilmasin.
-4. Keyin kerak bo'lsa quyidagi domain reference fayllardan faqat keraklisini o'qi.
-5. Agar kerakli bilim topilmasa, UI/test/trace orqali aniqlab, tegishli form dossier yoki reference faylga qisqa va tagli qilib qo'sh.
+3. Foydalanuvchi formani UI'da qayerdan topishi, qaysi filialda ko'rinishi yoki
+   menu/page-link/dropdown yo'lini so'rasa,
+   `references/legacy-form-navigation.md`ni o'qi.
+4. Forma rasmi kerak bo'lsa, avval shu skill ichidagi `references/forms/screenshots/<form-slug>/` papkasidan ol; `test-results` vaqtinchalik output bo'lgani uchun doimiy bilim manbasi sifatida ishlatilmasin.
+5. Keyin kerak bo'lsa quyidagi domain reference fayllardan faqat keraklisini o'qi.
+6. Agar kerakli bilim topilmasa, UI/test/trace orqali aniqlab, tegishli form dossier yoki reference faylga qisqa va tagli qilib qo'sh.
+
+## Ishonchlilik Modeli
+
+Dalillarni quyidagi ustuvorlikda ishlat:
+
+1. `trace-confirmed` yoki `live-ui-confirmed`
+2. `code-confirmed`
+3. `user-reported`
+4. To'liq provenance metadatasiz eski entry
+
+- `user-reported` bilimni test/kod o'zgartirish uchun tasdiqlangan fakt sifatida
+  ishlatma; avval code, trace yoki live UI bilan tekshir.
+- `code-confirmed` UI aynan shunday render bo'lishini emas, faqat joriy kod
+  kontraktini tasdiqlaydi.
+- `Verified` sanasi eski bo'lsa bilim avtomatik noto'g'ri bo'lmaydi, lekin
+  locator, menu, URL va serverga bog'liq xatti-harakatni qayta tekshir.
+- `Status`, `Verified`, `Source` to'liq bo'lmagan eski entryni joriy bilimga
+  nomzod deb ol, ammo riskli qarordan oldin manbasini qayta tasdiqla.
+- `references/history.md` faqat tarixiy kontekst; undagi qoidani current truth
+  sifatida ishlatma.
+- Qarama-qarshi dalilda eng yangi va yuqori ustuvorlikdagi manbani tanla,
+  current reference'ni yangila va almashtirilgan qoidani `history.md`ga ko'chir.
+
+## Skill Chegarasi
+
+`smartup-guide` domain knowledge va dalillar manbasi; u test bajarish workflowini
+takrorlamaydi. Avval kerakli dossier/reference'ni o'qi, keyin vazifaga mos skillni
+ishlat:
+
+- yangi test yozish: `$write-test`
+- reusable UI flow yaratish yoki o'zgartirish: `$new-flow`
+- failed test diagnostikasi: `$debug-test`
+- test/smoke run: `$run-smoke`
+- runner, config yoki reporting infrasi: `$maintain-test-infra`
+- test/flow/runner review: `$review-test`
+- tasdiqlangan yangi loyiha bilimini yozish: `$learn`
+
+Action skilldagi umumiy workflow bilan bu skilldagi Smartup-specific fakt
+qarama-qarshi chiqsa, faktni dalil bilan qayta tekshir; workflow qoidasi va
+domain bilimni bir faylda takrorlama.
 
 ## Reference Xarita
 
@@ -22,8 +77,13 @@ Bu skill Smartup bo'yicha bilimlarni tez topish uchun index vazifasini bajaradi.
 - Order biznes qoidalari va flowlar: [references/orders.md](references/orders.md)
 - Smoke runner setup zanjiri: [references/smoke-runner.md](references/smoke-runner.md)
 - Smartup UI, locator, modal, grid patternlari: [references/ui-patterns.md](references/ui-patterns.md)
-- A2 (migratsiya qilingan yangi) formalar, filial-menyu, URL/error signallari: [references/a2-migrated-forms.md](references/a2-migrated-forms.md)
+- Legacy formalarni foydalanuvchi UI'da topish yo'llari, filial ko'rinishi,
+  page-link va dropdown actionlari:
+  [references/legacy-form-navigation.md](references/legacy-form-navigation.md)
+- A2 (migratsiya qilingan yangi) formalar, A2 menu-tracklari va URL/error
+  signallari: [references/a2-migrated-forms.md](references/a2-migrated-forms.md)
 - Test setup, debug va screenshot arxivi: [references/testing-debug.md](references/testing-debug.md)
+- Superseded qoidalar va tarixiy dalillar: [references/history.md](references/history.md)
 
 ## Form Dossier Ro'yxati (to'liq)
 
@@ -36,6 +96,7 @@ Setup formalar:
 - [robot.md](references/forms/robot.md) — Штат (xodim) yaratish
 - [payment-type.md](references/forms/payment-type.md) — Типы оплат ulash
 - [price-type.md](references/forms/price-type.md) — Narx turi yaratish
+- [currency-view.md](references/forms/currency-view.md) — Valyuta ko'rish va kurs qo'shish modali
 - [room.md](references/forms/room.md) — Рабочая зона yaratish va prikreplenie
 - [user.md](references/forms/user.md) — Foydalanuvchi, rol, ruxsatlar, parol
 - [legal-person.md](references/forms/legal-person.md) — Yuridik shaxs
@@ -64,13 +125,17 @@ references/forms/<form-slug>.md
 
 Dossier ichida shu mavzu bo'yicha bir harakatda kerak bo'ladigan ma'lumotlar turadi:
 
-- URL pattern va navigation
-- screenshot pathlari; forma screenshotlari doim `references/forms/screenshots/<form-slug>/` ichida arxivlanadi
-- visual regression uchun baseline/current screenshot state nomlari va metadata
-- asosiy locatorlar
-- ishlatiladigan flow/helper/test fayllari
-- related business rules
-- known issues/debug notes
+- `Quick Lookup`: form slug, URL pattern va navigation
+- `Screenshot Paths`: aniq asset pathlari yoki `N/A`
+- `Known Locators`: asosiy locatorlar yoki `N/A`
+- `Flow And Tests`: mavjud flow/helper/test fayllari yoki `N/A`
+- `Business Rules`: forma bilan bog'liq joriy qoidalar
+- `Known Issues`: debug note yoki `N/A`
+
+Yangi dossierda shu olti bo'limni ishlat. Mavjud dossierga tegilganda yetishmagan
+bo'limlarni bosqichma-bosqich to'ldir. Screenshotlarni doim
+`references/forms/screenshots/<form-slug>/` ichida arxivla va dossierda aniq
+filename bilan ko'rsat; faqat papka nomini yozish yetarli emas.
 
 Misol: contract view haqida so'ralganda avval [references/forms/contract-view.md](references/forms/contract-view.md) o'qiladi.
 
@@ -81,18 +146,52 @@ Yangi bilim tegishli faylga quyidagi formatda qo'shilsin:
 ```markdown
 ### <qisqa mavzu>
 Tags: contract, order, payment-type, grid, error, setup, locator
-- <qayerda>: <sahifa yoki flow>
-- <qoida>: <biznes/UI xatti-harakati>
-- <testda ishlatish>: <qanday assert yoki flow kerak>
+Status: user-reported | code-confirmed | live-ui-confirmed | trace-confirmed
+Verified: YYYY-MM-DD yoki `pending`
+Source: user | <fayl:qator> | live UI | <trace/log path>
+- Qayerda: <sahifa yoki flow>
+- Qoida: <biznes/UI xatti-harakati>
+- Testda ishlatish: <qanday assert yoki flow kerak>
 ```
+
+`Status`, `Verified`, `Source` uchalasi birga yozilsin. Bir entryda bir nechta
+dalil bo'lsa eng kuchli statusni tanla, barcha manbalarni `Source`da `;` bilan
+ajrat.
+
+## Tekshirish
+
+Knowledge-base o'zgargandan keyin quyidagini ishga tushir:
+
+```bash
+./.venv/bin/python skills/smartup-guide/scripts/validate_knowledge_base.py
+```
+
+Validator broken Markdown linklar, indexdan tushib qolgan dossierlar, mavjud
+bo'lmagan repo pathlari, to'liq bo'lmagan provenance, uzun fayldagi mundarija va
+indekslanmagan screenshotlarni tekshiradi. Legacy provenance va JSON sidecar
+qarzi ratchet bilan nazorat qilinadi: kamayishi mumkin, lekin yangi o'zgarishda
+ko'paymasligi kerak. Qarzni kamaytirsang validator ichidagi baseline'ni ham shu
+o'zgarishda pasaytir. Errorlarni tuzatmasdan ishni yakunlama.
 
 ## Asosiy Eslatma
 
 - Smartup bo'yicha yangi biznes qoida, UI xatti-harakati, xato sababi yoki locator topilsa, shu skillning mos reference fayliga yoz.
-- Reference/dossierlarga **statik/literal test data yozilmaydi** (masalan `user-pw5963@autotest`, `product-pw5963`, `room-pw5963`, `autotest`). Bunday qiymatlar doim `code`'dan derive bo'ladigan ko'rinishda yoziladi: `user-pw{code}@<company>`, `product-pw{code}`, `room-pw{code}`. Konkret session qiymatlari `data_store.json` da turadi, dossierda emas.
+- Legacy formaning navbar/menu/page-link/dropdown yo'li va filial ko'rinishi
+  global navigatsiya bilimidir: uni `references/legacy-form-navigation.md`ga
+  yoz, forma A2 bo'lmasa `a2-migrated-forms.md`ga qo'shma.
+- Reference/dossierlarga **statik/literal test data yozilmaydi**. Qiymatlar
+  doim parametrik ko'rinishda yoziladi: `user-pw{code}@<company>`,
+  `product-pw{code}`, `room-pw{code}`. Konkret session qiymatlari
+  `data_store.json`da turadi, dossierda emas.
 - Dublikat kod, noto'g'ri testcase yoki flowga ajratilishi kerak bo'lgan takrorlanish ko'rinsa, foydalanuvchiga alohida xabar ber.
-- **MAJBURIY — suhbat tugamasdan:** Har bir Smartup/test vazifasi yakunida quyidagilar bajarilishi shart:
-  1. O'rganilgan biznes/UI bilimlar, locatorlar, tasdiqlangan flowlar → mos form dossier yoki reference faylga yoz.
-  2. Yangi yoki o'zgargan forma uchun **screenshot arxivlanishi shart** (`references/forms/screenshots/<slug>/` ga) — matn yozish yetarli emas.
-  3. Test muvaffaqiyatli ishlasa → test docstring + skills ma'lumoti sinxron bo'lsin.
-  - Agar suhbat oxirida bu bajarilmagan bo'lsa, foydalanuvchi so'ramasdan ham "Skills yangilanmadi — hozir yangilaymizmi?" deb so'ra.
+- Current reference fayllarda faqat joriy, tasdiqlangan xatti-harakat tursin.
+  Faqat foydalanuvchi aytgan va hali tekshirilmagan bilim `user-reported`
+  statusida alohida saqlansin; superseded qoida `references/history.md`ga ko'chirilsin.
+- Answer/review-only vazifada yangi bilim topilmasa knowledge-base'ni shunchaki
+  suhbat yakuni uchun o'zgartirma. Yangi loyiha bilimi topilsa AGENTS.md va
+  `learn` qoidasi bo'yicha yoz.
+- Screenshot faqat yangi/o'zgargan visual state tasdiqlanganda va keyingi
+  locator/debug ishiga real qiymat qo'shganda arxivlansin. Bir xil state'ning
+  dublikat rasmini yaratma; mavjud screenshotni dossierdan link qil.
+- Test muvaffaqiyatli ishlasa, o'zgargan testcase qadamlariga tegishli docstring
+  va current knowledge bir-biriga zid emasligini tekshir.

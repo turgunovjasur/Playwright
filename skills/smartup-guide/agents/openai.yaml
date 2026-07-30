@@ -1,0 +1,4 @@
+interface:
+  display_name: "Smartup Guide"
+  short_description: "Use verified Smartup domain and UI knowledge"
+  default_prompt: "Use $smartup-guide to find the freshest verified form, navigation, UI, and test rules, and distinguish current evidence from historical context."

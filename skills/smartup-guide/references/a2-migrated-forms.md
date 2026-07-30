@@ -1,5 +1,15 @@
 # A2 (migratsiya qilingan yangi) formalar
 
+## Mundarija
+
+- [Arxitektura](#arxitektura)
+- [Yangi Angular component kontrakti](#yangi-angular-component-kontrakti-companyda-live-tasdiqlangan-2026-07-23)
+- [Menyu filialga bog'liqligi](#menyu-филиалга-bogliq-eng-muhim-kuzatuv-2026-07-07)
+- [Real-user navigatsiya](#real-user-navigatsiya-menyu-orqali--2-etap-testlar-uchun)
+- [Filial switcher DOM](#filial-switcher-dom)
+- [Test](#test)
+- [Diagnostika natijasi](#diagnostika-natijasi-2026-07-07-app3greenwhiteuzxtrade--2-passed-0-muammo)
+
 Tags: a2, migrated-forms, filial, menu, navigation, error, url, new_forms
 
 Smartup yangi formalari (yangi Angular/modern app) eski AngularJS Biruni app ustiga qo'shilgan. Ular
@@ -58,7 +68,8 @@ Smartup yangi formalari (yangi Angular/modern app) eski AngularJS Biruni app ust
   Har `form`: `{form (path), name, add_form, is_migrated: 'Y'/'N', url, add_form_url}`.
   **`is_migrated === 'Y'` ⇒ a2 forma.** (Bu modelni `page.evaluate` bilan read-only o'qish mumkin — diagnostika uchun.)
 - **ASOSIY QOIDA: eski angular menyu orqali ochiladigan a2 formalar — BARCHASI ADMIN formalar.** Alohida "head"
-  profil / alohida head test KERAK EMAS; hammasi bitta admin test'да (`test_a2_admin_forms.py`) yig'iladi.
+  profil / alohida head test KERAK EMAS; hammasi bitta admin testda
+  (`test_a2_admin_menu_forms.py`) yig'iladi.
 - **Forma joyi (filial + aniq user track) — AVTORITET manba: `new_forms.md` (repo root).** U formalarni
   operatsion/Администрирование filial bo'yicha guruhlab, har biriga real user track (LEAF / LIST-ACTION / SIBLING)
   beradi. Qisqacha (2026-07-08 live tasdiqlangan):
@@ -115,7 +126,7 @@ Smartup yangi formalari (yangi Angular/modern app) eski AngularJS Biruni app ust
   shu asosda).
   `.project-list a.ng-binding` — bu proyektlar (Trade/Финансы), filiallar emas.
 - `BasePage(page).switch_filial(name)` filialga o'tadi va dashboard qayta yuklanadi.
-- `test_a2_admin_forms.py` code/data_store'ga bog'lanmaydi: operatsion filial sifatida angular session modelidagi
+- `test_a2_admin_menu_forms.py` code/data_store'ga bog'lanmaydi: operatsion filial sifatida angular session modelidagi
   "Администрирование" bo'lmagan birinchi filial tanlanadi va `switch_filial(page, name=<shu filial>)` qilinadi.
 - URL diagnostika testlarida operatsion filial nomini aniqlash: avval `filial-pw{code}` ({code} data_store.json dan),
   topilmasa har qanday `filial-pw*`, topilmasa "Администрирование" bo'lmagan birinchi filial.
@@ -126,19 +137,21 @@ Smartup yangi formalari (yangi Angular/modern app) eski AngularJS Biruni app ust
 
 ## Test
 
-- `tests/smoke/test_life_cycle/test_a2_new_forms.py` — 1-etap: har a2 formani **URL orqali** ochib tekshiradi
-  (title resolve / 404 / "нет доступа" / error / id-kerak), har forma `allure.step`, muammoda screenshot, to'xtamaydi.
-- **Profil-aware + mode:** `@pytest.mark.parametrize("profile_key", ["admin","head"])`. `A2_FORMS` — dict ro'yxati:
-  `{path, title, profile(admin|head), filial(operational|admin), mode(direct|via_list|skip), parent}`.
-  - `direct` — URL bilan ochiladi; ochilmasa fail.
-  - `via_list` — `parent` `_list` ochiladi, `main .smt-data-row` birinchi qatori double-click -> forma id bilan
-    ochiladi (edit/view/copy/details); ochilmasa fail, list bo'sh bo'lsa "no_rows" (fail emas). Bir parent bir marta (cache).
-  - `skip` — a2 list yo'q (ker/setting+edit), tekshirilmaydi.
-  head profil (`admin@head`) yo'q serverda avtomatik `pytest.skip`.
-- Ishga tushirish: `.env` joriy serverга qaratilgan bo'lsa oddiy `pytest tests/smoke/test_life_cycle/test_a2_new_forms.py`;
-  boshqa serverга `.env` ni vaqtincha chetlab `--url/--company-code/--company-password` bilan.
+Tags: a2, forms-runner, menu-track, navigation, code
+Status: code-confirmed
+Verified: 2026-07-30
+Source: `tests/smoke/test_forms/test_a2_admin_menu_forms.py`; `tests/smoke/test_forms/test_forms_runner.py`
 
-- **2-etap (test_a2_admin_forms.py) — real menyu orqali (2026-07-08, 24/24 passed):**
+- Joriy entrypoint `test_forms_runner.py::test_forms_02_a2_admin`;
+  u `run_a2_admin_menu_forms(...)`ni mavjud admin sessiyasida chaqiradi.
+- Har bir qamralgan A2 forma real navbar → menu column → menu item yoki
+  page-link yo'li orqali ochiladi; title va URL alohida tekshiriladi.
+- 53 formalik inventar joriy test docstringida backlog/provenance sifatida
+  saqlangan; current coverage faqat `✅ YOZILGAN` menu-tracklar bilan
+  belgilanadi. Oldingi URL-only harness konteksti
+  [history.md](history.md)da turadi.
+
+- **Joriy menu-track runner (`test_a2_admin_menu_forms.py`) — real menyu orqali:**
   Har a2 formani ESKI menyudan `navigate_to_a2(page, tab, path)` bilan ochadi (real user yo'li), xatoda to'xtamaydi,
   filial bo'yicha guruhlangan hisobot beradi. **Barcha angular-menyu a2 formalar ADMIN** — alohida head test YO'Q;
   hali live tasdiqlanmagan admin formalar (`md/*`, `announcement`, `client_list`, `security_settings`,
@@ -168,7 +181,7 @@ Smartup yangi formalari (yangi Angular/modern app) eski AngularJS Biruni app ust
     `anor/rep/mbi/mfa/purchase` (user bermagan — keyin). Boshqa company/serverda bo'lishi mumkin.
   - Hali URL-only (real user yo'li aniqlanmagan): `ker/setting+add/+edit`, `ker/head_template_list+attach`,
     `company_audit_info_audit(+details)` — kompaniya «История изменений» tugmasidan ochilishi mumkin (tekshirilmagan).
-  - **Standalone run:** `test_a2_admin_forms.py` uchun `code` fixture kerak emas; `.env` faqat login/server
+  - **Standalone run:** `test_a2_admin_menu_forms.py` uchun `code` fixture kerak emas; `.env` faqat login/server
     credentiallariga (`COMPANY_URL`, `COMPANY_CODE`, `COMPANY_PASSWORD`) ta'sir qiladi.
   - Setup bilan bir sessiyada collect qilinganda test fresh `page` contextida
     ishlaydi, ammo u Setupning faol `session_browser` runtimeini qayta ishlatadi;
@@ -181,7 +194,7 @@ Smartup yangi formalari (yangi Angular/modern app) eski AngularJS Biruni app ust
   yozuvda status (`✅ YOZILGAN`/`⬜ QOLGAN`), mode, path, title, parent (kerak
   bo'lsa) va mavjud user trace bor. Yangi menu-track qo'shilganda shu yozuvning
   statusi va yuqoridagi jami hisoblari ham yangilansin.
-- `tests/smoke/test_life_cycle/test_a2_admin_menu_forms.py` formalarni route
+- `tests/smoke/test_forms/test_a2_admin_menu_forms.py` formalarni route
   ro'yxati bo'yicha loop qilmaydi: har bir forma keyword parametrlar bilan
   alohida chaqiriladi.
 - Parametrlar real UI ma'nosida: `navbar_tab` — yuqori navbar,
@@ -219,6 +232,20 @@ Smartup yangi formalari (yangi Angular/modern app) eski AngularJS Biruni app ust
 - Joriy refaktorda 22 forma bor: 1 ta admin list, 19 ta operatsion direct va
   2 ta `page_links` formasi. 2026-07-27 live run:
   **22/22 passed, 123.45s**.
+- Forms runner bitta page'da legacy `#/` → A2 → legacy `#/` → A2 o'tishlarini
+  bajarganda legacy va A2 shell filial kontekstlari ajralib qolishi mumkin.
+  `BasePage.switch_filial("Администрирование")` A2 shellning oldingi
+  operatsion filialini almashtirmaydi. Admin-only A2 route ochilgach
+  `AngularBasePage.switch_filial("Администрирование")` qilinadi; bu switch
+  `/a2/trade/intro/dashboard`ga redirect qilgani uchun target forma A2
+  menyusidan qayta ochilib, shundan keyin title/readiness tekshiriladi.
+  2026-07-29 target Forms-02 headless run: **22/22 passed, 137.19s**.
+- Strukturali reporting verifikatsiyasi: Forms-02 target headless run
+  **22/22 passed, 136.83s**. Terminal summary har qatorda filial, tab, menu,
+  forma va full URLni chiqardi; generatsiya qilingan Allure JSONda har forma
+  uchun kontekstli step, kutilgan URL va haqiqiy URL steplari `passed`.
+- Reporting-only o'zgarishda forma UI/state o'zgarmagani uchun yangi screenshot
+  olinmadi; mavjud A2 forma screenshotlari aktual.
 - Live title farqlari: PnL formasi title'i aynan `PnL`; shelf-share title'i
   aynan `Конструктор отчётов по доле на полке`; mkw/mfm report konstruktorlari
   `Конструктор отчетов по ...` ko'rinishida.

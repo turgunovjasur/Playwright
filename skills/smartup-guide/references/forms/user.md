@@ -2,6 +2,17 @@
 
 User setup 5 ta alohida funksiya: `run_user`, `run_user_attach_form`, `run_role`, `run_role_attach_form`, `run_change_password`.
 
+## Mundarija
+
+- [Umumiy navigatsiya](#umumiy-navigatsiya)
+- [Screenshot paths](#screenshot-paths)
+- [User yaratish](#run_user--foydalanuvchi-yaratish)
+- [User formalarini ulash](#run_user_attach_form--formalar-ulash)
+- [Admin rolini sozlash](#run_role--admin-rolini-sozlash)
+- [Rolga formalar ulash](#run_role_attach_form--roliga-barcha-formalar)
+- [Parolni tasdiqlash](#run_change_password--parolni-tasdiqlash)
+- [Test](#test)
+
 ## Umumiy navigatsiya
 
 `run_*` funksiyalari faqat navigatsiya qiladi (auth/switch_filial YO'Q — `run_robot`/`run_natural_person` konvensiyasi):
@@ -12,6 +23,13 @@ expect_page(page, heading="Пользователи")
 ```
 
 Filialga o'tish va login `test_*` wrapper'da: setup zanjirida sahifa allaqachon `filial-pw{code}` da (run_room o'tgan), shuning uchun `run_user`/`run_user_attach_form` ichida `switch_filial` **takrorlanmaydi** — u standalone/debug run uchun `test_user`/`test_user_attach_form` wrapper'ida `authorization(page, who='admin')` bilan birga chaqiriladi. `run_role`/`run_role_attach_form` code'ga bog'liq emas (rol company-level): ular o'zi Пользователи→Роли ga navigatsiya qiladi, wrapper faqat `authorization(admin)` qiladi. `run_change_password` esa o'zi user sifatida `login(...)` qiladi (wrapper bare).
+
+## Screenshot Paths
+
+- `references/forms/screenshots/user/user__add-after-password__desktop-1920x1080.png`
+- `references/forms/screenshots/user/user__attach-forms-available-mcp-20260710__desktop-1440x1000.png`
+- `references/forms/screenshots/user/user__attach-forms-available__desktop-1920x1080.png`
+- `references/forms/screenshots/user/user__change-password-validation-overlay__desktop-1440x783.png`
 
 ## run_user — foydalanuvchi yaratish
 

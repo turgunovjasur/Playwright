@@ -1,0 +1,4 @@
+interface:
+  display_name: "Debug Failed Test"
+  short_description: "Diagnose Playwright and pytest failures"
+  default_prompt: "Use $debug-test to diagnose this failed Smartup test from available logs and traces."

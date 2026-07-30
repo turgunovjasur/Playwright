@@ -1,5 +1,16 @@
 # Orders
 
+## Mundarija
+
+- [Order navigation](#order-navigation)
+- [Mavjud order flowlar](#mavjud-order-flowlar)
+- [Minimal setup entitylar](#minimal-order-setup-entitylar)
+- [Contract limit](#contract-limit-order-case)
+- [Payment type](#contract--payment-type-order-case)
+- [Consignment](#consignment-order-case)
+- [Order list reports](#order-list-накладные-reports)
+- [Custom report template](#custom-invoice-report-template)
+
 ## Qidiruv Kalitlari
 
 Tags: order, order-add, order-list, order-view, product, payment-type, contract-limit
@@ -110,12 +121,17 @@ Tags: order, invoice, report, b-group, locator
 - Locator: bitta order uchun row-level button `#trade81-button-report_one`. Reportni ochish uchun `a.dropdown-item` markaziga emas, option nomi yozilgan `span[ng-click*="reportOne"]` yoki `span[ng-click*="chequeOne"]` elementiga click qilish kerak.
 - Qoida: B-03 HTML report sifatida ochiladigan `Накладные` optionlarini bosib tekshiradi; `Экспортировать заказ` yangi oyna ochmaydi, download sifatida `expect_download` bilan tekshiriladi.
 - B-group case: B-02 draft orderni listda qoldiradi; B-03 shu sessiyadan foydalanib `Накладные` optionlarini tekshiradi, har bir reportni ochadi va reportga mos client/product/summa/order data ko'rinishini assert qiladi.
-- Hozirgi kelishuv: B-03 report testi `smoke` va `regression` scope'da foydalanuvchi manual tekshirgan report ro'yxatini bir xil tekshiradi; `Чек-лист (80 мм)` uchun faqat yangi oyna ochilishi va yopilishi tekshiriladi, chunki native print dialog Playwright tomonidan boshqarilmaydi.
+- B-03 foydalanuvchi manual tekshirgan joriy report ro'yxatini tekshiradi;
+  `Чек-лист (80 мм)` uchun faqat yangi oyna ochilishi va yopilishi tekshiriladi,
+  chunki native print dialog Playwright tomonidan boshqarilmaydi.
 - Report popup ochilganda ba'zi HTML reportlar `window.print()` chaqirib native `Печать` dialogini ochadi; Playwright testlarida popupdan oldin `window.print` stub/no-op qilinsin.
 - UI dagi report nomi bo'shliqlari ham exact option hisoblanadi: 2026-07-21 holatida `Накладная № 4 (2012)` (`№4(2012)` emas).
 
 ### Custom Invoice Report Template
 Tags: order, invoice, report-template, b-group, admin
+Status: live-ui-confirmed
+Verified: 2026-07-21
+Source: `tests/smoke/test_groups/test_B_grup/test_invoice_report_template.py`; live UI on `smartup.online` and `app3.greenwhite.uz/xtrade`
 - Navigation: `Главное -> Шаблоны накладных`; URL pattern `anor/mr/template_list`.
 - B-04 case: mavjud admin login bilan `Шаблоны накладных` sahifasida `Накладная (заказ)` uchun `Test_invoice_report-{code}` nomli custom invoice report template yaratiladi.
 - Precondition: `data/test_invoice_report.xlsx` repo ichida mavjud bo'lishi kerak; shu Excel fayl template sifatida upload qilinadi.
@@ -126,5 +142,4 @@ Tags: order, invoice, report-template, b-group, admin
 - Testda tekshirish: `page.context.expect_page()` bilan popup ushlanadi, so'ng `report_page.frames` ichidan URL'i `office.smartup.online` + `spreadsheeteditor` bo'lgan iframe kutiladi. `expect_download` ISHLATILMAYDI — u headless CI da 180s timeout bilan `AssertionError: ... download boshlanmadi` beradi (eski xato). Solishtirish: bu report viewer'da ochiladi, `Экспортировать заказ` esa haqiqiy `attachment` download (B-03, `expect_download` mos).
 - CI vs Mac: OnlyOffice editor headless CI da ham yuklanadi (api.js, app.js, Editor.bin), shuning uchun frame-darajadagi tekshiruv ikkala muhitda ham o'tadi; canvas piksellariga bog'lanish shart emas (headless render quirklari). Implementatsiya: `test_invoice_report_template.py` -> `_open_custom_report_in_editor_and_assert`.
 - **SERVER FARQI HAL QILINDI (2026-06-16):** xtrade'ga OnlyOffice document server o'rnatildi, endi **`app3.greenwhite.uz/xtrade`** ham **`smartup.online`** kabi OnlyOffice editor viewer'da ochadi (download emas). Ikkala serverda B-04 bir xil ishlaydi: `_open_custom_report_in_editor_and_assert` to'liq ishlatiladi, vaqtinchalik host-skip (`XTRADE_ONLYOFFICE_SKIP_HOST`, `if XTRADE_ONLYOFFICE_SKIP_HOST in page.url`) olib tashlandi.
-  - Tarixiy kontekst (OnlyOffice o'rnatilishidan oldin): xtrade'da AYNAN shu `order_report:run?...&invoice_view_kind=O&...` so'rovi server tomonidan `Content-Disposition: attachment` xlsx download (`Test_invoice_report-{code}(<sana>).xlsx`) sifatida qaytarilardi, chunki OnlyOffice ulanmagan edi. Natijada `expect_page()` popup'i download holderi bo'lib `url=':'` da qolar, `domcontentloaded` hech qachon fire bo'lmas, `wait_for_load_state("domcontentloaded", 60_000)` 60s timeout berardi (CI run 27402337118, 2026-06-12). Bu endi yuz bermaydi. Agar kelajakda yana server OnlyOffice'siz qolsa, B-04 ni EITHER editor popup OR `.xlsx` download muvaffaqiyat deb qabul qiladigan qilib (`expect_page` + `expect_download` race) qayta yozish kerak.
 - 2026-07-21 verification: BasePage-first refactordan keyin alohida runlar ham o'tdi; yakuniy `test_b_group_runner.py --headless` natijasi `4 passed in 202.94s`.

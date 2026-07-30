@@ -23,7 +23,7 @@ def test_a2_checked_forms_are_counted_from_numbered_allure_steps():
         {
             "name": "A2 admin formalar — aniq menyu qadamlari orqali ochilish smoke",
             "fullName": (
-                "tests.smoke.test_life_cycle.test_a2_admin_menu_forms"
+                "tests.smoke.test_forms.test_a2_admin_menu_forms"
                 "#test_a2_admin_menu_forms"
             ),
             "status": "passed",
@@ -60,7 +60,7 @@ def test_a2_form_steps_are_preserved_when_allure_results_are_collected(tmp_path)
             {
                 "name": "A2 admin formalar — smoke",
                 "fullName": (
-                    "tests.smoke.test_life_cycle.test_a2_admin_menu_forms"
+                    "tests.smoke.test_forms.test_a2_admin_menu_forms"
                     "#test_a2_admin_menu_forms"
                 ),
                 "status": "passed",
@@ -95,7 +95,7 @@ def test_failure_uses_exact_allure_step_path_without_impact_or_solution():
             {
                 "name": "A2 admin formalar — smoke",
                 "fullName": (
-                    "tests.smoke.test_life_cycle.test_a2_admin_menu_forms"
+                    "tests.smoke.test_forms.test_a2_admin_menu_forms"
                     "#test_a2_admin_menu_forms"
                 ),
                 "status": "failed",
@@ -131,7 +131,7 @@ def test_failure_uses_exact_allure_step_path_without_impact_or_solution():
 def test_success_message_is_short_and_shows_a2_form_count():
     message = telegram_progress.render_message(
         {
-            "target": "setup-a2-admin",
+            "target": "setup-forms",
             "server": "https://app3.greenwhite.uz/xtrade",
             "result": "PASSED",
             "summary": "21 passed, 1 deselected in 530.93s",
@@ -168,7 +168,7 @@ def test_success_message_is_short_and_shows_a2_form_count():
 def test_failure_details_are_collapsed_and_html_escaped():
     message = telegram_progress.render_message(
         {
-            "target": "setup-a2-admin",
+            "target": "setup-forms",
             "server": "https://app3.greenwhite.uz/xtrade",
             "result": "FAILED",
             "summary": "5 passed, 1 failed",
@@ -216,3 +216,14 @@ def test_summary_metrics_are_loaded_into_telegram_state(tmp_path, monkeypatch):
     telegram_progress.sync_summary_metrics(state)
 
     assert state["a2_admin_forms"]["checked"] == 22
+
+
+def test_telegram_ci_defaults_to_setup_forms():
+    bot = (ROOT / "scripts" / "telegram_ci_bot.py").read_text(encoding="utf-8")
+    workflow = (ROOT / ".github" / "workflows" / "daily-smoke.yml").read_text(
+        encoding="utf-8"
+    )
+
+    assert 'DEFAULT_REF = "main"' in bot
+    assert 'DEFAULT_TARGET = "setup-forms"' in bot
+    assert "TEST_TARGET: setup-forms" in workflow

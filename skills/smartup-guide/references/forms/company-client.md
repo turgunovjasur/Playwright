@@ -12,6 +12,7 @@ Tags: a2, oauth2, company-client, filial, session, permission, error
 ## Screenshot
 
 - [A2 filial konteksti mos kelmagandagi access error](screenshots/company-client/company-client__access-error__desktop-1440x783__filial-context-mismatch.png)
+- [smartup.online Forms runnerda takrorlangan A2 filial context access error](screenshots/company-client/company-client__access-error__desktop-2880x1567__a2-filial-context-mismatch-smartup-online.png)
 - [A2 list muvaffaqiyatli yuklangan holat](screenshots/company-client/company-client__list-loaded__desktop-1440x783.png)
 
 ## Known issue: legacy va A2 filial konteksti alohida qolishi mumkin
@@ -38,8 +39,32 @@ Tags: a2-shell, legacy-shell, filial-id, access-denied, cascade
   A2 `company_client_list:model` operatsion filial ID bilan yuborildi va HTTP
   `403` qaytdi. UI: `Нет доступа к форме Клиенты OAuth2 сервера для компании`.
 - `document.title` shu error holatida `Smartup Online` bo'lib qoladi.
+- 2026-07-29 `smartup.online` Forms runner trace'i shu holatni qayta
+  tasdiqladi: legacy shell `Администрирование`ga o'tganidan keyin A2 route
+  operatsion filial kontekstida ochildi, `company_client_list:model` HTTP 403
+  qaytardi va A2 header operatsion filialni ko'rsatdi. Title assertiondagi
+  `Smartup Online` root cause emas, access-error sahifasining natijasi.
 - List yuklanmagani uchun `+add` va `+edit` xatolari mustaqil forma xatosi emas:
   `Создать`, `.smt-data-row` va `Изменить` bosqichlariga yetib borilmaydi.
 - Testda ishlatish: legacy switch tasdiqining o'zi yetarli emas; A2 sahifaga
   kirgach shell filialini ham target filialga sinxronlash va model so'rovi shu
   filial bilan ketganini tekshirish kerak.
+
+### Forms runnerdagi A2 filial sinxronlash tuzatishi (2026-07-29)
+Tags: a2-shell, legacy-shell, filial-sync, forms-runner, fix
+
+- `tests/smoke/test_forms/test_a2_admin_menu_forms.py` OAuth2 list menu
+  trackini bosgach, title/readiness tekshiruvidan oldin
+  `AngularBasePage.switch_filial(name="Администрирование")` chaqiradi.
+- Sabab: legacy `BasePage.switch_filial()` faqat `#/` shell kontekstini
+  o'zgartiradi; A2 shell oldingi operatsion filialni mustaqil saqlashi mumkin.
+- 2026-07-29 live debug: A2 filial switchi joriy list routeni saqlamaydi,
+  `/a2/trade/intro/dashboard`ga redirect qiladi. Shu sabab sync'dan keyin
+  `company_client_list` A2 menyusidan qayta ochiladi.
+- Kutilgan oqim: legacy `Администрирование` → A2 list route → A2
+  `Администрирование` sync → A2 dashboard → listni A2 menyusidan qayta ochish
+  → title/component readiness → operatsion filialga A2 switch.
+- Verifikatsiya: target Forms-02 headless run barcha 22 ta A2 formani ochib
+  `1 passed in 137.19s` natija berdi.
+- Screenshotlar o'zgarmadi: yuqoridagi access-error va list-loaded holatlari
+  ushbu regressiya hamda kutilgan natijani qamraydi.
