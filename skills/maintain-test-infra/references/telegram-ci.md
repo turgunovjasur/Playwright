@@ -35,6 +35,21 @@ Source: `scripts/telegram_ci_bot.py`, `.github/workflows/daily-smoke.yml`
 - Failure tafsiloti log va Allure'dagi faktlardan tuziladi: group, runner test,
   ichki test, nested step va error turi. Taxminiy `Ta'sir`/`Yechim` qo'shilmaydi.
 
+### Setup + Forms final coverage
+Status: code-confirmed
+Verified: 2026-07-30
+Source: GitHub Actions run `30528649258`; `scripts/analyze_test_result.py`; `scripts/telegram_progress.py`
+- Pytest summarydagi `22 passed` forma soni emas: existing-company
+  `setup-forms` runida bu 20 ta Setup case va 2 ta Forms runner case'dan iborat.
+- Shu run logida `Справочники` suite `89/89`, A2 Admin suite `22/22` forma
+  ochgan — jami `111/111`.
+- Telegram final xabari `Pytest` deb aniq belgilangan case summarydan tashqari
+  `Setup` o'tgan/jami qadamlar, umumiy Forms ochilgan/tekshirilgan formalar va
+  `Справочники` hamda `A2 Admin` kesimini alohida ko'rsatishi shart.
+- Coverage parser direct leaf testlar bilan birga
+  `test_forms_01_spravochniki` va `test_forms_02_a2_admin` wrapper
+  identitylarini ham tanishi kerak.
+
 ## Security
 
 - `TELEGRAM_BOT_TOKEN`, `GITHUB_TOKEN`/`GITHUB_PAT` va

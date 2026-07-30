@@ -247,17 +247,61 @@ def failed_block(state):
     return lines
 
 
-def a2_forms_line(state):
-    metrics = state.get("a2_admin_forms")
-    if not isinstance(metrics, dict) or "checked" not in metrics:
-        return ""
+def _metric_count(metrics, key):
     try:
-        checked = int(metrics.get("checked") or 0)
+        return int(metrics.get(key) or 0)
     except (TypeError, ValueError):
-        return ""
-    if checked < 0:
-        return ""
-    return f"🧾 A2 Admin Forms: {checked} ta forma tekshirildi"
+        return 0
+
+
+def final_coverage_lines(state):
+    results = [item for item in state.get("results", []) if isinstance(item, dict)]
+    setup_results = [
+        item for item in results if str(item.get("group") or "").strip() == "Setup"
+    ]
+    lines = []
+    if setup_results:
+        setup_passed = sum(
+            1
+            for item in setup_results
+            if str(item.get("status") or "").upper() == "PASSED"
+        )
+        lines.append(f"⚙️ Setup: {setup_passed}/{len(setup_results)} qadam o'tdi")
+
+    coverage = state.get("form_coverage")
+    if not isinstance(coverage, dict) or not coverage:
+        a2_metrics = state.get("a2_admin_forms")
+        if isinstance(a2_metrics, dict) and a2_metrics:
+            coverage = {
+                **a2_metrics,
+                "suites": {
+                    "a2_admin": {
+                        "label": "A2 Admin",
+                        **a2_metrics,
+                    }
+                },
+            }
+        else:
+            return lines
+
+    checked = _metric_count(coverage, "checked")
+    passed = _metric_count(coverage, "passed")
+    if checked:
+        lines.append(f"🧾 Forms: {passed}/{checked} forma ochildi")
+
+    suites = coverage.get("suites")
+    if isinstance(suites, dict):
+        for key in ("spravochniki", "a2_admin"):
+            metrics = suites.get(key)
+            if not isinstance(metrics, dict):
+                continue
+            suite_checked = _metric_count(metrics, "checked")
+            suite_passed = _metric_count(metrics, "passed")
+            if not suite_checked:
+                continue
+            label = str(metrics.get("label") or key)
+            lines.append(f"  • {label}: {suite_passed}/{suite_checked}")
+    return lines
 
 
 def render_html_message(main_lines, expandable_lines=None, footer_lines=None):
@@ -317,15 +361,14 @@ def render_message(state):
     if finished:
         summary = str(state.get("summary") or "").strip()
         if summary:
-            lines.append(f"📊 {summary}")
+            lines.append(f"🧪 Pytest: {summary}")
     else:
         status = str(state.get("status") or "").strip()
         if status:
             lines.append(f"Status: {status}")
 
-    forms_line = a2_forms_line(state)
-    if forms_line:
-        lines.append(forms_line)
+    if finished:
+        lines.extend(final_coverage_lines(state))
 
     expandable = []
     if not finished:
@@ -490,9 +533,14 @@ def sync_summary_metrics(state):
         data = json.loads(SYSTEM_SUMMARY_JSON.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return
-    metrics = data.get("a2_admin_forms") if isinstance(data, dict) else None
-    if isinstance(metrics, dict) and metrics:
-        state["a2_admin_forms"] = metrics
+    if not isinstance(data, dict):
+        return
+    coverage = data.get("form_coverage")
+    if isinstance(coverage, dict) and coverage:
+        state["form_coverage"] = coverage
+    a2_metrics = data.get("a2_admin_forms")
+    if isinstance(a2_metrics, dict) and a2_metrics:
+        state["a2_admin_forms"] = a2_metrics
 
 
 def enrich_failed_result_from_summary(state):

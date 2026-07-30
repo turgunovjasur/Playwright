@@ -50,7 +50,81 @@ def test_a2_checked_forms_are_counted_from_numbered_allure_steps():
         "failed": 1,
         "skipped": 0,
     }
+    assert deterministic["form_coverage"]["checked"] == 3
     assert local["a2_admin_forms"] == deterministic["a2_admin_forms"]
+    assert local["form_coverage"] == deterministic["form_coverage"]
+
+
+def test_forms_runner_wrappers_produce_combined_coverage():
+    deterministic = analyze_test_result.build_deterministic_summary(
+        0,
+        [
+            {
+                "name": "Forms-01 - Справочники menu formalarini ochish",
+                "fullName": (
+                    "tests.smoke.test_forms.test_forms_runner"
+                    "#test_forms_01_spravochniki"
+                ),
+                "status": "passed",
+                "steps": [
+                    {
+                        "name": "Parent",
+                        "steps": [
+                            {
+                                "name": "001 | Filial: filial | Forma: ТМЦ",
+                                "status": "passed",
+                            },
+                            {
+                                "name": "002 | Filial: filial | Forma: Цены",
+                                "status": "passed",
+                            },
+                        ],
+                    }
+                ],
+            },
+            {
+                "name": "Forms-02 - A2 admin menu formalarini ochish",
+                "fullName": (
+                    "tests.smoke.test_forms.test_forms_runner"
+                    "#test_forms_02_a2_admin"
+                ),
+                "status": "passed",
+                "steps": [
+                    {
+                        "name": "Parent",
+                        "steps": [
+                            {"name": "01 — OAuth2", "status": "passed"},
+                            {"name": "02 — Визиты", "status": "passed"},
+                        ],
+                    }
+                ],
+            },
+        ],
+    )
+
+    assert deterministic["form_coverage"] == {
+        "checked": 4,
+        "passed": 4,
+        "failed": 0,
+        "skipped": 0,
+        "suites": {
+            "spravochniki": {
+                "label": "Справочники",
+                "checked": 2,
+                "passed": 2,
+                "failed": 0,
+                "skipped": 0,
+            },
+            "a2_admin": {
+                "label": "A2 Admin",
+                "checked": 2,
+                "passed": 2,
+                "failed": 0,
+                "skipped": 0,
+            },
+        },
+    }
+    assert deterministic["a2_admin_forms"]["checked"] == 2
 
 
 def test_a2_form_steps_are_preserved_when_allure_results_are_collected(tmp_path):
@@ -128,7 +202,7 @@ def test_failure_uses_exact_allure_step_path_without_impact_or_solution():
     assert "next_action" not in failure
 
 
-def test_success_message_is_short_and_shows_a2_form_count():
+def test_success_message_shows_setup_and_forms_coverage():
     message = telegram_progress.render_message(
         {
             "target": "setup-forms",
@@ -139,6 +213,24 @@ def test_success_message_is_short_and_shows_a2_form_count():
             "finished_clock": "16:02",
             "duration": "9m 25s",
             "a2_admin_forms": {"checked": 22, "passed": 22},
+            "form_coverage": {
+                "checked": 111,
+                "passed": 111,
+                "failed": 0,
+                "skipped": 0,
+                "suites": {
+                    "spravochniki": {
+                        "label": "Справочники",
+                        "checked": 89,
+                        "passed": 89,
+                    },
+                    "a2_admin": {
+                        "label": "A2 Admin",
+                        "checked": 22,
+                        "passed": 22,
+                    },
+                },
+            },
             "results": [
                 {
                     "group": "Setup",
@@ -156,7 +248,11 @@ def test_success_message_is_short_and_shows_a2_form_count():
         }
     )
 
-    assert "🧾 A2 Admin Forms: 22 ta forma tekshirildi" in message
+    assert "🧪 Pytest: 21 passed, 1 deselected in 530.93s" in message
+    assert "⚙️ Setup: 1/1 qadam o'tdi" in message
+    assert "🧾 Forms: 111/111 forma ochildi" in message
+    assert "• Справочники: 89/89" in message
+    assert "• A2 Admin: 22/22" in message
     assert "🆔 Code: 317333" in message
     assert "(+5)" not in message
     assert "user-pw317333" not in message
@@ -173,6 +269,20 @@ def test_failure_details_are_collapsed_and_html_escaped():
             "result": "FAILED",
             "summary": "5 passed, 1 failed",
             "a2_admin_forms": {"checked": 6, "passed": 5, "failed": 1},
+            "form_coverage": {
+                "checked": 6,
+                "passed": 5,
+                "failed": 1,
+                "skipped": 0,
+                "suites": {
+                    "a2_admin": {
+                        "label": "A2 Admin",
+                        "checked": 6,
+                        "passed": 5,
+                        "failed": 1,
+                    }
+                },
+            },
             "results": [
                 {
                     "group": "A2 Admin Forms group",
@@ -188,7 +298,8 @@ def test_failure_details_are_collapsed_and_html_escaped():
         }
     )
 
-    assert "🧾 A2 Admin Forms: 6 ta forma tekshirildi" in message
+    assert "🧾 Forms: 5/6 forma ochildi" in message
+    assert "• A2 Admin: 5/6" in message
     assert "<blockquote expandable>" in message
     assert "</blockquote>" in message
     assert (
@@ -207,7 +318,27 @@ def test_failure_details_are_collapsed_and_html_escaped():
 def test_summary_metrics_are_loaded_into_telegram_state(tmp_path, monkeypatch):
     summary_path = tmp_path / "system-summary.json"
     summary_path.write_text(
-        json.dumps({"a2_admin_forms": {"checked": 22, "passed": 22}}),
+        json.dumps(
+            {
+                "a2_admin_forms": {"checked": 22, "passed": 22},
+                "form_coverage": {
+                    "checked": 111,
+                    "passed": 111,
+                    "suites": {
+                        "spravochniki": {
+                            "label": "Справочники",
+                            "checked": 89,
+                            "passed": 89,
+                        },
+                        "a2_admin": {
+                            "label": "A2 Admin",
+                            "checked": 22,
+                            "passed": 22,
+                        },
+                    },
+                },
+            }
+        ),
         encoding="utf-8",
     )
     monkeypatch.setattr(telegram_progress, "SYSTEM_SUMMARY_JSON", summary_path)
@@ -216,6 +347,7 @@ def test_summary_metrics_are_loaded_into_telegram_state(tmp_path, monkeypatch):
     telegram_progress.sync_summary_metrics(state)
 
     assert state["a2_admin_forms"]["checked"] == 22
+    assert state["form_coverage"]["checked"] == 111
 
 
 def test_telegram_ci_defaults_to_setup_forms():

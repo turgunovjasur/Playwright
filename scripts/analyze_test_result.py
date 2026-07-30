@@ -23,6 +23,11 @@ DEFAULT_MODEL = "gemini-2.5-flash"
 FAILED_STATUSES = {"failed", "broken"}
 A2_ADMIN_FORMS_TEST = "test_a2_admin_menu_forms"
 A2_FORM_STEP_PATTERN = re.compile(r"^\d{2}\s+[—-]\s+")
+SPRAVOCHNIKI_FORM_STEP_PATTERN = re.compile(r"^\d{3}\s+\|\s+Filial:")
+FORM_SUITE_LABELS = {
+    "spravochniki": "Справочники",
+    "a2_admin": "A2 Admin",
+}
 
 
 def parse_args():
@@ -416,6 +421,8 @@ def collect_allure_results(results_dir, started_at):
             continue
         status_details = data.get("statusDetails") if isinstance(data.get("statusDetails"), dict) else {}
         trace = str(status_details.get("trace") or "")
+        form_suite = _form_suite_key(data)
+        form_steps = _form_steps(data, form_suite=form_suite)
         rows.append(
             {
                 "name": data.get("name") or "",
@@ -424,7 +431,9 @@ def collect_allure_results(results_dir, started_at):
                 "message": status_details.get("message") or "",
                 "trace": _truncate(trace, 5000),
                 "failed_steps": _failed_step_entries(data.get("steps")),
-                "a2_form_steps": _a2_form_steps(data),
+                "form_suite": form_suite,
+                "form_steps": form_steps,
+                "a2_form_steps": form_steps if form_suite == "a2_admin" else [],
                 "start": data.get("start"),
                 "stop": data.get("stop"),
             }
@@ -464,17 +473,40 @@ def _iter_steps(steps):
 
 
 def _is_a2_admin_forms_result(item):
+    return _form_suite_key(item) == "a2_admin"
+
+
+def _form_suite_key(item):
     identity = " ".join(
         (
             str(item.get("name") or ""),
             str(item.get("fullName") or ""),
+            str(item.get("form_suite") or ""),
         )
     ).lower()
-    return A2_ADMIN_FORMS_TEST in identity or "a2 admin formalar" in identity
+    if (
+        "test_forms_01_spravochniki" in identity
+        or "test_spravochniki_menu_forms" in identity
+        or "spravochniki" in identity
+        or "справочники" in identity
+    ):
+        return "spravochniki"
+    if (
+        A2_ADMIN_FORMS_TEST in identity
+        or "test_forms_02_a2_admin" in identity
+        or "a2 admin" in identity
+    ):
+        return "a2_admin"
+    return ""
 
 
-def _a2_form_steps(item):
-    if not _is_a2_admin_forms_result(item):
+def _form_steps(item, *, form_suite=None):
+    suite = form_suite or _form_suite_key(item)
+    if suite == "a2_admin":
+        pattern = A2_FORM_STEP_PATTERN
+    elif suite == "spravochniki":
+        pattern = SPRAVOCHNIKI_FORM_STEP_PATTERN
+    else:
         return []
     return [
         {
@@ -482,20 +514,40 @@ def _a2_form_steps(item):
             "status": str(step.get("status") or "").lower(),
         }
         for step in _iter_steps(item.get("steps"))
-        if A2_FORM_STEP_PATTERN.match(str(step.get("name") or "").strip())
+        if pattern.match(str(step.get("name") or "").strip())
     ]
 
 
-def _a2_admin_forms_summary(results):
-    counts = {"checked": 0, "passed": 0, "failed": 0, "skipped": 0}
-    found = False
+def _a2_form_steps(item):
+    return _form_steps(item, form_suite="a2_admin") if _is_a2_admin_forms_result(item) else []
+
+
+def _empty_form_counts():
+    return {"checked": 0, "passed": 0, "failed": 0, "skipped": 0}
+
+
+def _form_coverage_summary(results):
+    suites = {}
     for item in results:
-        if not _is_a2_admin_forms_result(item):
+        suite = str(item.get("form_suite") or "") or _form_suite_key(item)
+        if suite not in FORM_SUITE_LABELS:
             continue
-        found = True
-        form_steps = item.get("a2_form_steps")
+        form_steps = item.get("form_steps")
         if not isinstance(form_steps, list):
-            form_steps = _a2_form_steps(item)
+            form_steps = []
+        if not form_steps and suite == "a2_admin":
+            legacy_steps = item.get("a2_form_steps")
+            if isinstance(legacy_steps, list):
+                form_steps = legacy_steps
+        if not form_steps:
+            form_steps = _form_steps(item, form_suite=suite)
+        counts = suites.setdefault(
+            suite,
+            {
+                "label": FORM_SUITE_LABELS[suite],
+                **_empty_form_counts(),
+            },
+        )
         for step in form_steps:
             if not isinstance(step, dict):
                 continue
@@ -507,7 +559,15 @@ def _a2_admin_forms_summary(results):
                 counts["failed"] += 1
             elif status == "skipped":
                 counts["skipped"] += 1
-    return counts if found else {}
+
+    if not suites:
+        return {}
+
+    total = _empty_form_counts()
+    for counts in suites.values():
+        for key in total:
+            total[key] += int(counts.get(key) or 0)
+    return {**total, "suites": suites}
 
 
 def build_deterministic_summary(exit_code, results):
@@ -519,6 +579,20 @@ def build_deterministic_summary(exit_code, results):
     failed = [item for item in results if item.get("status") in {"failed", "broken"}]
     skipped = [item for item in results if item.get("status") == "skipped"]
     skipped_count = len(skipped)
+    form_coverage = _form_coverage_summary(results)
+    a2_suite = (
+        form_coverage.get("suites", {}).get("a2_admin", {})
+        if isinstance(form_coverage, dict)
+        else {}
+    )
+    a2_admin_forms = (
+        {
+            key: int(a2_suite.get(key) or 0)
+            for key in ("checked", "passed", "failed", "skipped")
+        }
+        if isinstance(a2_suite, dict) and a2_suite
+        else {}
+    )
     return {
         "result": result,
         "exit_code": exit_code,
@@ -526,7 +600,8 @@ def build_deterministic_summary(exit_code, results):
         "failed_count": len(failed),
         "skipped_count": skipped_count,
         "failed_tests": [_humanize_failure(item) for item in failed],
-        "a2_admin_forms": _a2_admin_forms_summary(results),
+        "form_coverage": form_coverage,
+        "a2_admin_forms": a2_admin_forms,
     }
 
 
@@ -562,6 +637,11 @@ def build_local_summary(deterministic):
         "a2_admin_forms": (
             deterministic.get("a2_admin_forms")
             if isinstance(deterministic.get("a2_admin_forms"), dict)
+            else {}
+        ),
+        "form_coverage": (
+            deterministic.get("form_coverage")
+            if isinstance(deterministic.get("form_coverage"), dict)
             else {}
         ),
         "confidence": confidence,
