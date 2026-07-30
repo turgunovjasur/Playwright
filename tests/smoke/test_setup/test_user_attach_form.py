@@ -34,6 +34,7 @@ def run_user_attach_form(page, code):
         page.get_by_role("link", name=re.compile(r"Формы")).click()
 
     with allure.step("2 - Формы ulash"):
+        base.expect_page(heading="Пользователь (просмотр)")
         page.get_by_role("tab", name="Формы").click()
         page.get_by_role("button", name="Доступные").click()
         base.grid_controller(expand="1000")
@@ -42,6 +43,7 @@ def run_user_attach_form(page, code):
         base.confirm_biruni(expected_text="Прикрепить формы в количестве", button_name="да")
 
     with allure.step("3 - Отчеты ulash"):
+        base.expect_page(heading="Пользователь (просмотр)")
         page.get_by_role("tab", name="Отчеты").click()
         base.grid_controller(expand="1000")
         base.grid(checkbox="all")
@@ -49,16 +51,16 @@ def run_user_attach_form(page, code):
         base.confirm_biruni(expected_text="Прикрепить формы в количестве", button_name="да")
 
     with allure.step("4 - Накладные ulash"):
+        base.expect_page(heading="Пользователь (просмотр)")
         page.get_by_role("tab", name="Накладные").click()
-        base.wait_for_loader()
         base.grid_controller(expand="500")
         base.grid(checkbox="all")
         page.get_by_role("button", name="Прикрепить").click()
         base.confirm_biruni(expected_text="Прикрепить формы в количестве", button_name="да")
 
     with allure.step("5 - Внешние системы ulash"):
+        base.expect_page(heading="Пользователь (просмотр)")
         page.get_by_role("tab", name="Внешние системы").click()
-        base.wait_for_loader()
         base.grid_controller(expand="1000")
         base.grid(checkbox="all")
         page.get_by_role("button", name="Прикрепить").click()

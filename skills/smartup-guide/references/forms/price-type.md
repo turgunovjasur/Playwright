@@ -1,6 +1,12 @@
 # Цены / Narx turi (Price Type) — yaratish
 
-Price type = **Цена** / narx turi. Smoke testda `Price Type UZB-pw{code}` yaratiladi va room-pw{code} ga biriktiriladi.
+Price type = **Цена** / narx turi. Setup smoke testda ikkita sotuv narxi
+yaratiladi va `room-pw{code}` ga biriktiriladi:
+
+| Nomi | Kod | Valyuta | Downstream |
+|---|---|---|---|
+| `Price Type UZB-pw{code}` | `c_p_t_uzb_pw{code}` | `Узбекский сум` | `product-pw{code}` — 7000 UZS |
+| `Price Type USA-pw{code}` | `c_p_t_usa_pw{code}` | `Доллар США` | `product-usa-pw{code}` — 1 USD |
 
 ## Navigatsiya
 
@@ -12,9 +18,10 @@ Price type = **Цена** / narx turi. Smoke testda `Price Type UZB-pw{code}` ya
 
 | Maydon | Locator | Qiymat |
 |---|---|---|
-| Код | `#anor183-input-text-code` textbox | `c_p_t_pw{code}` |
-| Название | `#anor183-input-text-name` textbox | `Price Type UZB-pw{code}` |
+| Код | `#anor183-input-text-code` textbox | `c_p_t_uzb_pw{code}` yoki `c_p_t_usa_pw{code}` |
+| Название | `#anor183-input-text-name` textbox | `Price Type UZB-pw{code}` yoki `Price Type USA-pw{code}` |
 | Рабочие зоны | `b-input.filter("Выбранных").get_by_placeholder("Поиск")` → `room-pw{code}` → Escape | `room-pw{code}` |
+| Валюта | `BasePage.b_input(label="Валюта", ...)` | UZB uchun `Узбекский сум`, USA uchun `Доллар США` |
 
 Room tanlanganidan keyin **"Цена продажи"** avtomatik tanlangan bo'lishi kerak. Live trace
 (2026-07-13): `input[name="price_type_kind"][value="S"]` (`Цена продажи`) `checked=true`,
@@ -40,16 +47,34 @@ Bu test `fill_nps_survey(page, logger)` bilan boshlanadi — step 0. Agar NPS mo
 
 `save_and_expect_heading("Цены")` — biruni confirm yo'q.
 
-Natija qidiruvda: `Price Type UZB-pw{code}` ko'rinadi.
+Natijada ikkala price type ham alohida qidirilib, gridda tekshiriladi.
 
-`save_data("price_type_name_UZB", f"Price Type UZB-pw{code}")` — data_store.json ga saqlanadi.
+- `price_type_name_UZB` → `Price Type UZB-pw{code}`
+- `price_type_name_USA` → `Price Type USA-pw{code}`
 
 ## Room bilan munosabat
 
-Bu `Price Type UZB-pw{code}` room attachment orqali room'ga **alohida** ulanadi (room formasidagi "Выбранных" rooms, room prikreplenie "Тип цены" tabidan farqli).
+UZB va USA price type'lar yaratish formasidagi `Рабочие зоны` orqali
+`room-pw{code}` ga ulanadi (room formasidagi "Выбранных" rooms, room
+prikreplenie "Тип цены" tabidan farqli).
 
 Room prikreplenie "Тип цены" tabida esa `Акция` narx turi ulanadi — bu boshqa. Qarang: [room.md], [action.md].
 
 ## Test
 
-- `tests/smoke/test_setup/test_price_type.py` → `run_price_type_uzb(page, code, logger, save_data)`
+- `tests/smoke/test_setup/test_price_type.py` →
+  `run_price_type_uzb(page, code, save_data)` va
+  `run_price_type_usa(page, code, save_data)`.
+- Setup 13-qadam ikkala price type'ni yaratgach, `run_currency` bilan bugungi
+  USD kursini 10000 qilib saqlaydi.
+
+## 2026-07-30 — USA price type downstream ishlatildi
+
+Tags: price-type, usd, product, setup
+Status: live-ui-confirmed
+Verified: 2026-07-30
+Source: `tests/smoke/test_setup/test_setup_runner.py`; `smartup.online` headless
+Setup run `20 passed, 1 deselected`
+
+- `Price Type USA-pw{code}` faqat yaratilmaydi: Setup 16-qadamdagi
+  `product-usa-pw{code}` narxi aynan shu row orqali `1 USD` qilib qo'yiladi.

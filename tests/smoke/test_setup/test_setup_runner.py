@@ -4,9 +4,12 @@ import pytest
 from tests.smoke.flows.flow_modal import fill_nps_survey
 from tests.smoke.test_setup.test_balance import run_balance
 from tests.smoke.test_setup.test_currency import run_currency
-from tests.smoke.test_setup.test_init_balance import run_init_balance
+from tests.smoke.test_setup.test_init_balance import (
+    run_init_balance,
+    run_init_balance_usa,
+)
 from tests.smoke.test_setup.test_payment_type import run_payment_type
-from tests.smoke.test_setup.test_product import run_product
+from tests.smoke.test_setup.test_product import run_product, run_product_usa
 from tests.smoke.test_setup.test_robot import run_robot
 from tests.smoke.test_setup.test_company import run_company
 from tests.smoke.test_setup.test_filial import run_filial
@@ -118,9 +121,10 @@ def test_15_sector(session_page, code):
     run_sector(session_page, code)
 
 
-@allure.title("16 - Product")
+@allure.title("16 - Products")
 def test_16_product(session_page, code):
     run_product(session_page, code)
+    run_product_usa(session_page, code)
 
 
 @allure.title("17 - Natural Person For Client 1")
@@ -133,9 +137,10 @@ def test_18_room_attachment(session_page, code):
     run_room_attachment(session_page, code)
 
 
-@allure.title("19 - Init Balance")
+@allure.title("19 - Init Balances")
 def test_19_init_balance(session_page, code):
     run_init_balance(session_page, code)
+    run_init_balance_usa(session_page, code)
 
 
 @allure.title("20 - Balance")

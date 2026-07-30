@@ -30,10 +30,32 @@
 
 ## Test
 
-- `tests/smoke/test_setup/test_init_balance.py` → `run_init_balance(page, code)`
+- `tests/smoke/test_setup/test_init_balance.py`:
+  - `run_init_balance(page, code)` — `product-pw{code}` uchun 100 dona,
+    hujjat valyutasi UZS, kirim narxi 5000.
+  - `run_init_balance_usa(page, code)` — `product-usa-pw{code}` uchun 100 dona,
+    hujjat valyutasi `Доллар США`, kirim narxi 1.
+- Setup runner ikkala funksiyani bitta **19 - Init Balances** qadamida
+  ketma-ket chaqiradi.
+- USD hujjat raqami birinchi hujjat bilan to'qnashmasligi uchun `1{code}`.
+- Setup 20-qadam `Остатки ТМЦ` sahifasida ikkala productni ham tekshiradi.
 
 ## Debug Notes
 
 ### 2026-07-14 fresh setup run
 Tags: init-balance, warehouse, b-input, error
 - **User tasdiqlagan root cause:** `base.b_input(label="Склад", value="Основной склад", clear=True)` label resolver sabab `Валюта` b-inputini target qilgan va unga `Основной склад` yozgan. Currency dropdownida bunday option bo'lmagani uchun `Locator expected to be visible` chiqqan; keyingi `base.b_input(label="Валюта", ...)` qatori umuman bajarilmagan.
+
+### 2026-07-30 — Ikki valyutadagi product qoldiqlari
+Tags: init-balance, product, usd, stock, order
+Status: live-ui-confirmed
+Verified: 2026-07-30
+Source: `tests/smoke/test_setup/test_setup_runner.py`; `smartup.online` headless
+Setup run `20 passed, 1 deselected`
+
+- UZS va USD productlar uchun alohida boshlang'ich qoldiq hujjati yaratilib
+  o'tkaziladi.
+- Har bir productga 100 dona qoldiq beriladi. Bu keyingi Order testida ikkala
+  product ham stock filtri sabab yo'qolib qolmasligi uchun precondition.
+- USD qoldiq hujjatining `Валюта` maydoni `Доллар США`; product esa
+  `c_p_usa_pw{code}` kodi orqali tanlanadi.

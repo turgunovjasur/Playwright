@@ -711,11 +711,11 @@ class BasePage:
             option = gc.get_by_role("link", name=expand, exact=True).first
             expect(option).to_be_visible()
             option.click()
-            self.wait_for_loader()
+            self.wait_for_loader(timeout=120_000)
             return
         if reload:
             gc.locator('button[ng-click="reload()"]').first.click()
-            self.wait_for_loader()
+            self.wait_for_loader(timeout=120_000)
             return
         if open_filter:
             gc.locator('button[ng-click="openFilter()"]').first.click()

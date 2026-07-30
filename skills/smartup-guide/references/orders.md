@@ -41,7 +41,11 @@ Tags: order, setup
 - Client: `natural_client-pw{code}`
 - Room: `room-pw{code}`
 - Robot: `robot-pw{code}`
-- Product: `product-pw{code}`
+- Products:
+  - `product-pw{code}` — `Price Type UZB-pw{code}`, 7000 UZS
+  - `product-usa-pw{code}` — `Price Type USA-pw{code}`, 1 USD
+- Stock: Setup 19-qadam har ikkala productga 100 donadan boshlang'ich qoldiq
+  o'tkazadi; fresh run'da ikkala product order testiga tayyor.
 - Default payment type: `Наличные деньги`
 - Default status: `Черновик`
 
