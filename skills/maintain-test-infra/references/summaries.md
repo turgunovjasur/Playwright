@@ -16,6 +16,11 @@ Source: `scripts/analyze_test_result.py`, `scripts/run_tests.py`
   `test-results/system-summary.md/json`ga yoziladi.
 - U failed test, ichki Allure step, source, error turi va dalilga asoslangan
   qisqa sababni jamlaydi.
+- Smoke page'da HTTP 401 ushlangan bo'lsa, Allure `auth-diagnostic`
+  attachmentini o'qib, `LicenseSessionUnauthorized` yoki
+  `AuthSessionUnauthorized`ni locator timeoutidan ustun diagnostika qiladi;
+  method, querysiz path, status, xavfsiz tanilgan server xabari va UI holatini
+  system summary hamda Telegramga uzatadi.
 - `setup-forms` runida Allure numbered steplaridan umumiy `form_coverage`
   metrikasi hamda `Справочники`/`A2 Admin` suite kesimini chiqaradi.
 - Allure ichida `System Test Summary` sifatida attach qilinadi.

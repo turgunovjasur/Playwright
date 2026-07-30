@@ -202,6 +202,93 @@ def test_failure_uses_exact_allure_step_path_without_impact_or_solution():
     assert "next_action" not in failure
 
 
+def test_license_401_attachment_overrides_secondary_locator_diagnosis(tmp_path):
+    auth_source = "auth-diagnostic.json"
+    (tmp_path / auth_source).write_text(
+        json.dumps(
+            {
+                "kind": "license_session_unauthorized",
+                "error_type": "LicenseSessionUnauthorized",
+                "method": "POST",
+                "path": "/b/anor/mkr/price_type+add:model",
+                "status": 401,
+                "server_message": "Нет лицензии для входа в систему!",
+                "ui_state": "session_lock",
+                "summary": (
+                    "Backend license/session kirishini rad etdi: "
+                    "POST /b/anor/mkr/price_type+add:model → HTTP 401; "
+                    'server="Нет лицензии для входа в систему!"; '
+                    "UI=qayta login lock oynasi"
+                ),
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "failed-result.json").write_text(
+        json.dumps(
+            {
+                "name": "13 - Price Type",
+                "fullName": (
+                    "tests.smoke.test_setup.test_setup_runner"
+                    "#test_13_price_type"
+                ),
+                "status": "failed",
+                "statusDetails": {
+                    "message": "AssertionError: heading ko'rinmadi",
+                    "trace": "Locator: TimeoutError",
+                },
+                "attachments": [
+                    {
+                        "name": "auth-diagnostic",
+                        "source": auth_source,
+                        "type": "application/json",
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    results = analyze_test_result.collect_allure_results(
+        tmp_path,
+        started_at=0,
+    )
+    deterministic = analyze_test_result.build_deterministic_summary(1, results)
+    failure = deterministic["failed_tests"][0]
+
+    assert failure["error_type"] == "LicenseSessionUnauthorized"
+    assert failure["auth_request"] == (
+        "POST /b/anor/mkr/price_type+add:model"
+    )
+    assert failure["auth_status"] == 401
+    assert failure["reason"] == failure["auth_diagnostic"]
+
+    message = telegram_progress.render_message(
+        {
+            "target": "setup-forms",
+            "server": "https://smartup.online",
+            "result": "FAILED",
+            "summary": "1 failed",
+            "results": [
+                {
+                    **failure,
+                    "status": "FAILED",
+                    "display": "13 - Price Type",
+                }
+            ],
+        }
+    )
+
+    assert (
+        "Auth diagnostika: Backend license/session kirishini rad etdi"
+        in message
+    )
+    assert "POST /b/anor/mkr/price_type+add:model → HTTP 401" in message
+    assert "Texnik: LicenseSessionUnauthorized" in message
+
+
 def test_success_message_shows_setup_and_forms_coverage():
     message = telegram_progress.render_message(
         {

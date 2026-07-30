@@ -7,6 +7,7 @@ import socket
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import allure
 import pytest
@@ -23,6 +24,149 @@ ALLURE_SERVER_LOG = "test-results/logs/allure-report-server.log"
 
 _PROGRESS_STARTED_ATTR = "_smartup_progress_started"
 _PROGRESS_FINISHED_ATTR = "_smartup_progress_finished"
+_AUTH_LISTENER_ATTR = "_smartup_auth_diagnostics_installed"
+_AUTH_RESPONSE_ATTR = "_smartup_first_unauthorized_response"
+_LICENSE_401_MESSAGE = "Нет лицензии для входа в систему!"
+
+
+def page_from_item(item):
+    """Test item ishlatayotgan asosiy Playwright page'ini qaytaradi."""
+    for fixture_name in (
+        "session_page",
+        "group_user_page",
+        "group_session_page",
+        "page",
+    ):
+        page = item.funcargs.get(fixture_name)
+        if page is not None:
+            return page
+    return None
+
+
+def install_auth_diagnostics(page):
+    """Page'dagi birinchi HTTP 401 response'ni failure diagnostikasi uchun saqlaydi."""
+    if getattr(page, _AUTH_LISTENER_ATTR, False):
+        return
+
+    setattr(page, _AUTH_LISTENER_ATTR, True)
+    setattr(page, _AUTH_RESPONSE_ATTR, None)
+
+    def remember_first_unauthorized(response):
+        try:
+            status = int(response.status)
+        except (AttributeError, TypeError, ValueError):
+            return
+        if status != 401 or getattr(page, _AUTH_RESPONSE_ATTR, None) is not None:
+            return
+        try:
+            response_host = urlsplit(str(response.url or "")).netloc
+            page_host = urlsplit(str(page.url or "")).netloc
+        except Exception:
+            response_host = page_host = ""
+        if response_host and page_host and response_host != page_host:
+            return
+        setattr(page, _AUTH_RESPONSE_ATTR, response)
+
+    page.on("response", remember_first_unauthorized)
+
+
+def reset_auth_diagnostics(item):
+    """Keyingi test avvalgi testning 401 holatini meros qilib olmasligini ta'minlaydi."""
+    page = page_from_item(item)
+    if page is not None and getattr(page, _AUTH_LISTENER_ATTR, False):
+        setattr(page, _AUTH_RESPONSE_ATTR, None)
+
+
+def _safe_response_message(response):
+    try:
+        text = response.text()
+    except Exception:
+        return ""
+
+    clean = " ".join(str(text or "").split())
+    if not clean:
+        return ""
+    if _LICENSE_401_MESSAGE.casefold() in clean.casefold():
+        return _LICENSE_401_MESSAGE
+    if clean.casefold() in {"unauthorized", "401 unauthorized"}:
+        return clean
+    return ""
+
+
+def _auth_ui_state(page):
+    try:
+        current_path = urlsplit(page.url).path
+    except Exception:
+        current_path = ""
+    if current_path.endswith("/login.html"):
+        return "login_redirect"
+
+    try:
+        lock = page.locator("#closing-session .cs-lock.open").first
+        if lock.is_visible():
+            return "session_lock"
+    except Exception:
+        pass
+    return "current_page"
+
+
+def auth_diagnostic_for_item(item):
+    """Saqlangan 401'ni credentiallarsiz, user-facing diagnostikaga aylantiradi."""
+    page = page_from_item(item)
+    if page is None:
+        return None
+
+    response = getattr(page, _AUTH_RESPONSE_ATTR, None)
+    if response is None:
+        return None
+
+    try:
+        request_method = str(response.request.method or "REQUEST").upper()
+    except Exception:
+        request_method = "REQUEST"
+    try:
+        request_path = urlsplit(str(response.url or "")).path or "/"
+    except Exception:
+        request_path = "/"
+
+    server_message = _safe_response_message(response)
+    ui_state = _auth_ui_state(page)
+    is_license_401 = _LICENSE_401_MESSAGE.casefold() in server_message.casefold()
+    kind = (
+        "license_session_unauthorized"
+        if is_license_401
+        else "auth_session_unauthorized"
+    )
+    error_type = (
+        "LicenseSessionUnauthorized"
+        if is_license_401
+        else "AuthSessionUnauthorized"
+    )
+    cause = (
+        "Backend license/session kirishini rad etdi"
+        if is_license_401
+        else "Backend sessiya so'rovini rad etdi"
+    )
+    ui_labels = {
+        "login_redirect": "login sahifasiga redirect",
+        "session_lock": "qayta login lock oynasi",
+        "current_page": "joriy sahifa",
+    }
+    summary = f"{cause}: {request_method} {request_path} → HTTP 401"
+    if server_message:
+        summary += f'; server="{server_message}"'
+    summary += f"; UI={ui_labels[ui_state]}"
+
+    return {
+        "kind": kind,
+        "error_type": error_type,
+        "method": request_method,
+        "path": request_path,
+        "status": 401,
+        "server_message": server_message,
+        "ui_state": ui_state,
+        "summary": summary,
+    }
 
 
 def smoke_group_name(item):
@@ -164,15 +308,18 @@ def prepare_allure_results(config, run_info, root_dir):
         json.dump(executor_data, executor_file, indent=2)
 
 
-def attach_failure_artifacts(item, data_path):
-    """Failed testning URL, title, screenshot va data-store holatini Allurega qo'shadi."""
-    page = (
-        item.funcargs.get("session_page")
-        or item.funcargs.get("group_user_page")
-        or item.funcargs.get("group_session_page")
-        or item.funcargs.get("page")
-    )
-    if page:
+def attach_failure_artifacts(item, data_path, auth_diagnostic=None):
+    """Failed testning browser holati va strukturali diagnostikasini Allurega qo'shadi."""
+    page = page_from_item(item)
+    auth_diagnostic = auth_diagnostic or auth_diagnostic_for_item(item)
+    if auth_diagnostic:
+        allure.attach(
+            json.dumps(auth_diagnostic, ensure_ascii=False, indent=2),
+            name="auth-diagnostic",
+            attachment_type=allure.attachment_type.JSON,
+        )
+
+    if page is not None:
         try:
             allure.attach(
                 page.url,
@@ -210,6 +357,16 @@ def log_failed_report(report):
     if not report.failed:
         return
     longrepr_text = str(report.longrepr) if report.longrepr else "Xabar yo'q"
+    auth_diagnostic = next(
+        (
+            value
+            for key, value in getattr(report, "user_properties", [])
+            if key == "auth_diagnostic"
+        ),
+        "",
+    )
+    if auth_diagnostic:
+        longrepr_text += f"\n\n[AUTH DIAGNOSTIKA]\n{auth_diagnostic}"
     log_path = write_failure_log(report.nodeid, report.when, longrepr_text)
     print(f"\n[LOG] Xato logi saqlandi: {log_path}")
 

@@ -132,6 +132,7 @@ def session_page(session_context):
     Nima qaytaradi: `session_context` ichida ochilgan bitta umumiy `Page`.
     """
     page = session_context.new_page()
+    smoke_reporting.install_auth_diagnostics(page)
     yield page
     page.close()
 
@@ -151,6 +152,7 @@ def group_session_page(session_browser, request):
     context.set_default_navigation_timeout(20_000)
     context.tracing.start(screenshots=True, snapshots=True, sources=True)
     page = context.new_page()
+    smoke_reporting.install_auth_diagnostics(page)
 
     yield page
 
@@ -188,6 +190,7 @@ def page(session_browser, request):
     context.set_default_navigation_timeout(20_000)
     context.tracing.start(screenshots=True, snapshots=True, sources=True)
     isolated_page = context.new_page()
+    smoke_reporting.install_auth_diagnostics(isolated_page)
 
     yield isolated_page
 
@@ -313,9 +316,18 @@ def pytest_runtest_makereport(item, call):
     global _USER_SETUP_FAILED
     outcome = yield
     report = outcome.get_result()
+    auth_diagnostic = (
+        smoke_reporting.auth_diagnostic_for_item(item)
+        if report.failed
+        else None
+    )
 
     if report.failed:
-        error_type = call.excinfo.typename if call.excinfo else "Failed"
+        error_type = (
+            auth_diagnostic["error_type"]
+            if auth_diagnostic
+            else call.excinfo.typename if call.excinfo else "Failed"
+        )
         exception_message = (
             str(call.excinfo.value).strip() if call.excinfo else ""
         )
@@ -324,10 +336,16 @@ def pytest_runtest_makereport(item, call):
             "failed",
             error_type=error_type,
             message=(
-                exception_message
+                auth_diagnostic["summary"]
+                if auth_diagnostic
+                else exception_message
                 or smoke_reporting.report_message(report)
             ),
         )
+        if auth_diagnostic:
+            report.user_properties.append(
+                ("auth_diagnostic", auth_diagnostic["summary"])
+            )
     elif report.skipped:
         smoke_reporting.finish_progress(
             item,
@@ -338,8 +356,14 @@ def pytest_runtest_makereport(item, call):
     elif report.when == "teardown":
         smoke_reporting.finish_progress(item, "passed")
 
-    if report.when == "call" and report.failed:
-        smoke_reporting.attach_failure_artifacts(item, _data_file())
+    if report.failed:
+        smoke_reporting.attach_failure_artifacts(
+            item,
+            _data_file(),
+            auth_diagnostic=auth_diagnostic,
+        )
+    elif report.when == "teardown":
+        smoke_reporting.reset_auth_diagnostics(item)
 
     if report.failed:
         if smoke_reporting.is_user_setup(item):

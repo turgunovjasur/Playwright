@@ -2,6 +2,17 @@
 
 Litsenziya 2 ta alohida funksiya: `run_buy_license` va `run_attach_license`.
 
+## Mundarija
+
+- [Skip sharti](#skip-sharti)
+- [run_buy_license — sotib olish](#run_buy_license--sotib-olish)
+- [Yangi company uchun activation precondition](#yangi-company-uchun-activation-precondition)
+- [Date tanlangandan keyingi license tanlovi](#date-tanlangandan-keyingi-license-tanlovi)
+- [run_attach_license — foydalanuvchiga ulash](#run_attach_license--foydalanuvchiga-ulash)
+- [Muvaffaqiyatli attachdan keyingi license 401](#muvaffaqiyatli-attachdan-keyingi-license-401)
+- [Muhim](#muhim)
+- [Test](#test)
+
 ## Skip sharti
 
 Faqat `CREATE_COMPANY=1` va `DISABLE_LICENSE_POLICY=1/true/yes/on` birga
@@ -86,6 +97,33 @@ Har bir qatorda: miqdor → `Купить` → `Я ознакомился...` �
 ```
 
 **Eslatma:** attach modali (`Прикрепить пользователей`) faqat sotib olingan litsenziya hujjati (`ERP users` qatori) bo'lganda ochiladi — aks holda "Лицензии и документы" ro'yxati "нет данных". To'liq oqim setup zanjirida (test_12) green: `run_buy_license` → `run_attach_license` (MCP + chain 2026-07 tasdiqlangan).
+
+### Muvaffaqiyatli attachdan keyingi license 401
+Tags: license, attach, session, 401, backend, ci, flaky
+Status: trace-confirmed
+Verified: 2026-07-30
+Source: GitHub Actions runs `30413648152`, `30531780519`; artifacts
+`traces/smoke_trace.zip`; `test_13_price_type` Allure screenshots/logs
+- Trace'da oddiy `ERP users` license xaridi `200`, yangi license qatorida
+  miqdor va bo'sh slot `1`, generated `natural_person-pw{code}` useriga attach
+  requesti `200`, undan keyingi user login/session va birinchi forma requestlari
+  ham `200` bo'lgan.
+- User loginidan taxminan 17 sekund o'tib navbatdagi form model requesti `401`
+  va `Нет лицензии для входа в систему!` qaytargan. `util/session_info=1800`
+  hamda uzluksiz UI/network activity bu hodisa oddiy idle-timeout emasligini
+  tasdiqlaydi.
+- Oldingi run ham shu patternni takrorlagan: license purchase/attach va user
+  login/session `200`, `change_password:save` `200`, so'ng taxminan 8.5
+  sekundda Price Type table requesti aynan bir xil response body SHA bilan
+  `401` bo'lgan. Ikki trace majburiy password-change'dan keyingi
+  session/license lifecycle'ni takroriy trigger sifatida ko'rsatadi.
+- UI/Playwright trace license nega backendda yaroqsiz bo'lib qolganini
+  ko'rsatmaydi. Ichki sababni aniqlash uchun shu timestampdagi Smartup
+  license/auth backend loglari kerak; locator yoki Price Type formasi root
+  cause emas.
+- Client tomonda bu 401 generic `#closing-session .cs-lock.open` relogin
+  overlayi sifatida ko'rinadi; keyingi qadamning locator xatosi ikkilamchi
+  simptom.
 
 ## Muhim
 

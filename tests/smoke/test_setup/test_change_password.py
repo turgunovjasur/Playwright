@@ -1,6 +1,10 @@
 import allure
-from playwright.sync_api import expect
-from tests.smoke.flows.flow_authorization import login, USER_PASS, user_email_for
+from tests.smoke.flows.flow_authorization import (
+    USER_PASS,
+    dashboard,
+    login,
+    user_email_for,
+)
 from utils.base_page import BasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("User")]
@@ -12,6 +16,7 @@ def run_change_password(page, code):
 
     1. user-pw{code} sifatida kirib, majburiy parol o'zgartirish formasi ochilishini tekshirish.
     2. Текущий/Новый/Подтверждение парол maydonlarini to'ldirib "Подтвердить" bilan tasdiqlash.
+    3. Password-change sessiyasini davom ettirmasdan, user bilan yangidan login qilib dashboardni tekshirish.
 
     Bu run_ o'zi user sifatida login qiladi (authorization wrapper'da chaqirilmaydi).
     "Пароль (изменение)" — user qo'shilganda (birinchi login), user paroli o'zgartirilganda
@@ -29,6 +34,10 @@ def run_change_password(page, code):
 
         page.get_by_role("button", name="Подтвердить").click()
         base.confirm_biruni()
+
+    with allure.step("3 - Parol tasdiqlangandan keyin majburiy qayta login"):
+        login(page, email=user_email_for(code), password=USER_PASS)
+        dashboard(page)
 
 # ----------------------------------------------------------------------------------------------------------------------
 

@@ -133,22 +133,41 @@ Tags: role, permissions, onboarding, chat-widget, locator, debug
 
 **"Пароль (изменение)" formasi qachon chiqadi (2026-07 tasdiqlangan):** (a) user qo'shilganda — birinchi loginda majburiy, (b) user paroli o'zgartirilganda, (c) profildan "Изменить пароль" (`a.openChangePassword()`). Uchalasida ham **bir xil forma** (route `biruni/md/change_password`).
 
-**MUHIM:** bu **mavjud company'da ham** yangi yaratilgan user (masalan setup zanjiridagi user-pw{code}) birinchi loginda force-change oladi — `test_13_change_password` mavjud red_test chain'ida green (2026-07 chain tasdiqlangan). Faqat **allaqachon parolini o'zgartirgan** eski user to'g'ridan-to'g'ri dashboardga kiradi (`.alert-icon` chiqmaydi). Bu `run_` o'zi user sifatida `login()` qiladi (auth wrapper'da emas) — wrapper `test_change_password` bare.
+**MUHIM:** bu **mavjud company'da ham** yangi yaratilgan user (masalan setup zanjiridagi user-pw{code}) birinchi loginda force-change oladi — `test_12_change_password` Setup chain'ida green (2026-07-30 live run tasdiqlangan). Faqat **allaqachon parolini o'zgartirgan** eski user to'g'ridan-to'g'ri dashboardga kiradi (`.alert-icon` chiqmaydi). Bu `run_` o'zi user sifatida `login()` qiladi (auth wrapper'da emas) — wrapper `test_change_password` bare.
 
-**Maydonlar raw `page.locator("#id").fill()` bilan (BasePage.input EMAS):** `#current_password`/`#new_password`/`#rewritten_password` (ng-model `d.current_password` va h.k.). `BasePage.input` fokus uchun `input_el.click()` qiladi, bu formada esa parol-validatsiya qoidalari (`<label class="checkbox text-success">` — "Наличие цифр" va h.k.) `#rewritten_password` inputi ustiga tushib click'ni **bloklaydi** (chain 2026-07: "pointer events intercepts" → click timeout). `.fill()` esa pointer click qilmay fokuslaydi — shuning uchun bu formada raw `.fill()` to'g'ri (base funksiya mos kelmaydigan holat).
+**Maydonlar:** joriy `BasePage.input(label=...)` implementatsiyasi uchala
+password maydonida ishlaydi; `Новый пароль`dan keyin `press_tab=True`
+validation holatini yangilaydi. Avvalgi raw `#id.fill()` majburiy degan qoida
+joriy live run bilan tasdiqlanmadi va `references/history.md`ga ko'chirildi.
 
 ```python
 login(page, email=user_email_for(code), password=USER_PASS)
-expect(page.locator(".alert-icon")).to_be_visible()   # force-change ekrani
-page.locator("#current_password").fill(USER_PASS)
-page.locator("#new_password").fill(USER_PASS)
-page.locator("#rewritten_password").fill(USER_PASS)
+base.text(root=".alert-icon")
+base.input(label="Текущий пароль", value=USER_PASS)
+base.input(label="Новый пароль", value=USER_PASS, press_tab=True)
+base.input(label="Подтверждение пароля", value=USER_PASS)
 page.get_by_role("button", name="Подтвердить").click()
 base.confirm_biruni()
+login(page, email=user_email_for(code), password=USER_PASS)
+dashboard(page)
 ```
 
 Parol o'zgartirilmaydi (USER_PASS → USER_PASS), lekin sistem "tasdiqlangan" deb qabul qiladi.
 
+### Password-change'dan keyingi majburiy fresh login
+Status: live-ui-confirmed
+Verified: 2026-07-30
+Source: `tests/smoke/test_setup/test_change_password.py`; CI trace runs
+`30413648152`, `30531780519`; local `scripts/run_tests.py setup --headless`
+(`20 passed, 1 deselected`)
+- `change_password:save` muvaffaqiyatli tugagan sessiyada keyingi forma
+  requesti license `401` olishi mumkin. Shu sabab `run_change_password`
+  confirm'dan keyin eski SPA sessiyasini davom ettirmaydi: login sahifasidan
+  user bilan yangidan kiradi va `dashboard()` orqali `Trade` ochilganini
+  majburiy tekshiradi.
+- Bu qayta login alohida Allure step:
+  `3 - Parol tasdiqlangandan keyin majburiy qayta login`.
+
 ## Test
 
-- `tests/smoke/test_setup/test_user.py` → `run_user`, `run_user_attach_form`, `run_role`, `run_role_attach_form`, `run_change_password`
+- `tests/smoke/test_setup/test_change_password.py` → `run_change_password`

@@ -9,6 +9,8 @@ fayldagi ma'lumotni current truth sifatida ishlatmasin.
 - [Entry formati](#entry-formati)
 - [Superseded runner scope](#superseded-runner-scope)
 - [Removed runner va test entrypointlari](#removed-runner-va-test-entrypointlari)
+- [Removed session recovery helper](#removed-session-recovery-helper)
+- [Superseded locator qoidalari](#superseded-locator-qoidalari)
 - [Eski server xatti-harakati](#eski-server-xatti-harakati)
 
 ## Entry formati
@@ -89,6 +91,37 @@ qoidalari
   testlarga migratsiya qilinganda vaqtinchalik collection sonlari qayd etilgan.
 - Current behavior: collection tarkibi `scripts/run_tests.py` targetlari va
   joriy runner fayllaridan olinadi; eski collection sonini hard-code qilma.
+
+## Removed session recovery helper
+
+### `install_session_keepalive()` avtomatik overlay recovery
+Status: superseded
+Observed: 2026-06-12
+Superseded: 2026-07-02
+Source: git commits `21bdc3c`, `f94b377`
+Replaced by:
+`skills/smartup-guide/references/forms/login.md#joriy-kodda-sessiya-qulf-recovery-handleri-yoq`
+- Old behavior: har `login()`dan keyin `page.add_locator_handler(...)`
+  o'rnatilib, timeout-warningda `Продолжить`, lock holatida esa parolni
+  Angular modelga commit qilib `Войти` bosilar va overlay yopilishi kutilar edi.
+- Current behavior: helper va uning `login()` caller'i `f94b377` refaktorida
+  olib tashlangan; CI head `0670b8f`da avtomatik session-lock recovery yo'q.
+
+## Superseded locator qoidalari
+
+### Change Password uchun raw `#id.fill()` majburiy degan qoida
+Status: superseded
+Observed: 2026-07
+Superseded: 2026-07-30
+Source: `tests/smoke/test_setup/test_change_password.py`; local
+`scripts/run_tests.py setup --headless` (`20 passed, 1 deselected`)
+Replaced by: `skills/smartup-guide/references/forms/user.md`
+- Old behavior: validation overlay `BasePage.input()` clickini to'sishi
+  mumkinligi sabab raw `#current_password`/`#new_password`/
+  `#rewritten_password.fill()` majburiy deb yozilgan edi.
+- Current behavior: `BasePage.input(label=...)`, jumladan `Новый пароль`
+  uchun `press_tab=True`, fresh user bilan to'liq Setup runida muvaffaqiyatli
+  o'tdi.
 
 ## Eski server xatti-harakati
 

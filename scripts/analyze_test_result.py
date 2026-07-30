@@ -53,6 +53,41 @@ def _read_json(path):
     return data if isinstance(data, dict) else None
 
 
+def _auth_diagnostic_attachment(item, results_dir):
+    attachments = item.get("attachments")
+    if not isinstance(attachments, list):
+        return {}
+
+    for attachment in attachments:
+        if not isinstance(attachment, dict):
+            continue
+        if attachment.get("name") != "auth-diagnostic":
+            continue
+        source = Path(str(attachment.get("source") or "")).name
+        if not source:
+            return {}
+        diagnostic = _read_json(results_dir / source)
+        if not diagnostic:
+            return {}
+        return {
+            "kind": str(diagnostic.get("kind") or ""),
+            "error_type": str(diagnostic.get("error_type") or ""),
+            "method": str(diagnostic.get("method") or ""),
+            "path": str(diagnostic.get("path") or ""),
+            "status": diagnostic.get("status") or "",
+            "server_message": _truncate(
+                _mask_sensitive(str(diagnostic.get("server_message") or "")),
+                300,
+            ),
+            "ui_state": str(diagnostic.get("ui_state") or ""),
+            "summary": _truncate(
+                _mask_sensitive(str(diagnostic.get("summary") or "")),
+                700,
+            ),
+        }
+    return {}
+
+
 def _mask_sensitive(text):
     if not text:
         return text
@@ -376,6 +411,11 @@ def _humanize_failure(item):
     message = str(item.get("message") or "")
     trace = str(item.get("trace") or "")
     failure_text = f"{message}\n{trace}"
+    auth_diagnostic = (
+        item.get("auth_diagnostic")
+        if isinstance(item.get("auth_diagnostic"), dict)
+        else {}
+    )
     structured = _structured_failure_details(failure_text)
     trace_source = _inner_source_from_trace(trace)
     step_info = _failed_step_info(item)
@@ -384,7 +424,10 @@ def _humanize_failure(item):
         "name": item.get("name") or item.get("fullName") or "unknown",
         "status": item.get("status") or "unknown",
         "message": _truncate(message, 700),
-        "error_type": _error_type(f"{message}\n{trace}"),
+        "error_type": (
+            auth_diagnostic.get("error_type")
+            or _error_type(f"{message}\n{trace}")
+        ),
         "group": _group_name(item, runner_test),
         "runner_test": runner_test,
         "location": structured.get("location_hint") or trace_source.get("source") or _location(item),
@@ -398,10 +441,26 @@ def _humanize_failure(item):
         "expected": structured.get("expected") or "",
         "actual": structured.get("actual") or "",
         "ui_error": structured.get("ui_error") or "",
+        "auth_diagnostic": auth_diagnostic.get("summary") or "",
+        "auth_kind": auth_diagnostic.get("kind") or "",
+        "auth_request": " ".join(
+            value
+            for value in (
+                auth_diagnostic.get("method"),
+                auth_diagnostic.get("path"),
+            )
+            if value
+        ),
+        "auth_status": auth_diagnostic.get("status") or "",
+        "auth_server_message": auth_diagnostic.get("server_message") or "",
+        "auth_ui_state": auth_diagnostic.get("ui_state") or "",
         "target": _waited_target(failure_text),
         "element_state": _element_state(failure_text),
         "timeout": _timeout_text(failure_text) if "Timeout" in failure_text else "",
-        "reason": _human_reason(failure_text),
+        "reason": (
+            auth_diagnostic.get("summary")
+            or _human_reason(failure_text)
+        ),
     }
 
 
@@ -423,6 +482,7 @@ def collect_allure_results(results_dir, started_at):
         trace = str(status_details.get("trace") or "")
         form_suite = _form_suite_key(data)
         form_steps = _form_steps(data, form_suite=form_suite)
+        auth_diagnostic = _auth_diagnostic_attachment(data, results_dir)
         rows.append(
             {
                 "name": data.get("name") or "",
@@ -434,6 +494,7 @@ def collect_allure_results(results_dir, started_at):
                 "form_suite": form_suite,
                 "form_steps": form_steps,
                 "a2_form_steps": form_steps if form_suite == "a2_admin" else [],
+                "auth_diagnostic": auth_diagnostic,
                 "start": data.get("start"),
                 "stop": data.get("stop"),
             }
@@ -784,6 +845,7 @@ def render_markdown(
                     f"- Expected: `{item.get('expected', '')}`",
                     f"- Actual: `{item.get('actual', '')}`",
                     f"- UI error: `{item.get('ui_error', '')}`",
+                    f"- Auth diagnostic: `{item.get('auth_diagnostic', '')}`",
                     f"- Error type: `{item.get('error_type', 'unknown')}`",
                     f"- Location: `{item.get('location', 'unknown')}`",
                     f"- Reason: {item.get('reason', '')}",
