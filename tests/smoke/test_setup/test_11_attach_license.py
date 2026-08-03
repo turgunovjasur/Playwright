@@ -29,6 +29,10 @@ def run_attach_license(page, code, logger):
 
     base = BasePage(page)
 
+    base.switch_filial(name="Администрирование")
+    base.navigate_to(tab="Главное", name="Лицензии")
+    base.expect_page(heading="Лицензии")
+
     with allure.step("1 - Litsenziyalar va hujjatlar bo'limini ochish"):
         base.click(name="Лицензии и документы", role="link")
         base.text("Лицензии и документы")
