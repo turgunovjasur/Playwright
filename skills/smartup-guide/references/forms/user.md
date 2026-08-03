@@ -73,27 +73,38 @@ User view → **Формы** link:
 
 | Tab | Harakat |
 |---|---|
-| Формы | Доступные → checkall → Прикрепить → confirm → нет данных |
-| Отчеты | Доступные → checkall → Прикрепить → confirm → нет данных |
-| Накладные | wait_for_loader → Доступные → checkall → Прикрепить → confirm → нет данных |
-| Внешние системы | wait_for_loader → Доступные → checkall → Прикрепить → confirm → нет данных |
+| Формы | Доступные → loader → 1000 → grid all → Прикрепить → confirm → loader → нет данных |
+| Отчеты | Доступные → loader → 1000 → grid all → Прикрепить → confirm → loader → нет данных |
+| Накладные | Доступные → loader → 500 → grid all → Прикрепить → confirm → loader → нет данных |
+| Внешние системы | Доступные → loader → 1000 → grid all → Прикрепить → confirm → loader → нет данных |
 
-Page size 50→1000 qilinadi (agar 50/ button ko'rinsa). Bu attach pattern faqat shu testga xos, shuning uchun `test_user_attach_form.py` ichidagi `_attach_available_permissions(page, base)` local helperida qoladi.
+Bu attach pattern faqat shu testga xos, shuning uchun
+`test_07_user_attach_form.py` ichidagi
+`_attach_available_permissions(base, expand=...)` local helperida qoladi.
 
 ### User attach form grid controller
 Tags: user, grid, locator, setup, mcp
+Status: code-confirmed
+Verified: 2026-07-31
+Source: `tests/smoke/test_setup/test_07_user_attach_form.py:11`; `utils/base_page.py:64`
 - screenshot: `references/forms/screenshots/user/user__attach-forms-available-mcp-20260710__desktop-1440x1000.png`
 - sahifa: `Пользователь (просмотр) → Формы → Доступные` (`natural_person-pw{code}` user view).
 - MCP kuzatuv: sahifada bir nechta `b-grid-controller` DOMda qoladi; hidden tab controllerlari visible controllerdan oldin kelishi mumkin. `BasePage.grid_controller()` default selector bilan hidden controllerga tushmasligi uchun visible controllerni ishlatishi kerak.
 - `expand`: faqat string limit qabul qiladi — `"50"`, `"100"`, `"500"`, `"1000"`. Dropdownni ochib, shu limit linkini tanlaydi va loaderni kutadi; `expand=True` ishlatilmaydi.
-- testda ishlatish: `run_user_attach_form`da `_attach_available_permissions(page, base)` saqlansin; helper ichida page size uchun `base.grid_controller(expand="1000")` → `base.checkbox(first_visible=True, checked=True)` → `Прикрепить` → `confirm_biruni()` tartibi ishlatiladi.
+- testda ishlatish: `run_user_attach_form`da
+  `_attach_available_permissions(base, expand=...)` saqlansin; helper
+  `Доступные`ni ochadi, loaderni kutadi, `base.grid_controller(expand=...)` va
+  `base.grid(checkbox="all")` orqali barcha qatorni tanlaydi, `Прикрепить` +
+  `confirm_biruni()`dan keyin loaderni kutib, ko'rinadigan gridda
+  `base.grid(state="empty")` orqali `нет данных`ni tekshiradi.
 
 ## run_role — Admin rolini sozlash
 
 ```
 Роли link → "Админ" qatori → Изменить → "Роль (изменение)"
 → barcha o'chiq switchlarni toggling
-→ save_and_expect_heading("Роли", timeout=600_000)
+→ `base.click(name="Сохранить", exact=True)`
+→ `base.expect_page(heading="Роли", url="role_list", timeout=300_000)`
 ```
 
 **Base funksiyalar (raw locator EMAS):** rollar ro'yxati ham b-grid — "Админ" ni tanlash `base.grid("Админ", click=True)` bilan (raw `get_by_text("Админ", exact=True).click()` EMAS; grid `has_text` substring bilan topadi, fresh setup'da faqat bitta "Админ" roli — kolliziya yo'q, MCP 2026-07 tasdiqlangan). Heading tekshiruvi `base.expect_page(heading="Роли")` (raw `expect(page.get_by_role("heading")).to_contain_text(...)` EMAS). Ikkalasi `run_role` va `run_role_attach_form` da bir xil.
@@ -111,7 +122,7 @@ while remaining > 0:
     remaining -= 1
 ```
 
-Save timeout = **600_000** (10 min) — ko'p switch bo'lishi mumkin.
+Save transition timeout = **300_000** (5 min) — ko'p switch bo'lishi mumkin.
 
 ### Floating widgetlar switch klikini to'ssa
 Tags: role, permissions, onboarding, chat-widget, locator, debug
@@ -123,7 +134,8 @@ Tags: role, permissions, onboarding, chat-widget, locator, debug
 ```
 "Админ" qatori → Просмотреть → Формы link
 → "Доступ ко всем формам" → "Разрешить" → confirm_biruni()
-→ wait_for_loader(600_000) → Доступные → нет данных
+→ wait_for_loader(600_000) → Доступные → wait_for_loader()
+→ `base.grid(state="empty")`
 ```
 
 ## run_change_password — parolni tasdiqlash
@@ -157,7 +169,7 @@ Parol o'zgartirilmaydi (USER_PASS → USER_PASS), lekin sistem "tasdiqlangan" de
 ### Password-change'dan keyingi majburiy fresh login
 Status: live-ui-confirmed
 Verified: 2026-07-30
-Source: `tests/smoke/test_setup/test_change_password.py`; CI trace runs
+Source: `tests/smoke/test_setup/test_12_change_password.py`; CI trace runs
 `30413648152`, `30531780519`; local `scripts/run_tests.py setup --headless`
 (`20 passed, 1 deselected`)
 - `change_password:save` muvaffaqiyatli tugagan sessiyada keyingi forma
@@ -170,4 +182,4 @@ Source: `tests/smoke/test_setup/test_change_password.py`; CI trace runs
 
 ## Test
 
-- `tests/smoke/test_setup/test_change_password.py` → `run_change_password`
+- `tests/smoke/test_setup/test_12_change_password.py` → `run_change_password`

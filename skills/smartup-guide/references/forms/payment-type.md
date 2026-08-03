@@ -18,7 +18,7 @@ To'lov turlari **yaratilmaydi** — global katalogdan company'ga ulanadi (При
 → "Прикрепить" button
 → confirm_biruni("Прикрепить типы оплат в количестве 4?")
 → wait_for_loader()
-→ `BasePage.grid(is_empty=True)` natijasi `True` ekanini tekshirish (barcha available bo'sh qolishi kerak)
+→ `BasePage.grid(state="empty", return_bool=True)` natijasi `True` ekanini tekshirish (barcha available bo'sh qolishi kerak)
 → "Закрыть" button
 ```
 
@@ -38,4 +38,4 @@ Ro'yxatda ko'rinishi kerak:
 
 ## Test
 
-- `tests/smoke/test_setup/test_payment_type.py` → `run_payment_type(page)`
+- `tests/smoke/test_setup/test_16_payment_type.py` → `run_payment_type(page)`

@@ -61,7 +61,7 @@ def flow_order_list_grid_setting(page, colum_name, search_name):
     page.locator("#deal_id").get_by_text(colum_name).click()
     page.locator("label").filter(has_text=search_name).click()
     base.text(colum_name, root="#deal_id")
-    base.save_and_expect_heading("Заказы", location_hint="order list grid setting")
-    base.expect_page(url="order_list")
+    base.click(name="Сохранить", exact=True)
+    base.expect_page(heading="Заказы", url="order_list")
 
 # ----------------------------------------------------------------------------------------------------------------------

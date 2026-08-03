@@ -1,5 +1,5 @@
 from tests.smoke import smoke_reporting
-from tests.smoke.test_setup import test_change_password
+from tests.smoke.test_setup import test_12_change_password as test_change_password
 
 
 class _FakeRequest:
@@ -141,14 +141,12 @@ def test_change_password_requires_fresh_login_and_dashboard(monkeypatch):
         def confirm_biruni(self):
             events.append(("confirm",))
 
-    class FakeButton:
-        def click(self):
+        def click(self, **kwargs):
+            assert kwargs == {"name": "Подтвердить"}
             events.append(("submit",))
 
     class FakePasswordPage:
-        def get_by_role(self, role, name):
-            assert (role, name) == ("button", "Подтвердить")
-            return FakeButton()
+        pass
 
     def fake_login(page, *, email, password):
         events.append(("login", email, password))

@@ -30,18 +30,12 @@ TARGET_LABELS = {
     "setup-forms": "Setup + Forms",
     "company": "Company",
     "groups": "Groups",
-    "group-a": "Group A",
-    "group-b": "Group B",
-    "group-c": "Group C",
     "group-report": "Report Group",
     "forms": "Forms",
 }
 GROUP_ORDER = [
     "Setup",
     "A2 Admin Forms group",
-    "A group",
-    "B group",
-    "C group",
     "Report group",
     "Forms group",
 ]
@@ -463,6 +457,18 @@ def command_update(args):
 def update_from_event(state, event):
     event_name = str(event.get("event") or "")
     display = str(event.get("display") or event.get("title") or event.get("test_id") or "unknown")
+    if event_name == "form_result":
+        state["status"] = "Forms running"
+        state["current"] = display
+        state["current_group"] = str(event.get("group") or "Forms group")
+        state["form_progress"] = {
+            "suite": str(event.get("title") or ""),
+            "number": _metric_count(event, "form_number"),
+            "total": _metric_count(event, "form_total"),
+            "status": str(event.get("form_status") or ""),
+            "reason": str(event.get("error_type") or ""),
+        }
+        return
     if event_name == "started":
         state["status"] = "Tests running"
         state["current"] = display

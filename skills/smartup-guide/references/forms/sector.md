@@ -24,7 +24,8 @@ chip ko'rinadi. Shu sabab raw textbox/text click o'rniga `multiselect(label="Р�
 
 ## Saqlash
 
-`BasePage.save_and_expect_heading("Наборы ТМЦ")` — biruni confirm yo'q.
+`base.click(name="Сохранить", exact=True)` →
+`base.expect_page(heading="Наборы ТМЦ")`; Biruni confirm yo'q.
 
 Natija ro'yxatda:
 - `c_s_pw{code}` ko'rinadi
@@ -33,9 +34,9 @@ Natija ro'yxatda:
 ## Dependency
 
 - **Kerak bo'ladi:** room-pw{code} avval yaratilgan bo'lishi kerak
-- **Downstream:** `test_product.py` — product yaratishda `sector-pw{code}` ko'rinishi kutiladi
+- **Downstream:** `test_18_product.py` — product yaratishda `sector-pw{code}` ko'rinishi kutiladi
 - Standalone pytest wrapper user sifatida login qiladi; `run_sector(page, code)` esa allaqachon login qilingan page qabul qiladi.
 
 ## Test
 
-- `tests/smoke/test_setup/test_sector.py` → `run_sector(page, code)`
+- `tests/smoke/test_setup/test_17_sector.py` → `run_sector(page, code)`

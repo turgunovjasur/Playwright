@@ -16,6 +16,8 @@ def emit_progress_event(
     display=None,
     error_type=None,
     message=None,
+    writer=None,
+    **details,
 ):
     shown_name = display or title or test_id
     payload = {
@@ -30,4 +32,10 @@ def emit_progress_event(
         payload["error_type"] = error_type
     if message:
         payload["message"] = message
-    print("\n" + EVENT_PREFIX + json.dumps(payload, ensure_ascii=False, sort_keys=True), flush=True)
+    payload.update(details)
+    line = EVENT_PREFIX + json.dumps(payload, ensure_ascii=False, sort_keys=True)
+    if writer is not None:
+        writer(line)
+    else:
+        print("\n" + line, flush=True)
+    return payload

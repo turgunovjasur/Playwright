@@ -141,8 +141,9 @@ Tags: biruni, error, modal
 - Extended alertni tekshirib yopish uchun `BasePage.close_biruni_alert(*expected_text)` ishlatiladi.
 - Qoida: ba'zan `Закрыть` textli button yo'q.
 - Qoida: Modal yopilmasa menu/list clicklari intercept bo'lishi mumkin.
-- Save/transition debug: `Сохранить` bosilgandan keyin list/view heading kutishdan oldin umumiy Biruni error modal tekshirilsin; aks holda haqiqiy xato add/edit formdagi save error bo'lsa ham test keyingi list/viewda timeout bo'lgandek ko'rinadi.
-- Testda ishlatish: save helper xabari aralash formatda `Before page`, `Action`, `Expected`, `Actual`, `UI error`, `Location hint` maydonlarini chiqarsin.
+- Save/transition debug: `Сохранить` bosilgandan keyin kutilgan list/view
+  ochilmasa `expect_page` xabaridagi joriy heading va URL bilan birga
+  `#biruniAlertExtended` matnini tekshir.
 
 ### List va Grid Setting
 Tags: list, grid, search, column
@@ -210,18 +211,53 @@ Tags: locator, form, helper, setup
   **Tuzatish:** `(ancestor-or-self::label[1]//input[@type='checkbox'])[1]`;
   wrapping label bo'lmasa `following::` fallback saqlanadi.
 - Qoida: **grid checkbox — `base.grid(checkbox="row"/"all")`** (2026-07-10). `"row"` → matn bo'yicha topilgan qator checkbox'i; `"all"` → ko'rinadigan grid tepasidagi select-all (`input[bcheckall]`, fallback birinchi checkbox), bu holda `text` kerak emas. Migratsiya: `checkbox(check_all=True)` → `grid(checkbox="all")`; ma'lum grid uchun `grid(checkbox="all", root='b-grid[name="..."]')`; `checkbox(first_visible=True)` ham `grid(checkbox="all")` (grid'ning 1-checkbox'i doim select-all).
-- Qoida: **bo'sh grid holati — `base.grid(is_empty=True, root='b-grid[name="..."]')`**. Helper ko'rinadigan grid ichidagi aniq `"нет данных"` matni ko'rinsa `True`, ma'lumot bo'lsa `False` qaytaradi; branch uchun ishlatiladi va qator/checkbox amallari bilan birga berilmaydi. Eski assertion-semantikadagi `empty=True` olib tashlangan.
-- `grid(is_empty=True)` va `grid(..., is_visible=True)` bir martalik holatni o'qiydi, tab/filter transitionini o'zi kutmaydi. Gridni almashtiruvchi actiondan keyin avval `base.wait_for_loader()`, keyin boolean helper chaqirilsin; aks holda eski grid state branchni noto'g'ri tanlatishi mumkin.
-- Qoida: **grid qatori ko'rinishi — `base.grid("row text", is_visible=True, root='b-grid[name="..."]')`**. Helper ko'rinadigan grid ichida target `.tbl-row` ko'rinsa `True`, topilmasa `False` qaytaradi; conditional Available/Attached flowlarda raw `.tbl-row.filter(...).is_visible()` o'rniga ishlatiladi.
+- Qoida: **bo'sh grid assertioni — `base.grid(state="empty", root='b-grid[name="..."]')`**. Helper ko'rinadigan grid ichidagi aniq `"нет данных"` matnini auto-retry bilan kutadi va grid locatorini qaytaradi. Branch kerak bo'lsa `return_bool=True` qo'shiladi: bo'sh grid uchun `True`, ma'lumotli grid uchun `False`.
+- `grid(..., return_bool=True)` bir martalik holatni o'qiydi; assertion rejimi targetni auto-retry qiladi, lekin ikkalasi ham tab/filter transitionining boshlangan-tugaganini isbotlamaydi. Gridni almashtiruvchi actiondan keyin avval `base.wait_for_loader()`, keyin grid helper chaqirilsin; aks holda oldingi grid state yangi state bilan bir xil bo'lsa tekshiruv muddatidan oldin o'tishi mumkin.
+- Qoida: **grid qatori assertioni — `base.grid("row text", root='b-grid[name="..."]')`**. Helper target `.tbl-row`ni auto-retry bilan kutadi va row locatorini qaytaradi. Conditional Available/Attached flow uchun `base.grid("row text", return_bool=True, root=...)` ishlatiladi; qator ko'rinsa `True`, topilmasa `False` qaytaradi.
+- `state="empty"` text/`contains`/click/checkbox bilan, `return_bool=True` esa `contains`/click/checkbox bilan birga berilmaydi; noto'g'ri kombinatsiya `ValueError` beradi.
 - `BasePage.grid()` default `remove_spaces=True`: row qidirish va `contains` assertlari oddiy/non-breaking whitespace'ni e'tiborsiz qoldiradi (`"10000"` UI'dagi `"10 000"`ga mos keladi). Whitespace aynan tekshirilishi kerak bo'lsa `remove_spaces=False` beriladi.
 - DOM fakti (2026-07-10 MCP `red_test` user attach form jonli): **(1)** attach/tabli sahifada **8 ta `b-grid`, faqat 1 tasi ko'rinadi** — DOM'dagi birinchisi (`user_audits`) yashirin; shuning uchun `grid(checkbox="all")` `.filter(visible=True).first` ishlatadi (oddiy `b-grid.first` noto'g'ri yashirin grid'ni oladi). **(2)** Grid'ning birinchi checkbox'i = `input[bcheckall]` (select-all), `.tbl-header-cell.tbl-checkbox-cell` ichida; row checkbox `.tbl-checkbox-cell` ichida — ikkovi ham `opacity:0`. **(3)** Header katak baland (87px) va checkbox uning **tepasida** turadi: katak markaziga (`y=height/2`) oddiy `.click()` checkbox'ni chetlab o'tib **toggle QILMAYDI** (MCP'da isbotlangan). Ishlaydigan usul — `label.x + min(10, label.w/2)`, `cb.y + cb.h/2` koordinatasiga `page.mouse.click`; shuning uchun `_toggle_checkbox` label ko'rinmas (h:0) bo'lganda shu koordinatali click'ni ishlatadi. Tasdiq: yangi `grid(checkbox="all")` `form_table` grid'ni tanlab bcheckall'ni belgiladi va 50 qator select bo'ldi.
 - Testda ishlatish: input qiymatini tekshirishda `input_value(...) != x` deb raise qilish o'rniga `base.input(label="Код", expect_value=x)` ishlatilsin — auto-retry bo'ladi.
+
+### BasePage Semantic Click Helper
+Tags: locator, helper, button, tab
+Status: code-confirmed
+Verified: 2026-07-31
+Source: user; `utils/base_page.py:64`; `tests/unit/test_base_page_click.py:61`
+- Qayerda: legacy AngularJS/Biruni sahifalaridagi semantic role/name bilan topiladigan elementlar.
+- Qoida: raw `page.get_by_role(role, name=...).click()` o'rniga
+  `base.click(name=name, role=role)` ishlatiladi. Ko'p uchraydigan tugmalar
+  uchun `role="button"` default. Playwright `get_by_role` xulqini saqlash uchun
+  `exact=False` ham default va testda qayta yozilmaydi; faqat exact match kerak
+  bo'lsa `exact=True` beriladi. Kerak bo'lsa `role`, `index`, `root` va
+  `timeout` aniq beriladi.
+- Testda ishlatish: masalan, `base.click(name="Формы", role="tab")` va
+  `base.click(name="Доступные")`.
+
+### Legacy Save Transition Ochiq Yoziladi
+Tags: save, transition, helper, loader
+Status: code-confirmed
+Verified: 2026-07-31
+Source: user; `utils/base_page.py`; `tests/smoke/test_setup/test_13_price_type_uzb.py`
+- Qayerda: legacy AngularJS/Biruni add/edit formadan list yoki viewga saqlab
+  o'tish.
+- Qoida: birlashtirilgan save+heading helperi ishlatilmaydi. Test
+  `base.click(name="Сохранить")` (exact kerak bo'lsa `exact=True`), confirm majburiy bo'lsa
+  `base.confirm_biruni(...)`, so'ng `base.expect_page(heading=..., url=...)`
+  amallarini ochiq yozadi.
+- Testda ishlatish: `expect_page(heading=...)` target heading bilan birga
+  visible loader overlay yo'qolishini ham kutadi; shu page transitionda
+  alohida `base.wait_for_loader()` takrorlanmaydi.
 
 ### Order Wizard Save Tugmasi — Exact Role Name Mos Kelmaydi
 Tags: order, locator, error
 - Qayerda: `order+add`/`order+edit` wizard, 3-step (Завершение). Tugma: `#anor279-button-next_step` — step 1-2 da "Далее", oxirgi stepda "Сохранить" ko'rsatadi.
 - Qoida: tugma ichida `<i class="fa fa-save">` ikonka bor; FontAwesome `::before` glyph accessible name'ga qo'shiladi, shuning uchun `get_by_role("button", name="Сохранить", exact=True)` 0 ta element topadi ("element(s) not found"). Exact'siz (substring) qidiruv topadi.
-- Testda ishlatish: order final page save uchun `save_and_expect_heading(..., exact_button=False)` ishlatilsin. Oddiy toolbar save tugmalari (setup/contract formalari, `b-toolbar` ichidagi matnli tugma) ikonkasiz — ularda default `exact_button=True` ishlayveradi.
+- Testda ishlatish: order final page save uchun
+  `base.click(name="Сохранить")` → `base.confirm_biruni(...)` →
+  `base.expect_page(...)` ishlatilsin. Oddiy toolbar save tugmalari
+  (setup/contract formalari, `b-toolbar` ichidagi matnli tugma) ikonkasiz —
+  ularda `exact=True`.
 
 ## Loyiha Xususiyatlari
 

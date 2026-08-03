@@ -139,13 +139,9 @@ def flow_order_final_page(page, check_form=False, payment_type=None, natural_cli
 
     if save:
         with allure.step("Final Page: Order save qilish"):
-            base.save_and_expect_heading(
-                "Заказы",
-                confirm_text="Сохранить?",
-                exact_button=False,
-                location_hint="order final wizard",
-            )
-            base.expect_page(url="order_list")
+            base.click(name="Сохранить")
+            base.confirm_biruni(expected_text="Сохранить?")
+            base.expect_page(heading="Заказы", url="order_list")
 
 # ----------------------------------------------------------------------------------------------------------------------
 

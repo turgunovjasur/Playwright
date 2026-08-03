@@ -416,11 +416,9 @@ Asosiy run uchun `scripts/run_tests.py` ishlatish tavsiya qilinadi. Debug uchun 
 
 ```bash
 ./.venv/bin/pytest \
-  tests/smoke/test_setup/test_setup_runner.py \
-  tests/smoke/test_groups/test_A_grup/test_a_group_runner.py \
-  tests/smoke/test_groups/test_B_grup/test_b_group_runner.py \
-  tests/smoke/test_groups/test_C_grup/test_c_group_runner.py \
-  tests/smoke/test_groups/test_report_grup/test_report_group_runner.py \
+  tests/smoke/test_setup/test_0_setup_runner.py \
+  tests/smoke/test_groups/test_0_grup/test_0_group_runner.py \
+  tests/smoke/test_groups/test_report_grup/test_0_group_runner.py \
   --new-code --url <server_url> --company-code <company_code> --company-password <company_password> -v
 ```
 
@@ -428,18 +426,16 @@ Yangi company bilan:
 
 ```bash
 ./.venv/bin/pytest \
-  tests/smoke/test_setup/test_setup_runner.py \
-  tests/smoke/test_groups/test_A_grup/test_a_group_runner.py \
-  tests/smoke/test_groups/test_B_grup/test_b_group_runner.py \
-  tests/smoke/test_groups/test_C_grup/test_c_group_runner.py \
-  tests/smoke/test_groups/test_report_grup/test_report_group_runner.py \
+  tests/smoke/test_setup/test_0_setup_runner.py \
+  tests/smoke/test_groups/test_0_grup/test_0_group_runner.py \
+  tests/smoke/test_groups/test_report_grup/test_0_group_runner.py \
   --new-code --url <server_url> --create-company --head-email <head_email> --head-password <head_password> -v
 ```
 
 ---
 
 > **Muhim:** User setup testlari bir-biriga bog'liq — har biri oldingi test yaratgan ma'lumotdan foydalanadi.
-> Full smoke setup runner, keyin A/B/C/Report runner fayllarini shu tartibda bitta pytest sessiyasida collect qiladi. Oddiy `pytest` yoki directory collection duplicate flowlarni yurgizmasligi uchun runner bo'lmagan smoke testlar deselect qilinadi. Leaf testni debug qilish uchun uning fayl yo'lini pytestga aniq bering.
+> Full smoke setup runner, keyin Group-0 va Report runner fayllarini shu tartibda bitta pytest sessiyasida collect qiladi. Oddiy `pytest` yoki directory collection duplicate flowlarni yurgizmasligi uchun runner bo'lmagan smoke testlar deselect qilinadi. Leaf testni debug qilish uchun uning fayl yo'lini pytestga aniq bering.
 
 ---
 
@@ -447,7 +443,7 @@ Yangi company bilan:
 
 `scripts/run_tests.py` — full run uchun setup va A/B/C/Report runner fayllarini ketma-ket pytest targetlari sifatida beradi. Alohida outer `test_all_runner.py` ishlatilmaydi.
 
-`tests/smoke/test_setup/test_setup_runner.py` — user setup testlari **bitta browser sessiyasida** ketma-ket ishlaydi.
+`tests/smoke/test_setup/test_0_setup_runner.py` — user setup testlari **bitta browser sessiyasida** ketma-ket ishlaydi.
 
 Group runnerlar — har bir case alohida pytest/Allure test. User grouplarida group boshida bir marta login qilinadi va testlar shu module-scoped oynada davom etadi; keyingi group yangi context/page bilan boshlanadi.
 

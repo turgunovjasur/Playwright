@@ -27,10 +27,9 @@ python scripts/run_tests.py --url <server_url> --create-company --head-email <he
 Debug uchun setup yoki group:
 ```bash
 python scripts/run_tests.py setup --url <server_url> --company-code <company_code> --company-password <company_password>
+python scripts/run_tests.py setup-group-0 --url <server_url> --company-code <company_code> --company-password <company_password>
+python scripts/run_tests.py group-0 --url <server_url> --company-code <company_code> --company-password <company_password>
 python scripts/run_tests.py groups --url <server_url> --company-code <company_code> --company-password <company_password>
-python scripts/run_tests.py group-a --url <server_url> --company-code <company_code> --company-password <company_password>
-python scripts/run_tests.py group-b --url <server_url> --company-code <company_code> --company-password <company_password>
-python scripts/run_tests.py group-c --url <server_url> --company-code <company_code> --company-password <company_password>
 python scripts/run_tests.py group-report --url <server_url> --company-code <company_code> --company-password <company_password>
 python scripts/run_tests.py forms --url <server_url> --company-code <company_code> --company-password <company_password>
 python scripts/run_tests.py setup-forms --url <server_url> --company-code <company_code> --company-password <company_password>
@@ -45,10 +44,25 @@ python -m pytest tests/smoke/test_setup/test_<nomi>.py -v
 
 ### Bitta test funksiya:
 ```bash
-python -m pytest tests/smoke/test_setup/test_setup_runner.py::test_<nomi> -v
+python -m pytest tests/smoke/test_setup/test_0_setup_runner.py::test_<nomi> -v
 ```
 
 Repo rootda `.env` mavjud bo'lsa direct pytest/PyCharm run konfiguratsiyasi undan olinadi; `.env` yo'q bo'lsa terminal/CI flaglari ishlaydi.
+
+### Group-only run uchun majburiy preflight
+
+- `group-0`, `group-report` va `groups`
+  targetlari setup yaratmaydi; ular faqat oldin muvaffaqiyatli tugagan setup
+  baseline'ni qayta ishlatadi.
+- Repo rootda `.env` bo'lsa `NEW_CODE` ham CLI'dan ustun. `NEW_CODE=1` bilan
+  group-only targetni ishlatma: fixture yangi random code yaratadi, lekin shu
+  code uchun setup user/entitylar yaratilmagan bo'ladi. Runner bunday
+  kombinatsiyani configuration error bilan bloklaydi.
+- Group-0ni yangi baseline bilan tekshirish uchun `setup-group-0` ishlat:
+  setup va Group-0 bitta pytest sessiyasida bir xil yangi `code` bilan yuradi.
+- `group-0`ni alohida qayta run qilish faqat `.env`da `NEW_CODE=0` va
+  `data_store.json.code` aynan joriy server/companydagi muvaffaqiyatli setupdan
+  qolganiga ishonch bo'lsa to'g'ri.
 
 ### Allure hisobot ko'rish:
 ```bash
@@ -70,6 +84,8 @@ allure serve test-results/allure-results
 
 - Asosiy runner cross-platform: `python scripts/run_tests.py --url <server_url> --company-code <code> --company-password <password>`; Mac/Linux uchun `./run_tests.sh ...` wrapper ham bor.
 - Precedence qat'iy: repo rootda `.env` mavjud bo'lsa u yagona asosiy konfiguratsiya hisoblanadi; terminaldagi inline env va CLI flaglar berilgan bo'lsa ham `.env` qiymatlari ishlaydi. `.env` bo'lmasa terminal/CI CLI flaglari va shell env ishlaydi.
+- `.env`dagi `NEW_CODE=1` group-only debug run uchun yaroqsiz; yangi code bilan
+  setup ham shu sessiyada ishlashi kerak.
 - Mavjud company bilan run qilish uchun `--company-code` va `--company-password` majburiy.
 - Yangi company yaratish uchun `--create-company`, `--head-email` va `--head-password` majburiy.
 - `--create-company` bilan `--company-code` va `--company-password` berilmaydi; company code test ichida `autotest<code>` ko'rinishida yaratiladi.
@@ -86,10 +102,10 @@ allure serve test-results/allure-results
 
 - User setup testlari ketma-ket va bir-biriga bog'liq: oldingi setup test keyingi setup test uchun kerakli entity yaratadi.
 - User setup testlari yaxshi o'tgandan keyin group testlar run qilinadi.
+- Group-0 setup baselinega tayangan base order testi; yangi code bilan uning
+  xavfsiz tor targeti `setup-group-0`.
 - Group testlar user setup natijalariga bog'liq, lekin boshqa group testlarga bog'liq emas.
 - Bir group ichida test yiqilsa, shu groupning qolgan testlari skip qilinadi; keyingi group testlar run bo'lishda davom etadi.
 - Run natijasini tahlil qilganda failure setup bosqichidami yoki group bosqichidami aniq ajratib ayt.
-- `tests/smoke/test_setup/test_setup_runner.py` ichidagi mavjud barcha testlar user setup testlari hisoblanadi.
-- A-group testlari user setupdan keyin run qilinadi; A-groupning birinchi testi order uchun contract yaratadi.
-- A-group testlari `tests/smoke/test_groups/test_A_grup/` papkasida saqlanadi; contract testlari alohida `test_create_contract.py` va `test_create_contract_with_payment_type.py` fayllarida, tartib esa runnerda beriladi.
-- Order testlarida product chiqmasa, `test_20_init_balance` orqali balans qo'shib kelish yoki bron qilingan orderlarni `Canceled/Отменен` statusga o'tkazish kerak bo'lishi mumkin.
+- `tests/smoke/test_setup/test_0_setup_runner.py` ichidagi mavjud barcha testlar user setup testlari hisoblanadi.
+- Order testlarida product chiqmasa, `test_21_init_balance` orqali balans qo'shib kelish yoki bron qilingan orderlarni `Canceled/Отменен` statusga o'tkazish kerak bo'lishi mumkin.

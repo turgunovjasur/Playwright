@@ -137,24 +137,16 @@ def full_runner_paths(config):
     """Full smoke run tarkibiga kiradigan runner fayllarini tartib bilan beradi."""
     root = Path(str(config.rootpath))
     return (
-        (root / "tests/smoke/test_setup/test_setup_runner.py").resolve(),
+        (root / "tests/smoke/test_setup/test_0_setup_runner.py").resolve(),
         (
             root
-            / "tests/smoke/test_groups/test_A_grup/test_a_group_runner.py"
+            / "tests/smoke/test_groups/test_0_grup/test_0_group_runner.py"
         ).resolve(),
         (
             root
-            / "tests/smoke/test_groups/test_B_grup/test_b_group_runner.py"
+            / "tests/smoke/test_groups/test_report_grup/test_0_group_runner.py"
         ).resolve(),
-        (
-            root
-            / "tests/smoke/test_groups/test_C_grup/test_c_group_runner.py"
-        ).resolve(),
-        (
-            root
-            / "tests/smoke/test_groups/test_report_grup/test_report_group_runner.py"
-        ).resolve(),
-        (root / "tests/smoke/test_forms/test_forms_runner.py").resolve(),
+        (root / "tests/smoke/test_forms/test_0_forms_runner.py").resolve(),
     )
 
 
@@ -251,7 +243,7 @@ def modify_collected_items(config, items):
         company_items = [
             item
             for item in items
-            if Path(str(item.path)).name == "test_setup_runner.py"
+            if Path(str(item.path)).name == "test_0_setup_runner.py"
             and item.name == "test_00_company"
         ]
         if company_items:

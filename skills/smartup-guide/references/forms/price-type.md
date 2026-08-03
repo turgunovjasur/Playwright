@@ -45,7 +45,9 @@ Bu test `fill_nps_survey(page, logger)` bilan boshlanadi — step 0. Agar NPS mo
 
 ## Saqlash
 
-`save_and_expect_heading("Цены")` — biruni confirm yo'q.
+`base.click(name="Сохранить", exact=True)` →
+`base.expect_page(heading="Цены")`; Biruni confirm yo'q va `expect_page`
+loader overlay yo'qolishini ham kutadi.
 
 Natijada ikkala price type ham alohida qidirilib, gridda tekshiriladi.
 
@@ -62,18 +64,20 @@ Room prikreplenie "Тип цены" tabida esa `Акция` narx turi ulanadi �
 
 ## Test
 
-- `tests/smoke/test_setup/test_price_type.py` →
-  `run_price_type_uzb(page, code, save_data)` va
+- `tests/smoke/test_setup/test_13_price_type_uzb.py` →
+  `run_price_type_uzb(page, code, logger, save_data)`; setup zanjiridagi optional
+  NPS Survey modalini shu run birinchi qadamda qayta ishlaydi.
+- `tests/smoke/test_setup/test_14_price_type_usa.py` →
   `run_price_type_usa(page, code, save_data)`.
-- Setup 13-qadam ikkala price type'ni yaratgach, `run_currency` bilan bugungi
-  USD kursini 10000 qilib saqlaydi.
+- Setup 15-qadam `run_currency` bilan bugungi USD kursini 10000 qilib saqlaydi.
+- UZB, USA va Currency setup runnerda uchta alohida pytest case sifatida collect qilinadi.
 
 ## 2026-07-30 — USA price type downstream ishlatildi
 
 Tags: price-type, usd, product, setup
 Status: live-ui-confirmed
 Verified: 2026-07-30
-Source: `tests/smoke/test_setup/test_setup_runner.py`; `smartup.online` headless
+Source: `tests/smoke/test_setup/test_0_setup_runner.py`; `smartup.online` headless
 Setup run `20 passed, 1 deselected`
 
 - `Price Type USA-pw{code}` faqat yaratilmaydi: Setup 16-qadamdagi

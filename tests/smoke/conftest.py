@@ -221,7 +221,7 @@ def code(request):
 
     pytest.exit(
         "Yakka test uchun saqlangan 'code' topilmadi. "
-        "Avval test_setup_runner ni ishga tushiring."
+        "Avval test_0_setup_runner ni ishga tushiring."
     )
 
 
@@ -293,9 +293,12 @@ def pytest_runtest_setup(item):
     if not group_name:
         return
 
-    if _USER_SETUP_FAILED:
+    if (
+        _USER_SETUP_FAILED
+        and not smoke_reporting.smoke_group_setup_independent(item)
+    ):
         pytest.skip(
-            "User setup failed bo'lgani uchun barcha group testlar skip qilindi"
+            "User setup failed bo'lgani uchun setupga bog'liq group test skip qilindi"
         )
 
     if (
@@ -386,7 +389,7 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
     """Forms runnerning strukturali natijalarini capture yopilgach chiqaradi."""
     reports = getattr(terminalreporter, "_smartup_forms_reports", [])
     for summary in reports:
-        terminalreporter.write_sep("=", "FORMS — FILIAL, TAB, MENU, FORMA VA URL")
+        terminalreporter.write_sep("=", "FORMS — MARKAZIY MONITORING HISOBOTI")
         for line in summary.splitlines():
             terminalreporter.write_line(line)
 

@@ -4,39 +4,56 @@ from playwright.sync_api import Page
 from utils.base_page import BasePage
 
 
-def create_natural_person(page: Page, name: str, person_code: str, *, client: bool = False) -> None:
-    """To'g'ri filialda yangi jismoniy shaxs yaratib, ro'yxatga qaytadi."""
+def open_natural_person_list(page: Page, *, step_name: str) -> None:
+    """Jismoniy shaxslar ro'yxatini ochadi va sahifa holatini tekshiradi."""
     base = BasePage(page)
-
-    with allure.step("Jismoniy shaxs yaratish formasini ochish"):
+    with allure.step(step_name):
         base.navigate_to(tab="Справочники", name="Физические лица")
         base.expect_page(heading="Физические лица")
-        page.get_by_role("button", name="Создать").click()
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+def open_natural_person_create(page: Page, *, step_name: str) -> None:
+    """Jismoniy shaxs yaratish formasini ochadi."""
+    base = BasePage(page)
+    with allure.step(step_name):
+        base.click(name="Создать")
         base.expect_page(heading="Физическое лицо (создание)")
 
-    with allure.step("Jismoniy shaxs ma'lumotlarini to'ldirish"):
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+def create_natural_person(page: Page, name: str, person_code: str, *, step_name: str, client: bool = False) -> None:
+    """Ochiq create formani to'ldirib, jismoniy shaxsni saqlaydi."""
+    base = BasePage(page)
+    with allure.step(step_name):
         base.input(ng_model="d.first_name", value=name)
         base.input(label="Код", value=person_code)
         if client:
             base.checkbox(label="Клиент", checked=True)
         base.checkbox(label="Статус", expect_checked=True)
-
-    with allure.step("Jismoniy shaxsni saqlash"):
-        base.save_and_expect_heading("Физические лица", confirm_text="")
+        base.click(name="Сохранить", exact=True)
+        base.confirm_biruni()
+        base.expect_page(heading="Физические лица")
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def check_natural_person_view(page: Page, name: str) -> None:
-    """Tanlangan jismoniy shaxsning view formasida nom va statusni tekshiradi."""
+def open_natural_person_view(page: Page, name: str, *, step_name: str) -> None:
+    """Tanlangan jismoniy shaxs view formasini ochadi."""
     base = BasePage(page)
-
-    with allure.step("Jismoniy shaxs view formasini ochish"):
+    with allure.step(step_name):
         base.grid(name, click=True)
-        page.get_by_role("button", name="Просмотр", exact=True).click()
+        base.click(name="Просмотр", exact=True)
         base.expect_page(heading="Физическое лицо (просмотр)")
 
-    with allure.step("View formasidagi ma'lumotlarni tekshirish"):
-        base.text(name, "Активный")
-        page.get_by_role("button", name="Закрыть").first.click()
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+def close_natural_person_view(page: Page, *, step_name: str) -> None:
+    """Jismoniy shaxs view formasini yopib, ro'yxatga qaytadi."""
+    base = BasePage(page)
+    with allure.step(step_name):
+        base.click(name="Закрыть")
         base.expect_page(heading="Физические лица")

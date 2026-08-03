@@ -43,6 +43,6 @@ Inputlar:
 
 ## Test
 
-- `tests/smoke/test_groups/test_report_grup/test_integration_three.py::run_report_integration_three_check`
+- `tests/smoke/test_groups/test_report_grup/test_02_integration_three.py::run_report_integration_three_check`
 - Report group'da **Report-02** (`test_report_02_integration_three`), all-runner `test_05_report_group_runner` zanjirida.
 - Screenshot: `skills/smartup-guide/references/forms/screenshots/integration-three/integration_three__report-sheets__desktop__20260611.png`.

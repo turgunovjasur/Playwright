@@ -27,7 +27,7 @@ Avval `test-results/logs/` dagi tegishli log faylni o'qi.
 | `ElementNotFound` | Element yo'q | Page state tekshir, flow tartibini ko'r |
 | `AssertionError` | Qiymat mos kelmayapti | Kutilgan vs haqiqiy qiymatni solishtir |
 | `JSONDecodeError` | `data_store.json` buzilgan | Faylni backup qilib, keyin runner orqali qayta yarat |
-| `pytest.exit` | `code` fixture topilmadi | Avval `test_setup_runner.py` yoki `run_tests.sh` ishlatilsin |
+| `pytest.exit` | `code` fixture topilmadi | Avval `test_0_setup_runner.py` yoki `run_tests.sh` ishlatilsin |
 
 ### 3. Smartup kontekstini o'qi
 

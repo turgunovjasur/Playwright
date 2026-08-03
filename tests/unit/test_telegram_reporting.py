@@ -23,7 +23,7 @@ def test_a2_checked_forms_are_counted_from_numbered_allure_steps():
         {
             "name": "A2 admin formalar — aniq menyu qadamlari orqali ochilish smoke",
             "fullName": (
-                "tests.smoke.test_forms.test_a2_admin_menu_forms"
+                "tests.smoke.test_forms.test_02_a2_admin_menu_forms"
                 "#test_a2_admin_menu_forms"
             ),
             "status": "passed",
@@ -62,7 +62,7 @@ def test_forms_runner_wrappers_produce_combined_coverage():
             {
                 "name": "Forms-01 - Справочники menu formalarini ochish",
                 "fullName": (
-                    "tests.smoke.test_forms.test_forms_runner"
+                    "tests.smoke.test_forms.test_0_forms_runner"
                     "#test_forms_01_spravochniki"
                 ),
                 "status": "passed",
@@ -85,7 +85,7 @@ def test_forms_runner_wrappers_produce_combined_coverage():
             {
                 "name": "Forms-02 - A2 admin menu formalarini ochish",
                 "fullName": (
-                    "tests.smoke.test_forms.test_forms_runner"
+                    "tests.smoke.test_forms.test_0_forms_runner"
                     "#test_forms_02_a2_admin"
                 ),
                 "status": "passed",
@@ -134,7 +134,7 @@ def test_a2_form_steps_are_preserved_when_allure_results_are_collected(tmp_path)
             {
                 "name": "A2 admin formalar — smoke",
                 "fullName": (
-                    "tests.smoke.test_forms.test_a2_admin_menu_forms"
+                    "tests.smoke.test_forms.test_02_a2_admin_menu_forms"
                     "#test_a2_admin_menu_forms"
                 ),
                 "status": "passed",
@@ -169,7 +169,7 @@ def test_failure_uses_exact_allure_step_path_without_impact_or_solution():
             {
                 "name": "A2 admin formalar — smoke",
                 "fullName": (
-                    "tests.smoke.test_forms.test_a2_admin_menu_forms"
+                    "tests.smoke.test_forms.test_02_a2_admin_menu_forms"
                     "#test_a2_admin_menu_forms"
                 ),
                 "status": "failed",
@@ -228,10 +228,10 @@ def test_license_401_attachment_overrides_secondary_locator_diagnosis(tmp_path):
     (tmp_path / "failed-result.json").write_text(
         json.dumps(
             {
-                "name": "13 - Price Type",
+                "name": "13 - Price Type UZB",
                 "fullName": (
-                    "tests.smoke.test_setup.test_setup_runner"
-                    "#test_13_price_type"
+                    "tests.smoke.test_setup.test_0_setup_runner"
+                    "#test_13_price_type_uzb"
                 ),
                 "status": "failed",
                 "statusDetails": {
@@ -275,7 +275,7 @@ def test_license_401_attachment_overrides_secondary_locator_diagnosis(tmp_path):
                 {
                     **failure,
                     "status": "FAILED",
-                    "display": "13 - Price Type",
+                    "display": "13 - Price Type UZB",
                 }
             ],
         }
@@ -446,3 +446,31 @@ def test_telegram_ci_defaults_to_setup_forms():
     assert 'DEFAULT_REF = "main"' in bot
     assert 'DEFAULT_TARGET = "setup-forms"' in bot
     assert "TEST_TARGET: setup-forms" in workflow
+
+
+def test_form_result_progress_event_updates_live_telegram_state():
+    state = {}
+
+    telegram_progress.update_from_event(
+        state,
+        {
+            "event": "form_result",
+            "group": "Forms group",
+            "title": "Forms-01 — Справочники",
+            "display": "Forms-01: 057/089 Конструктор — OPENED_WITH_DEFECT",
+            "form_number": 57,
+            "form_total": 89,
+            "form_status": "OPENED_WITH_DEFECT",
+            "error_type": "TITLE_MISMATCH",
+        },
+    )
+
+    assert state["status"] == "Forms running"
+    assert state["current_group"] == "Forms group"
+    assert state["form_progress"] == {
+        "suite": "Forms-01 — Справочники",
+        "number": 57,
+        "total": 89,
+        "status": "OPENED_WITH_DEFECT",
+        "reason": "TITLE_MISMATCH",
+    }

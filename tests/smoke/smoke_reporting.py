@@ -28,6 +28,57 @@ _AUTH_LISTENER_ATTR = "_smartup_auth_diagnostics_installed"
 _AUTH_RESPONSE_ATTR = "_smartup_first_unauthorized_response"
 _LICENSE_401_MESSAGE = "Нет лицензии для входа в систему!"
 
+_SENSITIVE_SCREENSHOT_SELECTORS = (
+    "input[type='password']",
+    "input:not([type='hidden'])",
+    "textarea",
+    "[data-smt-col-key*='secret' i]",
+    "[data-smt-col-key*='password' i]",
+    "[data-smt-col-key*='token' i]",
+    "[data-column*='secret' i]",
+    "[data-column*='password' i]",
+    "[data-column*='token' i]",
+    "[data-testid*='secret' i]",
+    "[data-testid*='password' i]",
+    "[data-testid*='token' i]",
+    "[class*='client-secret' i]",
+    "[id*='client-secret' i]",
+)
+
+_SENSITIVE_SCREENSHOT_STYLE = """
+input:not([type='hidden']), textarea,
+[data-smt-col-key*='secret' i], [data-smt-col-key*='password' i],
+[data-smt-col-key*='token' i], [data-column*='secret' i],
+[data-column*='password' i], [data-column*='token' i],
+[data-testid*='secret' i], [data-testid*='password' i],
+[data-testid*='token' i], [class*='client-secret' i],
+[id*='client-secret' i] {
+  color: transparent !important;
+  text-shadow: none !important;
+  -webkit-text-security: disc !important;
+}
+"""
+
+_OAUTH_GRID_SCREENSHOT_SELECTORS = (
+    "app-company-client-list .smt-data-row",
+    "app-company-client-list [role='rowgroup'] [role='row']",
+    "app-company-client-list table tbody",
+)
+
+
+def safe_page_screenshot(page, *, full_page=True):
+    """Screenshot oladi va input/secret/token qiymatlarini dalilda yashiradi."""
+    selectors = list(_SENSITIVE_SCREENSHOT_SELECTORS)
+    if "kauth/company_client" in str(getattr(page, "url", "") or ""):
+        selectors.extend(_OAUTH_GRID_SCREENSHOT_SELECTORS)
+    masks = [page.locator(selector) for selector in selectors]
+    return page.screenshot(
+        full_page=full_page,
+        mask=masks,
+        mask_color="#2f3542",
+        style=_SENSITIVE_SCREENSHOT_STYLE,
+    )
+
 
 def page_from_item(item):
     """Test item ishlatayotgan asosiy Playwright page'ini qaytaradi."""
@@ -188,6 +239,12 @@ def smoke_group_independent(item):
     return bool(marker and marker.kwargs.get("independent", False))
 
 
+def smoke_group_setup_independent(item):
+    """Setup failed bo'lsa ham group ishlashi kerakligini tekshiradi."""
+    marker = item.get_closest_marker("smoke_group")
+    return bool(marker and marker.kwargs.get("setup_independent", False))
+
+
 def is_user_setup(item):
     """Test item `user_setup` chainiga tegishli ekanini tekshiradi."""
     return item.get_closest_marker("user_setup") is not None
@@ -331,9 +388,15 @@ def attach_failure_artifacts(item, data_path, auth_diagnostic=None):
                 name="page-title",
                 attachment_type=allure.attachment_type.TEXT,
             )
+            is_forms_runner = smoke_group_name(item) == "Forms"
+            screenshot_name = (
+                "pytest-final-page-context — failed-form dalili emas"
+                if is_forms_runner
+                else "failure-screenshot — sensitive qiymatlar yashirilgan"
+            )
             allure.attach(
-                page.screenshot(full_page=True),
-                name="screenshot",
+                safe_page_screenshot(page, full_page=True),
+                name=screenshot_name,
                 attachment_type=allure.attachment_type.PNG,
             )
         except Exception as exc:

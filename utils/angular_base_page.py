@@ -766,7 +766,7 @@ class AngularBasePage:
         self,
         name,
         *,
-        project="TRADE",
+        project="SFA",
         root="header",
         timeout=30_000,
     ):

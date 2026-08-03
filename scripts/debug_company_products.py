@@ -54,7 +54,7 @@ def main():
     configure_company_env(args)
     ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
 
-    from tests.smoke.test_setup.test_company import (  # noqa: E402
+    from tests.smoke.test_setup.test_00_company import (  # noqa: E402
         _click_trade_product,
         _fill_company_required_fields,
         _open_company_add,

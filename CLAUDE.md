@@ -24,7 +24,7 @@ Maqsad: har suhbatda bir xil xatoni takrorlamaslik.
 
 - Framework: Playwright + pytest (Python)
 - Test turi: Smoke testlar — `tests/smoke/`
-- User setup runner: `tests/smoke/test_setup/test_setup_runner.py` — setup testlarini ketma-ket ishlatadi
+- User setup runner: `tests/smoke/test_setup/test_0_setup_runner.py` — setup testlarini ketma-ket ishlatadi
 - Group runnerlar: `tests/smoke/test_groups/**/test_*_group_runner.py` — har bir group case alohida pytest testi
 - Full script: `run_tests.sh` — setup va barcha group runner fayllarini bitta pytest sessiyasida Allure bilan ishlatadi
 - `code` fixture: session uchun unikal 6 xonali son, runner da yangi, yakka testda `data_store.json` dan o'qiladi

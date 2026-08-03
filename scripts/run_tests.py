@@ -23,53 +23,66 @@ SUMMARY_FILES = (
 )
 CREATED_COMPANY_PASSWORD = "greenwhite"
 
-GROUP_RUNNER_PATHS = (
-    "tests/smoke/test_groups/test_A_grup/test_a_group_runner.py",
-    "tests/smoke/test_groups/test_B_grup/test_b_group_runner.py",
-    "tests/smoke/test_groups/test_C_grup/test_c_group_runner.py",
-    "tests/smoke/test_groups/test_report_grup/test_report_group_runner.py",
+GROUP_0_RUNNER_PATH = "tests/smoke/test_groups/test_0_grup/test_0_group_runner.py"
+GROUP_REPORT_RUNNER_PATH = (
+    "tests/smoke/test_groups/test_report_grup/test_0_group_runner.py"
 )
-FORMS_RUNNER_PATH = "tests/smoke/test_forms/test_forms_runner.py"
-A2_ADMIN_FORMS_PATH = "tests/smoke/test_forms/test_a2_admin_menu_forms.py"
+GROUP_RUNNER_PATHS = (
+    GROUP_0_RUNNER_PATH,
+    GROUP_REPORT_RUNNER_PATH,
+)
+FORMS_RUNNER_PATH = "tests/smoke/test_forms/test_0_forms_runner.py"
+A2_ADMIN_FORMS_PATH = "tests/smoke/test_forms/test_02_a2_admin_menu_forms.py"
 
 TARGETS = {
     "all": (
         (
-            "tests/smoke/test_setup/test_setup_runner.py",
+            "tests/smoke/test_setup/test_0_setup_runner.py",
             *GROUP_RUNNER_PATHS,
             FORMS_RUNNER_PATH,
         ),
         "--new-code",
     ),
-    "setup": ("tests/smoke/test_setup/test_setup_runner.py", "--new-code"),
+    "setup": ("tests/smoke/test_setup/test_0_setup_runner.py", "--new-code"),
+    "setup-group-0": (
+        (
+            "tests/smoke/test_setup/test_0_setup_runner.py",
+            GROUP_0_RUNNER_PATH,
+        ),
+        "--new-code",
+    ),
     "setup-report": (
         (
-            "tests/smoke/test_setup/test_setup_runner.py",
-            GROUP_RUNNER_PATHS[3],
+            "tests/smoke/test_setup/test_0_setup_runner.py",
+            GROUP_REPORT_RUNNER_PATH,
         ),
         "--new-code",
     ),
     "setup-a2-admin": (
         (
-            "tests/smoke/test_setup/test_setup_runner.py",
+            "tests/smoke/test_setup/test_0_setup_runner.py",
             A2_ADMIN_FORMS_PATH,
         ),
         "--new-code",
     ),
     "setup-forms": (
         (
-            "tests/smoke/test_setup/test_setup_runner.py",
+            "tests/smoke/test_setup/test_0_setup_runner.py",
             FORMS_RUNNER_PATH,
         ),
         "--new-code",
     ),
-    "company": ("tests/smoke/test_setup/test_setup_runner.py::test_00_company", "--new-code"),
+    "company": ("tests/smoke/test_setup/test_0_setup_runner.py::test_00_company", "--new-code"),
     "groups": (GROUP_RUNNER_PATHS, ""),
-    "group-a": (GROUP_RUNNER_PATHS[0], ""),
-    "group-b": (GROUP_RUNNER_PATHS[1], ""),
-    "group-c": (GROUP_RUNNER_PATHS[2], ""),
-    "group-report": (GROUP_RUNNER_PATHS[3], ""),
+    "group-0": (GROUP_0_RUNNER_PATH, ""),
+    "group-report": (GROUP_REPORT_RUNNER_PATH, ""),
     "forms": (FORMS_RUNNER_PATH, ""),
+}
+
+GROUP_ONLY_CODE_TARGETS = {
+    "groups",
+    "group-0",
+    "group-report",
 }
 
 
@@ -79,6 +92,13 @@ def normalized_url(value):
 
 def env_flag(env, name):
     return str(env.get(name, "")).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def new_code_enabled(env, *, local_dotenv_exists, pytest_extra):
+    """Joriy precedence bo'yicha pytest yangi session code yaratishini aniqlaydi."""
+    if local_dotenv_exists:
+        return env_flag(env, "NEW_CODE")
+    return env_flag(env, "NEW_CODE") or "--new-code" in pytest_extra
 
 
 def saved_company_code():
@@ -205,8 +225,10 @@ def parse_args():
         nargs="?",
         default="all",
         help=(
-            "Default: all. CI uchun: setup-forms. Debug uchun: setup, setup-report, setup-a2-admin, "
-            "company, groups, group-a, group-b, group-c, group-report, forms yoki pytest target path."
+            "Default: all. CI uchun: setup-forms. Debug uchun: setup, setup-group-0, "
+            "setup-report, setup-a2-admin, "
+            "company, groups, group-0, group-report, "
+            "forms yoki pytest target path."
         ),
     )
     parser.add_argument("--url", help="Server URL; lokal .env bo'lsa COMPANY_URL ishlatiladi.")
@@ -264,17 +286,26 @@ def main():
     if disable_license_policy and not create_company:
         print("DISABLE_LICENSE_POLICY faqat CREATE_COMPANY=1 bilan ishlaydi", file=sys.stderr)
         return 2
-    group_only_targets = {
-        "groups",
-        "group-a",
-        "group-b",
-        "group-c",
-        "group-report",
-        "forms",
-    }
+    group_only_targets = {*GROUP_ONLY_CODE_TARGETS, "forms"}
     if create_company and args.target in group_only_targets:
         print(
             "CREATE_COMPANY=1 group-only targetlar bilan ishlamaydi; all, setup yoki company ishlating",
+            file=sys.stderr,
+        )
+        return 2
+    if (
+        args.target in GROUP_ONLY_CODE_TARGETS
+        and new_code_enabled(
+            env,
+            local_dotenv_exists=local_dotenv_exists,
+            pytest_extra=pytest_extra,
+        )
+    ):
+        print(
+            "NEW_CODE=1 group-only target bilan ishlamaydi: yangi code uchun "
+            "setup user hali yaratilmagan. .env da NEW_CODE=0 qilib joriy "
+            "setup baseline'ni ishlating yoki setup bilan bir sessiyada "
+            "ishlaydigan targetni tanlang (Group-0 uchun: setup-group-0).",
             file=sys.stderr,
         )
         return 2

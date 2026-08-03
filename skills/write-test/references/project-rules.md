@@ -19,8 +19,8 @@ Quyidagi qoidalarga qat'iy rioya qil:
 - Testlar: `tests/smoke/test_setup/`, `tests/smoke/test_life_cycle/`,
   `tests/smoke/test_forms/` yoki mos `tests/smoke/test_groups/.../`
 - Flowlar: `tests/smoke/flows/`
-- User setup runner: `tests/smoke/test_setup/test_setup_runner.py`
-- Group runnerlar: `tests/smoke/test_groups/test_<X>_grup/test_<x>_group_runner.py`
+- User setup runner: `tests/smoke/test_setup/test_0_setup_runner.py`
+- Group runnerlar: har bir group papkasida `test_0_group_runner.py`
 - Full/groups targetlari: `scripts/run_tests.py` ichidagi runner fayllari ro'yxati
 - Pytest hook va fixture'lar: `tests/smoke/conftest.py`
 - Run konfiguratsiyasi va runner collection: `tests/smoke/smoke_config.py`
@@ -59,18 +59,18 @@ def run_<nomi>(page, code, save_data=None):
         base.expect_page(heading="<Ro'yxat heading>")
 
     with allure.step("2 - Yangi <entity> formasini to'ldirish"):
-        page.get_by_role("button", name="Создать").click()
+        base.click(name="Создать")
         base.expect_page(heading="<Create heading>")
         base.input(label="Код", value=entity_code)
         base.input(label="Название", value=entity_name)
         base.checkbox(label="Статус", expect_checked=True)
 
     with allure.step("3 - Saqlash va ro'yxatda tekshirish"):
-        page.get_by_role("button", name="Сохранить", exact=True).first.click()
+        base.click(name="Сохранить", exact=True)
         base.expect_page(heading="<Ro'yxat heading>")
         base.grid(entity_name, entity_code, "Активный")
 
-    # Downstream testlarga kerak bo'lsa (oxirgi step):
+    # Setup baseline'ni group testlarga uzatish kerak bo'lsa (oxirgi step):
     #     save_data("<key>", entity_code)
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -84,9 +84,12 @@ def test_<nomi>(page, code, save_data):
 ```
 
 ### `run_` / `test_` konvensiyasi qoidalari
-- **Maksimal base funksiya**: `base = BasePage(page)` qilib olinadi va `base.navigate_to/expect_page/save_and_expect_heading/switch_filial/text/form_view/input/b_input/multiselect/checkbox/grid_controller/grid/confirm_biruni/confirm_biruni_if_visible/close_biruni_alert/wait_for_loader` ishlatiladi. Raw `page.get_by_role/locator` faqat mos base funksiya yo'q joyda (masalan maxsus tab/dropdown/upload tugmasi). Grid qatorini bosish kerak bo'lsa alohida wrapper emas, `base.grid(..., click=True)` ishlatiladi.
+
+- **Maksimal base funksiya**: `base = BasePage(page)` qilib olinadi va `base.navigate_to/expect_page/switch_filial/click/text/form_view/input/b_input/multiselect/checkbox/grid_controller/grid/grid_cell/confirm_biruni/confirm_biruni_if_visible/close_biruni_alert/wait_for_loader` ishlatiladi. Raw `page.get_by_role/locator` faqat mos base funksiya yo'q joyda (masalan murakkab scoped filter yoki upload elementi). Grid qatorini bosish kerak bo'lsa alohida wrapper emas, `base.grid(..., click=True)` ishlatiladi; qaytgan rowning aniq ustunini tekshirish yoki o'qish uchun raw `.tbl-cell.nth(...)` emas, `base.grid_cell(row, index, ...)` ishlatiladi.
 - **allure.step raqamlari docstring qadamlari bilan mantiqan mos** kelsin; step nomi qisqa va professional.
-- **Test data** — `run_` boshida lokal `f"...{code}"` o'zgaruvchilar; downstream testga kerak bo'lsa oxirgi stepda `save_data(...)`.
+- **Test data** — `run_` boshida lokal `f"...{code}"` o'zgaruvchilar; faqat
+  setup baseline'ni group testlarga uzatish kerak bo'lsa oxirgi stepda
+  `save_data(...)`. Group testcase boshqa group testcase uchun data saqlamaydi.
 - **Entity name/code patterni** — yangi yoki refactor qilinayotgan setup entitylarda `entity_name = f"<entity>-pw{code}"`, `entity_code = f"c_<qisqa_entity_alias>_pw{code}"` ishlatilsin (masalan Natural Person `c_n_p_pw{code}`); code qiymati uzun entity nomini takrorlamasin. Oldindan downstream bog'liqligi tasdiqlangan biznes hujjat formatlari alohida saqlanadi.
 - **`run_` odatda auth qilmaydi** (page login qilingan deb keladi).
   Istisnolar: setup chainning birinchi umumiy itemi `run_legal_person`
@@ -98,6 +101,16 @@ def test_<nomi>(page, code, save_data):
 - **Soni aniq biznes qadamlari loopga yashirilmaydi**: bitta testdagi alohida Allure step va alohida ma'noga ega bo'lgan kam sonli bo'limlar (masalan room attachment'dagi `Типы оплат`, `Склады`, `Кассы`) `list + tuple` va umumiy loopga yig'ilmasin; har biri ochiq `with allure.step(...)` blokida yozilsin. Loop faqat haqiqiy batch/matrix ko'rinishidagi ko'p bir xil elementlar uchun ishlatiladi.
 - Fayl boshida module-level `pytestmark = [allure.epic, allure.feature, allure.story]` va funksiyalar orasida `# ---...---` separator.
 
+### Funksiya parametrlarini formatlash
+
+Tags: test, style, function, parameters
+Status: user-reported
+Verified: 2026-08-03
+Source: user
+
+- Qoida: yangi yoki o'zgartirilayotgan test, flow va helperlarda funksiya definition hamda chaqiruv parametrlari bitta fizik qatorda yoziladi; line uzunligi sabab ularni avtomatik ko'p qatorga bo'lib yuborilmaydi.
+- Testda ishlatish: `base.expect_page(...)`, `base.grid_cell(...)`, `base.form_view(...)` va boshqa chaqiruvlarning argumentlarini bir qatorda saqla.
+
 ## 3. Qoidalar
 
 - **Fixtures** — conftest.py dan keladi, import qilma:
@@ -106,21 +119,24 @@ def test_<nomi>(page, code, save_data):
 - **Allure**: har bir test `@allure.title()` va `with allure.step()` bilan bo'lishi SHART
 - **Locator**: `page.locator()` ishlatilsin, `page.find_element()` EMAS
 - **Assert**: `expect(locator).to_be_visible()` ishlatilsin, Python `assert` EMAS
-- **Project helper first**: sahifa ochilishi, heading, save natijasi, grid row, form input, checkbox/switch, b-input/multiselect va loader kutish uchun avval mavjud loyiha helperlarini ishlat (`base.expect_page(...)`, `base.save_and_expect_heading(...)`, `base.grid(...)`, `base.input(...)`, `base.checkbox(...)`, `base.wait_for_loader(...)`). `utils/base_page.py` ichida mos method bor bo'lsa raw `page.locator(...)`, raw `page.get_by_role(...)` yoki yangi local helper yozilmaydi; raw `expect(...)` faqat mos helper yo'q bo'lsa yoki yangi reusable helper yozishdan oldin lokal tekshiruv uchun ishlatiladi.
+- **Project helper first**: sahifa ochilishi, heading, semantic click, grid row/cell, form input, checkbox/switch, b-input/multiselect va loader kutish uchun avval mavjud loyiha helperlarini ishlat (`base.expect_page(...)`, `base.click(...)`, `base.grid(...)`, `base.grid_cell(...)`, `base.input(...)`, `base.checkbox(...)`, `base.wait_for_loader(...)`). `utils/base_page.py` ichida mos method bor bo'lsa raw `page.locator(...)`, raw `page.get_by_role(...)` yoki yangi local helper yozilmaydi; raw `expect(...)` faqat mos helper yo'q bo'lsa yoki yangi reusable helper yozishdan oldin lokal tekshiruv uchun ishlatiladi.
 - **b-input API bir xilligi**: single-select uchun `base.b_input(label=..., value=..., expect_value=..., return_value=...)`, multi-select uchun ham shu uslubdagi `base.multiselect(label=..., value=..., expect_value=..., return_value=..., clear=...)` ishlatiladi. Auto-selected chipni tekshirish uchun `expect_value`, tanlash uchun `value` beriladi.
 - **BasePage scope**: `utils/base_page.py` ga hamma yoki ko'p testlar ishlatadigan umumiy UI primitive'lar yoziladi. Faqat bitta testga kerak bo'lgan biznes/helper logika test faylida `_helper_name(...)` local helper bo'lib qoladi.
 - **Navigation wrapper ishlatilmaydi**: `navigate_to`, `expect_page`, `switch_filial` flow helper sifatida import qilinmaydi; test/flow ichida `base = BasePage(page)` qilib, to'g'ridan-to'g'ri `base.navigate_to(...)`, `base.expect_page(...)`, `base.switch_filial(...)` ishlatiladi.
 - **Page ready check**: `base.expect_page(..., heading=...)` heading visible bo'lishi bilan birga Smartup loader (`.block-ui-overlay:visible`) yo'qolganini ham kutadi. Loader yo'q bo'lsa 2 sekund kutmaydi; darhol davom etadi. Bu route/page state check uchun yetarli; lekin keyingi action aynan grid/form ichki async reloadga bog'liq bo'lsa `base.wait_for_loader()` alohida qoladi.
+- **Save transition ochiq yoziladi**: `base.click(name="Сохранить", exact=True)` → confirm majburiy bo'lsa `base.confirm_biruni(...)` → `base.expect_page(heading=..., url=...)`. `expect_page(heading=...)` loader overlay yo'qolishini ham kutgani uchun yangi list/view sahifasiga o'tishda alohida `wait_for_loader()` yozilmaydi. Order wizard ikonkalı save tugmasida partial match default bo'lgani uchun faqat `base.click(name="Сохранить")` yoziladi.
 - **Timeout**: DEFAULT_TIMEOUT (10s) yetarli; kerak bo'lsa `page.wait_for_timeout()` emas, `expect(...).to_be_visible()` kutish
-- **Session data**: `save_data("key", value)` va `load_data("key")` orqali ma'lumot almashing
+- **Session data**: `save_data("key", value)` va `load_data("key")` setup
+  baseline → group yo'nalishida ishlatiladi; group testcase'lar o'zaro data
+  almashmaydi.
 - **`code`**: har bir test uchun unikal identifikator, nom sifatida ishlating
 
 ## 4. Runner ga qo'shish
 
-Yangi user setup testi yozilgandan keyin `tests/smoke/test_setup/test_setup_runner.py` ga import va `@allure.title` bilan qo'sh:
+Yangi user setup testi yozilgandan keyin `tests/smoke/test_setup/test_0_setup_runner.py` ga import va `@allure.title` bilan qo'sh:
 
 ```python
-from tests.smoke.test_setup.test_<nomi> import test_<nomi> as run_<nomi>
+from tests.smoke.test_setup.test_XX_<nomi> import run_<nomi>
 
 @allure.title("XX - <Nomi>")
 def test_XX_<nomi>(session_page: Page, code):
@@ -172,12 +188,26 @@ def test_XX_<nomi>(session_page: Page, code):
 - Project helperning default parametr qiymati testda qayta yozilmaydi; parametr
   faqat default xatti-harakatni o'zgartirish kerak bo'lsa beriladi.
 
+#### Yangi page/form/modal uchun Allure step chegarasi
+Status: code-confirmed
+Verified: 2026-07-31
+Source: user; `skills/write-test/SKILL.md:33`; `skills/write-test/references/project-rules.md:175`
+- Qoida: har bir yangi page, forma yoki modal ochilishi alohida raqamlangan
+  `with allure.step(...)` blokiga ega bo'ladi. Transition actioni va shu yangi
+  state'ni tasdiqlovchi `base.expect_page(heading=...)` bir blokda turadi.
+- Bir Allure step ichida ketma-ket bir nechta yangi sahifa ochib, bir nechta
+  `base.expect_page(...)` yozilmaydi; har bir keyingi transition yangi stepga
+  ajratiladi.
+- `allure.setup` ishlatilmaydi; loyiha API'si `allure.step`.
+
 ### `expect_page` heading scope
 - Heading aniq konteyner ichida tekshirilishi kerak bo'lsa `base.expect_page(heading=..., root="<selector>")` ishlat; `root` berilmasa heading butun sahifadan qidiriladi, loader esa har ikki holatda global tekshiriladi.
 
 ### `grid` holatini tekshirish
-- Grid holati bo'yicha branch qilish uchun `base.grid(is_empty=True, root="<grid selector>")` ishlat; u bo'sh grid uchun `True`, ma'lumotli grid uchun `False` qaytaradi. Eski assertion-semantikadagi `empty=True` ishlatilmaydi.
-- Ma'lum grid qatori mavjudligi bo'yicha branch qilish uchun raw `.tbl-row.filter(...).is_visible()` yozma; `base.grid("row text", is_visible=True, root="<grid selector>")` ishlat. Qator ko'rinsa `True`, topilmasa `False` qaytaradi.
+- Bo'sh gridni majburiy tasdiqlash uchun `base.grid(state="empty", root="<grid selector>")` ishlat; helper ko'rinadigan grid ichidagi aniq `нет данных` matnini auto-retry bilan kutadi.
+- Grid holati bo'yicha branch qilish uchun `base.grid(state="empty", return_bool=True, root="<grid selector>")` ishlat; u bo'sh grid uchun `True`, ma'lumotli grid uchun `False` qaytaradi.
+- Ma'lum grid qatori mavjudligini majburiy tasdiqlash uchun `base.grid("row text", root="<grid selector>")` ishlat. Branch kerak bo'lsa raw `.tbl-row.filter(...).is_visible()` yozma; `base.grid("row text", return_bool=True, root="<grid selector>")` qator ko'rinsa `True`, topilmasa `False` qaytaradi.
+- `return_bool=True` bir martalik tekshiruv; assertion rejimi targetni retry qiladi, lekin oldingi state ham targetga mos bo'lishi mumkin. Tab yoki filter gridni almashtirsa har ikki rejimdan oldin `base.wait_for_loader()` chaqir.
 
 ### authorization (rolga qarab login)
 - Yagona funksiya: `authorization(page, *, who="admin"|"user"|"head", code=None)`. `who` majburiy keyword-only parametr: har bir chaqiruv login rolini ochiq yozishi shart. **Eski `authorization_user` OLIB TASHLANGAN — ishlatma.**
@@ -197,7 +227,12 @@ def test_XX_<nomi>(session_page: Page, code):
 - Codegen kodini moslashda har bir ochilgan sahifa, forma yoki view uchun `expect(...)` bilan ochilganini tasdiqla; mavjud login/navbar flowlari bo'lsa, codegen qatorlari o'rniga o'shalarni ishlat.
 - Codegen `page.goto("https://...")` kabi hardcode to'liq URL yozadi; bularni hech qachon kodda qoldirma. Conftest `--url` ni `os.environ["COMPANY_URL"]` ga yozadi va `tests/smoke/flows/flow_authorization.company_url()` shuni o'qiydi. Har bir hardcode URL ni `f"{company_url()}/login.html"`, `f"{company_url()}/a2/biruni/md/company_list"` kabi global URL ga bog'la (path qismi qoladi, domen `company_url()` dan keladi). `company_url` ni `flow_authorization` dan import qil.
 - Umumiy test ma'lumotlarini ajratish uchun random ishlatma, `code` fixture qiymatini ishlat; bu test boshida generatsiya bo'ladi va butun sessiya davomida saqlanadi.
-- `code` fixture umumiy entity nomlari va testlarni ajratish uchun ishlatiladi; agar formaning o'z `code`/`number` maydoni keyingi testlarda kerak bo'lsa, alohida `contract_code_{random_son}` kabi qiymat generatsiya qil, listda aynan shu qiymat bilan hozir yaratilgan recordni top, test muvaffaqiyatli tugaganda `save_data` orqali `data_store.json` ga saqla.
+- `code` fixture umumiy entity nomlari va testlarni ajratish uchun ishlatiladi;
+  agar formaning o'z `code`/`number` maydoni setup baseline sifatida group
+  testlarga kerak bo'lsa, alohida `contract_code_{random_son}` kabi qiymat
+  generatsiya qil, listda aynan shu qiymat bilan recordni top va setup
+  muvaffaqiyatli tugaganda `save_data` orqali saqla. Group testcase bu usul
+  bilan sibling consumer yaratmaydi.
 - Contract add formasida generated `contract_code_{random_son}` qiymati `Код` inputiga yoziladi; `Номер` inputi bilan almashtirib yuborma.
 - Dinamik test qiymatlarini test boshida alohida o'zgaruvchiga yig'ib olma; kerakli joyida `f"...{code}"` ko'rinishida yoz.
 - Barcha testlarda qayta ishlatiladigan umumiy helperlar, masalan `b-input` tanlash, local test helper emas `utils/base_page.py` ichidagi `BasePage` methodi bo'lsin.
@@ -215,23 +250,164 @@ def test_XX_<nomi>(session_page: Page, code):
   shaxs yaratishi kerak bo'lsa `flow_natural_person` reusable oqimini ishlatadi,
   locator/fill/assert logikasini dublikat qilmaydi.
 
-### Setup va Group test dependency modeli
+### Group testcase mustaqilligi, flow chegarasi va BasePage-first
+
+Status: user-reported
+Verified: pending
+Source: user; 2026-07-31 current group/flow code audit
+
+Bu bo'lim yangi yoziladigan va refactor qilinadigan group testlari uchun target
+architecture hisoblanadi. Eski A/B/C implementatsiyasi 2026-07-31 kuni
+o'chirilgan; ular qayta yozilganda quyidagi qoidalar joriy contract bo'ladi.
+
+#### Group testcase mustaqilligi
+
+- Har bir group testcase `user_setup` muvaffaqiyatli tugagan fresh holatdan
+  mustaqil ishlashi kerak.
+- Bitta group case boshqa case yaratgan order, contract, action, project,
+  setting yoki `data_store` keyni o'qimaydi. Runnerdagi `A-01`, `A-02` tartibi
+  report tartibi, dependency tartibi emas.
+- Testga feature-specific precondition kerak bo'lsa, u shu testcase'ning
+  Arrange qismida idempotent yaratiladi/sozlanadi yoki tasdiqlangan shared setup
+  baseline'dan olinadi.
+- Group case natijasi keyingi case uchun `save_data` qilinmaydi. `save_data`
+  faqat tashqi report/debug artefakti uchun zarur bo'lsa case-prefiksli key
+  bilan ishlatilishi mumkin; consumer dependency yaratmaydi.
+- Bitta case failed bo'lsa shu groupning boshqa caselari skip qilinmaydi.
+  Failure isolation pytest hook/runnerda ham ta'minlanishi kerak.
+- Cleanup faqat testcase o'zi yaratgan yoki o'z unique `code`/case IDsi bilan
+  aniq topgan dataga ishlaydi; boshqa testcase datasi cancel/edit qilinmaydi.
+
+#### Testcase ichki tuzilishi
+
+- `run_<case>(...)` ichida Arrange → Act → Assert biznes oqimi ko'rinib turadi.
+  Boshqa `run_*` testcase chaqirilmaydi va testcase ichiga boshqa testcase
+  yashirilmaydi.
+- Har leaf faylda bitta biznes testcase bo'ladi. Standalone `test_*` wrapper va
+  runner wrapper shu bitta `run_*` funksiyani chaqiradi.
+- Docstring qadamlari, `allure.step` raqamlari va real UI transitionlar bir
+  ma'noda bo'ladi; duplicate step raqami yoki boshqa testcase title'i
+  ishlatilmaydi.
+- Save'dan keyin `print(...)` diagnostika assertion o'rnini bosmaydi: list va
+  viewdagi biznes qiymatlar `BasePage` orqali tekshiriladi.
+
+#### Setup, group va Forms runner/leaf fayllarini tartib bilan nomlash
+
+Status: code-confirmed
+Verified: 2026-07-31
+Source: user; `tests/smoke/test_setup/test_0_setup_runner.py`; `tests/smoke/test_groups/test_0_grup/test_0_group_runner.py`; `tests/smoke/test_groups/test_report_grup/test_0_group_runner.py`; `tests/smoke/test_forms/test_0_forms_runner.py`
+
+- Setup runner doim `test_0_setup_runner.py` deb nomlanadi; setup leaf fayli wrapper raqamiga mos `test_00_<case>.py`, `test_01_<case>.py`, ... prefixini oladi.
+- Mustaqil setup biznes amallari alohida pytest wrapper va alohida leaf fayl oladi; masalan UZB price type `test_13_price_type_uzb.py`, USA price type `test_14_price_type_usa.py`, Currency esa `test_15_currency.py`.
+- Har bir group papkasidagi runner fayli doim `test_0_group_runner.py` deb nomlanadi.
+- Har bir group leaf test fayli runnerdagi o'rniga mos ikki xonali prefix bilan nomlanadi: `test_01_<case>.py`, `test_02_<case>.py`, ....
+- Forms runner `test_0_forms_runner.py`; Forms leaf modullari runner tartibiga mos `test_01_<case>.py`, `test_02_<case>.py`, ... deb nomlanadi.
+- Runner wrapper nomi va Allure title leaf fayl tartibini aynan takrorlaydi; yangi case orasiga qo'shilsa keyingi leaf fayllar ham runner tartibiga mos qayta raqamlanadi.
+
+#### Unit test qo'shmaslik va run qilmaslik
+
+Status: user-reported
+Verified: 2026-08-03
+Source: user
+
+- Foydalanuvchi alohida so'ramasa, smoke test o'zgarishlari uchun yangi unit test qo'shilmaydi va unit testlar ishga tushirilmaydi.
+- Tekshiruv collection, statik tekshiruv yoki foydalanuvchi ruxsat bergan aniq smoke target bilan cheklanadi.
+
+#### Flow admission gate
+
+Yangi `flow_*` faqat quyidagilardan kamida bittasi rost bo'lsa yaratiladi:
+
+1. Ko'pchilik shu domain testlari o'tishga majbur bo'lgan umumiy gateway
+   (`flow_order_list` kabi).
+2. Kamida uchta mustaqil leaf testda aynan bir xil ko'p qadamli UI choreography
+   takrorlanadi va uni ajratish test maqsadini yashirmaydi.
+3. Popup/download/modal kabi texnik state machine bir nechta testda bir xil
+   retry/cleanup talab qiladi.
+
+Flowga quyidagilar kiritilmaydi:
+
+- testcase-specific product/quantity/payment/status/expected amount;
+- contract/action/project kabi biznes preconditionni yaratib, butun scenarioni
+  final stepgacha tayyorlash;
+- `check_form`, `save`, `next_page` kabi ko'p branchli parametrlar orqali bir
+  funksiyani bir nechta testcasega aylantirish;
+- testga xos business assertion, `save_data/load_data` yoki Allure testcase
+  step'lari.
+
+Bir yoki ikki testda ishlatiladigan qadam leaf testda `BasePage` bilan ochiq
+qoladi. Takrorlanish real paydo bo'lmaguncha oldindan abstraksiya yaratilmaydi.
+
+#### BasePage-first
+
+- Page state, input, b-input, select, checkbox/radio, grid, view value, save,
+  confirm, alert va loader uchun avval mavjud `BasePage`/`AngularBasePage`
+  funksiyasi ishlatiladi.
+- Mos base method bor joyda raw locator, local one-line wrapper yoki yangi flow
+  yozilmaydi.
+- Raw Playwright faqat BasePage qamramagan maxsus interaction uchun leaf testda
+  minimal scope bilan ishlatiladi. Shu interaction uch yoki undan ko'p testda
+  takrorlansa avval BasePage primitive sifatida umumlashtirish ko'rib chiqiladi.
+- Flow BasePage'ni almashtirmaydi; flow ichida ham mavjud BasePage primitive'lari
+  ishlatiladi.
+
+#### `run_base_order` refactor mezoni
+
+`run_base_order` uslubi target yo'nalish sifatida olinadi: order listga o'tish
+uchun umumiy `flow_order_list`, qolgan qadamlar esa leaf testda BasePage bilan
+ko'rinadi. Final variantda u:
+
+- runner tartibiga mos ikki xonali raqamli leaf faylda turadi;
+- unique va maqsadga mos Allure title oladi;
+- docstring/allure step raqamlarini bir xil saqlaydi;
+- raw locator o'rniga `base.click(name="Сохранить", ...)`, kerak bo'lsa
+  `base.confirm_biruni(...)`, so'ng `base.expect_page(...)` ishlatadi;
+- list/viewda order ID va barcha asosiy qiymatlarni assert qiladi, `print`
+  bilan cheklanmaydi.
+
+#### Group-0 — setup baseline asosidagi base order
+
+Status: live-ui-confirmed
+Verified: 2026-07-31
+Source: user;
+`tests/smoke/test_groups/test_0_grup/test_01_create_base_order.py`;
+`tests/smoke/test_groups/test_0_grup/test_0_group_runner.py`; live UI
+
+- Mavjud `run_base_order` refactor qilinib, order grouplarining birinchi
+  mustaqil `Group-0` testcase'i sifatida olinadi.
+- Group-0 faqat muvaffaqiyatli `test_0_setup_runner.py` yaratgan baseline
+  entitylar va `code`ga tayanadi; boshqa group yaratgan contract, action, order
+  yoki `data_store` keyni o'qimaydi.
+- Group-0ning biznes maqsadi setupdagi room, robot, representative, client,
+  product, price, payment type va balance bilan oddiy orderning
+  add → list → view happy pathini tekshirishdir.
+- Group-0 boshqa grouplar uchun order yoki boshqa precondition yaratmaydi;
+  uning failure'i setup failure'i hisoblanmaydi va mustaqil keyingi group
+  caselarini bloklamaydi.
+- Leaf va Group-0 runner targetlari real UI'da alohida muvaffaqiyatli
+  tekshirilgan.
+
+### Setup va Group test execution modeli
 - Group runner faylida har bir case alohida pytest test sifatida yig'iladi va `pytest.mark.smoke_group("A")` kabi decorator/marker bilan o'z groupiga biriktiriladi; group caselari full run ichida bitta chain-testga birlashtirilmaydi.
 - Runner wrapperda ko'rinadigan test nomining yagona source'i `@allure.title(...)`; wrapper faqat tegishli `run_*` funksiyani chaqiradi. Telegram progress eventlari `conftest.py` hooklaridan title/marker/path orqali avtomatik chiqadi, test body ichida `progress_step` yoki takroriy title yozilmaydi.
 - Group runnerdagi thin wrapper signature va uning `run_*` chaqiruvi argumentlari uzun bo'lsa ham bitta qatorda yoziladi; fixture/argumentlar alohida qatorlarga bo'linmaydi.
 - Yangi testlar har doim yangi server/baza holatida ham ishlashi kerak; lokal debugda oldingi rerunlardan data ko'paygan bo'lsa ham, testni mavjud dataga suyanib yozma.
 - Fresh bazada feature settinglar default o'chirilgan bo'lishi mumkin; testga kerak bo'lgan settingni mavjud holatga suyanmay, idempotent tarzda yoqib/sozlab keyin asosiy flowga o't.
 - User setup testlari bir-biriga bog'liq: oldingi setup test keyingi setup test uchun kerakli ma'lumot yoki entity yaratadi; setup ichida test yiqilsa keyingi setup test yura olmasligi mumkin.
-- User setup testlari muvaffaqiyatli o'tgandan keyin group testlar boshlanadi: masalan `A group`, `B group` va boshqa guruhlar.
-- Har bir group test user setup natijalariga bog'liq, lekin boshqa group testlarga bog'liq emas.
-- Bir group ichida test yiqilsa, shu groupning qolgan testlari skip qilinadi; keyingi group testlari esa run bo'lishda davom etadi.
-- Group testlar boshqa group yaratgan data yoki statega suyanmasin; A failed bo'lsa ham B, C, D... group testlari user_setup natijalaridan mustaqil run bo'lishi kerak.
-- Har bir group ichki dependency uchun o'z data_store key prefixidan foydalansin (`a_group_*`, `b_group_*`, `c_group_*`), boshqa group prefixlarini o'qimasin.
-- Group runnerlar `tests/smoke/test_groups/test_<X>_grup/test_<x>_group_runner.py` ko'rinishida bo'lsin; group ichidagi tartib wrapper test nomlari orqali `X-01`, `X-02` tarzida aniq berilsin.
+- User setup testlari muvaffaqiyatli o'tgandan keyin joriy runnerga ulangan group testlar boshlanadi.
+- Har bir group test faqat user setup baseline'ga bog'liq; boshqa group yoki shu
+  groupdagi boshqa testcase yaratgan data/state'ga suyanmaydi.
+- Bir group ichida test yiqilsa, shu groupning boshqa testlari ham, keyingi
+  grouplar ham run bo'lishda davom etadi.
+- Group/testcase artefakti saqlanishi shart bo'lsa o'z case/group prefiksidan
+  foydalanadi, lekin boshqa testcase bu keyni consumer dependency sifatida
+  o'qimaydi.
+- Group runnerlar `tests/smoke/test_groups/test_<X>_grup/test_0_group_runner.py` ko'rinishida bo'lsin; group ichidagi tartib wrapper test nomlari orqali `X-01`, `X-02` tarzida aniq berilsin.
 - Har yangi group runner qo'shilganda `scripts/run_tests.py` ichidagi `GROUP_RUNNER_PATHS` ro'yxatiga va `tests/smoke/smoke_config.py::full_runner_paths()` ro'yxatiga qo'shilsin.
-- Full run `test_setup_runner.py`, keyin A/B/C/Report group runner fayllarini shu tartibda bitta pytest sessiyasida collect qiladi; alohida `test_all_runner.py` outer-chain fayli ishlatilmaydi.
+- Full run `test_0_setup_runner.py`, keyin joriy `GROUP_RUNNER_PATHS` group runner fayllarini bitta pytest sessiyasida collect qiladi; alohida `test_all_runner.py` outer-chain fayli ishlatilmaydi.
 - Mexanizm pytest hook/marker orqali bo'lsin: `pytest.mark.user_setup` setup chain uchun, `pytest.mark.smoke_group("A")` kabi markerlar group chain uchun ishlatiladi.
-- Bitta group testi failed bo'lsa faqat shu groupning keyingi testlari skip qilinadi, boshqa group markerlari skip qilinmaydi; user_setup failed bo'lsa barcha group testlar skip qilinadi.
+- Bitta group testi failed bo'lsa boshqa group testcase skip qilinmaydi;
+  `user_setup` failed bo'lsa baseline tayyor bo'lmagani uchun group testlar
+  skip qilinishi mumkin.
 - Grouplar bir-birining browser/page holatini meros qilib olmasin: har bir group runner modul-scoped `group_session_page` oladi; user grouplari `group_user_page` bilan bitta login/page'ni bo'lishadi.
 - `group_session_page` faqat browser context/page lifecycle uchun javobgar va `code`
   fixture'ini qabul qilmaydi. `code` faqat test data yoki user login talab qiladigan
@@ -239,39 +415,50 @@ def test_XX_<nomi>(session_page: Page, code):
   saqlangan `data_store.json` bo'lmasa fixture setupdayoq to'xtaydi.
 - Fixture nomidan uning lifecycle scope'i, runnerda ulashilishi va login roli
   tushunarli bo'lsin; yangi noaniq `group`/`session` kombinatsiyalari qo'shilmasin.
-- Group ichidagi `run_*` funksiyalari `login` parametrini qabul qilmaydi. User grouplarida loginni `group_user_page` fixture bir marta bajaradi; fresh `page` ishlatadigan standalone pytest wrapper esa `run_*` dan oldin `authorization(...)` qiladi. Admin rolidan boshlanishi testning o'z preconditioni bo'lgan B-04/Report caselari `authorization(who="admin")` ni parametrsiz va ochiq bajaradi.
-- B-group leaf testlari alohida, tartib raqamisiz fayllarda turadi: `test_create_order_with_consignment_limit.py`, `test_edit_order_with_consignment_limit.py`, `test_order_invoice_reports.py`, `test_invoice_report_template.py`. Tartib raqami faqat `test_b_group_runner.py` wrapper nomi/title'ida (`B-01`...`B-04`) beriladi. Umumiy order logikasi `order_helpers.py` ichidagi `run_*` funksiyalarda saqlanadi; `run_*` nomida `b_group` takrorlanmaydi.
+- Group ichidagi `run_*` funksiyalari `login` parametrini qabul qilmaydi. User grouplarida loginni `group_user_page` fixture bir marta bajaradi; fresh `page` ishlatadigan standalone pytest wrapper esa `run_*` dan oldin `authorization(...)` qiladi. Admin rolidan boshlanishi testning o'z preconditioni bo'lgan caselar `authorization(who="admin")` ni parametrsiz va ochiq bajaradi.
 - Bitta testga xos local yordamchi funksiyalar shu test faylida qolsin; helper/flow alohida faylga faqat funksiya bir nechta testda qayta ishlatilsa yoki haqiqiy umumiy flow bo'lsa chiqariladi.
 - Bitta test ichidagi 1 qatorlik wrapper/helper yoki constant-getter funksiyalar yozilmasin; oddiy test data va `f"..."` kabi expressionlar test/run flow boshida local variable bo'lib tursin. Helper faqat takrorlanadigan UI harakati, conditional/retry, download/file validation yoki o'qishni aniq yengillashtiradigan blok uchun ishlatilsin.
 - Download tekshiradigan testlar Windows, Linux va macOSda ishlashi kerak: contextlarda `accept_downloads=True` bo'lsin, fayl `download.save_as()` bilan `test-results/downloads/` ichiga OS-safe filename qilib saqlansin, va timeout bo'lsa Allurega URL/error/screenshot diagnostikasi yozilsin.
-- Group test ichida cleanup yoki oldingi recordlarni cancel qilish faqat optional bo'lsin: data topilmasa no-op bo'lib, test yangi record yaratib davom etishi kerak.
+- Group test cleanup'i faqat shu testcase yaratgan unique recordga tegishli
+  bo'lsin; boshqa testlarning oldingi recordlarini umumiy client bo'yicha
+  cancel qilish mustaqillikni buzadi.
 - Yangi test yozishda u setup bosqichigami yoki qaysi mustaqil groupga tegishli ekanini aniq ajrat.
-- `tests/smoke/test_setup/test_setup_runner.py` ichidagi mavjud barcha testlar user setup testlari hisoblanadi; runner setup testlari bilan bir papkada turadi va ular yozib bo'lingan.
-- **user_setup yakunlangan**: `tests/smoke/test_setup/` ga YANGI test QO'SHILMAYDI. Yangi testlar `tests/smoke/test_life_cycle/` yoki yangi group (`tests/smoke/test_groups/test_<X>_grup/`) ichida yoziladi.
+- `tests/smoke/test_setup/test_0_setup_runner.py` ichidagi testlar umumiy
+  baseline hisoblanadi. Yangi entity faqat kamida uchta mustaqil group
+  testcasega bir xil ko'rinishda kerakligi tasdiqlansa setupga qo'shiladi;
+  feature-specific variantlar testcase Arrange qismida yaratiladi.
 - **authorization har test boshida chaqirilmaydi**: setup chain admin logini
   `test_01_legal_person` boshida, user group logini `group_user_page`da bir marta
   bajariladi; keyingi `run_*` funksiyalar page holatini meros qiladi.
-- **Yangi test ma'lumotlari `data_store.json` dan olinadi**: setup yaratgan
-  entity nom/kodlari `load_data(...)` yoki `code` fixture orqali olinadi; test
-  ichiga konkret session/company qiymati hardcode qilinmaydi.
-- A-groupning birinchi testi UZS contract yaratadi; order yaratish uning keyingi downstream testdagi maqsadi bo'lsa ham, test nomiga `order` qo'shilmaydi.
-- A-group testlari `tests/smoke/test_groups/test_A_grup/` papkasiga yozib boriladi; contract testlari alohida `test_create_contract.py` va `test_create_contract_with_payment_type.py` fayllarida saqlanadi.
-- Group leaf test fayllariga tartib raqami yozilmaydi; `A-01`, `A-02` kabi tartib faqat group runner wrapper nomi va Allure title'da beriladi.
-- Test, funksiya va fayl nomi faqat testning o'zida bajariladigan biznes amalni ifodalaydi; downstream maqsad nomga qo'shilmaydi. A-group papka, marker va runner orqali ma'lum bo'lsa, `run_create_contract` va `test_create_contract` kabi sodda nom ishlatiladi. Downstream dependency uchun `a_group_*` data keylari o'zgartirilmaydi.
-- A-group contract testida `a_group_contract_code` bilan birga `a_group_contract_name` ham `data_store.json` ga saqlanadi; order formasidagi `Договор` maydoni contract code emas, contract name bilan tanlanadi.
-- Order testlari ko'p yozilishi kutiladi; yangi order case yozishda avval `tests/smoke/flows/flow_order/` ichidagi mavjud flowlardan foydalan, takrorlanadigan order harakatlari paydo bo'lsa ularni test ichida qoldirmay alohida order flowga ajrat.
+- **Yangi test ma'lumotlari**: faqat setup baseline nom/kodlari
+  `load_data(...)` yoki `code` orqali olinadi; group testcase boshqa testcase
+  saqlagan keyni o'qimaydi va konkret session/company qiymati hardcode
+  qilinmaydi.
+- Test, funksiya va fayl nomi faqat testning o'zida bajariladigan biznes amalni
+  ifodalaydi; boshqa testcase maqsadi nomga qo'shilmaydi. Group papka, marker
+  va runner orqali ma'lum bo'lsa, `run_create_contract` va
+  `test_create_contract` kabi sodda nom ishlatiladi.
+- Order formasidagi `Договор` maydoni contract code emas, contract name bilan
+  tanlanadi. Contract testcase-specific bo'lsa aynan shu case Arrange qismida
+  yaratiladi; shared baseline bo'lsa setup keydan olinadi.
+- Order testlari ko'p yozilishi kutiladi; yangi case avval BasePage va
+  tasdiqlangan `flow_order_list`dan foydalanadi. Boshqa order flowi faqat
+  yuqoridagi Flow admission gate'dan o'tsa saqlanadi/yaratiladi.
 - Test yozish, migratsiya yoki debug paytida xato testcase, noto'g'ri flow, ortiqcha murakkablik yoki dublikat kod ko'rinsa, foydalanuvchiga alohida xabar ber va tavsiya qilingan tuzatishni qisqa tushuntir.
-- A-group Contract A-01 va A-02 testlari alohida fayllarda, self-contained yoziladi; Contract add/list/view qadamlari `flow_contract` ga chiqarilmaydi. Har fayl o'z `run_*` va standalone `test_*` funksiyasiga ega bo'ladi.
-- A-group order A-03/A-04/A-05 caselari ham bittadan raqamsiz leaf faylda saqlanadi: `test_contract_limit_validation_and_valid_order.py`, `test_order_uses_contract_payment_type.py`, `test_edit_order_and_save_as_new.py`. Eski ko'p-testli `test_order.py` ishlatilmaydi; tartib faqat runnerda beriladi.
-- A-group order leaf testlarida page state va assertionlar uchun `BasePage.expect_page`, `text`, `grid`, `input`, `b_input`, `form_view`, `close_biruni_alert` va `save_and_expect_heading` ishlatiladi; maxsus wizard/list harakatlari mavjud `flow_order` funksiyalarida qoladi.
+- Contract testlari alohida fayllarda, self-contained yoziladi; Contract add/list/view qadamlari `flow_contract` ga chiqarilmaydi. Har fayl o'z `run_*` va standalone `test_*` funksiyasiga ega bo'ladi.
+- Order leaf testlarida page state va assertionlar uchun
+  `BasePage.expect_page`, `text`, `grid`, `input`, `b_input`, `form_view`,
+  `close_biruni_alert`, `click` va `confirm_biruni` ishlatiladi. Umumiy list
+  gateway `flow_order_list`da qoladi; boshqa wizard flowlar faqat Flow
+  admission gate'dan o'tsa saqlanadi.
 - Contract + `Типы оплат` case'ida `Тип оплаты` orderda auto-fill bo'lishini tekshir; user uni o'zgartirsa ham order ishlashi kerak, faqat contract sum limit tekshiriladi.
 - Contract valyutasi order productlarini filterlaydi; boshqa valyutali contractga almashtirilsa, oldin tanlangan productlar o'chishi kutiladi.
 
 ### Form-opening smoke suite arxitekturasi
 - Barcha forma-opening testlar `tests/smoke/test_forms/` ichida saqlanadi.
   `Справочники`, `Склад`, `Продажа` va keyingi har bir navbar tab uchun alohida
-  `test_<tab>_menu_forms.py` leaf modul bo'ladi. Mavjud
-  `test_a2_admin_menu_forms.py` ham `test_life_cycle/`dan shu papkaga ko'chiriladi.
+  `test_XX_<tab>_menu_forms.py` leaf modul bo'ladi. Mavjud
+  `test_02_a2_admin_menu_forms.py` ham `test_life_cycle/`dan shu papkaga ko'chiriladi.
 - Har leaf modul o'zining deklarativ forma inventari,
   `run_<tab>_menu_forms(...)` funksiyasi va standalone
   `test_<tab>_menu_forms(...)` testiga ega bo'ladi. Tablar bir-birini import
@@ -283,9 +470,9 @@ def test_XX_<nomi>(session_page: Page, code):
   yig'ish. `flow.py` mavjud `BasePage`/`AngularBasePage` atomik metodlarini
   chaqiradi; ularni takrorlamaydi va umumiy page objectni suite-specific
   biznes orchestration bilan to'ldirmaydi.
-- Umumiy runner `tests/smoke/test_forms/test_forms_runner.py` bo'ladi va har
+- Umumiy runner `tests/smoke/test_forms/test_0_forms_runner.py` bo'ladi va har
   leaf `run_*` funksiyasini alohida sibling pytest test sifatida chaqiradi.
-  Fayl oddiy `runner.py` emas, `test_*_runner.py` patternida nomlanadi, chunki
+  Fayl oddiy `runner.py` emas, `test_0_*_runner.py` patternida nomlanadi, chunki
   smoke collector shu patterndagi runnerlarni avtomatik topadi.
 - Runner bitta module-scoped admin page/login va topilgan operatsion filial
   nomini bo'lishishi mumkin, ammo har bir tab `run_*` o'z filial preconditionini

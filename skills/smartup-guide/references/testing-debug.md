@@ -64,6 +64,22 @@ Tags: authorization, user, code, data-store, debug
 - `authorization` code generatsiya qilmaydi va `data_store.json`dan code o'qimaydi; yangi/eski code tanlovining yagona source'i `NEW_CODE` boshqaradigan `code` fixture.
 - `who="user"` bilan login qiladigan runner va yakka testlarda doim `authorization(page, who="user", code=code)` ishlatilsin; `code` berilmasa authorization darhol aniq `AssertionError` beradi.
 
+### NEW_CODE=1 bilan group-only login ishlamaydi
+Tags: authorization, user, code, data-store, group, runner
+Status: trace-confirmed
+Verified: 2026-07-31
+Source: `test-results/traces/test_0_group_runner.zip`;
+`scripts/run_tests.py`; user correction
+- Group-only target setupni ishlatmaydi. `.env`dagi `NEW_CODE=1` precedence
+  sabab `code` fixture yangi random qiymat yaratsa, shu code uchun user va
+  boshqa setup entitylar mavjud bo'lmaydi.
+- Tasdiqlangan simptom: Group-0 fixture setupida login POST `400` va
+  noto'g'ri login/parol javobi qaytdi; testcase bodygacha yetilmadi.
+- Testda ishlatish: group-only rerun uchun `NEW_CODE=0` va joriy baseline;
+  yangi code bilan Group-0 uchun setup va testni bir sessiyada bajaradigan
+  `setup-group-0` targeti ishlatiladi. Runner `NEW_CODE=1 + group-only`
+  kombinatsiyasini UI ochilishidan oldin bloklaydi.
+
 ### Debug Iteratsiyada Precondition Qayta Yaratilmaydi
 Tags: debug, data-store, precondition
 - Qoida: Test yozish/debug iteratsiyasi paytida precondition entity allaqachon yaratilgan va `data_store.json` ga saqlangan bo'lsa, uni qayta yaratish shart emas.
@@ -86,20 +102,19 @@ Tags: debug, input, date, amount, mask
 
 ### Setup Va Group Model
 Tags: setup, group, dependency
-- `tests/smoke/test_setup/test_setup_runner.py` ichidagi mavjud testlar user setup testlari; runner setup testlari bilan bir papkada turadi.
-- `scripts/run_tests.py all` setup va A/B/C/Report group runner fayllarini bitta pytest sessiyasida collect qiladigan full smoke entrypoint hisoblanadi.
+- `tests/smoke/test_setup/test_0_setup_runner.py` ichidagi mavjud testlar user setup testlari; runner setup testlari bilan bir papkada turadi.
+- `scripts/run_tests.py all` setup, Group-0 va Report group runner fayllarini bitta pytest sessiyasida collect qiladigan full smoke entrypoint hisoblanadi.
 - Setup testlari ketma-ket va bir-biriga bog'liq.
 - Smoke runner bo'yicha har bir test vazifasi va entity naming xaritasi `references/smoke-runner.md` ichida saqlanadi.
 - Group testlar user setup natijalariga bog'liq, lekin boshqa grouplarga bog'liq emas.
 - Group ichidagi testlar bir-biriga bog'liq bo'lishi mumkin; shu groupda bitta test failed bo'lsa, shu groupning keyingi testlari skip qilinadi.
-- Bir group failed bo'lishi boshqa grouplarga ta'sir qilmasin: A failed bo'lsa B/C/D... group testlari run bo'lishi kerak.
+- Bir group failed bo'lishi boshqa grouplarga ta'sir qilmasin.
 - Group testlar boshqa groupning `data_store` keylari, UI state yoki yaratilgan biznes recordlariga suyanmasin; faqat user_setup va o'z group prefixidagi data ishlatilsin.
-- Yangi C/D/F/... group runner qo'shilsa, full run uchun `scripts/run_tests.py` dagi `GROUP_RUNNER_PATHS` va `tests/smoke/conftest.py` default runner tanloviga ulanadi.
+- Yangi group runner qo'shilsa, full run uchun `scripts/run_tests.py` dagi `GROUP_RUNNER_PATHS` va `tests/smoke/conftest.py` default runner tanloviga ulanadi.
 - Full run mexanizmida user_setup failed bo'lsa barcha group testlar skip qilinadi; user_setup passed bo'lsa group failed statuslari group marker/prefix bo'yicha alohida yuritiladi.
 - Implementatsiya: `pytest.mark.user_setup` setup chain uchun, `pytest.mark.smoke_group("A")` kabi markerlar group chain uchun ishlatiladi.
 - Grouplar orasida browser/page state leak bo'lmasligi uchun har group runner module-scoped `group_session_page` bilan alohida context/page oladi.
 - User group ichidagi testlar `group_user_page` fixture bilan bitta module-scoped page ishlatadi; login group boshida bir marta qilinadi, group tugaganda fixture oynani yopadi.
-- A-group testlari `tests/smoke/test_groups/test_A_grup/` ichida.
 - Group ichidagi testlar bir-biriga bog'liq bo'lmasa `pytest.mark.smoke_group("X", independent=True)` ishlatiladi — bitta test failed bo'lsa ham qolganlar skip qilinmaydi. Report group shu sababli `independent=True` bilan belgilangan.
 
 ### Company Mode Va Birinchi Authorization
@@ -141,16 +156,81 @@ Tags: runner, debug, modal, data-store
 - Save transition xatolarida list/view timeoutini root cause deb ko'rsatma; avval add/edit formdagi `Сохранить` actionidan keyingi Biruni/UI error, actual heading va expected transition yozilsin.
 
 ### Forms runner terminal va Allure hisoboti
-Tags: forms, report, terminal, allure, filial, menu, url
-- `tests/smoke/test_forms/flow.py` legacy va A2 formalar uchun yagona report
-  modelini ishlatadi: filial, tab, menu, menyu formasi, destination forma,
-  action/page-link, to'liq user yo'li, kutilgan URL va haqiqiy URL.
+Tags: forms, report, terminal, allure, filial, menu, url, monitoring, screenshot
+- `tests/smoke/test_forms/form_monitor.py` barcha Forms runnerlar uchun yagona
+  holat va tahlil manbasi. `flow.py` navigatsiya va umumiy result formatini
+  beradi; runner o'zicha alohida pass/fail hisoblamaydi.
+- Runner boshlanishidan oldin rejalashtirilgan formalar monitor ro'yxatiga
+  kiritiladi. Shuning uchun suite filial/login/shell bosqichida to'xtasa ham
+  nechta forma rejalashtirilgani va qaysilari tekshirilmagani yo'qolmaydi.
+- Forma holatlari: `PASSED` (ochildi), `OPENED_WITH_DEFECT` (URL va kontent
+  ochildi, lekin title/kontent nuqsoni bor), `NOT_OPENED` (target forma
+  ochilmadi), `TEST_BLOCKED` (test preconditionda to'xtadi), `NOT_CHECKED`
+  (blokerdan keyin tekshiruv boshlanmadi).
+- Har muammo uchun filial, to'liq yo'l, expected/actual URL, expected/actual
+  title, test boshlangan-tugagani, target URLga yetilgani, validatsiya tugagani,
+  validatsiyadan o'tgani, forma foydalanishga tayyorligi, xato bosqichi, qisqa
+  QA sababi va texnik detail saqlanadi. Aynan xato paytidagi full-page
+  screenshot Allure'da saqlanadi, lekin input va secret/password/token
+  qiymatlari masklanadi.
 - Allure forma step nomida `Filial | Forma | Tab | Menu`, ichki steplarda
-  to'liq navigatsiya, kutilgan URL va haqiqiy URL ko'rinadi; yakunda bir xil
-  summary text attachment qilinadi.
+  navigatsiya va tekshiruv ko'rinadi. Xato aynan forma yoki precondition stepini
+  qizil qiladi; faqat yakuniy umumiy assertionga yashirilmaydi.
+- Terminal summary, Allure text va `form-monitor.json` bitta result modelidan
+  quriladi. Yakuniy hisob rejalashtirilgan, boshlangan, yakunlangan, ochilgan,
+  nuqsonli, ochilmagan, bloklangan va tekshirilmagan sonlarni alohida ko'rsatadi.
+- Uzoq run paytida har tugagan forma terminal reporterga bitta `[FORM MONITOR]`
+  progress qatori va Telegram consumer uchun `SMARTUP_PROGRESS form_result`
+  eventi chiqaradi. Pass formalar uchun katta ko'p qatorli blok chiqarilmaydi;
+  batafsil blok muammoli natija va yakuniy hisobotga qoladi.
+- Forma `PASSED` bo'lishi uchun custom title/URL assertdan tashqari markaziy
+  readiness tekshiruvi ham o'tishi shart: target URL, kontent, tugagan loader,
+  UI error yo'qligi va title mosligi. `TypeError`, `KeyError` va boshqa kod
+  kontrakti xatolari forma nuqsoni sifatida yashirilmaydi.
+- `run_form_cases()` monitorsiz ishlamaydi; legacy parallel summary yo'li olib
+  tashlangan. Avtorizatsiya har Forms suite ichida monitor preconditioni bo'lib,
+  login xatosida ham planned coverage yo'qolmaydi.
+
+### Legacy forma nomi document.title emas, visible headingdan olinadi
+Tags: forms, legacy, title, heading, monitoring, false-positive
+Status: live-ui-confirmed
+Verified: 2026-08-03
+Source: `SMARTUP_RUNNER=1 ./.venv/bin/pytest -q -s tests/smoke/test_forms/test_0_forms_runner.py`;
+`tests/smoke/test_forms/form_monitor.py`
+- Qayerda: legacy `#/` formalarining markaziy post-validation tekshiruvida.
+- Qoida: A2 forma nomi `document.title`dan, legacy forma nomi esa ko'rinadigan
+  headingdan olinadi. Masalan, menu item `Регионы` ochgan
+  `anor/mr/region_list` formasining visible headingi `Страны`, browser
+  `document.title`i esa boshqa qiymat bo'lishi mumkin.
+- Testda ishlatish: legacy forma `BasePage.expect_page(heading=...)`dan
+  o'tgach `document.title == expected heading` shartini qo'yma; monitor visible
+  heading candidate'larini saqlasin. Aks holda sog'lom forma
+  `TITLE_MISMATCH` false-positive bo'ladi.
 - Oddiy `print()` pass testda pytest capture ichida qoladi. Forms summary
   `terminalreporter` queue'iga yozilib, `tests/smoke/conftest.py`dagi
   `pytest_terminal_summary` hookida capture tugagach chiqariladi.
+
+### Markaziy forma monitoringining real run verifikatsiyasi (2026-08-03)
+Tags: forms, monitoring, allure, live-run, coverage, blocker
+Status: live-ui-confirmed
+Verified: 2026-08-03
+Source: `test-results/logs/tests_smoke_test_forms_test_0_forms_runner.py__test_forms_01_spravochniki_20260803_142539.log`;
+`test-results/logs/tests_smoke_test_forms_test_0_forms_runner.py__test_forms_02_a2_admin_20260803_142617.log`
+- Forms-01: rejalashtirilgan 89 formaning 89 tasi boshlandi va target URLga
+  yetdi; 88 tasi `PASSED`, 1 tasi `OPENED_WITH_DEFECT`. Forma 057
+  `Конструктор отчетов по акциям` URL va kontent bo'yicha ochilgan, ammo visible
+  title `Заголовок` bo'lgani uchun `TITLE_MISMATCH` qayd etildi. Validatsiya
+  bajarilgan, lekin undan o'tmagan deb ko'rsatildi; xato-payt screenshoti aynan
+  shu natijaga bog'landi.
+- Forms-02: rejalashtirilgan 22 formadan birortasining test qadami boshlanmadi.
+  A2 texnik dashboardda joriy project `SFA` bo'lsa-da helper eski `TRADE`
+  project/filial triggerini qidirgani sabab birinchi case
+  `TEST_BLOCKED/FILIAL_SWITCH_FAILED`, qolgan 21 case `NOT_CHECKED` bo'ldi.
+  Bu 22 ta forma xatosi emas; bitta suite precondition bloklanganini anglatadi.
+- Testda ishlatish: product defect, ochilmagan forma va suite blokerni bir xil
+  `failed` deb ko'rsatma. `counts`, `metrics`, blocker detail va case screenshotini
+  alohida chiqar; A2 project fallbackini `SFA`ga moslashtirish alohida fix scope
+  bo'lib qoladi.
 
 ### Screenshot Debug Workflow
 Tags: screenshot, debug

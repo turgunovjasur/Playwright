@@ -35,7 +35,7 @@ TOC = re.compile(
 VERIFIED = re.compile(r"^(?:\d{4}-\d{2}-\d{2}|pending)$")
 
 # Debt ratchet: lower the matching baseline in the same change when debt drops.
-BASELINE_LEGACY_ENTRIES_WITHOUT_PROVENANCE = 141
+BASELINE_LEGACY_ENTRIES_WITHOUT_PROVENANCE = 140
 BASELINE_SCREENSHOTS_WITHOUT_JSON_SIDECAR = 41
 
 

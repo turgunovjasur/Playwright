@@ -52,7 +52,7 @@ Bu kompaniyada odatda 1 ta product (`product-pw{code}`) bo'ladi, shuning uchun "
 Aksiya chegirmasi order'da qo'llanishi uchun **uchta** shart bir vaqtda bajarilishi kerak:
 
 1. **Условие producti** = `product-pw{code}` (yuqorida). "Все ТМЦ" qolsa, order'ning "Акции" tabida `Тип цены акции не прикреплен к рабочей зоне или клиенту или штат` xatosi chiqadi va chegirma bo'lmaydi.
-2. **Room'ga "Акция" narx turi prikrep qilingan** bo'lishi kerak (`run_room_attachment` step 6 — qarang [room.md] yoki test_room.py). Ulanish 2 bosqichli: `Тип цены tab -> Доступные -> Создать тип цены -> "Акция" -> Прикрепить -> Прикрепить Акция? да` (Доступныега qo'shadi), so'ng yana `Доступные -> "Акция" -> Прикрепить -> да` (Прикрепленныега o'tkazadi). Faqat 1-bosqich qilinsa, "Акция" Доступныеда qolib ketadi va order'da aksiya chiqmaydi.
+2. **Room'ga "Акция" narx turi prikrep qilingan** bo'lishi kerak (`run_room_attachment` step 6 — qarang [room.md] yoki `test_20_room_attachment.py`). Ulanish 2 bosqichli: `Тип цены tab -> Доступные -> Создать тип цены -> "Акция" -> Прикрепить -> Прикрепить Акция? да` (Доступныега qo'shadi), so'ng yana `Доступные -> "Акция" -> Прикрепить -> да` (Прикрепленныега o'tkazadi). Faqat 1-bosqich qilinsa, "Акция" Доступныеда qolib ketadi va order'da aksiya chiqmaydi.
 3. **Order'da bonusni yoqish**: ТМЦ sahifasida product (qty=10) qo'shilgach, **"Акции" tab** paydo bo'ladi (badge bilan). Unda aksiya ko'rinadi (`Получить бонус`); chegirma avtomatik qo'llanmaydi — **"Получить" toggle**ни yoqish kerak. Toggle styled switch: `input[ng-model="condition.get"]` oddiy/force click bilan bosilmaydi, **native DOM `.click()`** (`page.evaluate`) ishonchli (ng-change orqali qayta hisoblanadi).
 
 Natija (10 × 7 000 = 70 000, 10% skidka): **Товар** qatorida `Сумма скидки/наценки = -7 000`, `Сумма к оплате/ИТОГО = 63 000`; final sahifa va view'da ham `-7 000` / `63 000`; order list jami `63 000 сум`.
@@ -72,4 +72,4 @@ Sabab: aksiya order product margin (`MDEAL_PRODUCT_MARGINS`) yozuvlarini yaratga
 ## Login / data eslatma
 
 - Aksiya user profil bilan yaratiladi: `user-pw{code}@<company>`, parol USER_PASS. `code` va konkret qiymatlar `data_store.json` dan olinadi (dossierга literal yozilmaydi).
-- Testlar: `tests/smoke/test_groups/test_C_grup/test_action.py` — C-01 `run_c_group_create_action(...)` (aksiya yaratish), C-02 `run_c_group_order_action_discount(...)` (order'da chegirmani tekshirish). Runner: `test_c_group_runner.py`.
+- Avvalgi Group C action testlari 2026-07-31 kuni o'chirilgan; yangi testlar qaytadan yoziladi.

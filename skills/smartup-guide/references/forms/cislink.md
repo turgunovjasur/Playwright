@@ -1,6 +1,6 @@
 # CisLink integration report (trade/rep/integration/cislink)
 
-> **STATUS: SKIP (barcha serverda) — 2026-06-12.** CisLink sahifasi Smartup deploymentlar bo'ylab o'zgarmoqda (pastdagi "Server farqi" bo'limiga qarang), shuning uchun test barcha serverda o'tkazib yuborilgan. Joyi: `test_report_group_runner.py::test_report_01_cislink` dagi `@pytest.mark.skip(reason=CISLINK_SKIP_REASON)`. Qayta yoqish: sahifa barqarorlashganda shu skip markerni olib tashlash.
+> **STATUS: SKIP (barcha serverda) — 2026-06-12.** CisLink sahifasi Smartup deploymentlar bo'ylab o'zgarmoqda (pastdagi "Server farqi" bo'limiga qarang), shuning uchun test barcha serverda o'tkazib yuborilgan. Joyi: `test_0_group_runner.py::test_report_01_cislink` dagi `@pytest.mark.skip(reason=CISLINK_SKIP_REASON)`. Qayta yoqish: sahifa barqarorlashganda shu skip markerni olib tashlash.
 
 CisLink — sotuv/qoldiq ma'lumotlarini tashqi tizim (CisLink) uchun `.txt` fayllar jamlangan **.zip** ko'rinishida eksport qiluvchi integration report.
 
@@ -63,5 +63,5 @@ Yuqoridagi flow **`smartup.online`** deployment uchun to'g'ri. **`app3.greenwhit
 ## Test
 
 - `tests/smoke/test_groups/test_report_grup/` — **Report group** (`smoke_group("Report")`), all-runner'da `test_05_report_group_runner`.
-- Leaf: `test_cislink.py::run_report_cislink_check(page, code)`; admin login + filialga o'tish, settings, generate+download verify. Login alohida mode parametri bilan boshqarilmaydi.
+- Leaf: `test_01_cislink.py::run_report_cislink_check(page, code)`; admin login + filialga o'tish, settings, generate+download verify. Login alohida mode parametri bilan boshqarilmaydi.
 - Screenshot: `skills/smartup-guide/references/forms/screenshots/cislink/cislink__main__desktop-1200x660__20260610.png`.

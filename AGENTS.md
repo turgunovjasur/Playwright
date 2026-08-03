@@ -20,11 +20,29 @@ Foydalanuvchi quyidagi narsalarni aytganda `/learn` skillini **o'zing, so'ralmay
 
 Maqsad: har suhbatda bir xil xatoni takrorlamaslik.
 
+## Muhokama Va Implementatsiya Tasdig'i
+
+- Foydalanuvchi `shunday qilsak bo'ladimi?`, `nima deysan?`, `qaysi variant
+  yaxshi?` kabi savol yoki taklif bersa, bu avtomatik ravishda kod yozish
+  ruxsati hisoblanmaydi.
+- Bunday holatda avval savolga to'g'ridan-to'g'ri javob ber, ta'sir va
+  trade-offlarni tushuntir, so'ng qisqa xulosa/tavsiya qil.
+- Repo kodi, testlar, skilllar, knowledge-base yoki konfiguratsiyani
+  o'zgartirishdan oldin foydalanuvchidan alohida implementatsiya tasdig'ini
+  so'ra.
+- Read-only qidiruv va impact analysis tasdiqsiz bajarilishi mumkin, lekin
+  undan keyin ham topilgan natijani tushuntirib, yozishdan oldin ruxsat ol.
+- Foydalanuvchi shu xabarning o'zida `yoz`, `o'zgartir`, `tuzat`,
+  `amalga oshir`, `qoidaga qo'sh` kabi aniq buyruq bergan bo'lsa, aynan
+  ko'rsatilgan scope uchun bu implementatsiya tasdig'i hisoblanadi.
+- Muhokama savolidan kengroq o'zgarishni taxmin qilib amalga oshirma. Tasdiq
+  olinganda ham faqat kelishilgan scope'ni o'zgartir.
+
 ## Loyiha Haqida
 
 - Framework: Playwright + pytest (Python)
 - Test turi: Smoke testlar — `tests/smoke/`
-- User setup runner: `tests/smoke/test_setup/test_setup_runner.py` — setup testlarini ketma-ket ishlatadi
+- User setup runner: `tests/smoke/test_setup/test_0_setup_runner.py` — setup testlarini ketma-ket ishlatadi
 - Group runnerlar: `tests/smoke/test_groups/**/test_*_group_runner.py` — har bir group case alohida pytest testi
 - Asosiy cross-platform runner: `python scripts/run_tests.py`; `run_tests.sh` — Mac/Linux wrapper
 - `code` fixture: session uchun unikal 6 xonali son, runner da yangi, yakka testda `data_store.json` dan o'qiladi

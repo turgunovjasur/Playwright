@@ -51,7 +51,7 @@ progress xabarda alohida block chiqadi:
 ```text
 Failed:
 Group: Setup
-Runner test: test_setup_runner.py
+Runner test: test_0_setup_runner.py
 Ichki test: 10 - Buy License
 Step: Buy License -> Лицензии sahifasini ochish
 Error turi: TimeoutError

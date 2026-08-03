@@ -2,7 +2,7 @@
   "form": "license",
   "state": "company-not-activated-error",
   "captured_at": "2026-07-23T16:23:08+05:00",
-  "source_test": "tests/smoke/test_setup/test_setup_runner.py::test_10_buy_license",
+  "source_test": "tests/smoke/test_setup/test_0_setup_runner.py::test_10_buy_license",
   "url_pattern": "/biruni/kl/license_list",
   "viewport_css_pixels": "1440x783",
   "screenshot_pixels": "2880x1566",

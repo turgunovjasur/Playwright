@@ -1,4 +1,5 @@
-from tests.smoke.test_setup import test_init_balance, test_product
+from tests.smoke.test_setup import test_21_init_balance as test_init_balance
+from tests.smoke.test_setup import test_18_product as test_product
 
 
 def test_setup_products_use_separate_uzs_and_usd_price_types(monkeypatch):

@@ -69,7 +69,7 @@ Smartup yangi formalari (yangi Angular/modern app) eski AngularJS Biruni app ust
   **`is_migrated === 'Y'` ⇒ a2 forma.** (Bu modelni `page.evaluate` bilan read-only o'qish mumkin — diagnostika uchun.)
 - **ASOSIY QOIDA: eski angular menyu orqali ochiladigan a2 formalar — BARCHASI ADMIN formalar.** Alohida "head"
   profil / alohida head test KERAK EMAS; hammasi bitta admin testda
-  (`test_a2_admin_menu_forms.py`) yig'iladi.
+  (`test_02_a2_admin_menu_forms.py`) yig'iladi.
 - **Forma joyi (filial + aniq user track) — AVTORITET manba: `new_forms.md` (repo root).** U formalarni
   operatsion/Администрирование filial bo'yicha guruhlab, har biriga real user track (LEAF / LIST-ACTION / SIBLING)
   beradi. Qisqacha (2026-07-08 live tasdiqlangan):
@@ -126,7 +126,7 @@ Smartup yangi formalari (yangi Angular/modern app) eski AngularJS Biruni app ust
   shu asosda).
   `.project-list a.ng-binding` — bu proyektlar (Trade/Финансы), filiallar emas.
 - `BasePage(page).switch_filial(name)` filialga o'tadi va dashboard qayta yuklanadi.
-- `test_a2_admin_menu_forms.py` code/data_store'ga bog'lanmaydi: operatsion filial sifatida angular session modelidagi
+- `test_02_a2_admin_menu_forms.py` code/data_store'ga bog'lanmaydi: operatsion filial sifatida angular session modelidagi
   "Администрирование" bo'lmagan birinchi filial tanlanadi va `switch_filial(page, name=<shu filial>)` qilinadi.
 - URL diagnostika testlarida operatsion filial nomini aniqlash: avval `filial-pw{code}` ({code} data_store.json dan),
   topilmasa har qanday `filial-pw*`, topilmasa "Администрирование" bo'lmagan birinchi filial.
@@ -140,9 +140,9 @@ Smartup yangi formalari (yangi Angular/modern app) eski AngularJS Biruni app ust
 Tags: a2, forms-runner, menu-track, navigation, code
 Status: code-confirmed
 Verified: 2026-07-30
-Source: `tests/smoke/test_forms/test_a2_admin_menu_forms.py`; `tests/smoke/test_forms/test_forms_runner.py`
+Source: `tests/smoke/test_forms/test_02_a2_admin_menu_forms.py`; `tests/smoke/test_forms/test_0_forms_runner.py`
 
-- Joriy entrypoint `test_forms_runner.py::test_forms_02_a2_admin`;
+- Joriy entrypoint `test_0_forms_runner.py::test_forms_02_a2_admin`;
   u `run_a2_admin_menu_forms(...)`ni mavjud admin sessiyasida chaqiradi.
 - Har bir qamralgan A2 forma real navbar → menu column → menu item yoki
   page-link yo'li orqali ochiladi; title va URL alohida tekshiriladi.
@@ -151,7 +151,7 @@ Source: `tests/smoke/test_forms/test_a2_admin_menu_forms.py`; `tests/smoke/test_
   belgilanadi. Oldingi URL-only harness konteksti
   [history.md](history.md)da turadi.
 
-- **Joriy menu-track runner (`test_a2_admin_menu_forms.py`) — real menyu orqali:**
+- **Joriy menu-track runner (`test_02_a2_admin_menu_forms.py`) — real menyu orqali:**
   Har a2 formani ESKI menyudan `navigate_to_a2(page, tab, path)` bilan ochadi (real user yo'li), xatoda to'xtamaydi,
   filial bo'yicha guruhlangan hisobot beradi. **Barcha angular-menyu a2 formalar ADMIN** — alohida head test YO'Q;
   hali live tasdiqlanmagan admin formalar (`md/*`, `announcement`, `client_list`, `security_settings`,
@@ -181,7 +181,7 @@ Source: `tests/smoke/test_forms/test_a2_admin_menu_forms.py`; `tests/smoke/test_
     `anor/rep/mbi/mfa/purchase` (user bermagan — keyin). Boshqa company/serverda bo'lishi mumkin.
   - Hali URL-only (real user yo'li aniqlanmagan): `ker/setting+add/+edit`, `ker/head_template_list+attach`,
     `company_audit_info_audit(+details)` — kompaniya «История изменений» tugmasidan ochilishi mumkin (tekshirilmagan).
-  - **Standalone run:** `test_a2_admin_menu_forms.py` uchun `code` fixture kerak emas; `.env` faqat login/server
+  - **Standalone run:** `test_02_a2_admin_menu_forms.py` uchun `code` fixture kerak emas; `.env` faqat login/server
     credentiallariga (`COMPANY_URL`, `COMPANY_CODE`, `COMPANY_PASSWORD`) ta'sir qiladi.
   - Setup bilan bir sessiyada collect qilinganda test fresh `page` contextida
     ishlaydi, ammo u Setupning faol `session_browser` runtimeini qayta ishlatadi;
@@ -189,14 +189,15 @@ Source: `tests/smoke/test_forms/test_a2_admin_menu_forms.py`; `tests/smoke/test_
 
 ### Explicit menu-track test (2026-07-27)
 
-- `test_a2_admin_menu_forms.py` module docstringi kelajak backlogi sifatida
+- `test_02_a2_admin_menu_forms.py` module docstringi kelajak backlogi sifatida
   `A2_FORMS`dagi barcha 53 formani profile → filial bo'yicha saqlaydi. Har
   yozuvda status (`✅ YOZILGAN`/`⬜ QOLGAN`), mode, path, title, parent (kerak
   bo'lsa) va mavjud user trace bor. Yangi menu-track qo'shilganda shu yozuvning
   statusi va yuqoridagi jami hisoblari ham yangilansin.
-- `tests/smoke/test_forms/test_a2_admin_menu_forms.py` formalarni route
-  ro'yxati bo'yicha loop qilmaydi: har bir forma keyword parametrlar bilan
-  alohida chaqiriladi.
+- `tests/smoke/test_forms/test_02_a2_admin_menu_forms.py` aktiv route
+  definitionlarini yagona `FormCase` rejasiga aylantirib, markaziy monitor
+  orqali ketma-ket loopda bajaradi. Plan qurish va title fallback boshqa
+  runnerlarda takrorlanmaydi.
 - Parametrlar real UI ma'nosida: `navbar_tab` — yuqori navbar,
   `menu_column` — mega-menu ustuni, `menu_item` — ustundagi forma,
   `page_links` — parent forma ochilgach bosiladigan yuqori linklar.
@@ -223,11 +224,13 @@ Source: `tests/smoke/test_forms/test_a2_admin_menu_forms.py`; `tests/smoke/test_
   2. `switch_filial(name="Администрирование")`;
   3. ochilgan filial ro'yxatidan birinchi `Администрирование` bo'lmagan nom
      `operational_filial`ga saqlanadi;
-  4. real menu track orqali `company_client_list` ochilib, alohida
-     `expect_page()` bilan tasdiqlanadi;
-  5. ortga qaytmasdan shu sahifadan
+  4. texnik A2 dashboard shell ochilib, A2 filial konteksti
+     `Администрирование` bilan sinxronlanadi;
+  5. real A2 menu track orqali `company_client_list` bir marta ochilib,
+     markaziy URL/title/readiness tekshiruvi bilan tasdiqlanadi;
+  6. ortga qaytmasdan shu sahifadan
      `switch_filial(name=operational_filial)` qilinadi;
-  6. operatsion filialdagi direct menu formalar, keyin `page_links` orqali
+  7. operatsion filialdagi direct menu formalar, keyin `page_links` orqali
      ochiladigan formalar ketma-ket tekshiriladi.
 - Joriy refaktorda 22 forma bor: 1 ta admin list, 19 ta operatsion direct va
   2 ta `page_links` formasi. 2026-07-27 live run:
@@ -265,7 +268,7 @@ Tags: a2, filial, project, menu, ci, locator, regression
   `shell-project-filial--project-list` loyihalari, o'ngdagi
   `Администрирование`/`filial-pw{code}` — haqiqiy
   `shell-project-filial--filial-list` tashkilot/filiallari.
-- `test_a2_admin_menu_forms.py::_first_operational_filial()` legacy
+- `test_02_a2_admin_menu_forms.py::_first_operational_filial()` legacy
   `.dropdown-menu` ichidagi barcha `role=link` elementlarni olgani sabab birinchi
   `Администрирование` bo'lmagan matn sifatida `Trade` loyiha nomini qaytargan.
 - Keyingi `AngularBasePage.switch_filial(name="Trade")` haqiqiy filial
@@ -278,6 +281,19 @@ Tags: a2, filial, project, menu, ci, locator, regression
   `Администрирование`ni chiqarib, qolgan birinchi haqiqiy filialni qaytaradi.
 - Tuzatishdan keyingi standalone headless run: barcha 22 forma ochildi,
   `1 passed in 122.26s`.
+
+### A2 project nomi TRADE'dan SFA'ga o'zgardi (2026-08-03)
+Tags: a2, project, filial-switch, locator, sfa, trade
+Status: live-ui-confirmed
+Verified: 2026-08-03
+Source: user; `test-results/allure-results/0e25c8ce-df57-4b59-8cae-60045db94448-attachment.png`;
+`utils/angular_base_page.py`
+- Qayerda: `smartup.online` A2 headeridagi project/filial triggerida.
+- Qoida: serverdagi avvalgi `TRADE` project nomi `SFA`ga o'zgargan. 2026-07-27
+  dalillaridagi `TRADE` nomi tarixiy holat, joriy triggerda `SFA` ko'rinadi.
+- Testda ishlatish: A2 filial switchining `TRADE` matniga fallbacki joriy server
+  uchun eskirgan. Joriy project sifatida `SFA` ishlatiladi yoki locator project
+  nomiga bog'lanmaydigan qilib yoziladi.
 
 ## Diagnostika natijasi (2026-07-07, app3.greenwhite.uz/xtrade — 2 passed, 0 muammo)
 

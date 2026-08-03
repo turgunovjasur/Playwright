@@ -75,6 +75,8 @@ domain bilimni bir faylda takrorlama.
 - Forma dossierlari: [references/forms/](references/forms/)
 - Contract va contract shartlari: [references/contracts.md](references/contracts.md)
 - Order biznes qoidalari va flowlar: [references/orders.md](references/orders.md)
+- Order yopish va client settlement scenario coverage:
+  [references/order-settlement-scenarios.md](references/order-settlement-scenarios.md)
 - Smoke runner setup zanjiri: [references/smoke-runner.md](references/smoke-runner.md)
 - Smartup UI, locator, modal, grid patternlari: [references/ui-patterns.md](references/ui-patterns.md)
 - Legacy formalarni foydalanuvchi UI'da topish yo'llari, filial ko'rinishi,
@@ -106,6 +108,11 @@ Setup formalar:
 Biznes formalar:
 - [order-list.md](references/forms/order-list.md) — Order ro'yxati, row selection va action tugmalari
 - [order-add.md](references/forms/order-add.md) — Order yaratish
+- [client-payment.md](references/forms/client-payment.md) — Client to'lovi yaratish va o'tkazish
+- [client-offset.md](references/forms/client-offset.md) — Client qarzi, oldindan to'lov va o'zaro hisob-kitob
+- [order-list-view-settings.md](references/forms/order-list-view-settings.md) — Order list table va widget ko'rinishi sozlamalari
+- [order-product-list.md](references/forms/order-product-list.md) — Order uchun ommaviy TMC tanlash
+- [order-import.md](references/forms/order-import.md) — Excel orqali order TMC importi
 - [contract-view.md](references/forms/contract-view.md) — Kontrakt ko'rish
 - [company-client.md](references/forms/company-client.md) — Kompaniya OAuth2 klientlari, A2/filial konteksti
 - [pnl.md](references/forms/pnl.md) — PnL menyu yo'li va legacy/A2 migratsiya holati

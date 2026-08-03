@@ -103,7 +103,7 @@ Tags: license, attach, session, 401, backend, ci, flaky
 Status: trace-confirmed
 Verified: 2026-07-30
 Source: GitHub Actions runs `30413648152`, `30531780519`; artifacts
-`traces/smoke_trace.zip`; `test_13_price_type` Allure screenshots/logs
+`traces/smoke_trace.zip`; `test_13_price_type_uzb` Allure screenshots/logs
 - Trace'da oddiy `ERP users` license xaridi `200`, yangi license qatorida
   miqdor va bo'sh slot `1`, generated `natural_person-pw{code}` useriga attach
   requesti `200`, undan keyingi user login/session va birinchi forma requestlari
@@ -133,5 +133,5 @@ Source: GitHub Actions runs `30413648152`, `30531780519`; artifacts
 
 ## Test
 
-- `tests/smoke/test_setup/test_buy_license.py` → `run_buy_license`
-- `tests/smoke/test_setup/test_attach_license.py` → `run_attach_license`
+- `tests/smoke/test_setup/test_10_buy_license.py` → `run_buy_license`
+- `tests/smoke/test_setup/test_11_attach_license.py` → `run_attach_license`

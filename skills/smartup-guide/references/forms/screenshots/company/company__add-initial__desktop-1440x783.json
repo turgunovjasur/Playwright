@@ -2,7 +2,7 @@
   "form": "company",
   "state": "add-initial",
   "captured_at": "2026-07-20T15:42:19+05:00",
-  "source_test": "tests/smoke/test_setup/test_company.py::test_company",
+  "source_test": "tests/smoke/test_setup/test_00_company.py::test_company",
   "url_pattern": "/a2/biruni/md/company_add",
   "viewport_css_pixels": "1440x783",
   "screenshot_pixels": "2880x1566",

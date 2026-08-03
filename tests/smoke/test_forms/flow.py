@@ -1,4 +1,3 @@
-import re
 from urllib.parse import urlsplit
 
 import allure
@@ -79,9 +78,47 @@ def build_form_result(
     page_links=None,
     action=None,
     detail="",
+    status=None,
+    reason_code="",
+    reason_summary="",
+    failed_stage="",
+    expected_title=None,
+    actual_title="",
+    opened=None,
+    checks=None,
+    shell=None,
+    suite=None,
+    duration_ms=None,
+    page_reached=None,
+    test_started=None,
+    test_completed=None,
+    validation_completed=None,
+    validation_passed=None,
+    usable=None,
 ):
     """Terminal va Allure uchun yagona strukturali forma natijasini yaratadi."""
     links = list(page_links or [])
+    status = status or ("PASSED" if ok else "NOT_OPENED")
+    status_icons = {
+        "PASSED": "✅",
+        "OPENED_WITH_DEFECT": "⚠️",
+        "NOT_OPENED": "❌",
+        "TEST_BLOCKED": "⛔",
+        "NOT_CHECKED": "⬜",
+    }
+    inferred_page_reached = (status == "PASSED") if opened is None else bool(opened)
+    if page_reached is None:
+        page_reached = inferred_page_reached
+    if test_started is None:
+        test_started = status not in {"TEST_BLOCKED", "NOT_CHECKED"}
+    if test_completed is None:
+        test_completed = bool(test_started)
+    if validation_completed is None:
+        validation_completed = status in {"PASSED", "OPENED_WITH_DEFECT"}
+    if validation_passed is None:
+        validation_passed = status == "PASSED"
+    if usable is None:
+        usable = status == "PASSED"
     return {
         "number": number,
         "filial": filial,
@@ -100,7 +137,25 @@ def build_form_result(
         ),
         "expected_path": expected_path or "—",
         "actual_url": actual_url,
-        "ok": ok,
+        "ok": status == "PASSED",
+        "status": status,
+        "status_icon": status_icons.get(status, "•"),
+        "reason_code": reason_code,
+        "reason_summary": reason_summary,
+        "failed_stage": failed_stage,
+        "expected_title": expected_title or title,
+        "actual_title": actual_title,
+        "opened": bool(page_reached),
+        "page_reached": bool(page_reached),
+        "test_started": bool(test_started),
+        "test_completed": bool(test_completed),
+        "validation_completed": bool(validation_completed),
+        "validation_passed": bool(validation_passed),
+        "usable": bool(usable),
+        "checks": dict(checks or {}),
+        "shell": shell,
+        "suite": suite,
+        "duration_ms": duration_ms,
         "detail": detail,
     }
 
@@ -110,7 +165,23 @@ def build_form_result(
 
 def format_form_result(result):
     """Bitta forma natijasini user o'qiydigan ko'p qatorli matnga aylantiradi."""
-    status = "✅ OCHILDI" if result["ok"] else "❌ XATO"
+    status_code = result.get("status") or (
+        "PASSED" if result.get("ok") else "NOT_OPENED"
+    )
+    status_labels = {
+        "PASSED": "✅ OCHILDI",
+        "OPENED_WITH_DEFECT": "⚠️ OCHILDI, LEKIN NUQSON BOR",
+        "NOT_OPENED": "❌ OCHILMADI",
+        "TEST_BLOCKED": "⛔ TEST BOSHLANISHIDAN OLDIN BLOKLANDI",
+        "NOT_CHECKED": "⬜ TEKSHIRILMADI",
+    }
+    status = status_labels.get(status_code, f"❓ {status_code}")
+    stage_labels = {
+        "navigation": "Navigatsiya (menu/action/page-link)",
+        "validation": "Forma ochilganini tekshirish",
+        "suite_precondition": "Testga tayyorlov (login/filial/shell)",
+        "not_started": "Tekshiruv boshlanmagan",
+    }
     menu = result["menu_column"] or "— (ustunsiz menu)"
     links = " → ".join(result["page_links"]) or "—"
     action = result["action"] or "—"
@@ -125,19 +196,49 @@ def format_form_result(result):
         f"  Page linklar       : {links}",
         f"  To'liq yo'l        : {result['track']}",
         f"  Kutilgan URL       : {result['expected_path']}",
-        f"  Haqiqiy URL        : {result['actual_url']}",
+        f"  Haqiqiy URL        : {result['actual_url'] or '—'}",
     ]
+    if status_code != "PASSED":
+        lines.extend(
+            [
+                f"  Holat              : {status_code}",
+                f"  Xato turi          : {result.get('reason_code') or '—'}",
+                f"  Xato sababi        : {result.get('reason_summary') or '—'}",
+                "  Xato bosqichi      : "
+                f"{stage_labels.get(result.get('failed_stage'), result.get('failed_stage') or '—')}",
+                f"  Test boshlandimi   : {'HA' if result.get('test_started') else 'YOQ'}",
+                f"  Target URLga yetdimi: {'HA' if result.get('page_reached') else 'YOQ'}",
+                f"  Tekshiruv tugadimi : {'HA' if result.get('test_completed') else 'YOQ'}",
+                f"  Validatsiya bajarildimi: {'HA' if result.get('validation_completed') else 'YOQ'}",
+                f"  Validatsiyadan o'tdimi: {'HA' if result.get('validation_passed') else 'YOQ'}",
+                f"  Foydalanishga tayyormi: {'HA' if result.get('usable') else 'YOQ'}",
+                f"  Kutilgan sahifa nomi: {result.get('expected_title') or result['title']}",
+                f"  Haqiqiy sahifa nomi: {result.get('actual_title') or '—'}",
+            ]
+        )
+        checks = result.get("checks") or {}
+        if checks:
+            lines.extend(
+                [
+                    f"  Joriy URL mosmi    : {'HA' if checks.get('url_matches') else 'YOQ'}",
+                    f"  Title mosmi        : {'HA' if checks.get('title_matches') else 'YOQ'}",
+                    f"  Title manbasi      : {checks.get('title_source') or '—'}",
+                    f"  Kontent yuklandimi : {'HA' if checks.get('content_ready') else 'YOQ'}",
+                    f"  Loader qoldimi     : {'HA' if checks.get('loader_visible') else 'YOQ'}",
+                    f"  UI error           : {checks.get('visible_error') or '—'}",
+                ]
+            )
+        if result.get("screenshot"):
+            lines.append(f"  Screenshot         : {result['screenshot']}")
+        elif result.get("screenshot_error"):
+            lines.append(
+                f"  Screenshot         : olinmadi ({result['screenshot_error']})"
+            )
+        if result.get("duration_ms") is not None:
+            lines.append(f"  Bosqich davomiyligi: {result['duration_ms']} ms")
     if result["detail"]:
         lines.append(f"  Xato               : {result['detail']}")
     return "\n".join(lines)
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-def print_form_result(result):
-    """Bitta forma natijasini terminalga strukturali ko'rinishda chiqaradi."""
-    print(f"\n{format_form_result(result)}")
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -159,8 +260,20 @@ def write_terminal_report(text, terminal_reporter=None):
 # ----------------------------------------------------------------------------------------------------------------------
 
 
+def _select_operational_filial(names):
+    """Filial nomlaridan birinchi ``Администрирование`` bo'lmaganini tanlaydi."""
+    cleaned_names = [str(name).strip() for name in names if str(name).strip()]
+    for name in cleaned_names:
+        if name != "Администрирование":
+            return name
+    raise AssertionError(
+        "'Администрирование' bo'lmagan operatsion filial topilmadi. "
+        f"Ko'ringan filiallar: {cleaned_names}"
+    )
+
+
 def first_operational_filial(page):
-    """Legacy filial ro'yxatidan birinchi ``Администрирование`` bo'lmagan nomni oladi."""
+    """Legacy filial ro'yxatidan birinchi operatsion filial nomini oladi."""
     locations = (
         page.locator(".header-logo.custom-dropdown:visible")
         .filter(has=page.locator(".dropdown-locations-custom"))
@@ -174,22 +287,12 @@ def first_operational_filial(page):
     expect(menu).to_be_visible(timeout=FORM_TIMEOUT)
     filial_list = menu.locator(".filial-list")
     expect(filial_list).to_be_visible(timeout=FORM_TIMEOUT)
-    names = [
-        name.strip()
-        for name in filial_list.get_by_role("link").all_inner_texts()
-        if name.strip()
-    ]
+    names = filial_list.get_by_role("link").all_inner_texts()
 
     trigger.click(timeout=FORM_TIMEOUT)
     expect(menu).to_be_hidden(timeout=FORM_TIMEOUT)
 
-    for name in names:
-        if name != "Администрирование":
-            return name
-    raise AssertionError(
-        "'Администрирование' bo'lmagan operatsion filial topilmadi. "
-        f"Ko'ringan filiallar: {names}"
-    )
+    return _select_operational_filial(names)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -215,11 +318,18 @@ def switch_forms_filial(page, name):
 def _click_page_links(page, page_links):
     base = BasePage(page)
     for page_link in page_links:
-        link = (
-            page.locator(".subheader ul.breadcrumb")
-            .get_by_role("link", name=page_link, exact=True)
-            .filter(visible=True)
-        )
+        if "/a2/" in page.url:
+            link = page.get_by_role(
+                "link",
+                name=page_link,
+                exact=True,
+            ).filter(visible=True).first
+        else:
+            link = (
+                page.locator(".subheader ul.breadcrumb")
+                .get_by_role("link", name=page_link, exact=True)
+                .filter(visible=True)
+            )
         try:
             expect(link).to_have_count(1, timeout=FORM_TIMEOUT)
             expect(link).to_be_visible(timeout=FORM_TIMEOUT)
@@ -229,7 +339,10 @@ def _click_page_links(page, page_links):
                 f"url={page.url}"
             ) from exc
         link.click()
-        base.wait_for_loader(timeout=FORM_TIMEOUT)
+        if "/a2/" in page.url:
+            AngularBasePage(page).wait_for_loader(timeout=FORM_TIMEOUT)
+        else:
+            base.wait_for_loader(timeout=FORM_TIMEOUT)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -331,34 +444,13 @@ def open_create_dropdown_form(
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def _visible_error_text(page):
-    for selector in (
-        "#biruniAlertExtended:visible",
-        "#biruniAlert:visible",
-        "[role='alert']:visible",
-        ".alert-danger:visible",
-    ):
-        error = page.locator(selector).first
-        try:
-            if not error.is_visible():
-                continue
-            text = re.sub(r"\s+", " ", error.inner_text(timeout=1_000)).strip()
-        except Exception:
-            continue
-        if text:
-            return text
-    return ""
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-def expect_form_open(page, *, title, path=None):
-    """Destination title/path, loader va ko'rinadigan Biruni error holatini tekshiradi."""
+def expect_form_open(page, *, title, path=None, ready=None):
+    """Destination title/path va formaga xos readiness signalini tekshiradi."""
     if "/a2/" in page.url:
         AngularBasePage(page).expect_page(
             title=title,
             url=path,
+            ready=ready,
             timeout=FORM_TIMEOUT,
         )
     else:
@@ -377,167 +469,46 @@ def expect_form_open(page, *, title, path=None):
             f"Forma canonical pathi ochilmadi: title='{title}', url={page.url}"
         )
 
-    error_text = _visible_error_text(page)
-    if error_text:
-        raise AssertionError(
-            f"Forma ochildi, lekin Biruni error ko'rindi: {error_text}; url={page.url}"
-        )
     return canonical_path
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def _attach_failure_screenshot(page, number, name):
-    try:
-        allure.attach(
-            page.screenshot(full_page=True),
-            name=f"{number:03d}-{name}-failure",
-            attachment_type=allure.attachment_type.PNG,
+def navigate_form_case(page, case):
+    """Legacy/A2 case uchun yagona menu/action/page-link navigatsiyasini bajaradi."""
+    if case.get("action") is not None:
+        open_create_dropdown_form(
+            page,
+            navbar_tab=case["navbar_tab"],
+            menu_column=case.get("menu_column"),
+            menu_item=case["menu_item"],
+            action=case["action"],
+            page_links=case.get("page_links"),
         )
-    except Exception:
-        pass
+    else:
+        open_menu_form(
+            page,
+            navbar_tab=case["navbar_tab"],
+            menu_column=case.get("menu_column"),
+            menu_item=case["menu_item"],
+            page_links=case.get("page_links"),
+        )
 
 
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-def run_form_cases(page, cases, *, navbar_tab, start_number, filial, results):
-    """Deklarativ forma caselarini tekshiradi va batch natijalarni ``results``ga yig'adi."""
-    number = start_number
+def run_form_cases(page, cases, *, monitor):
+    """Faqat markaziy monitor orqali normalizatsiya qilingan formalarni tekshiradi."""
+    if monitor is None:
+        raise ValueError("run_form_cases uchun FormMonitor majburiy")
     for case in cases:
-        title = case.get("title") or (
-            case.get("page_links", [None])[-1]
-            or case.get("action")
-            or case["menu_item"]
+        monitor.run_case(
+            case,
+            navigate=lambda current_case=case: navigate_form_case(page, current_case),
+            validate=lambda current_case=case: expect_form_open(
+                page,
+                title=current_case["title"],
+                path=current_case.get("expected_path"),
+                ready=current_case.get("ready"),
+            ),
         )
-        label = case.get("label", title)
-        step_title = form_step_title(
-            number=number,
-            filial=filial,
-            navbar_tab=navbar_tab,
-            menu_column=case["menu_column"],
-            title=title,
-        )
-        with allure.step(step_title):
-            try:
-                if case.get("action") is not None:
-                    open_create_dropdown_form(
-                        page,
-                        navbar_tab=navbar_tab,
-                        menu_column=case["menu_column"],
-                        menu_item=case["menu_item"],
-                        action=case["action"],
-                        page_links=case.get("page_links"),
-                    )
-                else:
-                    open_menu_form(
-                        page,
-                        navbar_tab=navbar_tab,
-                        menu_column=case["menu_column"],
-                        menu_item=case["menu_item"],
-                        page_links=case.get("page_links"),
-                    )
-                with allure.step(
-                    f"Tekshiruv | Forma: {title} | Kutilgan URL: {case.get('path')}"
-                ):
-                    expect_form_open(
-                        page,
-                        title=title,
-                        path=case.get("path"),
-                    )
-            except (AssertionError, PlaywrightTimeoutError) as exc:
-                detail = re.sub(r"\s+", " ", str(exc)).strip()
-                result = build_form_result(
-                    number=number,
-                    filial=filial,
-                    navbar_tab=navbar_tab,
-                    menu_column=case["menu_column"],
-                    menu_item=case["menu_item"],
-                    title=title,
-                    expected_path=case.get("path"),
-                    actual_url=page.url,
-                    ok=False,
-                    page_links=case.get("page_links"),
-                    action=case.get("action"),
-                    detail=detail,
-                )
-                results.append(result)
-                _attach_failure_screenshot(page, number, label)
-                allure.attach(
-                    format_form_result(result),
-                    name=f"{number:03d} | {title} | xato tafsilotlari",
-                    attachment_type=allure.attachment_type.TEXT,
-                )
-                print_form_result(result)
-            else:
-                result = build_form_result(
-                    number=number,
-                    filial=filial,
-                    navbar_tab=navbar_tab,
-                    menu_column=case["menu_column"],
-                    menu_item=case["menu_item"],
-                    title=title,
-                    expected_path=case.get("path"),
-                    actual_url=page.url,
-                    ok=True,
-                    page_links=case.get("page_links"),
-                    action=case.get("action"),
-                )
-                results.append(result)
-                with allure.step(f"Natija: OCHILDI | Haqiqiy URL: {page.url}"):
-                    pass
-                print_form_result(result)
-        number += 1
-    return number
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-def finish_form_results(results, *, terminal_reporter=None):
-    """Allure/terminalga jamlanma chiqaradi va muammolar bo'lsa testni yiqitadi."""
-    passed = sum(1 for result in results if result["ok"])
-    failed = len(results) - passed
-    lines = [
-        "FORMA OCHILISH HISOBOTI",
-        "=" * 80,
-        f"Jami: {len(results)}",
-        f"Ochildi: {passed}",
-        f"Xato: {failed}",
-        "",
-    ]
-    for result in results:
-        status = "✅" if result["ok"] else "❌"
-        line = (
-            f"{status} {result['number']:03d} | Filial: {result['filial']} | "
-            f"Tab: {result['navbar_tab']} | Menu: {result['menu_column'] or '—'} | "
-            f"Menyu formasi: {result['menu_item']} | Forma: {result['title']} | "
-            f"Yo'l: {result['track']} | Kutilgan URL: {result['expected_path']} | "
-            f"Haqiqiy URL: {result['actual_url']}"
-        )
-        if result["detail"]:
-            line += f" | Xato: {result['detail']}"
-        lines.append(line)
-    summary = "\n".join(lines)
-    write_terminal_report(summary, terminal_reporter=terminal_reporter)
-    allure.attach(
-        summary,
-        name="Forms hisoboti — filial, tab, menu, forma va URL",
-        attachment_type=allure.attachment_type.TEXT,
-    )
-
-    if failed:
-        failures = [
-            (
-                f"{result['number']:03d} | Filial: {result['filial']} | "
-                f"Yo'l: {result['track']} | Kutilgan URL: {result['expected_path']} | "
-                f"Haqiqiy URL: {result['actual_url']} | Xato: {result['detail']}"
-            )
-            for result in results
-            if not result["ok"]
-        ]
-        raise AssertionError(
-            f"{failed}/{len(results)} ta forma navigatsiyasida muammo:\n"
-            + "\n".join(failures)
-        )
+    return cases[-1]["number"] + 1 if cases else None

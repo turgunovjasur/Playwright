@@ -7,6 +7,7 @@
 - [Справочники page-link inventari](#справочники-page-link-inventari-2026-07-29-live)
 - [Создать dropdownidagi yashirin formalar](#создать-dropdownidagi-yashirin-formalar-2026-07-29-live)
 - [Form-opening smoke verifikatsiyasi](#справочники-form-opening-smoke-verifikatsiyasi-2026-07-29)
+- [Group-0 moliyaviy sahifalari](#group-0-moliyaviy-sahifalari-2026-07-31-live)
 
 Tags: legacy, forms, navigation, menu, navbar, page-link, dropdown, filial, administration
 
@@ -341,7 +342,7 @@ Tags: legacy, menu, create, dropdown, import, attach, local-code, page-link, fil
 
 Tags: spravochniki, test, run-result, canonical-url, screenshot
 
-- Test: `tests/smoke/test_forms/test_spravochniki_menu_forms.py`.
+- Test: `tests/smoke/test_forms/test_01_spravochniki_menu_forms.py`.
 - Muhit/filiallar: `app3.greenwhite.uz/xtrade`, operatsion
   `api_filial-232905` + `Администрирование`.
 - Natija: 100/100 navigation OK, pytest `1 passed`, 256.97s.
@@ -358,7 +359,7 @@ Tags: spravochniki, test, temporary-exclusion, sellers, telegram
   tegishli barcha direct/page-link yo'llar hozircha form-opening smoke testiga
   qo'shilmaydi.
 - Implementatsiya:
-  `tests/smoke/test_forms/test_spravochniki_menu_forms.py` ichidagi
+  `tests/smoke/test_forms/test_01_spravochniki_menu_forms.py` ichidagi
   `TEMPORARILY_EXCLUDED_MENU_ITEMS` parent bo'yicha filterlaydi.
 - Qamrov ta'siri: 100 ta inventar yo'lidan 11 tasi chiqarilib, aktiv test
   qamrovi 89 ta navigatsiya bo'ldi.
@@ -376,3 +377,18 @@ Tags: spravochniki, test, report, terminal, allure, run-result
   forma va full URLni ko'rsatadi.
 - Reporting-only o'zgarishda Smartup forma UI/state o'zgarmagani uchun yangi
   screenshot olinmadi; mavjud navigation screenshotlari aktual.
+
+## Group-0 moliyaviy sahifalari (2026-07-31 live)
+
+Tags: legacy, navigation, finance, sales, client-payment, client-offset
+Status: live-ui-confirmed
+Verified: 2026-07-31
+Source: live UI
+- `Финансы > Основное > Оплаты от клиентов`:
+  `*/trade/tcs/cashin_list`; listdagi `Создать` actioni
+  `*/trade/tcs/cashin+add` va `Оплата от клиента / Создание` headingini
+  ochadi.
+- `Продажа > Продажа > Взаиморасчеты с клиентами`:
+  `*/anor/mdeal/order/offset/offset_list`.
+- Testda ishlatish: `base.navigate_to`da exact navbar tab va exact menu item
+  matnlarini ishlat; ikkala forma turli top-level tabda joylashgan.

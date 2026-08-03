@@ -6,14 +6,14 @@
 Tags: natural-person, setup, form, navigation
 - Navigation: `Справочники` -> `Физические лица` -> `Создать`.
 - URL pattern: `/anor/mr/person/natural_person+add`.
-- Test fayli: `tests/smoke/test_setup/test_natural_person.py`.
-- Runner: `tests/smoke/test_setup/test_setup_runner.py`, step `06 - Natural Person` va `18 - Natural Person For Client 1`.
+- Test fayli: `tests/smoke/test_setup/test_05_natural_person.py`.
+- Runner: `tests/smoke/test_setup/test_0_setup_runner.py`, step `06 - Natural Person` va `18 - Natural Person For Client 1`.
 
 ## Test Arxitekturasi
 
 ### Alohida natural person flow
 Tags: natural-person, legal-person, helper
-- Natural Person alohida entity test hisoblanadi; testcase logikasi `tests/smoke/test_setup/test_natural_person.py` ichidagi `run_natural_person` va `tests/smoke/test_setup/test_natural_person_for_client_1.py` ichidagi `run_natural_person_for_client_1` (test_setup_runner step 06 va 18) da turadi.
+- Natural Person alohida entity test hisoblanadi; testcase logikasi `tests/smoke/test_setup/test_05_natural_person.py` ichidagi `run_natural_person` va `tests/smoke/test_setup/test_19_natural_person_for_client_1.py` ichidagi `run_natural_person_for_client_1` (`test_0_setup_runner` step 05 va 19) da turadi.
 - Bir nechta test ishlatadigan UI oqimi `tests/smoke/flows/flow_natural_person.py` ga ajratilgan; test fayllari bir-biridan helper import qilmaydi.
 - Reusable creator: `create_natural_person(page, name, person_code, *, client=False)` — list va add formani ochib, maydonlarni to'ldiradi va saqlaydi.
 - View tekshiruvi: `check_natural_person_view(page, name)` — list rowni tanlab, viewda nom/statusni tekshiradi va listga qaytadi.
@@ -21,9 +21,13 @@ Tags: natural-person, legal-person, helper
   `scope`/`mode` parametri yo'q.
 - **Base funksiya refactorlari (2026-07-01):**
   - ✅ BAJARILDI: `_search_list(page, text)` olib tashlandi → hamma joyda `BasePage(page).grid_controller(search=text)` (aynan bir xil `o.searchValue` element+xatti-harakat; MCP tasdiqlagan). `_search_list` faqat shu faylda ishlatilgan edi.
-  - ✅ BAJARILDI: `create_natural_person` dagi qo'lda save bloki (`Сохранить` click + `confirm_biruni()` + `wait_for_loader()` + `expect_page`) → `BasePage(page).save_and_expect_heading("Физические лица", confirm_text="")` (boyroq xato xabari). ESLATMA: `save_and_expect_heading` mavjud base funksiya, lekin bundan oldin HECH QAYERDA ishlatilmagan edi; qo'lda save naqshi 10 ta setup faylida (test_user, test_company, test_robot, test_legal_person, test_price_type, test_filial, test_room, test_sector, test_product) takrorlanadi — kelajakda cross-cutting refactor imkoniyati.
-  - ✅ BAJARILDI (2026-07-14): `create_natural_person` va view tekshiruvi test faylidan `flow_natural_person.py` ga ko'chirildi; `test_natural_person_for_client_1.py` endi boshqa test modulidan import qilmaydi.
-  - ⏳ IMKONIYAT (hali bajarilmagan): `run_natural_person` + `run_natural_person_for_client_1` bitta parametrli `run_natural_person(page, code, *, client=False)` ga birlashtirilishi mumkin (client uchun `Клиенты` list qadamini `if client:` bilan qo'shib). Ikkala pytest entry saqlanadi. `test_setup_runner.py` `run_*` ni to'g'ridan-to'g'ri chaqiradi (import + `test_06`/`test_18` call-site), shuning uchun birlashtirilsa runner ham yangilanadi.
+  - ✅ BAJARILDI: `create_natural_person` save flowi
+    `base.click(name="Сохранить", exact=True)` → `base.confirm_biruni()` →
+    `base.expect_page(heading="Физические лица")` ko'rinishida ochiq yoziladi.
+    `expect_page` loader overlay yo'qolishini ham kutgani uchun alohida
+    `wait_for_loader()` kerak emas.
+  - ✅ BAJARILDI (2026-07-14): `create_natural_person` va view tekshiruvi test faylidan `flow_natural_person.py` ga ko'chirildi; joriy `test_19_natural_person_for_client_1.py` boshqa test modulidan import qilmaydi.
+  - ⏳ IMKONIYAT (hali bajarilmagan): `run_natural_person` + `run_natural_person_for_client_1` bitta parametrli `run_natural_person(page, code, *, client=False)` ga birlashtirilishi mumkin (client uchun `Клиенты` list qadamini `if client:` bilan qo'shib). Ikkala pytest entry saqlanadi. `test_0_setup_runner.py` `run_*` ni to'g'ridan-to'g'ri chaqiradi (import + `test_06`/`test_18` call-site), shuning uchun birlashtirilsa runner ham yangilanadi.
 
 ## Field Bilimlari
 
@@ -72,7 +76,11 @@ Tags: natural-person, client, list, view, run-result
 
 ### 2026-07-01 base-funksiya refactor verification
 Tags: natural-person, client, refactor, run-result
-- `_search_list` → `grid_controller(search=)` va qo'lda save → `save_and_expect_heading("Физические лица", confirm_text="")` refactoridan keyin: `test_01_authorization` + `test_02_legal_person` + `test_03_filial` + `test_04_room` + `test_06_natural_person` + `test_18_natural_person_for_client_1` = **6 passed in 71.48s** (existing company `red_test`, yangi code `608492`, headed).
+- `_search_list` → `grid_controller(search=)` va save flow refactoridan keyin:
+  `test_01_authorization` + `test_02_legal_person` + `test_03_filial` +
+  `test_04_room` + `test_06_natural_person` +
+  `test_18_natural_person_for_client_1` = **6 passed in 71.48s** (existing
+  company `red_test`, yangi code `608492`, headed).
 - `test_18` o'tishi `Клиент` toggle FILIALga bog'liqligini empirik tasdiqladi: `run_room` (test_04) `filial-pw{code}` ga o'tгач, `create_natural_person(client=True)` da `Клиент` ko'rindi va bosildi.
 
 ### 2026-07-14 reusable flow refactor verification
@@ -80,4 +88,4 @@ Tags: natural-person, flow, duplicate-code, run-result
 - `create_natural_person` va `check_natural_person_view` `tests/smoke/flows/flow_natural_person.py` ga ajratilgandan keyin mavjud filialda noyob person name/code bilan create -> list search -> row assert -> view assert oqimi **1 passed in 22.38s** (`NEW_CODE=0`, headless).
 - `client=True` branch ham noyob person name/code bilan create -> natural person list/view -> `Клиенты` list assert oqimida **1 passed in 23.93s** (`NEW_CODE=0`, headless).
 - Refactordan oldingi `natural_person_pw{code}` formatini saqlangan eski `code` bilan standalone qayta ishlatish serverda `Найден дубликат кода` xatosini bergan. Bu locator/refactor xatosi emas.
-- Oraliq uzun `code_natural_person_pw{code}` / `code_natural_client_pw{code}` formatida aynan `test_natural_person.py` saqlangan code (`NEW_CODE=0`) va headless rejimda **1 passed in 28.06s**, `test_natural_person_for_client_1.py` esa **1 passed in 24.03s**. Keyin loyiha qoidasi bo'yicha ular qisqa `c_n_p_pw{code}` / `c_n_c_pw{code}` formatiga o'tkazildi.
+- Oraliq uzun `code_natural_person_pw{code}` / `code_natural_client_pw{code}` formatida aynan `test_05_natural_person.py` saqlangan code (`NEW_CODE=0`) va headless rejimda **1 passed in 28.06s**, joriy `test_19_natural_person_for_client_1.py` esa **1 passed in 24.03s**. Keyin loyiha qoidasi bo'yicha ular qisqa `c_n_p_pw{code}` / `c_n_c_pw{code}` formatiga o'tkazildi.

@@ -56,10 +56,10 @@ Natija ro'yxatda (`grid(robot_name, robot_code)`):
 
 ## Downstream ta'siri
 
-- `test_user.py`: user yaratishda `robot-pw{code}` "Штат" maydoniga biriktiriladi
+- `test_06_user.py`: user yaratishda `robot-pw{code}` "Штат" maydoniga biriktiriladi
 - Order yaratishda robot avtomatik to'ladi (room-pw{code} tanlangach)
 
 ## Test
 
-- `tests/smoke/test_setup/test_robot.py` → `test_robot` → `authorization(who='admin')` →
+- `tests/smoke/test_setup/test_04_robot.py` → `test_robot` → `authorization(who='admin')` →
   `switch_filial(filial-pw{code})` → `run_robot(page, code)`

@@ -2,6 +2,16 @@
 
 Tags: a2, oauth2, company-client, filial, session, permission, error
 
+## Mundarija
+
+- [URL va navigation](#url-va-navigation)
+- [Screenshot](#screenshot)
+- [Legacy va A2 filial konteksti](#known-issue-legacy-va-a2-filial-konteksti-alohida-qolishi-mumkin)
+- [A2 filial sinxronlash](#forms-runnerdagi-a2-filial-sinxronlash-tuzatishi-2026-07-29)
+- [Secretlarni yashirish](#monitoring-screenshotida-oauth-secretlarni-yashirish)
+- [Bootstrap navigatsiyasi](#forms-02-bootstrapda-listni-ikki-marta-ochmaslik)
+- [Joriy precondition bloklanishi](#joriy-forms-02-precondition-bloklanishi-2026-08-03)
+
 ## URL va navigation
 
 - A2 list: `/a2/biruni/kauth/company_client_list`.
@@ -22,9 +32,10 @@ Tags: a2-shell, legacy-shell, filial-id, access-denied, cascade
 - 2026-07-27 user tasdig'i: `company_client_list` joriy UI'da ochiladi va
   menyu-based testga qayta qo'shildi. `+add` va `+edit` keyinga qoldirildi.
 - Menyu-based test oqimi: dashboard tekshiruvi → `Администрирование`ga switch →
-  listni real menu track orqali ochish → A2 `document.title`, URL va
-  `app-company-client-list` tayyorligini `AngularBasePage.expect_page()` bilan
-  tasdiqlash. Shundan keyin ortga qaytmasdan joriy A2 sahifadan
+  texnik A2 dashboard shellga kirish → A2 filialini sinxronlash → listni real
+  menu track orqali bir marta ochish → A2 `document.title`, URL va
+  `app-company-client-list` tayyorligini tasdiqlash. Shundan keyin ortga
+  qaytmasdan joriy A2 sahifadan
   `AngularBasePage.switch_filial()` orqali oldindan saqlangan operatsion
   filialga o'tiladi.
 - 2026-07-27 trace fakti: forma nomi vizual ko'rinadi, ammo DOMda semantik
@@ -53,7 +64,7 @@ Tags: a2-shell, legacy-shell, filial-id, access-denied, cascade
 ### Forms runnerdagi A2 filial sinxronlash tuzatishi (2026-07-29)
 Tags: a2-shell, legacy-shell, filial-sync, forms-runner, fix
 
-- `tests/smoke/test_forms/test_a2_admin_menu_forms.py` OAuth2 list menu
+- `tests/smoke/test_forms/test_02_a2_admin_menu_forms.py` OAuth2 list menu
   trackini bosgach, title/readiness tekshiruvidan oldin
   `AngularBasePage.switch_filial(name="Администрирование")` chaqiradi.
 - Sabab: legacy `BasePage.switch_filial()` faqat `#/` shell kontekstini
@@ -68,3 +79,45 @@ Tags: a2-shell, legacy-shell, filial-sync, forms-runner, fix
   `1 passed in 137.19s` natija berdi.
 - Screenshotlar o'zgarmadi: yuqoridagi access-error va list-loaded holatlari
   ushbu regressiya hamda kutilgan natijani qamraydi.
+
+### Monitoring screenshotida OAuth secretlarni yashirish
+Tags: oauth2, client-secret, screenshot, allure, security, forms-runner
+Status: code-confirmed
+Verified: 2026-08-03
+Source: `tests/smoke/smoke_reporting.py`;
+`tests/smoke/test_forms/form_monitor.py`
+- Qayerda: company client list yoki uning add/edit holati xato dalili sifatida
+  screenshot qilinayotganda.
+- Qoida: Allure screenshotida input qiymatlari va secret/password/token
+  ustunlari masklanadi; company client listning data qatorlari ham to'liq
+  yopiladi. Client Secret hech qachon report rasmining ochiq qismi bo'lmaydi.
+- Testda ishlatish: forma xatosi dalili uchun faqat `safe_page_screenshot()`
+  ishlatiladi; oddiy `page.screenshot(full_page=True)` ishlatilmaydi.
+
+### Forms-02 bootstrapda listni ikki marta ochmaslik
+Tags: a2-shell, bootstrap, navigation, duplicate, forms-runner
+Status: code-confirmed
+Verified: 2026-08-03
+Source: `tests/smoke/test_forms/test_02_a2_admin_menu_forms.py`
+- Qayerda: Forms-02 boshida legacy shell'dan A2 shellga o'tishda.
+- Qoida: A2 kontekstini tayyorlash uchun OAuth list vaqtincha ochilmaydi;
+  texnik `/a2/trade/intro/dashboard` ochilib filial sinxronlanadi. Shundan
+  keyin company client list real A2 menu track orqali faqat testcase sifatida
+  ochiladi.
+- Testda ishlatish: bootstrap qadamini forma natijasi deb sanama; listning
+  yagona counted navigatsiyasi `run_form_cases()` ichida bo'lsin.
+
+### Joriy Forms-02 precondition bloklanishi (2026-08-03)
+Tags: a2-shell, trade, filial-switch, blocker, forms-runner
+Status: live-ui-confirmed
+Verified: 2026-08-03
+Source: `test-results/logs/tests_smoke_test_forms_test_0_forms_runner.py__test_forms_02_a2_admin_20260803_142617.log`
+- Texnik `/a2/trade/intro/dashboard` ochildi. Headerda joriy project `SFA`
+  ko'rindi, lekin helper eski `TRADE` project/filial triggerini kutdi. Natijada
+  A2 filialini `Администрирование` bilan sinxronlash 30 soniyada bloklandi.
+- Company client formasining navigatsiyasi boshlanmagan: target URLga
+  yetilmagan va forma kontenti tekshirilmagan. Shuning uchun bu holat
+  `company_client_list` product xatosi emas, `TEST_BLOCKED/FILIAL_SWITCH_FAILED`.
+- Markaziy hisobot birinchi caseni blocker, keyingi 21 formani `NOT_CHECKED`
+  sifatida ko'rsatdi. A2 project fallbackini `SFA`ga moslashtirish monitoring
+  implementatsiyasidan alohida fix scope.

@@ -61,6 +61,25 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    def click(
+        self,
+        name,
+        *,
+        role="button",
+        exact=False,
+        index=0,
+        root=None,
+        timeout=10_000,
+    ):
+        """Semantic role va accessible name orqali elementni topib bosadi."""
+        root = self._resolve_root(root)
+        target = root.get_by_role(role, name=name, exact=exact).nth(index)
+        expect(target).to_be_visible(timeout=timeout)
+        target.click()
+        return target
+
+    # ------------------------------------------------------------------------------------------------------------------
+
     def hide_ui(self, locator, *, remove=False):
         """Berilgan selector/Locator topgan yordamchi UI elementlarini bloklaydi.
 
@@ -96,111 +115,6 @@ class BasePage:
         except Exception:
             return ""
         return " | ".join(item for item in headings if item)
-
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def _visible_error_text(self, timeout=1_000):
-        selectors = (
-            "#biruniAlertExtended",
-            "#biruniAlert",
-            "[role='alert']:visible",
-            ".alert-danger:visible",
-            ".toast-message:visible",
-            ".toast:visible",
-        )
-        for index, selector in enumerate(selectors):
-            locator = self.page.locator(selector).first
-            try:
-                if index == 0 and timeout:
-                    expect(locator).to_be_visible(timeout=timeout)
-                elif not locator.is_visible():
-                    continue
-                text = re.sub(r"\s+", " ", locator.inner_text(timeout=timeout)).strip()
-            except Exception:
-                continue
-            if text:
-                return text
-        return ""
-
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def _transition_failure_message(
-        self,
-        *,
-        action,
-        expected,
-        before_state,
-        actual_state,
-        ui_error="",
-        location_hint="",
-    ):
-        lines = [
-            "Smartup transition failed",
-            f"Before page: {before_state or 'unknown'}",
-            f"Action: {action}",
-            f"Expected: {expected}",
-            f"Actual: {actual_state or 'unknown'}",
-        ]
-        if ui_error:
-            lines.append(f"UI error: {ui_error}")
-        if location_hint:
-            lines.append(f"Location hint: {location_hint}")
-        return "\n".join(lines)
-
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def save_and_expect_heading(
-        self,
-        expected_heading,
-        *,
-        action="Сохранить",
-        before_state=None,
-        expected_state=None,
-        confirm_text=None,
-        button_name="Сохранить",
-        exact_button=True,
-        timeout=30_000,
-        location_hint="",
-    ):
-        before = before_state or self._current_heading_text()
-        button = self.page.get_by_role("button", name=button_name, exact=exact_button).first
-        expect(button).to_be_visible()
-        button.click()
-
-        if confirm_text is not None:
-            self.confirm_biruni(confirm_text or None)
-        self.wait_for_loader(timeout=timeout)
-
-        expected = expected_state or f"{expected_heading} heading ochilishi"
-        ui_error = self._visible_error_text(timeout=1_000)
-        if ui_error:
-            actual = f"still on {self._current_heading_text() or before or 'unknown'}"
-            raise AssertionError(
-                self._transition_failure_message(
-                    action=action,
-                    expected=expected,
-                    before_state=before,
-                    actual_state=actual,
-                    ui_error=ui_error,
-                    location_hint=location_hint,
-                )
-            )
-
-        heading = self.page.get_by_role("heading").filter(has_text=expected_heading).first
-        try:
-            expect(heading).to_be_visible(timeout=timeout)
-        except (AssertionError, PlaywrightTimeoutError) as exc:
-            actual = f"still on {self._current_heading_text() or before or 'unknown'}; url={self.page.url}"
-            raise AssertionError(
-                self._transition_failure_message(
-                    action=action,
-                    expected=expected,
-                    before_state=before,
-                    actual_state=actual,
-                    ui_error=self._visible_error_text(timeout=500),
-                    location_hint=location_hint,
-                )
-            ) from exc
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -345,7 +259,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def wait_for_loader(self, timeout=30_000):
+    def wait_for_loader(self, timeout=120_000):
         """
         Loader (overlay) paydo bo'lishini va keyin yo'qolishini kutadi.
         Sahifa settled bo'lsa True qaytaradi; loader timeout ichida
@@ -611,8 +525,8 @@ class BasePage:
         root="b-grid",
         click=False,
         checkbox=None,
-        is_empty=False,
-        is_visible=False,
+        state=None,
+        return_bool=False,
         remove_spaces=True,
     ):
         """`text` bo'yicha grid qatorini topadi, ko'rinishini va (berilgan bo'lsa)
@@ -622,31 +536,45 @@ class BasePage:
           - checkbox="row": topilgan qator checkbox'ini belgilaydi (idempotent)
           - checkbox="all": ko'rinadigan grid tepasidagi select-all (input[bcheckall])
             checkbox'ini belgilaydi (bu holda `text` kerak emas)
-          - is_empty=True: ko'rinadigan grid bo'sh bo'lsa True, aks holda False qaytaradi
-          - is_visible=True: `text` qatori ko'rinsa True, aks holda False qaytaradi
+          - state="empty": ko'rinadigan grid bo'shashini retry bilan tasdiqlaydi
+          - return_bool=True: row yoki state holatini bir marta o'qib bool qaytaradi
           - remove_spaces=True: row qidirish va contains assertlarda barcha
             whitespace'ni avtomatik e'tiborsiz qoldiradi
 
         Grid checkbox'lari `opacity:0`; belgilash `_toggle_checkbox` orqali bajariladi."""
         if checkbox not in (None, "row", "all"):
             raise ValueError('grid(checkbox=...): "row" yoki "all" bo\'lishi kerak')
+        if state not in (None, "empty"):
+            raise ValueError('grid(state=...): faqat "empty" qo\'llanadi')
+        if not isinstance(return_bool, bool):
+            raise TypeError("grid(return_bool=...): bool bo'lishi kerak")
         if not isinstance(remove_spaces, bool):
             raise TypeError("grid(remove_spaces=...): bool bo'lishi kerak")
-        if is_empty and (text is not None or contains or click or checkbox is not None or is_visible):
-            raise ValueError("grid(is_empty=True) boshqa qator amallari bilan birga ishlatilmaydi")
-        if is_visible and text is None:
-            raise ValueError("grid(is_visible=True) uchun text berilishi kerak")
-        if is_visible and (contains or click or checkbox is not None):
-            raise ValueError("grid(is_visible=True) contains/click/checkbox bilan birga ishlatilmaydi")
+        if state is not None and (text is not None or contains or click or checkbox is not None):
+            raise ValueError("grid(state=...) qator/click/checkbox amallari bilan birga ishlatilmaydi")
+        if return_bool and (contains or click or checkbox is not None):
+            raise ValueError("grid(return_bool=True) contains/click/checkbox bilan birga ishlatilmaydi")
+        if checkbox == "all" and (text is not None or contains or click):
+            raise ValueError('grid(checkbox="all") text/contains/click bilan birga ishlatilmaydi')
+        if text is None and contains:
+            raise ValueError("grid(*contains) uchun text berilishi kerak")
+        if click and text is None:
+            raise ValueError("grid(click=True) uchun text berilishi kerak")
+        if checkbox == "row" and text is None:
+            raise ValueError('grid(checkbox="row") uchun text berilishi kerak')
+        if text is None and state is None and checkbox is None:
+            raise ValueError("grid(): text, state yoki checkbox dan bittasini bering")
 
-        if is_empty:
-            grid = self.page.locator(root).filter(visible=True).first
+        if state == "empty":
+            grid = self._resolve_root(root).filter(visible=True).first
             no_data = grid.get_by_text("нет данных", exact=True)
-            return no_data.is_visible()
+            if return_bool:
+                return no_data.is_visible()
+            expect(no_data).to_be_visible()
+            return grid
 
         if checkbox == "all":
-            self.wait_for_loader()
-            grid = self.page.locator(root).filter(visible=True).first
+            grid = self._resolve_root(root).filter(visible=True).first
             cb = grid.locator("input[bcheckall]").first
             if cb.count() == 0:
                 cb = grid.locator("input[type='checkbox']").first
@@ -656,12 +584,12 @@ class BasePage:
 
         row_text = _whitespace_agnostic_pattern(text) if remove_spaces else text
 
-        if is_visible:
-            grid = self.page.locator(root).filter(visible=True).first
+        if return_bool:
+            grid = self._resolve_root(root).filter(visible=True).first
             row = grid.locator(".tbl-row").filter(has_text=row_text).first
             return row.is_visible()
 
-        grid = self.page.locator(root)
+        grid = self._resolve_root(root)
         row = grid.locator(".tbl-row").filter(has_text=row_text).first
         expect(row).to_be_visible()
         for value in contains:
@@ -672,6 +600,34 @@ class BasePage:
         if click:
             row.click()
         return row
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def grid_cell(self, row, index, *, expect_value=_UNSET, return_value=False, remove_spaces=False):
+        """``grid()`` qaytargan row ichidagi bitta cellni tekshiradi yoki o'qiydi.
+
+        ``expect_value`` cell matnini tasdiqlaydi. ``return_value=True`` joriy
+        matnni qaytaradi. ``remove_spaces=True`` bo'lsa oddiy va NBSP
+        whitespace'lar assert hamda return qiymatida e'tiborsiz qoldiriladi.
+        """
+        if not isinstance(index, int) or index < 0:
+            raise ValueError("grid_cell(index=...): manfiy bo'lmagan int berilishi kerak")
+        if not isinstance(return_value, bool):
+            raise TypeError("grid_cell(return_value=...): bool bo'lishi kerak")
+        if not isinstance(remove_spaces, bool):
+            raise TypeError("grid_cell(remove_spaces=...): bool bo'lishi kerak")
+
+        cell = row.locator(".tbl-cell").nth(index)
+        expect(cell).to_be_visible()
+
+        if expect_value is not _UNSET:
+            expected = _whitespace_agnostic_pattern(expect_value) if remove_spaces else str(expect_value)
+            expect(cell).to_contain_text(expected)
+
+        if return_value:
+            value = cell.inner_text().strip()
+            return re.sub(r"\s+", "", value) if remove_spaces else " ".join(value.split())
+        return cell
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -711,11 +667,11 @@ class BasePage:
             option = gc.get_by_role("link", name=expand, exact=True).first
             expect(option).to_be_visible()
             option.click()
-            self.wait_for_loader(timeout=120_000)
+            self.wait_for_loader()
             return
         if reload:
             gc.locator('button[ng-click="reload()"]').first.click()
-            self.wait_for_loader(timeout=120_000)
+            self.wait_for_loader()
             return
         if open_filter:
             gc.locator('button[ng-click="openFilter()"]').first.click()
@@ -1051,11 +1007,28 @@ class BasePage:
         if grid.count() == 0:
             grid = root
 
-        headers = grid.locator(".tbl-header-cell").filter(has_text=self._label_pattern(label))
-        if headers.count() == 0:
+        headers = grid.locator(".tbl-header-cell")
+        try:
+            expect(headers.first).to_be_visible(timeout=10_000)
+        except (AssertionError, PlaywrightTimeoutError) as exc:
+            raise AssertionError(f"Grid headers not visible for label: {label}") from exc
+
+        normalized_label = re.sub(r"\s+", " ", label).strip().casefold()
+        matching_headers = []
+        for header_index in range(headers.count()):
+            header_item = headers.nth(header_index)
+            header_text = re.sub(
+                r"\s+",
+                " ",
+                header_item.inner_text(),
+            ).strip().casefold()
+            if header_text == normalized_label:
+                matching_headers.append(header_item)
+
+        if index >= len(matching_headers):
             raise AssertionError(f"Grid header not found by label: {label}")
 
-        header = headers.nth(index)
+        header = matching_headers[index]
         expect(header).to_be_visible(timeout=1_000)
         header_box = header.bounding_box()
         if header_box is None:
@@ -1071,6 +1044,13 @@ class BasePage:
             )
         else:
             candidates = grid.locator("input:visible, textarea:visible, b-input:visible")
+
+        try:
+            expect(candidates.first).to_be_visible(timeout=10_000)
+        except (AssertionError, PlaywrightTimeoutError) as exc:
+            raise AssertionError(
+                f"Grid field candidates not visible for label: {label} (target={target})"
+            ) from exc
 
         header_left = header_box["x"]
         header_right = header_box["x"] + header_box["width"]

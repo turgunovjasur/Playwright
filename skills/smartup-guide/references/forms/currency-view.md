@@ -5,7 +5,7 @@ Tags: currency, currency-view, rate, modal
 - URL pattern: `anor/mk/currency_view?currency_id=<id>`.
 - Sahifa headingi: `Валюта (просмотр)`.
 - `Курсы` tabida `Установить курс` tugmasi kurs qo'shish modalini ochadi.
-- Related test: `tests/smoke/test_setup/test_currency.py`.
+- Related test: `tests/smoke/test_setup/test_15_currency.py`.
 
 ### Добавить курс modali
 Tags: currency, rate, modal, dialog, heading, locator
@@ -43,13 +43,13 @@ Tags: currency, rate, modal, dialog, heading, locator
   tekshirish:
 
   ```python
-  if not base.grid(base.date("today"), is_visible=True):
+  if not base.grid(base.date("today"), return_bool=True):
       logger.warning("Kurs Markaziy bankdan olinmadi!")
   ```
 
-  `base.grid(is_visible=True)`ni `text` bermasdan chaqirish helper validationda
-  `ValueError` beradi va UI umuman tekshirilmaydi. Faqat gridda istalgan
-  ma'lumot bor-yo'qligi kerak bo'lsa `base.grid(is_empty=True)` ishlatiladi.
+  `base.grid(return_bool=True)`ni `text` bermasdan chaqirish helper validationda
+  `ValueError` beradi va UI umuman tekshirilmaydi. Faqat grid bo'shligini
+  aniqlash kerak bo'lsa `base.grid(state="empty", return_bool=True)` ishlatiladi.
 - `Курс валют` inputi live DOMda `b-number="positive"`; inputga `10_000` kabi
   underscore'li matn emas, `10000` kabi raqam matni beriladi. `BasePage.grid()`
   default whitespace-insensitive bo'lgani uchun assertda ham `"10000"` berish

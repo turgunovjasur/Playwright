@@ -10,6 +10,7 @@ fayldagi ma'lumotni current truth sifatida ishlatmasin.
 - [Superseded runner scope](#superseded-runner-scope)
 - [Removed runner va test entrypointlari](#removed-runner-va-test-entrypointlari)
 - [Removed session recovery helper](#removed-session-recovery-helper)
+- [Removed BasePage helperlari](#removed-basepage-helperlari)
 - [Superseded locator qoidalari](#superseded-locator-qoidalari)
 - [Eski server xatti-harakati](#eski-server-xatti-harakati)
 
@@ -106,6 +107,36 @@ Replaced by:
   Angular modelga commit qilib `Войти` bosilar va overlay yopilishi kutilar edi.
 - Current behavior: helper va uning `login()` caller'i `f94b377` refaktorida
   olib tashlangan; CI head `0670b8f`da avtomatik session-lock recovery yo'q.
+
+## Superseded setup/group/Forms test naming qoidalari
+
+### Setup/group/Forms runner va leaf fayllarini eski usulda nomlash
+Status: superseded
+Observed: 2026-07-31
+Superseded: 2026-07-31
+Source: user
+Replaced by: `skills/write-test/references/project-rules.md` → `Setup, group va Forms runner/leaf fayllarini tartib bilan nomlash`
+- Old behavior: setup runner `test_setup_runner.py`, setup leaf fayllari raqamsiz edi.
+- Old behavior: group leaf fayllari raqamsiz, tartib faqat runner wrapper va Allure title ichida yozilar edi.
+- Old behavior: runner fayli group nomini takrorlab `test_<group>_group_runner.py` ko'rinishida bo'lishi mumkin edi.
+- Old behavior: Forms runner `test_forms_runner.py`, Forms leaf modullari raqamsiz edi.
+- Current behavior: setup runner `test_0_setup_runner.py`, group runner `test_0_group_runner.py`, Forms runner `test_0_forms_runner.py`; barcha leaf fayllar runner wrapper raqamiga mos prefix oladi.
+
+## Removed BasePage helperlari
+
+### Birlashtirilgan `save_and_expect_heading()` transition helperi
+Status: superseded
+Observed: 2026-07-01
+Superseded: 2026-07-31
+Source: user; `utils/base_page.py`; legacy test call-site'lari
+Replaced by: `skills/smartup-guide/references/ui-patterns.md` →
+`Legacy Save Transition Ochiq Yoziladi`
+- Old behavior: legacy save, optional Biruni confirm, loader va target heading
+  bitta ko'p parametrli `BasePage.save_and_expect_heading()` ichida
+  birlashtirilgan edi.
+- Current behavior: test action va assertionni ochiq yozadi:
+  `base.click(name="Сохранить", exact=...)`, kerak bo'lsa
+  `base.confirm_biruni(...)`, keyin `base.expect_page(heading=..., url=...)`.
 
 ## Superseded locator qoidalari
 

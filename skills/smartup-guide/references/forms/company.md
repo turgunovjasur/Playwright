@@ -130,9 +130,9 @@ kutish.
 
 - A2 `company_list`da ko'rinadigan `Компании` desktop title'i `span`, mobile
   `h1` esa yashirin. Shu sabab semantic heading role qidiradigan legacy
-  `BasePage.save_and_expect_heading()` mos emas. Yangi
+  `BasePage.expect_page(heading=...)` mos emas.
   `AngularBasePage.save_and_expect_page(expected_heading="Компании", ...)`
-  ko'rinadigan matnni tekshiradi.
+  ko'rinadigan A2 matnini tekshiradi.
 - Save confirm live tasdiqlangan. Confirm yopilgach target list readiness va A2
   error dialog bir vaqtda kutiladi; error chiqsa `Angular save failed` target URL,
   actual URL va UI matni bilan darhol fail qiladi. Shu fail-fast race uchun
@@ -234,7 +234,7 @@ Tags: company, setup, locator, wait
 
 ## Test
 
-- `tests/smoke/test_setup/test_company.py` → `run_company(page, code, save_data)`
+- `tests/smoke/test_setup/test_00_company.py` → `run_company(page, code, save_data)`
 - `save_data("company_code", company_code)` — data_store.json ga saqlanadi
 - Keyingi `test_01_legal_person` admin authorizationda aynan shu saqlangan
   `company_code`ni login suffix sifatida ishlatadi.

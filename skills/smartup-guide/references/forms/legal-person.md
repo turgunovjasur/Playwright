@@ -15,8 +15,8 @@
 Tags: legal-person, setup, form, navigation
 - Navigation: `Справочники` -> `Юридические лица` -> `Создать`.
 - URL pattern: `/anor/mr/person/legal_person+add`.
-- Test fayli: `tests/smoke/test_setup/test_legal_person.py`.
-- Runner: `tests/smoke/test_setup/test_setup_runner.py`, step `01 - Legal Person`.
+- Test fayli: `tests/smoke/test_setup/test_01_legal_person.py`.
+- Runner: `tests/smoke/test_setup/test_0_setup_runner.py`, step `01 - Legal Person`.
 - Setup chainda alohida Authorization testi yo'q: `run_legal_person` birinchi
   qadamda joriy company admini bilan login qiladi.
 
@@ -48,7 +48,7 @@ Tags: legal-person, owner, director, natural-person, relation
 - `Собственник` b-input ustunlari `Код` / `Название`; u alohida legal person bo'lishi kerak.
 - `Руководитель` b-input ustunlari `Ф.И.О.` / `Код`; u alohida natural person bo'lishi kerak.
 - Director quick-add `Физическое лицо (создание)` sahifasiga o'tadi; owner quick-add esa yana `Юридическое лицо (создание)` ochadi. Barqaror test uchun avval owner legal person va director natural person alohida yaratiladi, keyin asosiy legal person add formida code orqali tanlanadi.
-- Director natural person yaratish logikasi Legal Person ichida yozilmaydi; `tests/smoke/test_setup/test_natural_person.py` ichidagi `natural_person_values` va `create_natural_person_record` import qilib ishlatiladi.
+- Director natural person yaratish logikasi Legal Person ichida yozilmaydi; `tests/smoke/test_setup/test_05_natural_person.py` ichidagi `natural_person_values` va `create_natural_person_record` import qilib ishlatiladi.
 
 ### Region
 Tags: legal-person, region, b-tree

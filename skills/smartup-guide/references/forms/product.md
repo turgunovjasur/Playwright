@@ -51,7 +51,8 @@ Live UI probe (2026-07-13): `Товар`, `Продукция`, `Сырье` rad
 ## Saqlash pattern
 
 ```python
-BasePage(page).save_and_expect_heading("ТМЦ", ...)
+base.click(name="Сохранить", exact=True)
+base.expect_page(heading="ТМЦ")
 # biruni confirm yo'q yaratishda
 ```
 
@@ -78,33 +79,35 @@ Yaratilgan product qatori bosilgach:
 ```
 "Установить цены" button → "ТМЦ (установка цен)" heading
 → `BasePage.input(label=price_type_name, value=price)`
-→ save_and_expect_heading("ТМЦ", confirm_text="Сохранить?")
+→ `base.click(name="Сохранить", exact=True)`
+→ `base.confirm_biruni(expected_text="Сохранить?")`
+→ `base.expect_page(heading="ТМЦ")`
 ```
 
 Live UI probe (2026-07-13) narx grid headerlari: `Название`, `Тип цены`, `Номер карточки`, `Средняя цена закупа`, `Цена с НДС и акцизом`, `Цена без НДС`, `Цена без НДС и акциза`. UZB narx turi qatori `price_type_name` matni orqali topilib, shu qatordagi keyingi narx inputi `BasePage.input(label=price_type_name, ...)` bilan to'ldiriladi.
 
-- Asosiy product narxi = **7000 UZS**. Bu qiymat C-group aksiya testida
+- Asosiy product narxi = **7000 UZS**. Bu qiymat aksiya chegirmasi ssenariysida
   ishlatiladi: 10 × 7000 = 70 000, 10% skidka → 63 000.
 - Ikkinchi product narxi = **1 USD**. Uning price type'i
   `run_price_type_usa` yaratgan `Price Type USA-pw{code}` bo'lishi shart.
-- Setup 13-qadam shu USD price type'ni `Доллар США` valyutasida yaratadi va
+- Setup 14-qadam shu USD price type'ni `Доллар США` valyutasida yaratadi va
   joriy kun kursini 10000 qilib o'rnatadi.
 
 ## Downstream ta'siri
 
-- `action.md` C-01/C-02: `product-pw{code}` x10 = 70 000; 10% skidka = 63 000
+- `action.md` aksiya ssenariysi: `product-pw{code}` x10 = 70 000; 10% skidka = 63 000
 - `order-add.md`: `product-pw{code}` va `product-usa-pw{code}` ikkita alohida
   product sifatida ishlatiladi.
-- Har ikkala product uchun Setup 19-qadamda 100 donadan boshlang'ich qoldiq
+- Har ikkala product uchun Setup 21-qadamda 100 donadan boshlang'ich qoldiq
   o'tkaziladi; shuning uchun fresh run'da ikkalasi ham Order product pickerda
   stock preconditioniga ega.
 
 ## Test
 
-- `tests/smoke/test_setup/test_product.py` → `run_product(page, code)` UZS
-  productni, `run_product_usa(page, code)` USD productni yaratadi; `run_`
-  funksiyalar auth qilmaydi.
-- Setup runner ikkala funksiyani bitta **16 - Products** qadamida ketma-ket
+- `tests/smoke/test_setup/test_18_product.py` → yagona `run_product(page, code)`
+  UZS va USD productlarni yaratib, tegishli narx turlarini belgilaydi; `run_`
+  auth qilmaydi.
+- Setup runner **18 - Product** wrapperida shu bitta `run_product` funksiyasini
   chaqiradi.
 - Standalone `test_product` user sifatida login qiladi, kerakli
   `filial-pw{code}` filialiga o'tadi va ikkala productni yaratadi.
@@ -115,7 +118,7 @@ Live UI probe (2026-07-13) narx grid headerlari: `Название`, `Тип ц�
 Tags: product, usd, price-type, setup, order
 Status: live-ui-confirmed
 Verified: 2026-07-30
-Source: `tests/smoke/test_setup/test_setup_runner.py`; `smartup.online` headless
+Source: `tests/smoke/test_setup/test_0_setup_runner.py`; `smartup.online` headless
 Setup run `20 passed, 1 deselected`
 
 - `product-usa-pw{code}` / `c_p_usa_pw{code}` yaratildi.

@@ -50,7 +50,7 @@ def main():
     configure_company_env(args)
     ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
 
-    from tests.smoke.test_setup.test_company import (  # noqa: E402
+    from tests.smoke.test_setup.test_00_company import (  # noqa: E402
         COMPANY_SAVE_TIMEOUT,
         _company_code_text_pattern,
         _open_company_list,

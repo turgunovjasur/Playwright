@@ -30,15 +30,14 @@
 
 ## Test
 
-- `tests/smoke/test_setup/test_init_balance.py`:
-  - `run_init_balance(page, code)` — `product-pw{code}` uchun 100 dona,
-    hujjat valyutasi UZS, kirim narxi 5000.
-  - `run_init_balance_usa(page, code)` — `product-usa-pw{code}` uchun 100 dona,
-    hujjat valyutasi `Доллар США`, kirim narxi 1.
-- Setup runner ikkala funksiyani bitta **19 - Init Balances** qadamida
-  ketma-ket chaqiradi.
+- `tests/smoke/test_setup/test_21_init_balance.py`:
+  - yagona `run_init_balance(page, code)` `product-pw{code}` uchun 100 dona,
+    UZS valyutasida 5000 kirim narxini va `product-usa-pw{code}` uchun 100 dona,
+    `Доллар США` valyutasida 1 kirim narxini ketma-ket yaratadi.
+- Setup runner **21 - Init Balance** wrapperida shu bitta `run_init_balance`
+  funksiyasini chaqiradi.
 - USD hujjat raqami birinchi hujjat bilan to'qnashmasligi uchun `1{code}`.
-- Setup 20-qadam `Остатки ТМЦ` sahifasida ikkala productni ham tekshiradi.
+- Setup 22-qadam `Остатки ТМЦ` sahifasida ikkala productni ham tekshiradi.
 
 ## Debug Notes
 
@@ -50,7 +49,7 @@ Tags: init-balance, warehouse, b-input, error
 Tags: init-balance, product, usd, stock, order
 Status: live-ui-confirmed
 Verified: 2026-07-30
-Source: `tests/smoke/test_setup/test_setup_runner.py`; `smartup.online` headless
+Source: `tests/smoke/test_setup/test_0_setup_runner.py`; `smartup.online` headless
 Setup run `20 passed, 1 deselected`
 
 - UZS va USD productlar uchun alohida boshlang'ich qoldiq hujjati yaratilib

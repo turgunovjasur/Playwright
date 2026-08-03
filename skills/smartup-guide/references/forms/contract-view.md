@@ -8,9 +8,7 @@ Tags: contract, contract-view, view-form, locator, screenshot, order-preconditio
 - Navigation: `Финансы > Договоры` -> contract row -> `Просмотр`
 - URL pattern: `*/anor/mkf/contract_view`
 - Page container: `b-page`
-- Main test files:
-  - `tests/smoke/test_groups/test_A_grup/test_create_contract.py`
-  - `tests/smoke/test_groups/test_A_grup/test_create_contract_with_payment_type.py`
+- Joriy automated test yo'q; avvalgi Group A testlari 2026-07-31 kuni o'chirilgan.
 - Contract testlari self-contained; `flow_contract` ishlatilmaydi.
 - Related domain docs:
   - `../contracts.md`
@@ -33,7 +31,9 @@ Tags: contract, contract-view, view-form, locator, screenshot, order-preconditio
 
 1. Har test faylida `BasePage.navigate_to(tab="Финансы", name="Договоры")` bilan list ochiladi.
 2. `Создать` bosilib add heading/URL tekshiriladi; barcha inputlar shu test faylining `run_*` funksiyasida to'ldiriladi.
-3. `BasePage.save_and_expect_heading("Договоры")` bilan saqlanadi.
+3. `base.click(name="Сохранить", exact=True)` va
+   `base.expect_page(heading="Договоры", url="anor/mkf/contract_list")` bilan
+   saqlanadi.
 4. `grid_controller(search=contract_code)` va `grid(..., click=True)` bilan row tekshiriladi.
 5. `Просмотр` bosilib qiymatlar `BasePage.form_view(...)` bilan tekshiriladi; `Закрыть` orqali listga qaytiladi.
 
@@ -48,7 +48,7 @@ Tags: contract, contract-view, view-form, locator, screenshot, order-preconditio
 
 ## Current View Assertions
 
-For A-group UZS contract:
+For UZS contract:
 
 - `contract_code`
 - `contract_name`
