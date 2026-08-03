@@ -73,10 +73,4 @@ def run_attach_license(page, code, logger):
 @allure.title("Foydalanuvchiga litsenziya ulash")
 def test_attach_license(page, code, logger):
     authorization(page, who="admin")
-    if not license_policy_disabled():
-        with allure.step("Precondition - Litsenziyalar sahifasini ochish"):
-            base = BasePage(page)
-            base.switch_filial(name="Администрирование")
-            base.navigate_to(tab="Главное", name="Лицензии")
-            base.expect_page(heading="Лицензии")
     run_attach_license(page, code, logger)

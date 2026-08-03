@@ -38,6 +38,16 @@ Maqsad: har suhbatda bir xil xatoni takrorlamaslik.
 - Muhokama savolidan kengroq o'zgarishni taxmin qilib amalga oshirma. Tasdiq
   olinganda ham faqat kelishilgan scope'ni o'zgartir.
 
+## Kod O'zgarishlari Uchun Branch
+
+Status: user-reported
+Verified: pending
+Source: user
+
+- Foydalanuvchi boshqa branchni aniq aytmasa, barcha kod o'zgarishlarini
+  `dev1` branchida qil. Har qanday kod tahriridan oldin joriy branchni tekshir
+  va kerak bo'lsa `dev1`ga o't.
+
 ## Loyiha Haqida
 
 - Framework: Playwright + pytest (Python)
