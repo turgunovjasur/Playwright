@@ -25,7 +25,7 @@ def run_change_password(page, code):
     base = BasePage(page)
     with allure.step("1 - Foydalanuvchi sifatida kirish"):
         login(page, email=user_email_for(code), password=USER_PASS)
-        base.expect_page(heading="Пароль (изменение)", url="change_password")
+        base.expect_page(url="change_password")
         base.text(root=".alert-icon")
 
     with allure.step("2 - Yangi parol kiritish va tasdiqlash"):

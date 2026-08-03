@@ -1,6 +1,7 @@
 import allure
 import pytest
 
+from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.test_setup.test_00_company import run_company
 from tests.smoke.test_setup.test_01_legal_person import run_legal_person
 from tests.smoke.test_setup.test_02_filial import run_filial
