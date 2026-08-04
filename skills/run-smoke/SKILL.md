@@ -7,6 +7,20 @@ description: Smartup smoke testlarini scripts/run_tests.py yoki pytest orqali is
 
 Argument: `$ARGUMENTS` (test nomi, fayl yoki bo'sh)
 
+## User-reported Execution Qoidasi
+
+### Testlarni faqat foydalanuvchi aniq so'raganda ishga tushirish
+Status: user-reported
+Verified: 2026-08-04
+Source: user
+- Qoida: foydalanuvchi aniq `run qil` deb aytmaguncha `pytest`,
+  `scripts/run_tests.py`, test collection, smoke yoki boshqa test commandini
+  avtomatik ishga tushirma. Kod o'zgarishidan keyin test ishga tushirilmaganini
+  handoffda aniq ayt.
+- `Tuzat`, `o'zgartir`, `amalga oshir`, `tekshir` yoki skill/reference'dagi
+  verification commandi test execution ruxsati emas. Faqat userning aynan
+  `run qil` buyrug'i execution authoritysi bo'ladi.
+
 ## Qaysi buyruqni ishlating
 
 ### Barcha smoke testlar (to'liq run):

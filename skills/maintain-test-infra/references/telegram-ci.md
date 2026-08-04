@@ -37,15 +37,21 @@ Source: `scripts/telegram_ci_bot.py`, `.github/workflows/daily-smoke.yml`
 
 ### Setup + Forms final coverage
 Status: code-confirmed
-Verified: 2026-07-30
-Source: GitHub Actions run `30528649258`; `scripts/analyze_test_result.py`; `scripts/telegram_progress.py`
+Verified: 2026-08-04
+Source: GitHub Actions runs `30528649258`, `30878853396`; `scripts/analyze_test_result.py`; `scripts/telegram_progress.py`
 - Pytest summarydagi `22 passed` forma soni emas: existing-company
   `setup-forms` runida bu 20 ta Setup case va 2 ta Forms runner case'dan iborat.
 - Shu run logida `Справочники` suite `89/89`, A2 Admin suite `22/22` forma
   ochgan — jami `111/111`.
-- Telegram final xabari `Pytest` deb aniq belgilangan case summarydan tashqari
-  `Setup` o'tgan/jami qadamlar, umumiy Forms ochilgan/tekshirilgan formalar va
+- Telegram final xabari `Pytest cases` deb aniq belgilangan case summarydan tashqari
+  `Setup` passed/failed/skipped qadamlar, umumiy Forms muvaffaqiyatli/jami va
   `Справочники` hamda `A2 Admin` kesimini alohida ko'rsatishi shart.
+- Forms coverage uchun asosiy manba Allure'dagi versionlangan
+  `form-monitor.json`; markaziy monitor attachmenti bo'lmagan eski runlarda
+  `NNN | Filial: ...` va legacy `NN — ...` Allure steplari fallback bo'ladi.
+- Bitta Forms wrapper ichida bir nechta forma muammosi bo'lsa Telegram faqat
+  birinchi failed stepni emas, monitor payloadidagi barcha `PASSED` bo'lmagan
+  formalarni raqami, holati va sababi bilan ko'rsatadi.
 - Coverage parser direct leaf testlar bilan birga
   `test_forms_01_spravochniki` va `test_forms_02_a2_admin` wrapper
   identitylarini ham tanishi kerak.
@@ -74,6 +80,10 @@ Source: GitHub Actions run `30528649258`; `scripts/analyze_test_result.py`; `scr
 
 ## Verification
 
-- Unit: `python -m pytest tests/unit/test_telegram_reporting.py -q`
-- Workflow YAML va command syntaxni read-only ko'rish.
+- Default: workflow YAML, Python syntax, message template va command syntaxni
+  read-only/statik tekshirish; unit test fayliga tegmaslik.
+- Faqat user unit testni alohida so'rasa uni yozish/o'zgartirish mumkin. Faqat
+  user aynan `run qil` desa
+  `python -m pytest tests/unit/test_telegram_reporting.py -q`ni ishga tushirish
+  mumkin; bu yerda command borligi ruxsat hisoblanmaydi.
 - Real workflow dispatch yoki Telegram message faqat user explicit so'raganda.

@@ -22,11 +22,18 @@ AI_SUMMARY_JSON = ROOT / "test-results" / "ai-summary.json"
 DEFAULT_MODEL = "gemini-2.5-flash"
 FAILED_STATUSES = {"failed", "broken"}
 A2_ADMIN_FORMS_TEST = "test_a2_admin_menu_forms"
-A2_FORM_STEP_PATTERN = re.compile(r"^\d{2}\s+[—-]\s+")
+A2_FORM_STEP_PATTERN = re.compile(
+    r"^(?:\d{2}\s+[—-]\s+|\d{3}\s+\|\s+Filial:)"
+)
 SPRAVOCHNIKI_FORM_STEP_PATTERN = re.compile(r"^\d{3}\s+\|\s+Filial:")
 FORM_SUITE_LABELS = {
     "spravochniki": "Справочники",
     "a2_admin": "A2 Admin",
+}
+FORM_MONITOR_FAILURE_STATUSES = {
+    "OPENED_WITH_DEFECT",
+    "NOT_OPENED",
+    "TEST_BLOCKED",
 }
 
 
@@ -85,6 +92,27 @@ def _auth_diagnostic_attachment(item, results_dir):
                 700,
             ),
         }
+    return {}
+
+
+def _form_monitor_attachment(item, results_dir):
+    attachments = item.get("attachments")
+    if not isinstance(attachments, list):
+        return {}
+
+    for attachment in attachments:
+        if not isinstance(attachment, dict):
+            continue
+        name = str(attachment.get("name") or "").strip()
+        if not name.endswith("| form-monitor.json"):
+            continue
+        source = Path(str(attachment.get("source") or "")).name
+        if not source:
+            continue
+        payload = _read_json(results_dir / source)
+        if not payload or not isinstance(payload.get("results"), list):
+            continue
+        return payload
     return {}
 
 
@@ -461,6 +489,7 @@ def _humanize_failure(item):
             auth_diagnostic.get("summary")
             or _human_reason(failure_text)
         ),
+        "form_issues": _form_monitor_issues(item.get("form_monitor")),
     }
 
 
@@ -483,6 +512,7 @@ def collect_allure_results(results_dir, started_at):
         form_suite = _form_suite_key(data)
         form_steps = _form_steps(data, form_suite=form_suite)
         auth_diagnostic = _auth_diagnostic_attachment(data, results_dir)
+        form_monitor = _form_monitor_attachment(data, results_dir)
         rows.append(
             {
                 "name": data.get("name") or "",
@@ -495,6 +525,7 @@ def collect_allure_results(results_dir, started_at):
                 "form_steps": form_steps,
                 "a2_form_steps": form_steps if form_suite == "a2_admin" else [],
                 "auth_diagnostic": auth_diagnostic,
+                "form_monitor": form_monitor,
                 "start": data.get("start"),
                 "stop": data.get("stop"),
             }
@@ -587,11 +618,85 @@ def _empty_form_counts():
     return {"checked": 0, "passed": 0, "failed": 0, "skipped": 0}
 
 
+def _form_monitor_counts(form_monitor):
+    results = form_monitor.get("results")
+    if not isinstance(results, list):
+        return {}
+
+    statuses = [
+        str(result.get("status") or "").upper()
+        for result in results
+        if isinstance(result, dict)
+    ]
+    try:
+        planned = int(form_monitor.get("planned") or 0)
+    except (TypeError, ValueError):
+        planned = 0
+    return {
+        "checked": max(planned, len(statuses)),
+        "passed": statuses.count("PASSED"),
+        "failed": sum(
+            status in FORM_MONITOR_FAILURE_STATUSES for status in statuses
+        ),
+        "skipped": statuses.count("NOT_CHECKED"),
+    }
+
+
+def _form_monitor_issues(form_monitor):
+    if not isinstance(form_monitor, dict):
+        return []
+    results = form_monitor.get("results")
+    if not isinstance(results, list):
+        return []
+
+    issues = []
+    for result in results:
+        if not isinstance(result, dict):
+            continue
+        status = str(result.get("status") or "").upper()
+        if not status or status == "PASSED":
+            continue
+        issues.append(
+            {
+                "number": result.get("number") or "",
+                "title": str(result.get("title") or "unknown"),
+                "status": status,
+                "reason_code": str(result.get("reason_code") or ""),
+                "reason": _truncate(
+                    _mask_sensitive(str(result.get("reason_summary") or "")),
+                    350,
+                ),
+                "detail": _truncate(
+                    _mask_sensitive(str(result.get("detail") or "")),
+                    500,
+                ),
+            }
+        )
+    return issues
+
+
 def _form_coverage_summary(results):
     suites = {}
     for item in results:
         suite = str(item.get("form_suite") or "") or _form_suite_key(item)
         if suite not in FORM_SUITE_LABELS:
+            continue
+        form_monitor = item.get("form_monitor")
+        monitor_counts = (
+            _form_monitor_counts(form_monitor)
+            if isinstance(form_monitor, dict)
+            else {}
+        )
+        if monitor_counts:
+            counts = suites.setdefault(
+                suite,
+                {
+                    "label": FORM_SUITE_LABELS[suite],
+                    **_empty_form_counts(),
+                },
+            )
+            for key in _empty_form_counts():
+                counts[key] += int(monitor_counts.get(key) or 0)
             continue
         form_steps = item.get("form_steps")
         if not isinstance(form_steps, list):

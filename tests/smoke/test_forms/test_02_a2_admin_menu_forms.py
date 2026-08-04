@@ -9,7 +9,7 @@ A2 FORMALAR INVENTARI — kelajakdagi menu-track testlar uchun
 ==============================================================
 
 Manba: ``test_a2_new_forms.py::A2_FORMS`` va ``new_forms.md``.
-Jami: 53 | ✅ YOZILGAN: 22 | ⬜ QOLGAN: 31.
+Jami: 53 | ✅ YOZILGAN: 21 | ⏸ VAQTINCHA SKIP: 1 | ⬜ QOLGAN: 31.
 
 Status shu faylga nisbatan:
 - ``✅ YOZILGAN`` — real menu/page-link yo'li shu testda mavjud va live o'tgan.
@@ -62,13 +62,14 @@ ADMIN profil → operatsion filial (24 ta)
     Title: Plugin Marketplace
     User trace: Плагин → Plugin Marketplace
 
-10. ✅ YOZILGAN | direct | ``anor/mkw/marking_stocktaking/marking_stocktaking_list``
+10. ⏸ VAQTINCHA SKIP | direct | ``anor/mkw/marking_stocktaking/marking_stocktaking_list``
     Title: Инвентаризация КМ
     User trace: Склад → Документы → Инвентаризации → Инвентаризация КМ
+    Skip sababi: joriy test muhitida formaga dostup yo'q; dostup berilgach skip registry'dan olib tashlanadi.
 
 11. ✅ YOZILGAN | direct | ``anor/rep/mkr/pnl``
-    Title: PnL
-    User trace: Финансы → Отчеты → PnL
+    Title: Отчет о прибылях и убытках
+    User trace: Финансы → Отчеты → Отчет о прибылях и убытках
 
 12. ✅ YOZILGAN | direct | ``trade/tvt/user_locations``
     Title: Отслеживание пользователей
@@ -284,6 +285,7 @@ ADMIN_A2_FORMS = [
         "title": "Клиенты OAuth2 сервера для компании",
         "path": "biruni/kauth/company_client_list",
         "ready": "app-company-client-list",
+        "screenshot_mask": "company-client",
     },
 ]
 
@@ -381,7 +383,7 @@ OPERATIONAL_A2_FORMS = [
     {
         "navbar_tab": "Финансы",
         "menu_column": "Отчеты",
-        "menu_item": "PnL",
+        "menu_item": "Отчет о прибылях и убытках",
         "path": "anor/rep/mkr/pnl",
     },
     {
@@ -438,7 +440,7 @@ def _open_a2_dashboard_shell(page, angular):
 
 
 def run_a2_admin_menu_forms(page, *, terminal_reporter=None):
-    """22 ta A2 formani markaziy monitor bilan kuzatib tekshiradi."""
+    """21 ta active A2 formani markaziy monitor bilan kuzatib tekshiradi."""
     base = BasePage(page)
     angular = AngularBasePage(page)
     operational_placeholder = "<operatsion filial>"

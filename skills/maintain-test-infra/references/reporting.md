@@ -22,9 +22,11 @@ Source: `tests/smoke/smoke_reporting.py`, `scripts/open_allure_report.py`
 ## Forms central monitoring
 
 Status: code-confirmed
-Verified: 2026-08-03
+Verified: 2026-08-04
 Source: `tests/smoke/test_forms/form_monitor.py`,
-`tests/smoke/test_forms/flow.py`
+`tests/smoke/test_forms/flow.py`,
+`tests/smoke/test_forms/skipped_forms.py`,
+`tests/smoke/screenshot_masking.py`
 
 - Forms-01 va Forms-02 bir xil `FormMonitor` orqali ishlaydi. Yangi Forms
   runner avval barcha rejalashtirilgan formalarni ro'yxatdan o'tkazadi, so'ng
@@ -44,11 +46,18 @@ Source: `tests/smoke/test_forms/form_monitor.py`,
   ko'rsatiladi; suite bloklangan sahifa esa forma ochildi deb noto'g'ri
   hisoblanmaydi.
 - Xato paytidagi full-page screenshot aynan shu forma Allure stepiga
-  biriktiriladi. Barcha inputlar va secret/password/token ustunlari masklanadi;
-  OAuth client listda data qatorlari to'liq yopiladi.
+  biriktiriladi. Default mask faqat password/secret/token elementlarini
+  yashiradi; oddiy search/filter inputlari ochiq qoladi.
+- Kengroq forma masklari `screenshot_masking.py`dagi opt-in profillarda turadi.
+  Profil case inventarida explicit ko'rsatiladi va faqat profilga mos URL
+  ochilganida ishlaydi. Hozir `company-client` profili OAuth inputlari va list
+  qatorlarini to'liq yopadi.
 - `run_form_cases()` uchun `FormMonitor` majburiy. Eski parallel
   `finish_form_results()`/`results` hisoboti yo'q; barcha yangi forma rejalari
   yagona `build_form_case_plan()` orqali normalizatsiya qilinadi.
+- `SKIPPED_FORMS` registry'sidagi canonical pathlar `build_form_case_plan()`
+  boshida chiqariladi. Ular `planned_cases`ga kirmagani uchun tekshirilmaydi va
+  terminal, Allure hamda `form-monitor.json` hisobotlarida ko'rsatilmaydi.
 - Har forma tugashi bilan terminal reporter orqali bitta ixcham
   `[FORM MONITOR]` qatori
   chiqariladi; uzoq Forms run vaqtida joriy progress va oxirgi forma holati
@@ -88,6 +97,12 @@ Source: `tests/smoke/test_forms/form_monitor.py`,
 
 ## Verification
 
-- Eng tor reporting unit testlarini ishga tushir.
-- Report server uchun state/health-check unit yoki lokal generated report bilan
-  tekshir; production browser/processni o'zboshimchalik bilan ochma.
+- Default holatda reporting kodini syntax parse, linter, read-only artifact
+  inspection va `git diff --check` bilan tekshir; unit test fayllarini yaratma
+  yoki o'zgartirma.
+- `tests/unit/test_telegram_reporting.py` faqat user aynan unit test yozish yoki
+  o'zgartirishni so'rasa tahrirlanadi; `pytest` esa user aynan `run qil` deganda
+  ishga tushiriladi. Bu reference'dagi command/tavsiya o'zicha authority emas.
+- Report server uchun production browser/processni o'zboshimchalik bilan ochma;
+  lokal generated report yoki state/health-check ham user execution so'ragan
+  scope ichida bo'lsin.

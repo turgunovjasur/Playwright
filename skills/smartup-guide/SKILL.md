@@ -121,6 +121,7 @@ Biznes formalar:
 - [cislink.md](references/forms/cislink.md) — CIS link integratsiya
 - [integration-three.md](references/forms/integration-three.md) — Integration Three hisobotlar
 - [integration-reports.md](references/forms/integration-reports.md) — Integratsiya hisobotlari
+- [marking-stocktaking-list.md](references/forms/marking-stocktaking-list.md) — Markirovka inventarizatsiyasi ro'yxati va test dostup holati
 
 ## Form Dossier Qoidasi
 

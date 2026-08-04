@@ -19,6 +19,7 @@ from tests.smoke.test_forms.flow import (
     format_form_result,
     write_terminal_report,
 )
+from tests.smoke.test_forms.skipped_forms import is_form_skipped
 
 
 PASSED = "PASSED"
@@ -349,6 +350,7 @@ def form_case(
     ready=None,
     shell=None,
     section=None,
+    screenshot_mask=None,
 ):
     """Monitor uchun barcha runnerlarda bir xil planned-case yozuvini yaratadi."""
     if not isinstance(number, int) or number < 1:
@@ -362,7 +364,7 @@ def form_case(
     ):
         if not _clean_text(value):
             raise ValueError(f"Forma case uchun {field_name} majburiy")
-    return {
+    case = {
         "number": number,
         "filial": filial,
         "navbar_tab": navbar_tab,
@@ -376,6 +378,9 @@ def form_case(
         "shell": shell,
         "section": section,
     }
+    if screenshot_mask is not None:
+        case["screenshot_mask"] = screenshot_mask
+    return case
 
 
 def build_form_case_plan(
@@ -387,9 +392,11 @@ def build_form_case_plan(
     shell=None,
     section=None,
 ):
-    """Legacy va A2 definitionlarni yagona ``FormCase`` rejasiga aylantiradi."""
+    """Skip registry'ni chiqarib, yagona ``FormCase`` rejasini yaratadi."""
     planned = []
-    for offset, definition in enumerate(definitions):
+    for definition in definitions:
+        if is_form_skipped(definition):
+            continue
         links = list(definition.get("page_links") or [])
         title = (
             definition.get("title")
@@ -399,7 +406,7 @@ def build_form_case_plan(
         )
         planned.append(
             form_case(
-                number=start_number + offset,
+                number=start_number + len(planned),
                 filial=filial,
                 navbar_tab=definition.get("navbar_tab") or navbar_tab,
                 menu_column=definition.get("menu_column"),
@@ -413,6 +420,7 @@ def build_form_case_plan(
                 ready=definition.get("ready"),
                 shell=definition.get("shell") or shell,
                 section=definition.get("section") or section,
+                screenshot_mask=definition.get("screenshot_mask"),
             )
         )
     return planned
@@ -634,7 +642,7 @@ class FormMonitor:
         )
         return result
 
-    def _attach_case_evidence(self, result):
+    def _attach_case_evidence(self, result, *, case=None):
         safe_title = re.sub(r"[^\w.-]+", "-", result["title"], flags=re.UNICODE).strip("-")
         screenshot_name = (
             f"{result['number']:03d}-{safe_title}-{result['status']}-"
@@ -642,7 +650,11 @@ class FormMonitor:
         )
         try:
             allure.attach(
-                safe_page_screenshot(self.page, full_page=True),
+                safe_page_screenshot(
+                    self.page,
+                    full_page=True,
+                    mask_profile=(case or {}).get("screenshot_mask"),
+                ),
                 name=screenshot_name,
                 attachment_type=allure.attachment_type.PNG,
             )
@@ -768,7 +780,7 @@ class FormMonitor:
                         test_started=True,
                         test_completed=True,
                     )
-                    self._attach_case_evidence(failure_result)
+                    self._attach_case_evidence(failure_result, case=case)
                     raise
 
                 checks = self._checks(case, state)
@@ -880,7 +892,7 @@ class FormMonitor:
                 test_completed=False,
                 state=state,
             )
-            self._attach_case_evidence(result)
+            self._attach_case_evidence(result, case=blocked_case)
         else:
             allure.attach(
                 json.dumps(blocker, ensure_ascii=False, indent=2),

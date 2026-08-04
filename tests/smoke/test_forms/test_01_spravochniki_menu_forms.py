@@ -32,12 +32,6 @@ pytestmark = [
 ]
 
 NAVBAR_TAB = "Справочники"
-TEMPORARILY_EXCLUDED_MENU_ITEMS = frozenset(
-    {
-        "Продавцы",
-        "Публикация в бот",
-    }
-)
 
 
 OPERATIONAL_DIRECT_FORMS = [
@@ -720,18 +714,6 @@ ADMIN_HIDDEN_FORMS = [
 ]
 
 
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-def _active_form_cases(cases):
-    """Vaqtincha o'chirilgan parent menyularga tegishli case'larni chiqarmaslik."""
-    return [
-        case
-        for case in cases
-        if case["menu_item"] not in TEMPORARILY_EXCLUDED_MENU_ITEMS
-    ]
-
-
 def run_spravochniki_menu_forms(page, *, terminal_reporter=None):
     """Testcase: ``Справочники`` tabidagi barcha user-visible forma yo'llarini ochish.
 
@@ -741,36 +723,18 @@ def run_spravochniki_menu_forms(page, *, terminal_reporter=None):
     4. Jami 89 ta aktiv navigatsiya natijasini terminal va Allurega biriktirish.
 
     ``Продавцы`` va ``Публикация в бот`` parentlari ostidagi 11 ta yo'l
-    ``TEMPORARILY_EXCLUDED_MENU_ITEMS`` orqali testga qo'shilmaydi.
+    umumiy ``SKIPPED_FORMS`` registry'si orqali test rejasiga qo'shilmaydi.
     """
-    operational_direct_forms = _active_form_cases(OPERATIONAL_DIRECT_FORMS)
-    operational_page_link_forms = _active_form_cases(OPERATIONAL_PAGE_LINK_FORMS)
-    operational_hidden_forms = _active_form_cases(OPERATIONAL_HIDDEN_FORMS)
-    admin_direct_forms = _active_form_cases(ADMIN_DIRECT_FORMS)
-    admin_page_link_forms = _active_form_cases(ADMIN_PAGE_LINK_FORMS)
-    admin_hidden_forms = _active_form_cases(ADMIN_HIDDEN_FORMS)
-    expected_count = sum(
-        len(cases)
-        for cases in (
-            operational_direct_forms,
-            operational_page_link_forms,
-            operational_hidden_forms,
-            admin_direct_forms,
-            admin_page_link_forms,
-            admin_hidden_forms,
-        )
-    )
-
     operational_placeholder = "<operatsion filial>"
     planned_cases = []
     number = 1
     for cases, filial, section in (
-        (operational_direct_forms, operational_placeholder, "operational-direct"),
-        (operational_page_link_forms, operational_placeholder, "operational-page-link"),
-        (operational_hidden_forms, operational_placeholder, "operational-hidden"),
-        (admin_direct_forms, "Администрирование", "admin-direct"),
-        (admin_page_link_forms, "Администрирование", "admin-page-link"),
-        (admin_hidden_forms, "Администрирование", "admin-hidden"),
+        (OPERATIONAL_DIRECT_FORMS, operational_placeholder, "operational-direct"),
+        (OPERATIONAL_PAGE_LINK_FORMS, operational_placeholder, "operational-page-link"),
+        (OPERATIONAL_HIDDEN_FORMS, operational_placeholder, "operational-hidden"),
+        (ADMIN_DIRECT_FORMS, "Администрирование", "admin-direct"),
+        (ADMIN_PAGE_LINK_FORMS, "Администрирование", "admin-page-link"),
+        (ADMIN_HIDDEN_FORMS, "Администрирование", "admin-hidden"),
     ):
         planned = build_form_case_plan(
             cases,
@@ -781,6 +745,7 @@ def run_spravochniki_menu_forms(page, *, terminal_reporter=None):
         )
         planned_cases.extend(planned)
         number += len(planned)
+    expected_count = len(planned_cases)
 
     monitor = FormMonitor(
         page,

@@ -1,6 +1,6 @@
 ---
 name: debug-test
-description: Muvaffaqiyatsiz Playwright/pytest testini log, trace va Allure dalillari orqali tahlil qiladi. Test xatosi, timeout, locator, fixture yoki session-state muammosi so'ralganda ishlat; foydalanuvchi faqat sababni so'rasa kodni o'zgartirma, tuzatishni ham so'rasa fix va qayta run qil.
+description: Muvaffaqiyatsiz Playwright/pytest testini log, trace va Allure dalillari orqali tahlil qiladi. Test xatosi, timeout, locator, fixture yoki session-state muammosi so'ralganda ishlat; foydalanuvchi faqat sababni so'rasa kodni o'zgartirma, tuzatishni so'rasa fix qil, testni esa faqat aynan run qilishni so'rasa qayta ishga tushir.
 ---
 
 # Muvaffaqiyatsiz Testni Debug Qilish
@@ -27,7 +27,7 @@ Avval `test-results/logs/` dagi tegishli log faylni o'qi.
 | `ElementNotFound` | Element yo'q | Page state tekshir, flow tartibini ko'r |
 | `AssertionError` | Qiymat mos kelmayapti | Kutilgan vs haqiqiy qiymatni solishtir |
 | `JSONDecodeError` | `data_store.json` buzilgan | Faylni backup qilib, keyin runner orqali qayta yarat |
-| `pytest.exit` | `code` fixture topilmadi | Avval `test_0_setup_runner.py` yoki `run_tests.sh` ishlatilsin |
+| `pytest.exit` | `code` fixture topilmadi | User runni so'ragan bo'lsa avval `test_0_setup_runner.py` yoki `run_tests.sh` ishlatilsin |
 
 ### 3. Smartup kontekstini o'qi
 
@@ -52,7 +52,8 @@ Avval `test-results/logs/` dagi tegishli log faylni o'qi.
 1. Xato sababini dalil bilan ko'rsat.
 2. Faqat diagnostika so'ralgan bo'lsa shu yerda to'xta.
 3. Tuzatish ham so'ralgan bo'lsa minimal kod o'zgarishini qil.
-4. Eng tor relevant testni qayta ishga tushir.
+4. Faqat user aynan `run qil` degan bo'lsa eng tor relevant testni qayta ishga
+   tushir; oddiy `tuzat` buyrug'i execution authoritysi emas.
 5. Tizim muammosi bo'lsa (server, env, credential, dependency) kodni taxminiy
    o'zgartirma; muammoni aniq ajratib ko'rsat.
 

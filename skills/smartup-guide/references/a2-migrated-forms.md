@@ -176,7 +176,9 @@ Source: `tests/smoke/test_forms/test_02_a2_admin_menu_forms.py`; `tests/smoke/te
     - `anor/rep/mbi/mcg/action` = Справочники → «Акции» (eski `anor/mcg/action_list`) → sub-link «Конструктор отчетов по акциям».
     - `anor/mkw/marking_stocktaking/marking_stocktaking_list` = Склад → Документы → «Инвентаризации» (eski
       `anor/mkw/stocktaking/stocktaking_list`) → sub-link «Инвентаризация КМ».
-    Test'da `_open_a2_via_sibling(...)` + `SIBLING_FORMS` ro'yxati shu patternni bajaradi.
+    Action konstruktori testda `PAGE_LINK_A2_FORMS` orqali ochiladi. Marking
+    stocktaking formasining joriy coverage holati
+    [form dossierida](forms/marking-stocktaking-list.md) saqlanadi.
   - **new_forms.md da bor, red_test menyusida hali topilmadi** (URL test qamraydi):
     `anor/rep/mbi/mfa/purchase` (user bermagan — keyin). Boshqa company/serverda bo'lishi mumkin.
   - Hali URL-only (real user yo'li aniqlanmagan): `ker/setting+add/+edit`, `ker/head_template_list+attach`,

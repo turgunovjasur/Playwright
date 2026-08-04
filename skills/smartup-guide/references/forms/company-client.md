@@ -83,16 +83,20 @@ Tags: a2-shell, legacy-shell, filial-sync, forms-runner, fix
 ### Monitoring screenshotida OAuth secretlarni yashirish
 Tags: oauth2, client-secret, screenshot, allure, security, forms-runner
 Status: code-confirmed
-Verified: 2026-08-03
-Source: `tests/smoke/smoke_reporting.py`;
-`tests/smoke/test_forms/form_monitor.py`
+Verified: 2026-08-04
+Source: `tests/smoke/screenshot_masking.py`;
+`tests/smoke/smoke_reporting.py`;
+`tests/smoke/test_forms/form_monitor.py`;
+`tests/smoke/test_forms/test_02_a2_admin_menu_forms.py`
 - Qayerda: company client list yoki uning add/edit holati xato dalili sifatida
   screenshot qilinayotganda.
-- Qoida: Allure screenshotida input qiymatlari va secret/password/token
-  ustunlari masklanadi; company client listning data qatorlari ham to'liq
-  yopiladi. Client Secret hech qachon report rasmining ochiq qismi bo'lmaydi.
-- Testda ishlatish: forma xatosi dalili uchun faqat `safe_page_screenshot()`
-  ishlatiladi; oddiy `page.screenshot(full_page=True)` ishlatilmaydi.
+- Qoida: `company-client` mask profili forma inventarida explicit beriladi va
+  faqat `kauth/company_client` URLida ishlaydi. Shu formada inputlar va list
+  qatorlari to'liq yopiladi; Client Secret report rasmining ochiq qismi
+  bo'lmaydi. Boshqa formalarning oddiy search/filter inputlari bu profil bilan
+  masklanmaydi.
+- Testda ishlatish: mask kerak bo'lgan company client case definitioniga
+  `screenshot_mask: company-client` ber; boshqa formaga shu profilni qo'shma.
 
 ### Forms-02 bootstrapda listni ikki marta ochmaslik
 Tags: a2-shell, bootstrap, navigation, duplicate, forms-runner

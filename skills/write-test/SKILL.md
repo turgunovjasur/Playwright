@@ -16,6 +16,7 @@ description: Yangi Playwright + pytest Smartup smoke testi, setup/group/forms le
    - runner/fixture/dependency → `Runnerga qo'shish`, `Loyiha xususiyatlari`;
    - Selenium/codegen → `Selenium migratsiya source fayli`;
    - Forms batch suite → `Form-opening smoke suite arxitekturasi`;
+   - har qanday kod/test o'zgarishi → `Unit test qo'shmaslik va run qilmaslik`;
    - group test → `Group testcase mustaqilligi, flow chegarasi va
      BasePage-first`, so'ng `Setup va Group test execution modeli`.
 3. O'xshash amaldagi test, flow va mos page-object API'larini tekshir.
@@ -48,6 +49,8 @@ description: Yangi Playwright + pytest Smartup smoke testi, setup/group/forms le
   holda runner/pytest CLI va shell env ishlaydi.
 - Global `regression`/`scope` mode yo'q; coverage farqini alohida testcase yoki
   target bilan ifodala.
+- User unit testni aynan so'ramasa yangi unit test qo'shma va mavjud unit test
+  fixture/expectationlarini o'zgartirma; implementatsiya buyrug'i bunga ruxsat emas.
 - `time.sleep`, hardcoded timeout va UI holati uchun Python `assert` ishlatma.
 
 ## Ish tartibi
@@ -58,6 +61,6 @@ description: Yangi Playwright + pytest Smartup smoke testi, setup/group/forms le
 3. Mos dossier va mavjud koddan navigation, locator va page-objectni tanlash.
 4. `run_*` + `test_*` yoki runner wrapperni yozish.
 5. Kerak bo'lsa runner target/path mappinglarini yangilash.
-6. Eng tor relevant pytest target bilan tekshirish.
+6. Tekshirishda `$run-smoke` ichidagi user-reported execution qoidasiga amal qilish.
 7. Yangi, tasdiqlangan Smartup bilimi topilsa `learn` provenance qoidasi
    bo'yicha current dossier/reference'ni yangilash.

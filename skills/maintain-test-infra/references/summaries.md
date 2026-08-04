@@ -9,7 +9,7 @@
 ## System summary
 
 Status: code-confirmed
-Verified: 2026-07-30
+Verified: 2026-08-04
 Source: `scripts/analyze_test_result.py`, `scripts/run_tests.py`
 
 - System summary AI emas va har run uchun
@@ -21,8 +21,10 @@ Source: `scripts/analyze_test_result.py`, `scripts/run_tests.py`
   `AuthSessionUnauthorized`ni locator timeoutidan ustun diagnostika qiladi;
   method, querysiz path, status, xavfsiz tanilgan server xabari va UI holatini
   system summary hamda Telegramga uzatadi.
-- `setup-forms` runida Allure numbered steplaridan umumiy `form_coverage`
-  metrikasi hamda `Справочники`/`A2 Admin` suite kesimini chiqaradi.
+- `setup-forms` runida Allure `form-monitor.json` attachmentidan umumiy
+  `form_coverage`, `Справочники`/`A2 Admin` suite kesimi va barcha muammoli
+  formalarni chiqaradi. Attachment mavjud bo'lmagan eski natijalarda numbered
+  Allure steplari fallback sifatida ishlatiladi.
 - Allure ichida `System Test Summary` sifatida attach qilinadi.
 
 ## AI summary

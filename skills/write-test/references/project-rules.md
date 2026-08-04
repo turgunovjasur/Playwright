@@ -220,7 +220,9 @@ Source: user; `skills/write-test/SKILL.md:33`; `skills/write-test/references/pro
 - Credentiallar `.env` dan olinadi (precedence: `.env` yutadi — `smoke_config.option_or_env`).
 
 ### Selenium migratsiya source fayli
-- Foydalanuvchi Selenium test kodini rootdagi `for_migratsiya.py` fayliga qo'yadi; migratsiya so'ralganda shu fayldan o'qib Playwright + pytest smoke testga o'tkaz, UI da run qilib xatolarini tuzat.
+- Foydalanuvchi Selenium test kodini rootdagi `for_migratsiya.py` fayliga qo'yadi;
+  migratsiya so'ralganda shu fayldan o'qib Playwright + pytest smoke testga
+  o'tkaz. UI/smoke runni faqat user aynan `run qil` deganda bajar.
 - Migratsiya qilingan Playwright kodni ham `for_migratsiya.py` faylining davomiga yoz; runnerga yoki test flowga avtomatik qo'shma, foydalanuvchi tekshirib o'zi ko'chiradi.
 - Migratsiyada foydalanuvchi `run_tests.sh` oldin run qilinganini aytsa, user setup tayyor deb hisobla; user bilan login qil va `code` qiymatini `test-results/data/data_store.json` dan ol.
 - Agar foydalanuvchi Playwright codegen pytest kodini bersa, Seleniumdan taxminiy migratsiya qilma; codegen kodini asos qilib olib loyiha fixture, Allure step, `code`, `authorization(who="user", code=code)`, helper flow va locator patternlariga moslab ber.
@@ -307,11 +309,21 @@ Source: user; `tests/smoke/test_setup/test_0_setup_runner.py`; `tests/smoke/test
 #### Unit test qo'shmaslik va run qilmaslik
 
 Status: user-reported
-Verified: 2026-08-03
+Verified: 2026-08-04
 Source: user
 
-- Foydalanuvchi alohida so'ramasa, smoke test o'zgarishlari uchun yangi unit test qo'shilmaydi va unit testlar ishga tushirilmaydi.
-- Tekshiruv collection, statik tekshiruv yoki foydalanuvchi ruxsat bergan aniq smoke target bilan cheklanadi.
+- Foydalanuvchi aynan unit test yozish yoki o'zgartirishni so'ramasa, smoke,
+  infra, reporting, runner yoki boshqa kod o'zgarishi uchun yangi unit test
+  qo'shilmaydi va mavjud unit test fixture/expectationlari o'zgartirilmaydi.
+- `Tuzat`, `o'zgartir`, `amalga oshir` yoki umumiy verification so'rovi unit test
+  artefaktini yaratish/o'zgartirishga ruxsat bermaydi; unit test uchun alohida
+  explicit buyruq kerak.
+- Foydalanuvchi aynan `run qil` demasa unit test, pytest collection, smoke yoki
+  boshqa test commandi ishga tushirilmaydi. Skill/reference ichidagi
+  verification commandi ruxsat emas, faqat explicit ruxsatdan keyingi buyruqdir.
+- Default tekshiruv read-only/statik inspection, syntax/config parse, linter va
+  `git diff --check` bilan cheklanadi. Test yozilmagani va run qilinmagani
+  handoffda aniq aytiladi.
 
 #### Flow admission gate
 

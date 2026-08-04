@@ -13,6 +13,7 @@ import allure
 import pytest
 
 from tests.smoke.progress import emit_progress_event
+from tests.smoke.screenshot_masking import masked_page_screenshot
 from tests.smoke.smoke_config import env_flag, is_headless
 from utils.logger import write_failure_log
 
@@ -28,55 +29,13 @@ _AUTH_LISTENER_ATTR = "_smartup_auth_diagnostics_installed"
 _AUTH_RESPONSE_ATTR = "_smartup_first_unauthorized_response"
 _LICENSE_401_MESSAGE = "Нет лицензии для входа в систему!"
 
-_SENSITIVE_SCREENSHOT_SELECTORS = (
-    "input[type='password']",
-    "input:not([type='hidden'])",
-    "textarea",
-    "[data-smt-col-key*='secret' i]",
-    "[data-smt-col-key*='password' i]",
-    "[data-smt-col-key*='token' i]",
-    "[data-column*='secret' i]",
-    "[data-column*='password' i]",
-    "[data-column*='token' i]",
-    "[data-testid*='secret' i]",
-    "[data-testid*='password' i]",
-    "[data-testid*='token' i]",
-    "[class*='client-secret' i]",
-    "[id*='client-secret' i]",
-)
 
-_SENSITIVE_SCREENSHOT_STYLE = """
-input:not([type='hidden']), textarea,
-[data-smt-col-key*='secret' i], [data-smt-col-key*='password' i],
-[data-smt-col-key*='token' i], [data-column*='secret' i],
-[data-column*='password' i], [data-column*='token' i],
-[data-testid*='secret' i], [data-testid*='password' i],
-[data-testid*='token' i], [class*='client-secret' i],
-[id*='client-secret' i] {
-  color: transparent !important;
-  text-shadow: none !important;
-  -webkit-text-security: disc !important;
-}
-"""
-
-_OAUTH_GRID_SCREENSHOT_SELECTORS = (
-    "app-company-client-list .smt-data-row",
-    "app-company-client-list [role='rowgroup'] [role='row']",
-    "app-company-client-list table tbody",
-)
-
-
-def safe_page_screenshot(page, *, full_page=True):
-    """Screenshot oladi va input/secret/token qiymatlarini dalilda yashiradi."""
-    selectors = list(_SENSITIVE_SCREENSHOT_SELECTORS)
-    if "kauth/company_client" in str(getattr(page, "url", "") or ""):
-        selectors.extend(_OAUTH_GRID_SCREENSHOT_SELECTORS)
-    masks = [page.locator(selector) for selector in selectors]
-    return page.screenshot(
+def safe_page_screenshot(page, *, full_page=True, mask_profile=None):
+    """Secretlar va explicit forma profilini masklab screenshot oladi."""
+    return masked_page_screenshot(
+        page,
         full_page=full_page,
-        mask=masks,
-        mask_color="#2f3542",
-        style=_SENSITIVE_SCREENSHOT_STYLE,
+        profile_name=mask_profile,
     )
 
 

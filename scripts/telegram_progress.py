@@ -207,6 +207,39 @@ def failed_block(state):
 
     error_message = first_message_line(failed.get("message"))
 
+    form_issues = failed.get("form_issues")
+    if isinstance(form_issues, list) and form_issues:
+        status_labels = {
+            "OPENED_WITH_DEFECT": "nuqson bilan ochildi",
+            "NOT_OPENED": "ochilmadi",
+            "TEST_BLOCKED": "test bloklandi",
+            "NOT_CHECKED": "tekshirilmadi",
+        }
+        lines = ["", f"❌ Muammoli formalar: {len(form_issues)} ta"]
+        for index, issue in enumerate(form_issues, start=1):
+            if not isinstance(issue, dict):
+                continue
+            try:
+                number = f"{int(issue.get('number')):03d}"
+            except (TypeError, ValueError):
+                number = str(issue.get("number") or "—")
+            title = str(issue.get("title") or "unknown").strip()
+            status = str(issue.get("status") or "").upper()
+            status_text = status_labels.get(status, status or "xato")
+            lines.append(f"{index}. {number} - {title} — {status_text}")
+            reason = str(issue.get("reason") or issue.get("reason_code") or "").strip()
+            detail = first_message_line(issue.get("detail"))
+            if reason:
+                lines.append(f"   Sabab: {reason}")
+            if detail and detail != reason:
+                lines.append(f"   Texnik: {detail}")
+        if test_context:
+            lines.extend(["", f"Test: {test_context}"])
+        location = str(failed.get("location") or "").strip()
+        if location:
+            lines.append(f"Kod: {location}")
+        return lines
+
     technical = []
     error_type = str(failed.get("error_type") or "").strip()
     timeout = str(failed.get("timeout") or "").strip()
@@ -256,12 +289,17 @@ def final_coverage_lines(state):
     ]
     lines = []
     if setup_results:
-        setup_passed = sum(
-            1
-            for item in setup_results
-            if str(item.get("status") or "").upper() == "PASSED"
+        setup_statuses = [
+            str(item.get("status") or "").upper() for item in setup_results
+        ]
+        setup_parts = [f"✅ {setup_statuses.count('PASSED')}"]
+        if setup_statuses.count("FAILED"):
+            setup_parts.append(f"❌ {setup_statuses.count('FAILED')}")
+        if setup_statuses.count("SKIPPED"):
+            setup_parts.append(f"⏭ {setup_statuses.count('SKIPPED')}")
+        lines.append(
+            f"⚙️ Setup: {len(setup_results)} qadam · " + " · ".join(setup_parts)
         )
-        lines.append(f"⚙️ Setup: {setup_passed}/{len(setup_results)} qadam o'tdi")
 
     coverage = state.get("form_coverage")
     if not isinstance(coverage, dict) or not coverage:
@@ -282,7 +320,7 @@ def final_coverage_lines(state):
     checked = _metric_count(coverage, "checked")
     passed = _metric_count(coverage, "passed")
     if checked:
-        lines.append(f"🧾 Forms: {passed}/{checked} forma ochildi")
+        lines.append(f"🧾 Forms: ✅ {passed}/{checked} muvaffaqiyatli")
 
     suites = coverage.get("suites")
     if isinstance(suites, dict):
@@ -356,7 +394,7 @@ def render_message(state):
     if finished:
         summary = str(state.get("summary") or "").strip()
         if summary:
-            lines.append(f"🧪 Pytest: {summary}")
+            lines.append(f"🧪 Pytest cases: {summary}")
     else:
         status = str(state.get("status") or "").strip()
         if status:
@@ -513,6 +551,7 @@ def failed_details_from_system_summary():
     if not isinstance(failed_tests, list) or not failed_tests:
         return {}
     first = failed_tests[0] if isinstance(failed_tests[0], dict) else {}
+    form_issues = first.get("form_issues")
     return {
         "group": str(first.get("group") or ""),
         "runner": str(first.get("runner_test") or ""),
@@ -531,6 +570,11 @@ def failed_details_from_system_summary():
         "target": str(first.get("target") or ""),
         "element_state": str(first.get("element_state") or ""),
         "timeout": str(first.get("timeout") or ""),
+        "form_issues": (
+            [dict(issue) for issue in form_issues if isinstance(issue, dict)]
+            if isinstance(form_issues, list)
+            else []
+        ),
     }
 
 

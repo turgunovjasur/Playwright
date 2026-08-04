@@ -65,5 +65,6 @@ def <nomi>(page: Page, **kwargs) -> None:
 2. O'xshash mavjud flow larni ko'r (`tests/smoke/flows/`)
 3. Legacy yoki A2 DOM kontraktini aniqlab, mos page-objectni tanla
 4. Default yoki domain papkasida flow faylini yarat
-5. Eng tor consumer testda ishlatib tekshir
+5. Consumer call-site va syntaxni statik tekshir; consumer testni faqat user
+   aynan `run qil` deganda ishga tushir
 6. Qaysi testlarda ishlatilishini ko'rsat

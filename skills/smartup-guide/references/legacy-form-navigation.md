@@ -359,12 +359,12 @@ Tags: spravochniki, test, temporary-exclusion, sellers, telegram
   tegishli barcha direct/page-link yo'llar hozircha form-opening smoke testiga
   qo'shilmaydi.
 - Implementatsiya:
-  `tests/smoke/test_forms/test_01_spravochniki_menu_forms.py` ichidagi
-  `TEMPORARILY_EXCLUDED_MENU_ITEMS` parent bo'yicha filterlaydi.
+  `tests/smoke/test_forms/skipped_forms.py` ichidagi `SKIPPED_FORMS` canonical
+  pathlar bo'yicha markaziy reja tuzilishidan oldin filterlaydi.
 - Qamrov ta'siri: 100 ta inventar yo'lidan 11 tasi chiqarilib, aktiv test
   qamrovi 89 ta navigatsiya bo'ldi.
-- Bu o'zgarish UI inventarini bekor qilmaydi; menular qayta yoqilganda
-  constantdan nomlarni olib tashlash yetarli.
+- Bu o'zgarish UI inventarini bekor qilmaydi; menular qayta yoqilganda mos
+  pathlarni skip registry'dan olib tashlash yetarli.
 
 ### Aktiv 89 forma va strukturali hisobot verifikatsiyasi (2026-07-29)
 Tags: spravochniki, test, report, terminal, allure, run-result

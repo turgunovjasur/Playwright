@@ -156,6 +156,20 @@ Replaced by: `skills/smartup-guide/references/forms/user.md`
 
 ## Eski server xatti-harakati
 
+### PnL menyusining eski nomi va legacy route holati
+Status: superseded
+Observed: 2026-07-24
+Superseded: 2026-08-04
+Source: `app3.greenwhite.uz/xtrade` live UI; `smartup.online` live UI
+Replaced by: `skills/smartup-guide/references/forms/pnl.md#quick-lookup`
+- Old behavior: operatsion filialdagi `Финансы → Отчеты` yo'lida exact
+  `PnL` menu itemi kuzatilgan va u
+  `anor/rep/mkr/profit_and_loss` legacy route'ini bergan; test esa
+  `menu_item="PnL"` bilan `/a2/anor/rep/mkr/pnl`ni kutgan.
+- Current behavior: A2 `anor/rep/mkr/pnl` leaf matni
+  `Отчет о прибылях и убытках`; exact `PnL` menuitem joriy UI'da yo'q.
+  `Прибыль и убыток (PnL)` esa alohida legacy route bo'lib qolgan.
+
 ### Xtrade OnlyOffice ulanmagan davr
 Status: superseded
 Observed: 2026-06-12
