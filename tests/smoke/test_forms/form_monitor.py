@@ -234,8 +234,7 @@ def _title_matches(case, state):
 
 def classify_form_failure(*, case, stage, detail, state):
     """Kutilgan UI exception va sahifa signallaridan QA holatini chiqaradi."""
-    detail_text = _clean_text(detail)
-    lower_detail = detail_text.lower()
+    lower_detail = _clean_text(detail).lower()
     path_matches = _path_matches(case, state)
     title_matches = _title_matches(case, state)
     content_ready = bool(state.get("content_ready"))
@@ -292,17 +291,7 @@ def classify_form_failure(*, case, stage, detail, state):
             "opened": True,
         }
 
-    title_failure = any(
-        marker in lower_detail
-        for marker in (
-            "to_have_title",
-            "page title expected",
-            "title expected",
-            "kutilgan heading",
-            "heading expected",
-        )
-    )
-    if not title_matches and (title_failure or content_ready):
+    if not title_matches:
         return {
             "status": OPENED_WITH_DEFECT,
             "reason_code": "TITLE_MISMATCH",
@@ -753,7 +742,6 @@ class FormMonitor:
             title=case["title"],
             expected_path=case.get("expected_path"),
             actual_url=state["actual_url"],
-            ok=False,
             page_links=case.get("page_links"),
             action=case.get("action"),
             add_icon=case.get("add_icon", False),
@@ -828,7 +816,6 @@ class FormMonitor:
                     title=case["title"],
                     expected_path=case.get("expected_path"),
                     actual_url=state["actual_url"],
-                    ok=True,
                     page_links=case.get("page_links"),
                     action=case.get("action"),
                     add_icon=case.get("add_icon", False),
@@ -958,7 +945,6 @@ class FormMonitor:
                 title=case["title"],
                 expected_path=case.get("expected_path"),
                 actual_url="",
-                ok=False,
                 page_links=case.get("page_links"),
                 action=case.get("action"),
                 add_icon=case.get("add_icon", False),

@@ -183,7 +183,6 @@ def test_form_report_contains_user_visible_context_and_explicit_state():
         title="Клиенты OAuth2 сервера для компании",
         expected_path="biruni/kauth/company_client_list",
         actual_url="https://smartup.online/a2/biruni/kauth/company_client_list",
-        ok=False,
         status=OPENED_WITH_DEFECT,
         reason_code="TITLE_MISMATCH",
         reason_summary="Title mos emas",
@@ -501,7 +500,6 @@ def test_summary_does_not_duplicate_not_checked_forms():
             title="OAuth2",
             expected_path="biruni/kauth/company_client_list",
             actual_url="",
-            ok=False,
             status=TEST_BLOCKED,
             reason_code="FILIAL_SWITCH_FAILED",
             test_started=False,
@@ -516,7 +514,6 @@ def test_summary_does_not_duplicate_not_checked_forms():
             title="Визиты",
             expected_path="trade/tvt/visit_list",
             actual_url="",
-            ok=False,
             status=NOT_CHECKED,
             reason_code="BLOCKED_BY_PRECONDITION",
             reason_summary="Oldingi blocker sabab tekshirilmadi",
@@ -575,7 +572,7 @@ def test_monitor_payload_has_versioned_metrics_and_durations():
         title="Визиты",
         expected_path="trade/tvt/visit_list",
         actual_url="https://smartup.online/a2/trade/tvt/visit_list",
-        ok=True,
+        status=PASSED,
         duration_ms=321,
     )
     payload = build_monitor_payload(

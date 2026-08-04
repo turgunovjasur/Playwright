@@ -1,11 +1,13 @@
 """``Справочники`` tabidagi legacy formalarni user-visible yo'llar orqali tekshirish.
 
 Live inventar: ``skills/smartup-guide/references/legacy-form-navigation.md``.
-Aktiv qamrov: 35 direct menu forma, 37 ta page-link/sub-page-link, 14 ta
-``Создать`` dropdown forma va import formadagi 3 ta page-link — jami 89 ta
-navigatsiya. ``Продавцы`` va ``Публикация в бот`` parentlariga tegishli 11 ta
-yo'l vaqtincha qamrovdan chiqarilgan. Har bir aktiv forma Allure va terminalda
-filial, tab, menu, forma, kutilgan URL va haqiqiy URL bilan hisobot qilinadi.
+Aktiv qamrov — jami 88 ta navigatsiya: operatsion filialda 33 direct menu
+forma, 35 page-link/sub-page-link va 14 ``Создать`` dropdown forma;
+``Администрирование`` filialida 1 direct, 2 page-link va 3 ``Создать``
+dropdown forma. ``Продавцы`` (8 yo'l) va ``Публикация в бот`` (4 yo'l)
+parentlariga tegishli 12 ta yo'l vaqtincha qamrovdan chiqarilgan. Har bir
+aktiv forma Allure va terminalda filial, tab, menu, forma, kutilgan URL va
+haqiqiy URL bilan hisobot qilinadi.
 """
 
 import allure
@@ -717,12 +719,12 @@ ADMIN_HIDDEN_FORMS = [
 def run_spravochniki_menu_forms(page, *, terminal_reporter=None):
     """Testcase: ``Справочники`` tabidagi barcha user-visible forma yo'llarini ochish.
 
-    1. Birinchi operatsion filialni topib, 34 ta aktiv direct menu formani tekshirish.
+    1. Birinchi operatsion filialni topib, 33 ta aktiv direct menu formani tekshirish.
     2. Operatsion filialdagi page-link, nested link va hidden formalarni tekshirish.
     3. ``Администрирование``ga o'tib, faqat shu filialga xos yo'llarni tekshirish.
-    4. Jami 89 ta aktiv navigatsiya natijasini terminal va Allurega biriktirish.
+    4. Jami 88 ta aktiv navigatsiya natijasini terminal va Allurega biriktirish.
 
-    ``Продавцы`` va ``Публикация в бот`` parentlari ostidagi 11 ta yo'l
+    ``Продавцы`` va ``Публикация в бот`` parentlari ostidagi 12 ta yo'l
     umumiy ``SKIPPED_FORMS`` registry'si orqali test rejasiga qo'shilmaydi.
     """
     operational_placeholder = "<operatsion filial>"
@@ -776,7 +778,11 @@ def run_spravochniki_menu_forms(page, *, terminal_reporter=None):
         monitor.precondition(
             f"'{operational_filial}' filialiga o'tish",
             lambda: switch_forms_filial(page, operational_filial),
-            affected_case_number=operational_direct_cases[0]["number"],
+            affected_case_number=(
+                operational_direct_cases[0]["number"]
+                if operational_direct_cases
+                else None
+            ),
         )
         if monitor.blocked:
             monitor.finish()
@@ -803,7 +809,9 @@ def run_spravochniki_menu_forms(page, *, terminal_reporter=None):
         monitor.precondition(
             "'Администрирование' filialiga o'tish",
             lambda: switch_forms_filial(page, "Администрирование"),
-            affected_case_number=admin_direct_cases[0]["number"],
+            affected_case_number=(
+                admin_direct_cases[0]["number"] if admin_direct_cases else None
+            ),
         )
         if monitor.blocked:
             monitor.finish()

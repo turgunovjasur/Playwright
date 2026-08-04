@@ -454,19 +454,21 @@ def run_a2_admin_menu_forms(page, *, terminal_reporter=None):
     )
     operational_cases = build_form_case_plan(
         OPERATIONAL_A2_FORMS,
-        start_number=2,
+        start_number=1 + len(admin_cases),
         filial=operational_placeholder,
         section="operational-menu",
         shell="a2",
     )
     page_link_cases = build_form_case_plan(
         PAGE_LINK_A2_FORMS,
-        start_number=2 + len(operational_cases),
+        start_number=1 + len(admin_cases) + len(operational_cases),
         filial=operational_placeholder,
         section="operational-page-link",
         shell="a2",
     )
     planned_cases = admin_cases + operational_cases + page_link_cases
+    admin_first = admin_cases[0]["number"] if admin_cases else None
+    operational_first = operational_cases[0]["number"] if operational_cases else None
     monitor = FormMonitor(
         page,
         suite_name="Forms-02 — A2 admin",
@@ -478,7 +480,7 @@ def run_a2_admin_menu_forms(page, *, terminal_reporter=None):
     monitor.precondition(
         "Admin avtorizatsiyasi",
         lambda: authorization(page, who="admin"),
-        affected_case_number=1,
+        affected_case_number=admin_first,
     )
     if monitor.blocked:
         monitor.finish()
@@ -486,7 +488,7 @@ def run_a2_admin_menu_forms(page, *, terminal_reporter=None):
     monitor.precondition(
         "Legacy shellni 'Администрирование' filialiga o'tkazish",
         lambda: base.switch_filial(name="Администрирование"),
-        affected_case_number=1,
+        affected_case_number=admin_first,
     )
     if monitor.blocked:
         monitor.finish()
@@ -494,20 +496,20 @@ def run_a2_admin_menu_forms(page, *, terminal_reporter=None):
     operational_filial = monitor.precondition(
         "Operatsion filialni aniqlash",
         lambda: first_operational_filial(page),
-        affected_case_number=1,
+        affected_case_number=admin_first,
     )
     if monitor.blocked:
         monitor.finish()
     monitor.update_filial(operational_placeholder, operational_filial)
+    admin_cases = monitor.cases(section="admin")
     operational_cases = monitor.cases(section="operational-menu")
     page_link_cases = monitor.cases(section="operational-page-link")
 
-    first_case = monitor.planned_case(1)
     with allure.step("1 - 'Администрирование' filialidagi OAuth2 list forma"):
         monitor.precondition(
             "A2 dashboard shellga kirish",
             lambda: _open_a2_dashboard_shell(page, angular),
-            affected_case_number=1,
+            affected_case_number=admin_first,
         )
         if monitor.blocked:
             monitor.finish()
@@ -515,17 +517,17 @@ def run_a2_admin_menu_forms(page, *, terminal_reporter=None):
         monitor.precondition(
             "A2 filialini 'Администрирование' bilan sinxronlash",
             lambda: angular.switch_filial(name="Администрирование"),
-            affected_case_number=1,
+            affected_case_number=admin_first,
         )
         if monitor.blocked:
             monitor.finish()
 
-        run_form_cases(page, [first_case], monitor=monitor)
+        run_form_cases(page, admin_cases, monitor=monitor)
 
     monitor.precondition(
         f"A2 shellni '{operational_filial}' filialiga o'tkazish",
         lambda: angular.switch_filial(name=operational_filial),
-        affected_case_number=2,
+        affected_case_number=operational_first,
     )
     if monitor.blocked:
         monitor.finish()

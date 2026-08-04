@@ -311,7 +311,9 @@ def run_prodaja_menu_forms(page, *, terminal_reporter=None):
         monitor.precondition(
             f"'{operational_filial}' filialiga o'tish",
             lambda: switch_forms_filial(page, operational_filial),
-            affected_case_number=direct_cases[0]["number"],
+            affected_case_number=(
+                direct_cases[0]["number"] if direct_cases else None
+            ),
         )
         if monitor.blocked:
             monitor.finish()

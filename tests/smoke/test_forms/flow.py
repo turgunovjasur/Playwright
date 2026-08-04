@@ -78,12 +78,11 @@ def build_form_result(
     title,
     expected_path,
     actual_url,
-    ok,
+    status,
     page_links=None,
     action=None,
     add_icon=False,
     detail="",
-    status=None,
     reason_code="",
     reason_summary="",
     failed_stage="",
@@ -103,7 +102,6 @@ def build_form_result(
 ):
     """Terminal va Allure uchun yagona strukturali forma natijasini yaratadi."""
     links = list(page_links or [])
-    status = status or ("PASSED" if ok else "NOT_OPENED")
     status_icons = {
         "PASSED": "✅",
         "OPENED_WITH_DEFECT": "⚠️",
@@ -172,9 +170,7 @@ def build_form_result(
 
 def format_form_result(result):
     """Bitta forma natijasini user o'qiydigan ko'p qatorli matnga aylantiradi."""
-    status_code = result.get("status") or (
-        "PASSED" if result.get("ok") else "NOT_OPENED"
-    )
+    status_code = result["status"]
     status_labels = {
         "PASSED": "✅ OCHILDI",
         "OPENED_WITH_DEFECT": "⚠️ OCHILDI, LEKIN NUQSON BOR",
@@ -545,4 +541,3 @@ def run_form_cases(page, cases, *, monitor):
                 add_icon=current_case.get("add_icon", False),
             ),
         )
-    return cases[-1]["number"] + 1 if cases else None
