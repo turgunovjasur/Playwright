@@ -56,15 +56,17 @@ Dalillarni quyidagi ustuvorlikda ishlat:
 
 `smartup-guide` domain knowledge va dalillar manbasi; u test bajarish workflowini
 takrorlamaydi. Avval kerakli dossier/reference'ni o'qi, keyin vazifaga mos skillni
-ishlat:
+ishlat. Skill nomi harness prefiksisiz yoziladi, chunki `skills/` ikkala
+entry-point uchun umumiy manba: chaqirish sintaksisini har bir agent o'zi
+qo'llaydi (`skills/<name>/SKILL.md` esa har ikkisida bir xil o'qiladi).
 
-- yangi test yozish: `$write-test`
-- reusable UI flow yaratish yoki o'zgartirish: `$new-flow`
-- failed test diagnostikasi: `$debug-test`
-- test/smoke run: `$run-smoke`
-- runner, config yoki reporting infrasi: `$maintain-test-infra`
-- test/flow/runner review: `$review-test`
-- tasdiqlangan yangi loyiha bilimini yozish: `$learn`
+- yangi test yozish: `write-test`
+- reusable UI flow yaratish yoki o'zgartirish: `new-flow`
+- failed test diagnostikasi: `debug-test`
+- test/smoke run: `run-smoke`
+- runner, config yoki reporting infrasi: `maintain-test-infra`
+- test/flow/runner review: `review-test`
+- tasdiqlangan yangi loyiha bilimini yozish: `learn`
 
 Action skilldagi umumiy workflow bilan bu skilldagi Smartup-specific fakt
 qarama-qarshi chiqsa, faktni dalil bilan qayta tekshir; workflow qoidasi va
@@ -141,7 +143,10 @@ Dossier ichida shu mavzu bo'yicha bir harakatda kerak bo'ladigan ma'lumotlar tur
 - `Known Issues`: debug note yoki `N/A`
 
 Yangi dossierda shu olti bo'limni ishlat. Mavjud dossierga tegilganda yetishmagan
-bo'limlarni bosqichma-bosqich to'ldir. Screenshotlarni doim
+bo'limlarni bosqichma-bosqich to'ldir. Buni validator
+`dossiers_without_canonical_sections` ratcheti majburlaydi: kanonik bo'limi
+yetishmagan dossier soni ko'paysa error beradi, kamaysa esa baseline'ni shu
+o'zgarishda pasaytirishni talab qiladi. Screenshotlarni doim
 `references/forms/screenshots/<form-slug>/` ichida arxivla va dossierda aniq
 filename bilan ko'rsat; faqat papka nomini yozish yetarli emas.
 
@@ -176,10 +181,11 @@ Knowledge-base o'zgargandan keyin quyidagini ishga tushir:
 
 Validator broken Markdown linklar, indexdan tushib qolgan dossierlar, mavjud
 bo'lmagan repo pathlari, to'liq bo'lmagan provenance, uzun fayldagi mundarija va
-indekslanmagan screenshotlarni tekshiradi. Legacy provenance va JSON sidecar
-qarzi ratchet bilan nazorat qilinadi: kamayishi mumkin, lekin yangi o'zgarishda
-ko'paymasligi kerak. Qarzni kamaytirsang validator ichidagi baseline'ni ham shu
-o'zgarishda pasaytir. Errorlarni tuzatmasdan ishni yakunlama.
+indekslanmagan screenshotlarni tekshiradi. Legacy provenance, JSON sidecar va
+kanonik dossier bo'limlari qarzi ratchet bilan nazorat qilinadi: kamayishi
+mumkin, lekin yangi o'zgarishda ko'paymasligi kerak. Qarzni kamaytirsang
+validator ichidagi baseline'ni ham shu o'zgarishda pasaytir. Errorlarni
+tuzatmasdan ishni yakunlama.
 
 ## Asosiy Eslatma
 

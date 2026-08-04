@@ -114,12 +114,20 @@ allure serve test-results/allure-results
 
 ## Test dependency modeli
 
+Bu bo'lim setup/group cascade va skip xatti-harakati uchun yagona manba; boshqa
+skill va reference fayllar shu bo'limga havola qiladi, matnni takrorlamaydi.
+
 - User setup testlari ketma-ket va bir-biriga bog'liq: oldingi setup test keyingi setup test uchun kerakli entity yaratadi.
 - User setup testlari yaxshi o'tgandan keyin group testlar run qilinadi.
 - Group-0 setup baselinega tayangan base order testi; yangi code bilan uning
   xavfsiz tor targeti `setup-group-0`.
 - Group testlar user setup natijalariga bog'liq, lekin boshqa group testlarga bog'liq emas.
 - Bir group ichida test yiqilsa, shu groupning qolgan testlari skip qilinadi; keyingi group testlar run bo'lishda davom etadi.
+- Cascade defaultdan chiqish faqat marker bilan bo'ladi:
+  `pytest.mark.smoke_group("X", independent=True)` — shu group ichidagi caselar
+  bir-birini skip qilmaydi; `setup_independent=True` — `user_setup` failed
+  bo'lsa ham run bo'ladi. Hozircha Forms runner ikkalasini, Report group esa
+  `independent=True`ni oladi; Group-0 markersiz, ya'ni cascade skip ostida.
 - Run natijasini tahlil qilganda failure setup bosqichidami yoki group bosqichidami aniq ajratib ayt.
 - `tests/smoke/test_setup/test_0_setup_runner.py` ichidagi mavjud barcha testlar user setup testlari hisoblanadi.
 - Order testlarida product chiqmasa, `test_21_init_balance` orqali balans qo'shib kelish yoki bron qilingan orderlarni `Canceled/Отменен` statusga o'tkazish kerak bo'lishi mumkin.

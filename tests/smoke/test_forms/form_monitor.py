@@ -76,6 +76,28 @@ def _clean_text(value):
     return re.sub(r"\s+", " ", str(value or "")).strip()
 
 
+def _normalize_allowed_warnings(value):
+    if value is None:
+        return []
+    values = [value] if isinstance(value, str) else list(value)
+    return [_clean_text(item) for item in values if _clean_text(item)]
+
+
+def _allowed_warning_text(case, state):
+    visible_error = _clean_text(state.get("visible_error"))
+    warning_text = re.sub(r"^×\s*", "", visible_error).strip()
+    if warning_text in _normalize_allowed_warnings(case.get("allowed_warnings")):
+        return warning_text
+    return ""
+
+
+def _unexpected_visible_error(case, state):
+    visible_error = _clean_text(state.get("visible_error"))
+    if visible_error and _allowed_warning_text(case, state):
+        return ""
+    return visible_error
+
+
 def _safe_page_title(page):
     try:
         return _clean_text(page.title())
@@ -217,7 +239,7 @@ def classify_form_failure(*, case, stage, detail, state):
     path_matches = _path_matches(case, state)
     title_matches = _title_matches(case, state)
     content_ready = bool(state.get("content_ready"))
-    visible_error = _clean_text(state.get("visible_error"))
+    visible_error = _unexpected_visible_error(case, state)
 
     if stage == "suite_precondition":
         lowered_operation = _clean_text(case.get("failed_operation")).lower()
@@ -312,10 +334,11 @@ def _assert_healthy_form_state(case, state):
             f"expected={case.get('expected_path') or '—'}, "
             f"actual={state.get('canonical_path') or '—'}"
         )
-    if state.get("visible_error"):
+    visible_error = _unexpected_visible_error(case, state)
+    if visible_error:
         raise AssertionError(
             "Markaziy holat tekshiruvi [APPLICATION_ERROR]: "
-            f"{state['visible_error']}"
+            f"{visible_error}"
         )
     if state.get("loader_visible"):
         raise AssertionError("Markaziy holat tekshiruvi [LOADER_NOT_FINISHED]")
@@ -347,10 +370,12 @@ def form_case(
     expected_path,
     page_links=None,
     action=None,
+    add_icon=False,
     ready=None,
     shell=None,
     section=None,
     screenshot_mask=None,
+    allowed_warnings=None,
 ):
     """Monitor uchun barcha runnerlarda bir xil planned-case yozuvini yaratadi."""
     if not isinstance(number, int) or number < 1:
@@ -364,6 +389,8 @@ def form_case(
     ):
         if not _clean_text(value):
             raise ValueError(f"Forma case uchun {field_name} majburiy")
+    if action is not None and add_icon:
+        raise ValueError("Forma case bir vaqtda action va add_icon ishlata olmaydi")
     case = {
         "number": number,
         "filial": filial,
@@ -374,9 +401,11 @@ def form_case(
         "expected_path": expected_path,
         "page_links": list(page_links or []),
         "action": action,
+        "add_icon": bool(add_icon),
         "ready": ready,
         "shell": shell,
         "section": section,
+        "allowed_warnings": _normalize_allowed_warnings(allowed_warnings),
     }
     if screenshot_mask is not None:
         case["screenshot_mask"] = screenshot_mask
@@ -417,10 +446,12 @@ def build_form_case_plan(
                 ),
                 page_links=links,
                 action=definition.get("action"),
+                add_icon=definition.get("add_icon", False),
                 ready=definition.get("ready"),
                 shell=definition.get("shell") or shell,
                 section=definition.get("section") or section,
                 screenshot_mask=definition.get("screenshot_mask"),
+                allowed_warnings=definition.get("allowed_warnings"),
             )
         )
     return planned
@@ -671,11 +702,13 @@ class FormMonitor:
     @staticmethod
     def _checks(case, state):
         path_matches = _path_matches(case, state)
+        allowed_warning = _allowed_warning_text(case, state)
+        visible_error = _unexpected_visible_error(case, state)
         usable = (
             path_matches
             and bool(state.get("content_ready"))
             and not bool(state.get("loader_visible"))
-            and not bool(state.get("visible_error"))
+            and not bool(visible_error)
         )
         return {
             "url_matches": path_matches,
@@ -686,7 +719,8 @@ class FormMonitor:
             "ready_required": bool(state.get("ready_required")),
             "ready_visible": bool(state.get("ready_visible")),
             "loader_visible": bool(state.get("loader_visible")),
-            "visible_error": state.get("visible_error") or "",
+            "visible_error": visible_error,
+            "allowed_warning": allowed_warning,
             "usable": usable,
         }
 
@@ -722,6 +756,7 @@ class FormMonitor:
             ok=False,
             page_links=case.get("page_links"),
             action=case.get("action"),
+            add_icon=case.get("add_icon", False),
             detail=detail,
             status=analysis["status"],
             reason_code=analysis["reason_code"],
@@ -796,6 +831,7 @@ class FormMonitor:
                     ok=True,
                     page_links=case.get("page_links"),
                     action=case.get("action"),
+                    add_icon=case.get("add_icon", False),
                     status=PASSED,
                     reason_code="",
                     failed_stage="",
@@ -925,6 +961,7 @@ class FormMonitor:
                 ok=False,
                 page_links=case.get("page_links"),
                 action=case.get("action"),
+                add_icon=case.get("add_icon", False),
                 detail="",
                 status=NOT_CHECKED,
                 reason_code=blocker_reason,

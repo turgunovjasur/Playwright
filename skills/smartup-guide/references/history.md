@@ -40,6 +40,20 @@ Replaced by: `scripts/run_tests.py` target modeli va
 - Current behavior: global scope konfiguratsiyasi yo'q; suite faqat amaldagi
   smoke targetlari bilan ishlaydi.
 
+### Forms-03 rejasidagi `+add` creation formalari
+Status: superseded
+Observed: 2026-08-04
+Superseded: 2026-08-04
+Source: user; `tests/smoke/test_forms/test_03_prodaja_menu_forms.py`
+Replaced by:
+`skills/smartup-guide/references/legacy-form-navigation.md#продажа-page-link-va-add-inventari-2026-08-04-live`
+- Old behavior: Forms-03 rejasiga uchta `+add` ikonka-link case
+  (`Заказ (создание)`, `Возврат (создание)`, `Лид (создание)`) kirgan va jami
+  41 navigation tekshirilgan; `Возврат (создание)` uchun `allowed_warnings`
+  berilgan edi.
+- Current behavior: foydalanuvchi qaroriga ko'ra `+add` tekshiruvi olib
+  tashlandi; Forms-03 faqat 26 direct + 12 page-link = 38 navigation tekshiradi.
+
 ## Removed runner va test entrypointlari
 
 ### Outer `test_all_runner.py`
@@ -153,6 +167,19 @@ Replaced by: `skills/smartup-guide/references/forms/user.md`
 - Current behavior: `BasePage.input(label=...)`, jumladan `Новый пароль`
   uchun `press_tab=True`, fresh user bilan to'liq Setup runida muvaffaqiyatli
   o'tdi.
+
+### `Возврат (создание)` alertini application error deb hisoblash
+Status: superseded
+Observed: 2026-08-04
+Superseded: 2026-08-04
+Source: live UI; user correction
+Replaced by:
+`skills/smartup-guide/references/legacy-form-navigation.md#возврат-создание-administrator-draft-ogohlantirishi`
+- Old behavior: `Возврат (создание)` ochilganda ko'ringan administrator draft
+  cheklovi alerti Forms-03 uchun haqiqiy `APPLICATION_ERROR` deb qabul qilingan.
+- Current behavior: foydalanuvchi bu xabar application error emas, balki admin
+  faqat `Черновик` statusida saqlashi mumkinligini bildiradigan kutilgan biznes
+  ogohlantirishi ekanini aniqlashtirdi.
 
 ## Eski server xatti-harakati
 

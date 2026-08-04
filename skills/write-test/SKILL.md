@@ -61,6 +61,6 @@ description: Yangi Playwright + pytest Smartup smoke testi, setup/group/forms le
 3. Mos dossier va mavjud koddan navigation, locator va page-objectni tanlash.
 4. `run_*` + `test_*` yoki runner wrapperni yozish.
 5. Kerak bo'lsa runner target/path mappinglarini yangilash.
-6. Tekshirishda `$run-smoke` ichidagi user-reported execution qoidasiga amal qilish.
+6. Tekshirishda `run-smoke` skillidagi user-reported execution qoidasiga amal qilish.
 7. Yangi, tasdiqlangan Smartup bilimi topilsa `learn` provenance qoidasi
    bo'yicha current dossier/reference'ni yangilash.

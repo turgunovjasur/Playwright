@@ -243,9 +243,11 @@ def test_build_form_case_plan_is_the_single_title_and_path_normalizer():
             "expected_path": "anor/rep/mbi/mcg/action",
             "page_links": ["Конструктор отчетов по акциям"],
             "action": None,
+            "add_icon": False,
             "ready": None,
             "shell": "a2",
             "section": "page-link",
+            "allowed_warnings": [],
         }
     ]
 

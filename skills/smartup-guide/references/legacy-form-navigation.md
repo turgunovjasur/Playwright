@@ -7,6 +7,8 @@
 - [Справочники page-link inventari](#справочники-page-link-inventari-2026-07-29-live)
 - [Создать dropdownidagi yashirin formalar](#создать-dropdownidagi-yashirin-formalar-2026-07-29-live)
 - [Form-opening smoke verifikatsiyasi](#справочники-form-opening-smoke-verifikatsiyasi-2026-07-29)
+- [Продажа mega-menu inventari](#продажа-mega-menu-inventari-2026-08-04-live)
+- [Продажа page-link va +add inventari](#продажа-page-link-va-add-inventari-2026-08-04-live)
 - [Group-0 moliyaviy sahifalari](#group-0-moliyaviy-sahifalari-2026-07-31-live)
 
 Tags: legacy, forms, navigation, menu, navbar, page-link, dropdown, filial, administration
@@ -26,8 +28,9 @@ birgalikda yoziladi.
   `a2-migrated-forms.md`ga yozilmaydi. Legacy parentdan ochiladigan ayrim
   destination A2 bo'lishi mumkin; bunda user-visible legacy yo'l shu katalogda,
   A2 destinationning texnik xususiyatlari esa A2 reference/dossierda turadi.
-- Joriy katalogning tekshirilgan scope'i `navbar_tab="Справочники"`.
-  Keyingi navbar inventarlari ham shu faylga alohida bo'lim sifatida qo'shiladi.
+- Joriy katalogning tekshirilgan scope'i `navbar_tab="Справочники"` va
+  `navbar_tab="Продажа"`. Keyingi navbar inventarlari ham shu faylga alohida
+  bo'lim sifatida qo'shiladi.
 
 ## `Справочники` legacy mega-menu inventari (2026-07-29 live)
 
@@ -377,6 +380,124 @@ Tags: spravochniki, test, report, terminal, allure, run-result
   forma va full URLni ko'rsatadi.
 - Reporting-only o'zgarishda Smartup forma UI/state o'zgarmagani uchun yangi
   screenshot olinmadi; mavjud navigation screenshotlari aktual.
+
+## `Продажа` mega-menu inventari (2026-08-04 live)
+
+Tags: legacy, a2, menu, navbar, sales, visits, filial, administration, test
+Status: live-ui-confirmed
+Verified: 2026-08-04
+Source: live UI
+
+- Muhit: `smartup.online`, admin login; taqqoslash `Администрирование` va
+  birinchi operatsion filialda bajarildi.
+- `Администрирование`da 2 ta `menu_column`, jami 6 ta `menu_item` bor:
+  - `Отчеты по продажам`: `Дашборд по продажам (БЕТА)`,
+    `Конструктор отчётов по продажам`,
+    `Общий отчет по продажам (организации)`;
+  - `Отчеты по визитам`: `Конструктор отчётов по визитам`,
+    `Анализ маршрута`, `Отчёт о маршруте пользователей`.
+- Operatsion filialda 4 ta `menu_column`, jami 27 ta `menu_item` bor:
+  - `Визиты` (9): `Визиты`, `Архив визитов`,
+    `Отслеживание пользователей`,
+    `Отслеживание мобильных представителей`, `Планирование визитов`,
+    `Планы`, `Автоформирование плана визитов`,
+    `Отслеживание оборудования`, `Фото- и видеоотчеты`;
+  - `Продажа` (6): `Заказы`, `Архив заказов`, `Отмененные заказы`,
+    `Возвраты`, `Взаиморасчеты с клиентами`, `Лиды`;
+  - `Отчеты по продажам` (8): `Дашборд`, `Дашборд по продажам`,
+    `Дашборд по продажам (БЕТА)`, `Конструктор отчётов по продажам`,
+    `Общий отчет по продажам (организации)`,
+    `Задолженность покупателей по срокам задолженности`,
+    `Расчет бонуса за оплату долга`, `Коммерческий дашборд`;
+  - `Отчеты по визитам` (4): `Конструктор отчётов по визитам`,
+    `Отчет по визитам`, `Анализ маршрута`,
+    `Отчёт о маршруте пользователей`.
+- Kesishma: adminning barcha 6 itemi operatsion filialda ham bor;
+  admin-only item yo'q, filial-only itemlar 21 ta. Direct forma ochilish
+  coverage'i operatsion filialdagi 27 item bilan barcha unique yo'llarni
+  qoplaydi.
+- A2 direct yo'llar: `Визиты`, `Архив визитов`,
+  `Отслеживание пользователей`,
+  `Отслеживание мобильных представителей`, `Коммерческий дашборд`,
+  `Конструктор отчётов по визитам`; qolganlari legacy shellga o'tadi.
+
+### Qlik BETA dashboard vaqtincha skip
+Tags: sales, qlik, dashboard, error, skip, test
+Status: live-ui-confirmed
+Verified: 2026-08-04
+Source: user; live UI
+
+- Qayerda: `Продажа → Отчеты по продажам → Дашборд по продажам (БЕТА)`,
+  canonical path `trade/tdeal/qlik_sales_dashboard`.
+- Live UI xatosi: `A01-02001 — Нет лицензии Qlik`; joriy foydalanuvchida
+  amaldagi Qlik litsenziyasi yo'q.
+- Foydalanuvchi qarori: forma vaqtincha umumiy `SKIPPED_FORMS` registry'sida
+  saqlanadi va Forms-03 aktiv rejasiga kiritilmaydi.
+
+## `Продажа` page-link va `+add` inventari (2026-08-04 live)
+
+Tags: legacy, sales, page-link, add-icon, creation, cycle, error, test
+Status: live-ui-confirmed
+Verified: 2026-08-04
+Source: user; live UI
+
+- Operatsion filialdagi birinchi darajali `page_links`:
+  - `Отслеживание оборудования → Архив` →
+    `trade/tvt/equipment_review_history_list`;
+  - `Заказы → Отказы` → `anor/mdeal/order/sales_return_list`;
+  - `Заказы → Детали задолженности` →
+    `anor/mdeal/order/offset/offset_detail_list`;
+  - `Возвраты → Причины возврата` →
+    `anor/mdeal/return/return_reason_list`;
+  - `Взаиморасчеты с клиентами → Взаиморасчеты` →
+    `anor/mku/offset/offset_list`;
+  - `Дашборд по продажам → Дашборд команды продаж` →
+    `trade/tdeal/sales_team_dashboard`.
+- Rekursiv yo'llar:
+  - `Отслеживание оборудования → Архив → Отслеживание оборудования`
+    parent canonical pathiga qaytadi;
+  - `Заказы → Детали задолженности → История взаиморасчетов` →
+    `anor/mdeal/order/offset/offset_history_list`; undan
+    `Детали задолженности`ga qaytish canonical cycle;
+  - `Взаиморасчеты с клиентами → Взаиморасчеты → Парные счета` →
+    `anor/mku/coa_twin_list`; undan `Взаиморасчеты`ga qaytish cycle;
+  - `Дашборд по продажам → Дашборд команды продаж →
+    Дашборд по продажам` parent canonical pathiga qaytadi.
+- `Продажа` menu ustunida uchta matnsiz `+add` ikonka-link bor. DOM kontrakti:
+  parent forma qatoridagi `a.menu-link.menu-link-icon`, `href`da `+add`:
+  - `Заказы` → `anor/mdeal/order/order+add`, heading
+    `Заказ (создание)`;
+  - `Возвраты` → `anor/mdeal/return/return+add`, heading
+    `Возврат (создание)`;
+  - `Лиды` → `anor/mdeal/order/lead+add`, heading `Лид (создание)`.
+- Foydalanuvchi qarori (2026-08-04): `+add` ikonka-link tekshiruvi Forms-03
+  rejasidan butunlay olib tashlandi — creation formalari bu suite'da
+  tekshirilmaydi. `add_icon=True` support flow/monitor/`base_page` da qoladi,
+  lekin Forms-03 da hech qanday case uni ishlatmaydi. Sabab: admin roli
+  creation formalarida hujjatni faqat `Черновик` statusida saqlay oladi, shuning
+  uchun bu formalar doimo ogohlantirish beradi va smoke navigatsiya tekshiruvi
+  uchun ma'noli signal bermaydi.
+- Aktiv Forms-03 qamrovi: 26 direct (`BETA` skipdan keyin) + 12 rekursiv
+  page-link/cycle = 38 navigation check.
+
+### `Возврат (создание)` administrator draft ogohlantirishi
+Tags: sales, return, add-icon, admin, draft, warning, test
+Status: code-confirmed
+Verified: 2026-08-04
+Source: user; `tests/smoke/test_forms/form_monitor.py`
+
+- Qayerda: `Продажа → Продажа → Возвраты → +add`, canonical path
+  `anor/mdeal/return/return+add`.
+- Biznes qoida: `Проведение транзакции администратором невозможна...`
+  alerti application error emas. U administrator hujjatni faqat `Черновик`
+  statusida saqlashi mumkinligini bildiradigan kutilgan ogohlantirish. Shu alert
+  barcha `+add` creation formalarida (order, return, lead) chiqadi.
+- Monitor `allowed_warnings` mexanizmi: case uchun ogohlantirishning to'liq
+  matni berilsa, monitor whitespace'ni normalizatsiya qilib exact taqqoslaydi va
+  alert boshidagi `×` close belgisini hisobga olmaydi. Mos kelgan warning
+  `checks.allowed_warning`da saqlanadi va formani `APPLICATION_ERROR` qilmaydi.
+- Forms-03 da bu mexanizm endi ishlatilmaydi — `+add` case'lar olib tashlandi.
+  Boshqa suite creation formasini tekshirsa, shu pattern ishlatilishi mumkin.
 
 ## Group-0 moliyaviy sahifalari (2026-07-31 live)
 

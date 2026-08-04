@@ -302,6 +302,7 @@ class BasePage:
         menu_column,
         menu_item,
         page_links=None,
+        add_icon=False,
         timeout=60_000,
     ):
         """Navbar menyusi orqali formani ochadi.
@@ -309,9 +310,11 @@ class BasePage:
         ``navbar_tab`` yuqori navbar elementi, ``menu_column`` ochilgan mega-menu
         ustuni, ``menu_item`` esa shu ustundagi forma linkidir. Ustunsiz kichik
         menyuda ``menu_column=None`` beriladi va item bevosita flyout ichidan
-        qidiriladi. ``page_links`` berilsa, menu formasi ochilgach sahifa
-        yuqorisidagi linklar tartib bilan bosiladi. Forma heading va URL
-        tekshiruvi chaqiruvchi kodda alohida ``expect_page(...)`` bilan qilinadi.
+        qidiriladi. ``add_icon=True`` bo'lsa menu item matnli linki o'rniga
+        shu item qatoridagi ``+add`` ikonka-link bosiladi. ``page_links``
+        berilsa, menu formasi ochilgach sahifa yuqorisidagi linklar tartib bilan
+        bosiladi. Forma heading va URL tekshiruvi chaqiruvchi kodda alohida
+        ``expect_page(...)`` bilan qilinadi.
         """
         links = [] if page_links is None else [page_links] if isinstance(page_links, str) else list(page_links)
 
@@ -341,7 +344,12 @@ class BasePage:
         if menu_column is not None:
             column_heading = (
                 flyout.locator("h3.menu-heading")
-                .filter(has_text=menu_column)
+                .filter(
+                    has_text=_whitespace_agnostic_pattern(
+                        menu_column,
+                        exact=True,
+                    )
+                )
                 .filter(visible=True)
             )
             try:
@@ -374,7 +382,31 @@ class BasePage:
                 f"navigate_to_form: '{menu_scope}' ichida "
                 f"menu_item='{menu_item}' topilmadi"
             ) from exc
-        item.click()
+        if add_icon:
+            item_row = item.locator(
+                "xpath=ancestor::li[contains(@class, 'menu-item')][1]"
+            )
+            add_link = item_row.locator(
+                ":scope > a.menu-link-icon"
+            ).filter(visible=True)
+            try:
+                expect(add_link).to_have_count(1, timeout=timeout)
+                expect(add_link).to_be_visible(timeout=timeout)
+            except (AssertionError, PlaywrightTimeoutError) as exc:
+                raise AssertionError(
+                    f"navigate_to_form: menu_item='{menu_item}' qatorida "
+                    "yagona ko'rinadigan +add ikonka-link topilmadi"
+                ) from exc
+
+            add_href = add_link.get_attribute("href") or ""
+            if "+add" not in add_href:
+                raise AssertionError(
+                    f"navigate_to_form: menu_item='{menu_item}' ikonka-link URLida "
+                    f"'+add' yo'q; href={add_href or '—'}"
+                )
+            add_link.click()
+        else:
+            item.click()
 
         for page_link in links:
             link = (
@@ -391,7 +423,7 @@ class BasePage:
                 ) from exc
             link.click()
 
-        return item
+        return add_link if add_icon else item
 
     # ------------------------------------------------------------------------------------------------------------------
 

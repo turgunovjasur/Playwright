@@ -7,6 +7,10 @@ SELLERS_SKIP_REASON = (
 BOT_SKIP_REASON = (
     "'Публикация в бот' parenti foydalanuvchi qarori bilan vaqtincha chiqarilgan."
 )
+QLIK_BETA_SKIP_REASON = (
+    "'Дашборд по продажам (БЕТА)' foydalanuvchi qarori bilan vaqtincha "
+    "chiqarilgan: joriy muhitda Qlik litsenziyasi yo'q."
+)
 
 SKIPPED_FORMS = [
     {
@@ -63,6 +67,11 @@ SKIPPED_FORMS = [
         "name": "Инвентаризация КМ",
         "path": "anor/mkw/marking_stocktaking/marking_stocktaking_list",
         "reason": "Joriy test muhitida formaga dostup yo'q.",
+    },
+    {
+        "name": "Дашборд по продажам (БЕТА)",
+        "path": "trade/tdeal/qlik_sales_dashboard",
+        "reason": QLIK_BETA_SKIP_REASON,
     },
 ]
 

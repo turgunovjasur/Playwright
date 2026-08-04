@@ -7,8 +7,8 @@ va migratsiya detallarini saqlaydi. Faqat vazifaga tegishli bo'limni o'qi.
 
 - [Loyiha strukturasini tushun](#1-loyiha-strukturasini-tushun)
 - [Test fayl shabloni](#2-test-fayl-shabloni-run_-test_-ikki-funksiya)
-- [Asosiy qoidalar](#3-qoidalar)
-- [Runnerga qo'shish](#4-runner-ga-qoshish)
+- [Asosiy qoidalar](#3-asosiy-qoidalar)
+- [Runnerga qo'shish](#4-runnerga-qoshish)
 - [Loyiha xususiyatlari](#5-loyiha-xususiyatlari)
 - [Ish tartibi](#6-ish-tartibi)
 
@@ -111,7 +111,7 @@ Source: user
 - Qoida: yangi yoki o'zgartirilayotgan test, flow va helperlarda funksiya definition hamda chaqiruv parametrlari bitta fizik qatorda yoziladi; line uzunligi sabab ularni avtomatik ko'p qatorga bo'lib yuborilmaydi.
 - Testda ishlatish: `base.expect_page(...)`, `base.grid_cell(...)`, `base.form_view(...)` va boshqa chaqiruvlarning argumentlarini bir qatorda saqla.
 
-## 3. Qoidalar
+## 3. Asosiy qoidalar
 
 - **Fixtures** — conftest.py dan keladi, import qilma:
   - `page` — yakka test uchun fresh page; `session_page` — setup chain; `group_user_page` — group chain (login qilingan)
@@ -131,7 +131,7 @@ Source: user
   almashmaydi.
 - **`code`**: har bir test uchun unikal identifikator, nom sifatida ishlating
 
-## 4. Runner ga qo'shish
+## 4. Runnerga qo'shish
 
 Yangi user setup testi yozilgandan keyin `tests/smoke/test_setup/test_0_setup_runner.py` ga import va `@allure.title` bilan qo'sh:
 
@@ -275,8 +275,11 @@ o'chirilgan; ular qayta yozilganda quyidagi qoidalar joriy contract bo'ladi.
 - Group case natijasi keyingi case uchun `save_data` qilinmaydi. `save_data`
   faqat tashqi report/debug artefakti uchun zarur bo'lsa case-prefiksli key
   bilan ishlatilishi mumkin; consumer dependency yaratmaydi.
-- Bitta case failed bo'lsa shu groupning boshqa caselari skip qilinmaydi.
-  Failure isolation pytest hook/runnerda ham ta'minlanishi kerak.
+- Target: bitta case failed bo'lsa shu groupning boshqa caselari skip
+  qilinmasin. Joriy default bunga teskari — cascade skip ishlaydi; undan chiqish
+  faqat group runnerdagi `pytest.mark.smoke_group("X", independent=True)`
+  markeri bilan bo'ladi. Joriy runtime xatti-harakati uchun `run-smoke`
+  skillidagi `Test dependency modeli`ni o'qi.
 - Cleanup faqat testcase o'zi yaratgan yoki o'z unique `code`/case IDsi bilan
   aniq topgan dataga ishlaydi; boshqa testcase datasi cancel/edit qilinmaydi.
 
@@ -318,12 +321,11 @@ Source: user
 - `Tuzat`, `o'zgartir`, `amalga oshir` yoki umumiy verification so'rovi unit test
   artefaktini yaratish/o'zgartirishga ruxsat bermaydi; unit test uchun alohida
   explicit buyruq kerak.
-- Foydalanuvchi aynan `run qil` demasa unit test, pytest collection, smoke yoki
-  boshqa test commandi ishga tushirilmaydi. Skill/reference ichidagi
-  verification commandi ruxsat emas, faqat explicit ruxsatdan keyingi buyruqdir.
-- Default tekshiruv read-only/statik inspection, syntax/config parse, linter va
-  `git diff --check` bilan cheklanadi. Test yozilmagani va run qilinmagani
-  handoffda aniq aytiladi.
+- Test commandini ishga tushirish authoritysi bu yerda takrorlanmaydi; yagona
+  manba — `run-smoke` skillidagi `User-reported Execution Qoidasi`. Default
+  tekshiruv shu qoidaga muvofiq read-only/statik inspection, syntax/config
+  parse, linter va `git diff --check` bilan cheklanadi; test yozilmagani va run
+  qilinmagani handoffda aniq aytiladi.
 
 #### Flow admission gate
 
@@ -408,8 +410,10 @@ Source: user;
 - User setup testlari muvaffaqiyatli o'tgandan keyin joriy runnerga ulangan group testlar boshlanadi.
 - Har bir group test faqat user setup baseline'ga bog'liq; boshqa group yoki shu
   groupdagi boshqa testcase yaratgan data/state'ga suyanmaydi.
-- Bir group ichida test yiqilsa, shu groupning boshqa testlari ham, keyingi
-  grouplar ham run bo'lishda davom etadi.
+- Cascade/skip runtime qoidasi bu yerda takrorlanmaydi; yagona manba —
+  `run-smoke` skillidagi `Test dependency modeli`. Qisqasi: group ichida test
+  yiqilsa default holda shu groupning qolgan caselari skip qilinadi, keyingi
+  grouplar esa run bo'lishda davom etadi.
 - Group/testcase artefakti saqlanishi shart bo'lsa o'z case/group prefiksidan
   foydalanadi, lekin boshqa testcase bu keyni consumer dependency sifatida
   o'qimaydi.
@@ -417,9 +421,10 @@ Source: user;
 - Har yangi group runner qo'shilganda `scripts/run_tests.py` ichidagi `GROUP_RUNNER_PATHS` ro'yxatiga va `tests/smoke/smoke_config.py::full_runner_paths()` ro'yxatiga qo'shilsin.
 - Full run `test_0_setup_runner.py`, keyin joriy `GROUP_RUNNER_PATHS` group runner fayllarini bitta pytest sessiyasida collect qiladi; alohida `test_all_runner.py` outer-chain fayli ishlatilmaydi.
 - Mexanizm pytest hook/marker orqali bo'lsin: `pytest.mark.user_setup` setup chain uchun, `pytest.mark.smoke_group("A")` kabi markerlar group chain uchun ishlatiladi.
-- Bitta group testi failed bo'lsa boshqa group testcase skip qilinmaydi;
-  `user_setup` failed bo'lsa baseline tayyor bo'lmagani uchun group testlar
-  skip qilinishi mumkin.
+- Bitta group failed bo'lsa BOSHQA groupning caselari skip qilinmaydi; shu group
+  ichidagi keyingi caselar esa `independent=True` bo'lmasa skip qilinadi.
+  `user_setup` failed bo'lsa setupga bog'liq group testlar skip qilinadi,
+  `setup_independent=True` olgan runner (masalan Forms) ishlashda davom etadi.
 - Grouplar bir-birining browser/page holatini meros qilib olmasin: har bir group runner modul-scoped `group_session_page` oladi; user grouplari `group_user_page` bilan bitta login/page'ni bo'lishadi.
 - `group_session_page` faqat browser context/page lifecycle uchun javobgar va `code`
   fixture'ini qabul qilmaydi. `code` faqat test data yoki user login talab qiladigan

@@ -45,6 +45,10 @@ Source: `tests/smoke/test_forms/form_monitor.py`,
   Nuqson topilgan forma uchun validatsiya bajarilgan, ammo undan o'tmagan deb
   ko'rsatiladi; suite bloklangan sahifa esa forma ochildi deb noto'g'ri
   hisoblanmaydi.
+- Case inventaridagi `allowed_warnings` faqat whitespace-normalized exact UI
+  matn uchun scoped exception beradi. Mos warning `checks.allowed_warning`da
+  qayd etiladi va formani yaroqsiz qilmaydi; boshqa visible errorlar
+  `APPLICATION_ERROR` bo'lib qoladi.
 - Xato paytidagi full-page screenshot aynan shu forma Allure stepiga
   biriktiriladi. Default mask faqat password/secret/token elementlarini
   yashiradi; oddiy search/filter inputlari ochiq qoladi.

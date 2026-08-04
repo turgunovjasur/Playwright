@@ -136,14 +136,33 @@ Tags: biruni, confirm, modal
 
 ### Biruni Error
 Tags: biruni, error, modal
-- Selector: `#biruniAlertExtended`.
-- Close button: `#biruniAlertExtended button.close`.
-- Extended alertni tekshirib yopish uchun `BasePage.close_biruni_alert(*expected_text)` ishlatiladi.
-- Qoida: ba'zan `Закрыть` textli button yo'q.
-- Qoida: Modal yopilmasa menu/list clicklari intercept bo'lishi mumkin.
-- Save/transition debug: `Сохранить` bosilgandan keyin kutilgan list/view
-  ochilmasa `expect_page` xabaridagi joriy heading va URL bilan birga
-  `#biruniAlertExtended` matnini tekshir.
+Status: live-ui-confirmed
+Verified: 2026-08-04
+Source: user; live UI `*/anor/mr/product/inventory+add`;
+`tests/smoke/test_forms/form_monitor.py`
+- Legacy formadagi odatiy blocking backend/business xato modali
+  `#biruniAlert.modal.fade.show[role="dialog"]`. Ko'rinadigan strukturasi:
+  `Ошибка` headingi, `.text-danger` xato matni, `button.close` va textli
+  `Закрыть` tugmasi. Jonli misol: mavjud `<product_code>` bilan TMC saqlashda
+  duplicate-code xatosi shu modalda chiqdi.
+- Extended varianti `#biruniAlertExtended[role="dialog"]`; oddiy va extended
+  modal DOMda bir vaqtda mavjud bo'lishi mumkin, lekin faqat `.show`/`:visible`
+  holati xato signali hisoblanadi. Extended alertni tekshirib yopish uchun
+  `BasePage.close_biruni_alert(*expected_text)` ishlatiladi; unda ba'zan
+  `Закрыть` textli button yo'q.
+- Barcha forma xatolari aynan shu modal ko'rinishida chiqmaydi. Legacy formani
+  saqlash/tranzaksiya backend xatolari ko'pincha Biruni modalida; forma
+  ochilishidagi vaqtinchalik xabar `[role="alert"]`, inline validatsiya
+  `.alert-danger`, A2 xatolari esa boshqa error komponentida ko'rinishi mumkin.
+- Forms monitor `#biruniAlertExtended:visible`, `#biruniAlert:visible`,
+  `[role="alert"]:visible` va `.alert-danger:visible` signallarini tekshiradi;
+  ulardan biri target sahifada ko'rinsa natija `OPENED_WITH_DEFECT /`
+  `APPLICATION_ERROR` bo'ladi. Faqat formani ochadigan smoke test save-time
+  modalni o'zi hosil qilmaydi; modal formani ochishda paydo bo'lsa yoki case
+  tegishli actionni bajarsa aniqlanadi.
+- Modal yopilmasa menu/list clicklari intercept bo'lishi mumkin. Save/transition
+  debugda kutilgan list/view ochilmasa joriy heading va URL bilan birga ikkala
+  Biruni alertning visible matnini tekshir.
 
 ### List va Grid Setting
 Tags: list, grid, search, column
@@ -282,6 +301,16 @@ Tags: order, locator, error
   Marketplace` 2026-07-27 live tasdiqlangan misol.
 - Menu matni real DOM bilan aynan yozilsin: `е` va `ё` farqi locator uchun
   muhim. Shelf-share leaf matni `Конструктор отчётов по доле на полке`.
+- Mega-menu ustun headingi substring bilan emas, exact matn bilan topilsin.
+  `Продажа` tabida `has_text="Продажа"` bir vaqtda `Продажа` va
+  `Отчеты по продажам` headinglarini match qiladi; natijada ustun UI'da
+  ko'rinib turgan bo'lsa ham yagona element assertioni yiqiladi.
+  - Status: trace-confirmed
+  - Verified: 2026-08-04
+  - Source:
+    `test-results/logs/tests_smoke_test_forms_test_0_forms_runner.py__test_forms_03_prodaja_20260804_151214.log`;
+    Allure `010-Заказы-NOT_OPENED-URL_MISMATCH-evidence` screenshoti;
+    `utils/base_page.py`
 - Parent forma ichidagi bir yoki bir nechta yuqori linklar `page_links`ga
   bosilish tartibida beriladi.
 - Foydalanuvchi bergan visual namunalar:

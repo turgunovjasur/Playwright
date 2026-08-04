@@ -33,10 +33,19 @@ TOC = re.compile(
     re.MULTILINE | re.IGNORECASE,
 )
 VERIFIED = re.compile(r"^(?:\d{4}-\d{2}-\d{2}|pending)$")
+DOSSIER_SECTIONS = (
+    "## Quick Lookup",
+    "## Screenshot Paths",
+    "## Known Locators",
+    "## Flow And Tests",
+    "## Business Rules",
+    "## Known Issues",
+)
 
 # Debt ratchet: lower the matching baseline in the same change when debt drops.
-BASELINE_LEGACY_ENTRIES_WITHOUT_PROVENANCE = 139
+BASELINE_LEGACY_ENTRIES_WITHOUT_PROVENANCE = 138
 BASELINE_SCREENSHOTS_WITHOUT_JSON_SIDECAR = 41
+BASELINE_DOSSIERS_WITHOUT_CANONICAL_SECTIONS = 23
 
 
 def relative(path: Path) -> str:
@@ -75,6 +84,15 @@ def check_dossier_index(errors: list[str]) -> None:
             errors.append(
                 f"{relative(dossier)}: dossier is missing from SKILL.md index"
             )
+
+
+def check_dossier_sections() -> int:
+    incomplete = 0
+    for dossier in sorted(FORMS.glob("*.md")):
+        text = dossier.read_text(encoding="utf-8")
+        if any(section not in text for section in DOSSIER_SECTIONS):
+            incomplete += 1
+    return incomplete
 
 
 def check_long_file_toc(files: list[Path], errors: list[str]) -> None:
@@ -170,6 +188,7 @@ def main() -> int:
 
     check_markdown_links(files, errors)
     check_dossier_index(errors)
+    dossiers_without_sections = check_dossier_sections()
     check_long_file_toc(files, errors)
     reference_files = sorted(REFERENCES.rglob("*.md"))
     legacy_entries = check_provenance(reference_files, errors)
@@ -200,10 +219,24 @@ def main() -> int:
             f"{images_without_metadata} in this validator"
         )
 
+    if dossiers_without_sections > BASELINE_DOSSIERS_WITHOUT_CANONICAL_SECTIONS:
+        errors.append(
+            "dossiers without the six canonical sections increased "
+            f"from {BASELINE_DOSSIERS_WITHOUT_CANONICAL_SECTIONS} "
+            f"to {dossiers_without_sections}"
+        )
+    elif dossiers_without_sections < BASELINE_DOSSIERS_WITHOUT_CANONICAL_SECTIONS:
+        errors.append(
+            "dossier section debt decreased; lower "
+            "BASELINE_DOSSIERS_WITHOUT_CANONICAL_SECTIONS to "
+            f"{dossiers_without_sections} in this validator"
+        )
+
     print(f"markdown_files={len(files)}")
     print(f"form_dossiers={len(list(FORMS.glob('*.md')))}")
     print(f"legacy_entries_without_full_provenance={legacy_entries}")
     print(f"screenshots_without_json_sidecar={images_without_metadata}")
+    print(f"dossiers_without_canonical_sections={dossiers_without_sections}")
 
     if errors:
         print(f"errors={len(errors)}")

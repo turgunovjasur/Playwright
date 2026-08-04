@@ -1,3 +1,4 @@
+import re
 from urllib.parse import urlsplit
 
 import allure
@@ -33,11 +34,14 @@ def form_navigation_track(
     menu_item,
     page_links=None,
     action=None,
+    add_icon=False,
 ):
     """Navbar, menu, forma, action va page-linklardan user-visible yo'l yasaydi."""
     parts = [navbar_tab, menu_column, menu_item]
     if action is not None:
         parts.extend(["Создать dropdown", action])
+    if add_icon:
+        parts.append("+add icon")
     parts.extend(page_links or [])
     return " → ".join(str(part) for part in parts if part is not None)
 
@@ -77,6 +81,7 @@ def build_form_result(
     ok,
     page_links=None,
     action=None,
+    add_icon=False,
     detail="",
     status=None,
     reason_code="",
@@ -128,12 +133,14 @@ def build_form_result(
         "title": title,
         "page_links": links,
         "action": action,
+        "add_icon": bool(add_icon),
         "track": form_navigation_track(
             navbar_tab=navbar_tab,
             menu_column=menu_column,
             menu_item=menu_item,
             page_links=links,
             action=action,
+            add_icon=add_icon,
         ),
         "expected_path": expected_path or "—",
         "actual_url": actual_url,
@@ -185,6 +192,7 @@ def format_form_result(result):
     menu = result["menu_column"] or "— (ustunsiz menu)"
     links = " → ".join(result["page_links"]) or "—"
     action = result["action"] or "—"
+    add_icon = "HA" if result.get("add_icon") else "YOQ"
     lines = [
         f"[FORMA {result['number']:03d}] {status}",
         f"  Filial             : {result['filial']}",
@@ -193,6 +201,7 @@ def format_form_result(result):
         f"  Menyu formasi      : {result['menu_item']}",
         f"  Tekshirilgan forma : {result['title']}",
         f"  Action             : {action}",
+        f"  +add ikonka-link   : {add_icon}",
         f"  Page linklar       : {links}",
         f"  To'liq yo'l        : {result['track']}",
         f"  Kutilgan URL       : {result['expected_path']}",
@@ -348,18 +357,35 @@ def _click_page_links(page, page_links):
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def open_menu_form(page, *, navbar_tab, menu_column, menu_item, page_links=None):
-    """Legacy yoki A2 shell menyusidan parent formani va page-link zanjirini ochadi."""
+def open_menu_form(
+    page,
+    *,
+    navbar_tab,
+    menu_column,
+    menu_item,
+    page_links=None,
+    add_icon=False,
+):
+    """Menu item yoki uning ``+add`` ikonkasidan forma/page-link zanjirini ochadi."""
     links = [] if page_links is None else list(page_links)
     track = form_navigation_track(
         navbar_tab=navbar_tab,
         menu_column=menu_column,
         menu_item=menu_item,
         page_links=links,
+        add_icon=add_icon,
     )
 
     with allure.step(f"Navigatsiya | Yo'l: {track}"):
-        if "/a2/" in page.url:
+        if add_icon:
+            BasePage(page).navigate_to_form(
+                navbar_tab=navbar_tab,
+                menu_column=menu_column,
+                menu_item=menu_item,
+                add_icon=True,
+                timeout=FORM_TIMEOUT,
+            )
+        elif "/a2/" in page.url:
             AngularBasePage(page).navigate_to(
                 tab=navbar_tab,
                 name=menu_item,
@@ -444,8 +470,8 @@ def open_create_dropdown_form(
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def expect_form_open(page, *, title, path=None, ready=None):
-    """Destination title/path va formaga xos readiness signalini tekshiradi."""
+def expect_form_open(page, *, title, path=None, ready=None, add_icon=False):
+    """Destination title/path, readiness va ``+add`` URL signalini tekshiradi."""
     if "/a2/" in page.url:
         AngularBasePage(page).expect_page(
             title=title,
@@ -457,6 +483,12 @@ def expect_form_open(page, *, title, path=None, ready=None):
         BasePage(page).expect_page(
             heading=title,
             url=path,
+            timeout=FORM_TIMEOUT,
+        )
+
+    if add_icon:
+        expect(page).to_have_url(
+            re.compile(r"\+add(?:$|[?#])"),
             timeout=FORM_TIMEOUT,
         )
 
@@ -493,6 +525,7 @@ def navigate_form_case(page, case):
             menu_column=case.get("menu_column"),
             menu_item=case["menu_item"],
             page_links=case.get("page_links"),
+            add_icon=case.get("add_icon", False),
         )
 
 
@@ -509,6 +542,7 @@ def run_form_cases(page, cases, *, monitor):
                 title=current_case["title"],
                 path=current_case.get("expected_path"),
                 ready=current_case.get("ready"),
+                add_icon=current_case.get("add_icon", False),
             ),
         )
     return cases[-1]["number"] + 1 if cases else None
