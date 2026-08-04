@@ -1,0 +1,288 @@
+# Forms Suite va FormMonitor Tahlili — Yaxshilanish Rejasi
+
+**Sana:** 2026-08-04
+**Qamrov:** `tests/smoke/test_forms/` — `form_monitor.py` (1026 qator), `flow.py` (543), `skipped_forms.py`, uchta suite (`test_01` 88 forma, `test_02` 21, `test_03` 38) va `test_0_forms_runner.py`
+**Usul:** Kod o'qish + da'volarni tasdiqlash — Playwright API introspeksiyasi, forma sonlarini skript bilan hisoblash, HEAD bilan solishtirish uchun vaqtinchalik git worktree
+**Branch:** `dev1`
+
+---
+
+## Umumiy Holat
+
+| Bosqich | Mazmun | Holat | Commit |
+|---|---|---|---|
+| 0 | Forms-03 suite + `+add` tekshiruvini olib tashlash | ✅ Bajarildi | `e19cf60` |
+| 1 | Mexanik tozalash (#6, #8, #9, #10, #11) | ✅ Bajarildi | `8afabb3` |
+| 2 | Hisobotni ishonchli qilish (#3, #4) | ⬜ Qolgan | — |
+| 3 | Aniqlashni kuchaytirish (#1, #2, #7) | ⬜ Qolgan | — |
+| 4 | Hisobot sifati (Taklif 3) | ⬜ Qolgan | — |
+| 5 | JS/network xatolari (Taklif 1) | ⬜ Qolgan | — |
+| 6 | Shell helper refactori (Taklif 4) | ⬜ Qaror kutilmoqda | — |
+
+Har bosqich alohida commit. Bosqich 2 dan boshlab real run bilan tekshiriladi.
+
+---
+
+## Bajarilgan Ishlar
+
+### Bosqich 0 — Forms-03 va `+add` qarori (`e19cf60`)
+
+- Forms-03 `Продажа` suite qo'shildi: 26 direct menu forma + 12 rekursiv
+  page-link/cycle = **38 navigatsiya**. Runnerga `test_forms_03_prodaja`
+  sifatida ulandi.
+- `+add` ikonka-link tekshiruvi Forms-03 rejasidan **olib tashlandi**. Sabab:
+  admin roli creation formalarida hujjatni faqat `Черновик` statusida saqlay
+  oladi, shuning uchun `Заказ/Возврат/Лид (создание)` doim ogohlantirish
+  beradi va smoke navigatsiya tekshiruvi uchun ma'noli signal bermaydi.
+- `add_icon=True` support infrada **saqlandi** (`BasePage.navigate_to_form`,
+  `flow.py`, `form_monitor.py`) — boshqa suite ishlatishi mumkin.
+- Qo'shimcha: `Дашборд по продажам (БЕТА)` umumiy `SKIPPED_FORMS`ga o'tdi
+  (Qlik litsenziyasi yo'q); `navigate_to_form` `menu_column`ni substring
+  emas, whitespace-agnostic exact pattern bilan topadi.
+- Bilim bazasi: `legacy-form-navigation.md` (`+add` inventari va olib tashlash
+  qarori), `history.md` (eski 41-navigation reja superseded).
+
+**Commit paytida topilgan regressiya:** `test_form_flow.py` dagi
+`test_build_form_case_plan_...` yiqilayotgan edi — `form_case` ga `add_icon` va
+`allowed_warnings` kalitlari qo'shilgan, unit test aynan dict taqqoslaydi va
+yangilanmagan. Kutilgan dict yangilandi. HEAD bilan solishtirish: HEAD 6 fail,
+commit'dan oldingi ishchi daraxt 7 fail, tuzatgandan keyin 6 fail.
+
+### Bosqich 1 — Mexanik tozalash (`8afabb3`)
+
+Xatti-harakat o'zgarmadi; raqamlash tekshirildi: t01 `1..88`, t02 `1..21`,
+t03 `1..38` — uzluksiz.
+
+| # | O'zgarish |
+|---|---|
+| 11 | `build_form_result(ok=...)` → `status` majburiy. `ok` faqat `status or ("PASSED" if ok else "NOT_OPENED")` fallbackini oziqlantirardi, unga esa production'dagi 3 chaqiruvning hech biri yetib bormaydi. `format_form_result` ham `result["status"]` ni to'g'ridan-to'g'ri o'qiydi. |
+| 10 | `run_form_cases` o'lik `return cases[-1]["number"] + 1` o'chirildi — 11 chaqiruvning hech biri o'qimaydi. |
+| 6 | `classify_form_failure` dagi `title_failure` marker skani (10 qator, 5 marker) o'chirildi. Undan oldingi `content_ready` guard early-return qiladi, shuning uchun o'sha nuqtada `content_ready` doim `True` va shart allaqachon `not title_matches` ga teng edi. |
+| 9b | Forms-02 `start_number` va precondition targetlarini plan uzunligidan hisoblaydi (`1`/`2` hardcode o'chdi), `planned_case(1)` → `cases(section="admin")`. Admin formasi qo'shilsa raqam to'qnashmaydi, skip qilinsa `KeyError` bo'lmaydi. |
+| 9a | Forms-01/03 birinchi case izlashni guard qildi — butunlay skip qilingan section endi `IndexError` emas, `None` beradi (`precondition` buni allaqachon qo'llab-quvvatlaydi). |
+| 8 | Forms-01 docstringlari haqiqiy qamrovni aytadi: **33** direct, **88** navigatsiya, **12** skip (avval 35/34, 89, 11 — uchtasi ham xato edi). |
+
+Yo'l-yo'lakay: `detail_text` → `lower_detail` bir qatorga yig'ildi.
+
+---
+
+## Qolgan Ishlar
+
+### Bosqich 2 — Hisobotni ishonchli qilish
+
+#### 2.1. Kutilmagan exception butun hisobotni yo'q qiladi `#3`
+- **Joyi:** `form_monitor.py:797, 842` (`run_case` except bloklari); `finish()`
+  chaqiruvlari — `test_01` 5 ta, `test_02` 7 ta, `test_03` 4 ta
+- **Muammo:** `run_case` faqat `AssertionError` va `PlaywrightError` tutadi.
+  Suite o'rtasida `AttributeError`/`KeyError`/`TypeError` chiqsa exception
+  yuqoriga otiladi va `monitor.finish()` **ishlamaydi**: summary yo'q,
+  `form-monitor.json` yo'q, qolgan formalar `NOT_CHECKED` bo'lib yozilmaydi.
+  Monitorning asosiy va'dasi — "reja bo'yicha har forma hisobotda bo'ladi" —
+  aynan kod buzilgan paytda buziladi.
+- **Yechim:** Uchta suite tanasini `try/finally` ichiga olib `finish()` ni
+  kafolatlash. `run_case` da `except Exception` ga o'tmaslik — aks holda kod
+  xatosi "forma nuqsoni" bo'lib ko'rinadi.
+- **Tekshirish:** Bitta formaga vaqtincha sun'iy `AttributeError` qo'yib,
+  hisobot **chiqishini** ko'rish, keyin qaytarish.
+
+#### 2.2. Yiqilganda holat ikki marta o'qiladi `#4`
+- **Joyi:** `form_monitor.py:795-796` (`state` olinadi va tekshiriladi) →
+  `:798` (`_failure_result` ga `state` **uzatilmaydi**) → `:727`
+  (`state = state or capture_form_state(...)` — ikkinchi o'qish)
+- **Muammo:** Xatoni yiqitgan holat va uni klassifikatsiya qiladigan holat —
+  ikki xil o'qish. Alert oraliqda yo'qolsa `detail` da `[APPLICATION_ERROR]`,
+  `reason_code` da `CONTENT_VALIDATION_FAILED`, `UI error` da `—` chiqadi —
+  uch qatorning uchtasi bir-biriga qarama-qarshi. Screenshot ham bu paytda
+  olinadi. Ustiga har fail uchun ortiqcha 6 selektor probe.
+- **Yechim:** `:798` chaqiruviga `state=state` qo'shish. `state` ni `None` deb
+  boshlash kerak, chunki `navigate()` yiqilsa u hali mavjud emas —
+  `_failure_result` ning `state or capture_form_state(...)` logikasi buni
+  qo'llab-quvvatlaydi.
+- **Diqqat:** Kod boshqa joyda buni to'g'ri qiladi — `_block_suite` da
+  `state=state` aniq uzatilgan. Pattern ma'lum, faqat bu joyda tushib qolgan.
+
+### Bosqich 3 — Aniqlashni kuchaytirish
+
+⚠️ **Bu bosqich yangi fail keltirishi mumkin — maqsad ham shu.** Har yangi fail
+uchun "real nuqsonmi yoki test artefaktimi" degan qaror kerak; qaror bilim
+bazasiga yoziladi.
+
+#### 3.1. Alert formalar orasida tozalanmaydi `#1`
+- **Joyi:** Forms suite'da alert yopadigan kod **umuman yo'q**. Loyihada helper
+  bor: `test_groups/test_report_grup/test_06_integration_two.py:29`
+  (`_close_alert_if_open` — Escape bosib `hidden` kutadi).
+- **Muammo:** Forma N da chiqqan alert ekranda qolsa, forma N+1 uchun
+  `_visible_error_text` uni o'qiydi va **N+1 ni** `APPLICATION_ERROR` deb
+  belgilaydi.
+- **Dalil (2026-08-04 run, hali `+add` case'lar bor edi):**
+
+  | # | Forma | O'qilgan matn |
+  |---|---|---|
+  | 039 | Заказ | ...невозмож**но** ... Чернови**к** |
+  | 040 | Возврат | ...невозмож**но** ... Чернови**к** ← 039 bilan aynan bir xil |
+  | 041 | Лид | ...невозмож**на** ... Чернови**ка** ← KB'da **Возврат** uchun yozilgan matn |
+
+  Matnlar bir qadam surilgan ko'rinadi. Shu sabab `Возврат`ning
+  `allowed_warnings` exact-match'i buzilgan.
+- **Holat:** Gipoteza — app matni o'zgargan bo'lishi ham mumkin.
+- **Yechim:** Har case'dan keyin `finally`da alertni yopib `hidden` kutish;
+  `validate`dan **oldin** "eski alert yo'q" shartini tekshirish. Matnlar
+  surilishi to'xtasa — bleed-through tasdiqlanadi.
+- **Tartib muhim:** avval state + screenshot olinadi, **keyin** alert yopiladi —
+  aks holda dalilni o'zimiz o'chiramiz.
+
+#### 3.2. `is_visible(timeout=...)` e'tiborga olinmaydi `#2`
+- **Joyi:** `form_monitor.py:108` (`_safe_locator_visible`), chaqiruvlari
+  `:145, 155, 163, 172, 178, 183`
+- **Muammo:** O'rnatilgan Playwright dokumentatsiyasi:
+  *"Deprecated: This option is ignored. `locator.is_visible()` does not wait."*
+  Ya'ni `timeout=500`/`timeout=250` — **o'lik parametrlar**, tekshiruv lahzalik
+  surat. Natijada **xato aniqlash bitta lahzada** bo'ladi: `expect_form_open`
+  heading/URL'ni kutib qaytadi, keyin darhol alert o'qiladi. Server validatsiya
+  xatosi 300–500 ms keyin kelsa — umuman ko'rinmaydi va forma **yolg'on PASSED**
+  bo'ladi. Hisobotda hech qanday iz qolmaydi, shuning uchun bu muammoni
+  hisobotdan topib bo'lmaydi.
+- **Yechim:** Alert uchun kutadigan usul —
+  `locator.wait_for(state="visible", timeout=~1200)`. Faqat "alert bormi?"
+  tekshiruviga kutish kerak; `loader_visible` uchun lahzalik surat aslida
+  to'g'ri. O'lik `timeout=` parametrlarini olib tashlash — ular kodni yolg'on
+  tushuntiryapti.
+- **Bog'liqlik:** #1 dan **ayirib bo'lmaydi**. #2 ni yolg'iz tuzatsak alert
+  o'qish ishonchli bo'ladi, ya'ni oldingi formadan qolgan alert ham
+  kafolatlangan o'qiladi → yolg'on `APPLICATION_ERROR` soni oshadi.
+
+#### 3.3. Title tekshiruvida sirg'alib o'tish yo'li `#7`
+- **Joyi:** `form_monitor.py:219` (`_title_matches`), `if not candidates and
+  state.get("title_source") == "visible_heading": return True`
+- **Muammo:** Tarjimasi: "legacy sahifada bironta heading topilmasa — title
+  tekshiruvidan o'tgan deb hisobla." Hisobotda `Title mosmi: HA` chiqadi,
+  aslida taqqoslash umuman bo'lmagan. `content_ready` (`b-page`/`.subheader`)
+  buni qismon tutadi, lekin `.subheader` bor / heading yo'q holatda ikkalasi
+  ham o'tib ketadi.
+- **Yechim (tavsiya):** `True` qaytarishni qoldirish, lekin `checks` ga
+  `title_verified: False` bayrog'i qo'shish → hisobotda "tekshirilmadi
+  (heading topilmadi)" deb yozilsin. Hech narsani buzmaydi, hisobot rostgo'y
+  bo'ladi.
+- **Muqobil (qattiq):** heading topilmasa `False` qaytarish → `TITLE_MISMATCH`.
+  Xavfi: heading ishlatmaydigan legacy sahifalar (dashboard, grafik) yiqilishi
+  mumkin — avval qaysilari borligini tekshirish kerak.
+
+### Bosqich 4 — Hisobot sifati
+
+#### 4.1. `duration_ms` yig'iladi, lekin ishlatilmaydi `Taklif 3`
+- **Joyi:** `form_monitor.py:765, 837` (o'lchanadi) →
+  `render_monitor_summary` (`:484`) da vaqt haqida **hech narsa yo'q**
+- **Muammo:** Run 155 s davom etdi. Ertaga 240 s bo'lsa — qaysi forma
+  sekinlashganini bilishning yo'li yo'q. Bu server degradatsiyasining eng erta
+  signali: forma hali ochiladi (test yashil), lekin 2 barobar sekin.
+- **Yechim:** Summary'ga "eng sekin 5 forma + o'rtacha + jami" bo'limi.
+  Ma'lumot allaqachon yig'ilgan, qo'shimcha o'lchov shart emas.
+
+### Bosqich 5 — JS va network xatolari `Taklif 1`
+
+- **Muammo:** Monitor formaning sog'lig'ini faqat **ko'zga ko'rinadigan**
+  narsalar bilan o'lchaydi: heading, URL, alert div'i, loader. Real hayotda
+  buzuq forma ko'pincha **jim** yiqiladi:
+
+  | Nima bo'ladi | Ekranda | Monitor |
+  |---|---|---|
+  | API `500`, grid bo'sh qoldi | heading bor, jadval bo'sh | ✅ PASSED |
+  | JS exception, filtr paneli chizilmadi | heading bor | ✅ PASSED |
+  | `403` — dostup yo'q, alert chiqmadi | heading bor | ✅ PASSED |
+  | Ma'lumot so'rovi timeout bo'ldi | heading bor, spinner o'chgan | ✅ PASSED |
+
+  Ya'ni suite hozir faqat "ochiladimi" qismini o'lchayapti, "ishlaydimi" ni yo'q.
+- **Yechim, ikki qadam:**
+  1. **Faqat yig'ish** — har case boshida ro'yxatni tozalab,
+     `page.on("pageerror")` va `page.on("response")` (4xx/5xx) natijasini
+     `checks` ga yozish (`js_errors`, `failed_requests`). Formani
+     **yiqitmaydi**. To'liq Forms group ishlatib "shovqin" hajmini ko'rish
+     (analytics, favicon 404 kabi).
+  2. **Qattiqlashtirish** — 1-qadam natijasiga qarab filtr yozish va
+     `_assert_healthy_form_state` ga qo'shish.
+- **Yaxshi tomoni:** pattern loyihada bor — `tests/smoke/smoke_reporting.py:80`
+  (`page.on("response", remember_first_unauthorized)`).
+- **Hajmi:** bir necha suhbat oladi, shuning uchun oxirida.
+
+### Bosqich 6 — Shell helper refactori `Taklif 4`
+
+- **Joyi:** `flow.py:308, 326, 347, 384, 471` — `if "/a2/" in page.url`
+  tarmoqlanishi 5 joyda takrorlanadi
+- **Muammo:** Shell-ga bog'liq yangi amal qo'shganda yana yozish kerak.
+  Bittasini esdan chiqarsangiz — A2 sahifada legacy locator ishlatiladi va
+  xato sababi tushunarsiz bo'ladi.
+- **Yechim:** `shell_page(page)` helperi — `AngularBasePage` yoki `BasePage`
+  qaytaradi.
+- **Holat:** Bu struktura refactori, nuqta-fix emas. **Foydalanuvchi qarori
+  kutilmoqda**, majburiy emas.
+
+---
+
+## Qamrovdan Tashqarida Qoldirilganlar
+
+### Skip qilingan formalar hisobotda ko'rinmaydi `#5`
+Foydalanuvchi bu topilmani hozirgi rejaga qo'shmadi. Yozib qo'yiladi:
+
+| Suite | Ro'yxatda | Aktiv | Skip |
+|---|---|---|---|
+| Forms-01 | 100 | 88 | 12 |
+| Forms-02 | 22 | 21 | 1 |
+| Forms-03 | 39 | 38 | 1 |
+
+Summary faqat `Rejalashtirilgan: 88` deydi. Hisobotni o'qigan odam 12 forma
+tekshirilmaganini bilmaydi — "hammasi qoplangan" degan taassurot qoladi.
+Yechim: `build_form_case_plan` (`:404`) skip'larni ham qaytarsin, monitor
+`SKIP QILINGAN FORMALAR` bo'limini chiqarsin.
+
+### `allowed_warnings` exact-match mo'rtligi `Taklif 2`
+`form_monitor.py:86` whitespace normalizatsiya + `×` prefiks olib tashlash +
+**aynan** taqqoslash. Yuqoridagi matn siljishi (3.1) buning mo'rtligini
+ko'rsatdi. Substring yoki kalit so'zlar ro'yxati ishonchliroq bo'lardi.
+**Hozir kerak emas** — `+add` case'lar olib tashlangani uchun bu mexanizmni
+hech qaysi suite ishlatmaydi. Kelajakda creation forma tekshirilsa qaytiladi.
+
+### Natija dict'idagi `"ok"` kaliti
+Bosqich 1 da `ok` **parametri** olib tashlandi, lekin natijadagi `"ok"` kaliti
+qoldi. U `form-monitor.json` (`schema_version: 2`) ichida va tashqi consumer
+o'qishi mumkin — o'chirish schema o'zgarishi bo'ladi.
+
+---
+
+## Eski Unit Test Faillari (bu ish bilan bog'liq emas)
+
+`main` da **allaqachon** 6 ta unit test yiqiladi. Bosqich 0/1 ularni ko'paytirmadi
+— har commit'dan oldin HEAD bilan solishtirib tasdiqlandi.
+
+```
+test_auth_diagnostics.py::test_change_password_requires_fresh_login_and_dashboard
+test_form_flow.py::test_safe_screenshot_masks_inputs_and_secret_columns
+test_product_setup.py::test_setup_products_use_separate_uzs_and_usd_price_types
+test_product_setup.py::test_setup_products_receive_separate_uzs_and_usd_balances
+test_telegram_reporting.py::test_success_message_shows_setup_and_forms_coverage
+test_telegram_reporting.py::test_failure_details_are_collapsed_and_html_escaped
+```
+
+Telegram'dagi ikkitasi xabar formati o'zgargani sababli ko'rinadi
+(`🧪 Pytest:` → `🧪 Pytest cases:`, `🧾 Forms: 5/6 forma ochildi` yo'qolgan).
+Alohida ish sifatida hal qilinadi.
+
+---
+
+## Har Commit'dan Oldin Tekshiruv Ro'yxati
+
+```bash
+# 1. Kompilyatsiya
+.venv/bin/python -m py_compile tests/smoke/test_forms/*.py
+
+# 2. Unit testlar — 6 dan oshmasligi kerak
+.venv/bin/python -m pytest tests/unit -q --maxfail=999 2>&1 | grep -c "^FAILED"
+
+# 3. Raqamlash uzluksizligi va forma sonlari (88 / 21 / 38)
+
+# 4. Bilim bazasi validatori
+.venv/bin/python skills/smartup-guide/scripts/validate_knowledge_base.py
+
+# 5. Bosqich 2 dan boshlab — real run
+#    Tez feedback: Forms-03 (38 forma, ~2.5 min)
+#    Yakuniy: to'liq Forms group (147 forma, ~10 min)
+```
