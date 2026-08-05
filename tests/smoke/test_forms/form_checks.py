@@ -6,6 +6,7 @@ import re
 
 
 PASSED = "PASSED"
+OBSERVED_ONLY = "OBSERVED_ONLY"
 OPENED_WITH_DEFECT = "OPENED_WITH_DEFECT"
 NOT_OPENED = "NOT_OPENED"
 TEST_BLOCKED = "TEST_BLOCKED"
@@ -13,6 +14,7 @@ NOT_CHECKED = "NOT_CHECKED"
 
 FORM_STATUSES = {
     PASSED,
+    OBSERVED_ONLY,
     OPENED_WITH_DEFECT,
     NOT_OPENED,
     TEST_BLOCKED,
@@ -263,9 +265,12 @@ def normalize_enabled_names(value, *, available=CHECK_NAMES, option_name="checks
     """``None``=all, bo'sh ro'yxat=none, ro'yxat=faqat tanlangan nomlar."""
     if value is None:
         return tuple(available)
-    if isinstance(value, str):
-        raise ValueError(f"{option_name} string emas, list[str] bo'lishi kerak")
+    if not isinstance(value, list):
+        raise ValueError(f"{option_name} list[str] bo'lishi kerak")
     names = list(value)
+    invalid = [name for name in names if not isinstance(name, str) or not name]
+    if invalid:
+        raise ValueError(f"{option_name} ichida noto'g'ri nomlar: {invalid}")
     duplicates = sorted({name for name in names if names.count(name) > 1})
     if duplicates:
         raise ValueError(f"{option_name} ichida takrorlangan nomlar: {duplicates}")
@@ -276,28 +281,53 @@ def normalize_enabled_names(value, *, available=CHECK_NAMES, option_name="checks
 
 
 def evaluate_checks(case, state, *, enabled_names=None):
-    enabled = normalize_enabled_names(enabled_names)
+    enabled = set(normalize_enabled_names(enabled_names))
     return {
-        name: CHECK_FUNCTIONS[name](case, state)
-        for name in enabled
+        name: (
+            CHECK_FUNCTIONS[name](case, state)
+            if name in enabled
+            else {
+                "name": name,
+                "enabled": False,
+                "passed": None,
+                "reason_code": "",
+                "reason_summary": "",
+                "expected": "",
+                "actual": "",
+                "detail": "",
+                "status": "",
+                "opened": False,
+            }
+        )
+        for name in CHECK_NAMES
     }
 
 
 def primary_check_failure(check_results):
     for name in CHECK_NAMES:
         result = check_results.get(name)
-        if result and not result["passed"]:
+        if result and result["enabled"] and not result["passed"]:
             return result
     return None
 
 
-def assert_healthy_form_state(case, state):
-    failure = primary_check_failure(evaluate_checks(case, state))
+def assert_healthy_form_state(case, state, *, enabled_names=None):
+    failure = primary_check_failure(
+        evaluate_checks(case, state, enabled_names=enabled_names)
+    )
     if failure:
         raise AssertionError(failure["detail"])
 
 
-def classify_form_failure(*, case, stage, detail, state):
+def classify_form_failure(
+    *,
+    case,
+    stage,
+    detail,
+    state,
+    enabled_names=None,
+    check_results=None,
+):
     """Kutilgan UI exception va sahifa signallaridan QA holatini chiqaradi."""
     lower_detail = clean_text(detail).lower()
 
@@ -319,7 +349,12 @@ def classify_form_failure(*, case, stage, detail, state):
             "opened": False,
         }
 
-    failure = primary_check_failure(evaluate_checks(case, state))
+    results = check_results or evaluate_checks(
+        case,
+        state,
+        enabled_names=enabled_names,
+    )
+    failure = primary_check_failure(results)
     if failure:
         return {
             "status": failure["status"],

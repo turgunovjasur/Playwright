@@ -13,9 +13,11 @@ from playwright.sync_api import Error as PlaywrightError
 from tests.smoke.progress import emit_progress_event
 from tests.smoke.smoke_reporting import safe_page_screenshot
 from tests.smoke.test_forms.form_checks import (
+    CHECK_NAMES,
     FORM_STATUSES,
     NOT_CHECKED,
     NOT_OPENED,
+    OBSERVED_ONLY,
     OPENED_WITH_DEFECT,
     PASSED,
     TEST_BLOCKED,
@@ -25,6 +27,7 @@ from tests.smoke.test_forms.form_checks import (
     clean_text as _clean_text,
     evaluate_checks,
     normalize_allowed_warnings as _normalize_allowed_warnings,
+    normalize_enabled_names,
     reason_description,
     title_verified as _title_verified,
 )
@@ -34,10 +37,10 @@ from tests.smoke.test_forms.form_diagnostics import (
     CAPTURE_JS_ERROR_SCRIPT,
     CAPTURE_READ_SCRIPT,
     CAPTURE_RESET_SCRIPT,
+    DIAGNOSTIC_NAMES,
     EMPTY_CAPTURE_SIGNALS,
     MAX_PAGE_EVENTS,
     capture_form_state,
-    diagnose_failed_requests,
     evaluate_diagnostics,
     failed_request_label as _failed_request_label,
     js_error_label as _js_error_label,
@@ -48,6 +51,7 @@ from tests.smoke.test_forms.flow import (
     build_form_result,
     form_step_title,
     format_form_result,
+    settle_form_open,
     write_terminal_report,
 )
 from tests.smoke.test_forms.skipped_forms import skipped_form
@@ -409,6 +413,7 @@ def render_monitor_summary(
         f"Validatsiyadan o'tgan  : {metrics['validation_passed']}",
         f"Foydalanishga tayyor   : {metrics['usable']}",
         f"✅ Muvaffaqiyatli       : {counts[PASSED]}",
+        f"👁️ Faqat kuzatildi      : {counts[OBSERVED_ONLY]}",
         f"⚠️ Ochildi, nuqson     : {counts[OPENED_WITH_DEFECT]}",
         f"❌ Ochilmadi            : {counts[NOT_OPENED]}",
         f"⛔ Test bloklandi       : {counts[TEST_BLOCKED]}",
@@ -444,7 +449,11 @@ def render_monitor_summary(
     title_unverified = [
         result
         for result in results
-        if result.get("checks") and not result["checks"].get("title_verified")
+        if result.get("checks")
+        and result["checks"].get("hard_checks", {})
+        .get("title", {"enabled": True})
+        .get("enabled", True)
+        and not result["checks"].get("title_verified")
     ]
     if title_unverified:
         lines.extend(["TITLE TAQQOSLANMAGAN FORMALAR", "-" * 88])
@@ -521,6 +530,8 @@ class FormMonitor:
         progress_runner="test_0_forms_runner.py",
         progress_test_id="forms",
         skipped_cases=None,
+        checks=None,
+        diagnostics=None,
     ):
         self.page = page
         self.suite_name = suite_name
@@ -529,6 +540,12 @@ class FormMonitor:
         self.terminal_reporter = terminal_reporter
         self.progress_runner = progress_runner
         self.progress_test_id = progress_test_id
+        self.enabled_checks = normalize_enabled_names(checks)
+        self.enabled_diagnostics = normalize_enabled_names(
+            diagnostics,
+            available=DIAGNOSTIC_NAMES,
+            option_name="diagnostics",
+        )
         self.results = []
         self.blockers = []
         self.blocked = False
@@ -555,14 +572,28 @@ class FormMonitor:
         global ``error`` eventida ``preventDefault()`` chaqiradi, shuning uchun
         A2 formalarida bu kanal ko'r — batafsil `ui-patterns.md`.
         """
+        self._pageerror_listener_installed = False
+        self._response_listener_installed = False
         try:
-            self.page.on("pageerror", self._record_js_error)
-            self.page.on("response", self._record_failed_request)
+            if "javascript" in self.enabled_checks:
+                self.page.on("pageerror", self._record_js_error)
+                self._pageerror_listener_installed = True
+            if "failed_requests" in self.enabled_diagnostics:
+                self.page.on("response", self._record_failed_request)
+                self._response_listener_installed = True
         except (AttributeError, TypeError):
             self._listeners_installed = False
             return
-        self._listeners_installed = True
-        self._install_capture_js_error_script()
+        self._listeners_installed = (
+            self._pageerror_listener_installed
+            or self._response_listener_installed
+        )
+        if (
+            "javascript" in self.enabled_checks
+            or "resource_errors" in self.enabled_diagnostics
+            or "promise_rejections" in self.enabled_diagnostics
+        ):
+            self._install_capture_js_error_script()
 
     def _install_capture_js_error_script(self):
         """A2 uchun canonical capture-fazali JS xato kuzatuvini yoqadi.
@@ -584,8 +615,10 @@ class FormMonitor:
         if not getattr(self, "_listeners_installed", False):
             return
         try:
-            self.page.remove_listener("pageerror", self._record_js_error)
-            self.page.remove_listener("response", self._record_failed_request)
+            if self._pageerror_listener_installed:
+                self.page.remove_listener("pageerror", self._record_js_error)
+            if self._response_listener_installed:
+                self.page.remove_listener("response", self._record_failed_request)
         except (AttributeError, TypeError, ValueError, KeyError):
             pass
         self._listeners_installed = False
@@ -612,7 +645,12 @@ class FormMonitor:
         self.failed_requests = []
         self.js_error_count = 0
         self.failed_request_count = 0
-        _reset_capture_signals(self.page)
+        if (
+            "javascript" in self.enabled_checks
+            or "resource_errors" in self.enabled_diagnostics
+            or "promise_rejections" in self.enabled_diagnostics
+        ):
+            _reset_capture_signals(self.page)
 
     def update_filial(self, placeholder, actual_name):
         for case in self.planned_cases + self.skipped_cases:
@@ -710,67 +748,123 @@ class FormMonitor:
         )
 
     @staticmethod
-    def _checks(case, state):
-        hard_checks = evaluate_checks(case, state)
+    def _checks(
+        case,
+        state,
+        *,
+        enabled_checks=None,
+        enabled_diagnostics=None,
+        page_events=None,
+    ):
+        hard_checks = evaluate_checks(
+            case,
+            state,
+            enabled_names=enabled_checks,
+        )
         diagnostics = evaluate_diagnostics(
             state,
-            {},
-            enabled_names=(
-                "busy",
-                "resource_errors",
-                "promise_rejections",
-                "title_metadata",
-            ),
+            page_events or {},
+            enabled_names=enabled_diagnostics,
         )
         path_matches = hard_checks["url"]["passed"]
         allowed_warning = _allowed_warning_text(case, state)
         visible_error = hard_checks["application_error"]["actual"]
-        js_errors = list(state.get("js_errors") or [])
+        js_errors = (
+            list(state.get("js_errors") or [])
+            if hard_checks["javascript"]["enabled"]
+            else []
+        )
         capture = state.get("capture_signals") or EMPTY_CAPTURE_SIGNALS
         resources = diagnostics["resource_errors"]
         promises = diagnostics["promise_rejections"]
         busy = diagnostics["busy"]
-        title_metadata = diagnostics["title_metadata"]
-        usable = (
-            path_matches
-            and bool(state.get("content_ready"))
-            and not bool(state.get("loader_visible"))
-            and not bool(visible_error)
-            and not js_errors
+        failed_requests = diagnostics["failed_requests"]
+        usability_names = (
+            "url",
+            "application_error",
+            "javascript",
+            "loader",
+            "content_ready",
+        )
+        enabled_usability_checks = [
+            hard_checks[name]
+            for name in usability_names
+            if hard_checks[name]["enabled"]
+        ]
+        usable = bool(enabled_usability_checks) and all(
+            result["passed"] for result in enabled_usability_checks
         )
         return {
             "js_errors": js_errors,
-            "js_error_count": int(state.get("js_error_count") or 0),
-            "js_error_source": state.get("js_error_source") or "",
-            "capture_js_errors": list(
-                capture.get("js_errors") or []
-            )[:MAX_PAGE_EVENTS],
-            "capture_js_error_count": int(capture.get("js_error_count") or 0),
-            "capture_resource_errors": resources["samples"],
-            "capture_resource_error_count": resources["count"],
-            "promise_rejections": promises["samples"],
-            "promise_rejection_count": promises["count"],
+            "js_error_count": (
+                int(state.get("js_error_count") or 0)
+                if hard_checks["javascript"]["enabled"]
+                else 0
+            ),
+            "js_error_source": (
+                state.get("js_error_source") or ""
+                if hard_checks["javascript"]["enabled"]
+                else ""
+            ),
+            "capture_js_errors": (
+                list(capture.get("js_errors") or [])[:MAX_PAGE_EVENTS]
+                if hard_checks["javascript"]["enabled"]
+                else []
+            ),
+            "capture_js_error_count": (
+                int(capture.get("js_error_count") or 0)
+                if hard_checks["javascript"]["enabled"]
+                else 0
+            ),
+            "capture_resource_errors": resources.get("samples", []),
+            "capture_resource_error_count": resources.get("count", 0),
+            "promise_rejections": promises.get("samples", []),
+            "promise_rejection_count": promises.get("count", 0),
+            "failed_requests": failed_requests.get("samples", []),
+            "failed_request_count": failed_requests.get("count", 0),
             "url_matches": path_matches,
             "title_matches": hard_checks["title"]["passed"],
-            "title_verified": _title_verified(case, state),
-            "title_source": title_metadata["source"],
-            "document_title": title_metadata["document_title"],
+            "title_verified": (
+                _title_verified(case, state)
+                if hard_checks["title"]["enabled"]
+                else False
+            ),
+            "title_source": state.get("title_source") or "",
+            "document_title": state.get("document_title") or "",
             "content_ready": hard_checks["content_ready"]["passed"],
             "ready_required": bool(state.get("ready_required")),
             "ready_visible": bool(state.get("ready_visible")),
-            "loader_visible": not hard_checks["loader"]["passed"],
-            "busy_visible": busy["visible"],
-            "busy_visible_count": busy["count"],
+            "loader_visible": (
+                not hard_checks["loader"]["passed"]
+                if hard_checks["loader"]["enabled"]
+                else False
+            ),
+            "busy_visible": busy.get("visible", False),
+            "busy_visible_count": busy.get("count", 0),
             "visible_error": visible_error,
             "allowed_warning": allowed_warning,
             "usable": usable,
+            "hard_checks": hard_checks,
+            "diagnostics": diagnostics,
+            "enabled_checks": [
+                name for name in CHECK_NAMES if hard_checks[name]["enabled"]
+            ],
+            "enabled_diagnostics": [
+                name
+                for name in DIAGNOSTIC_NAMES
+                if diagnostics[name]["enabled"]
+            ],
         }
 
     def _capture_state(self, case=None):
         """Shellga mos yagona effective JS kanalini sahifa holatiga qo'shadi."""
         state = capture_form_state(self.page, ready=(case or {}).get("ready"))
         capture = state.get("capture_signals") or EMPTY_CAPTURE_SIGNALS
-        if "/a2/" in state.get("actual_url", ""):
+        if "javascript" not in self.enabled_checks:
+            state["js_errors"] = []
+            state["js_error_count"] = 0
+            state["js_error_source"] = "disabled"
+        elif "/a2/" in state.get("actual_url", ""):
             state["js_errors"] = list(capture["js_errors"])
             state["js_error_count"] = capture["js_error_count"]
             state["js_error_source"] = "capture"
@@ -786,15 +880,16 @@ class FormMonitor:
         JS xatolari ``state`` orqali ``_checks`` ga yetib boradi va statusga
         ta'sir qiladi; network signallari esa hozir faqat qayd qilinadi.
         """
-        checks = self._checks(case, state)
-        failed_requests = diagnose_failed_requests(
-            {
+        checks = self._checks(
+            case,
+            state,
+            enabled_checks=list(self.enabled_checks),
+            enabled_diagnostics=list(self.enabled_diagnostics),
+            page_events={
                 "failed_requests": self.failed_requests,
                 "failed_request_count": self.failed_request_count,
-            }
+            },
         )
-        checks["failed_requests"] = failed_requests["samples"]
-        checks["failed_request_count"] = failed_requests["count"]
         return checks
 
     def _failure_result(
@@ -810,13 +905,15 @@ class FormMonitor:
     ):
         state = state or self._capture_state(case)
         detail = _clean_text(exc)
+        checks = self._case_checks(case, state)
         analysis = classify_form_failure(
             case=case,
             stage=stage,
             detail=detail,
             state=state,
+            enabled_names=list(self.enabled_checks),
+            check_results=checks["hard_checks"],
         )
-        checks = self._case_checks(case, state)
         result = build_form_result(
             number=case["number"],
             filial=case["filial"],
@@ -837,7 +934,15 @@ class FormMonitor:
             expected_title=case["title"],
             actual_title=state["actual_title"],
             opened=analysis["opened"],
-            page_reached=(checks["url_matches"] if test_started else False),
+            page_reached=(
+                stage == "validation"
+                and test_started
+                and (
+                    checks["url_matches"]
+                    if "url" in self.enabled_checks
+                    else True
+                )
+            ),
             test_started=test_started,
             test_completed=test_completed,
             validation_completed=(stage == "validation" and test_started),
@@ -850,7 +955,7 @@ class FormMonitor:
         )
         return self._append_result(result)
 
-    def run_case(self, case, *, navigate, validate):
+    def run_case(self, case, *, navigate):
         """Bitta formani kuzatadi; kutilgan UI xatosidan keyin davom etadi."""
         if self.blocked:
             return None
@@ -860,6 +965,7 @@ class FormMonitor:
         stage = "navigation"
         failure_result = None
         state = None
+        previous_url = getattr(self.page, "url", "") or ""
         step_title = form_step_title(
             number=case["number"],
             filial=case["filial"],
@@ -877,9 +983,18 @@ class FormMonitor:
                         f"Tekshiruv | Forma: {case['title']} | "
                         f"Kutilgan URL: {case.get('expected_path') or '—'}"
                     ):
-                        validate()
+                        settle_detail = settle_form_open(
+                            self.page,
+                            case=case,
+                            enabled_checks=self.enabled_checks,
+                            previous_url=previous_url,
+                        )
                         state = self._capture_state(case)
-                        _assert_healthy_form_state(case, state)
+                        _assert_healthy_form_state(
+                            case,
+                            state,
+                            enabled_names=list(self.enabled_checks),
+                        )
                 except (AssertionError, PlaywrightError) as exc:
                     failure_result = self._failure_result(
                         case=case,
@@ -894,6 +1009,9 @@ class FormMonitor:
                     raise
 
                 checks = self._case_checks(case, state)
+                checks["settle_detail"] = _clean_text(settle_detail)
+                observed_only = not self.enabled_checks
+                status = OBSERVED_ONLY if observed_only else PASSED
                 result = build_form_result(
                     number=case["number"],
                     filial=case["filial"],
@@ -906,7 +1024,7 @@ class FormMonitor:
                     page_links=case.get("page_links"),
                     action=case.get("action"),
                     add_icon=case.get("add_icon", False),
-                    status=PASSED,
+                    status=status,
                     reason_code="",
                     failed_stage="",
                     expected_title=case["title"],
@@ -915,16 +1033,19 @@ class FormMonitor:
                     page_reached=True,
                     test_started=True,
                     test_completed=True,
-                    validation_completed=True,
-                    validation_passed=True,
-                    usable=True,
+                    validation_completed=not observed_only,
+                    validation_passed=not observed_only,
+                    usable=checks["usable"],
                     checks=checks,
                     shell=_shell_from_url(state["actual_url"], case.get("shell")),
                     suite=self.suite_name,
                     duration_ms=int((time.monotonic() - started_at) * 1000),
                 )
                 self._append_result(result)
-                with allure.step(f"Natija: OCHILDI | Haqiqiy URL: {state['actual_url']}"):
+                result_label = "KUZATILDI" if observed_only else "OCHILDI"
+                with allure.step(
+                    f"Natija: {result_label} | Haqiqiy URL: {state['actual_url']}"
+                ):
                     pass
         except (AssertionError, PlaywrightError):
             return failure_result
@@ -1093,7 +1214,7 @@ class FormMonitor:
         actionable = [
             result
             for result in ordered_results
-            if result["status"] not in {PASSED, NOT_CHECKED}
+            if result["status"] not in {PASSED, OBSERVED_ONLY, NOT_CHECKED}
         ]
         if actionable or counts[NOT_CHECKED]:
             failures = "\n".join(
@@ -1105,6 +1226,7 @@ class FormMonitor:
             raise AssertionError(
                 f"{self.suite_name}: reja={len(ordered_results)}, "
                 f"muvaffaqiyatli={counts[PASSED]}, "
+                f"faqat_kuzatildi={counts[OBSERVED_ONLY]}, "
                 f"nuqsonli={counts[OPENED_WITH_DEFECT]}, "
                 f"ochilmadi={counts[NOT_OPENED]}, "
                 f"bloklandi={counts[TEST_BLOCKED]}, "

@@ -104,12 +104,17 @@ def build_form_result(
     links = list(page_links or [])
     status_icons = {
         "PASSED": "✅",
+        "OBSERVED_ONLY": "👁️",
         "OPENED_WITH_DEFECT": "⚠️",
         "NOT_OPENED": "❌",
         "TEST_BLOCKED": "⛔",
         "NOT_CHECKED": "⬜",
     }
-    inferred_page_reached = (status == "PASSED") if opened is None else bool(opened)
+    inferred_page_reached = (
+        status in {"PASSED", "OBSERVED_ONLY"}
+        if opened is None
+        else bool(opened)
+    )
     if page_reached is None:
         page_reached = inferred_page_reached
     if test_started is None:
@@ -173,6 +178,7 @@ def format_form_result(result):
     status_code = result["status"]
     status_labels = {
         "PASSED": "✅ OCHILDI",
+        "OBSERVED_ONLY": "👁️ FAQAT KUZATILDI — HARD CHECKLAR O‘CHIRILGAN",
         "OPENED_WITH_DEFECT": "⚠️ OCHILDI, LEKIN NUQSON BOR",
         "NOT_OPENED": "❌ OCHILMADI",
         "TEST_BLOCKED": "⛔ TEST BOSHLANISHIDAN OLDIN BLOKLANDI",
@@ -203,7 +209,17 @@ def format_form_result(result):
         f"  Kutilgan URL       : {result['expected_path']}",
         f"  Haqiqiy URL        : {result['actual_url'] or '—'}",
     ]
-    if status_code != "PASSED":
+    if status_code == "OBSERVED_ONLY":
+        checks = result.get("checks") or {}
+        lines.extend(
+            [
+                "  Holat              : OBSERVED_ONLY",
+                "  Izoh               : Navigatsiya bajarildi, hard checklar ishlamadi",
+                "  Diagnostikalar     : "
+                f"{', '.join(checks.get('enabled_diagnostics') or []) or 'o‘chirilgan'}",
+            ]
+        )
+    elif status_code != "PASSED":
         lines.extend(
             [
                 f"  Holat              : {status_code}",
@@ -483,38 +499,74 @@ def open_create_dropdown_form(
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def expect_form_open(page, *, title, path=None, ready=None, add_icon=False):
-    """Destination title/path, readiness va ``+add`` URL signalini tekshiradi."""
-    if "/a2/" in page.url:
-        AngularBasePage(page).expect_page(
-            title=title,
-            url=path,
-            ready=ready,
-            timeout=FORM_TIMEOUT,
-        )
-    else:
-        BasePage(page).expect_page(
-            heading=title,
-            url=path,
-            timeout=FORM_TIMEOUT,
-        )
 
-    if add_icon:
-        expect(page).to_have_url(
-            re.compile(r"\+add(?:$|[?#])"),
-            timeout=FORM_TIMEOUT,
-        )
 
-    canonical_path = canonical_form_path(page.url)
-    if not canonical_path or canonical_path in {
-        "dashboard",
-        "trade/intro/dashboard",
-    }:
-        raise AssertionError(
-            f"Forma canonical pathi ochilmadi: title='{title}', url={page.url}"
-        )
+def settle_form_open(page, *, case, enabled_checks, previous_url):
+    """Enabled checklar uchun bitta bounded auto-wait qiladi, failure chiqarmaydi.
 
-    return canonical_path
+    Yakuniy pass/fail qarorini ``FormMonitor`` bitta final snapshotdan chiqaradi.
+    Bu helper faqat SPA transition tugashiga vaqt beradi va timeout detailini
+    diagnostika sifatida qaytaradi.
+    """
+    enabled = set(enabled_checks)
+    expected_path = case.get("expected_path") if "url" in enabled else None
+    expected_title = case.get("title") if "title" in enabled else None
+    ready = case.get("ready") if "content_ready" in enabled else None
+
+    try:
+        if "/a2/" in page.url:
+            if expected_path or expected_title or ready:
+                AngularBasePage(page).expect_page(
+                    title=expected_title,
+                    url=expected_path,
+                    ready=ready,
+                    timeout=FORM_TIMEOUT,
+                    check_unblocked=False,
+                )
+            elif "content_ready" in enabled:
+                expect(page.locator("main:visible").first).to_be_visible(
+                    timeout=FORM_TIMEOUT
+                )
+            else:
+                expect(page).not_to_have_url(
+                    re.compile(rf"^{re.escape(previous_url)}$"),
+                    timeout=FORM_TIMEOUT,
+                )
+        else:
+            if expected_path or expected_title:
+                BasePage(page).expect_page(
+                    heading=expected_title,
+                    url=expected_path,
+                    timeout=FORM_TIMEOUT,
+                    check_unblocked=False,
+                )
+            elif ready:
+                expect(page.locator(ready).first).to_be_visible(timeout=FORM_TIMEOUT)
+            elif "content_ready" in enabled:
+                expect(
+                    page.locator("b-page:visible, .subheader:visible").first
+                ).to_be_visible(timeout=FORM_TIMEOUT)
+            else:
+                expect(page).not_to_have_url(
+                    re.compile(rf"^{re.escape(previous_url)}$"),
+                    timeout=FORM_TIMEOUT,
+                )
+
+        if "loader" in enabled:
+            expect(
+                page.locator(
+                    ".block-ui-overlay:visible, .smt-skeleton:visible"
+                )
+            ).to_have_count(0, timeout=FORM_TIMEOUT)
+
+        if case.get("add_icon") and "url" in enabled:
+            expect(page).to_have_url(
+                re.compile(r"\+add(?:$|[?#])"),
+                timeout=FORM_TIMEOUT,
+            )
+    except (AssertionError, PlaywrightTimeoutError) as exc:
+        return str(exc)
+    return ""
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -550,11 +602,4 @@ def run_form_cases(page, cases, *, monitor):
         monitor.run_case(
             case,
             navigate=lambda current_case=case: navigate_form_case(page, current_case),
-            validate=lambda current_case=case: expect_form_open(
-                page,
-                title=current_case["title"],
-                path=current_case.get("expected_path"),
-                ready=current_case.get("ready"),
-                add_icon=current_case.get("add_icon", False),
-            ),
         )

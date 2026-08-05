@@ -32,8 +32,8 @@
 |---|---|---|
 | 1. Final plan va baseline | COMPLETED | `eb87ba1` |
 | 2. Check modulini ajratish | COMPLETED | `7a89862` |
-| 3. Diagnostika modulini ajratish | COMPLETED | task commit |
-| 4. Configurable FormMonitor va `OBSERVED_ONLY` | PENDING | — |
+| 3. Diagnostika modulini ajratish | COMPLETED | `b052b6d` |
+| 4. Configurable FormMonitor va `OBSERVED_ONLY` | COMPLETED | task commit |
 | 5. Case identity, avtomatik label va menu-column runner | PENDING | — |
 | 6. Mavjud Forms testlari va runner migratsiyasi | PENDING | — |
 | 7. Reporting schema/analyzer/docs | PENDING | — |
@@ -197,30 +197,30 @@
 - Consumes: `checks=None | list[str]`, `diagnostics=None | list[str]`.
 - Produces: test-level enabled-name contract, `OBSERVED_ONLY` status va bitta final snapshotdan result.
 
-- [ ] **Step 1: konfiguratsiya semantikasini implement qilish**
+- [x] **Step 1: konfiguratsiya semantikasini implement qilish**
 
   - `None` → barcha registered nomlar;
   - `[]` → hech biri;
   - `list[str]` → faqat ko‘rsatilganlari;
   - unknown yoki duplicate nom → aniq `ValueError`.
 
-- [ ] **Step 2: tashqi hard-validation dublikatini olib tashlash**
+- [x] **Step 2: tashqi hard-validation dublikatini olib tashlash**
 
   `run_form_cases()` endi `validate=lambda: expect_form_open(...)` bermaydi. `FormMonitor.run_case(case, navigate=...)` enabled checklarni o‘zi bajaradi.
 
-- [ ] **Step 3: bitta bounded settle va final snapshot ishlatish**
+- [x] **Step 3: bitta bounded settle va final snapshot ishlatish**
 
   Navigatsiyadan keyin shell transitioni bir marta settle qilinadi; barcha enabled checklar bir xil final state’dan baholanadi. Har check uchun ketma-ket 15 soniyalik alohida timeout ishlatilmaydi.
 
-- [ ] **Step 4: `OBSERVED_ONLY` statusini qo‘shish**
+- [x] **Step 4: `OBSERVED_ONLY` statusini qo‘shish**
 
   Navigatsiya muvaffaqiyatli va enabled hard checklar soni nol bo‘lsa result `OBSERVED_ONLY`. Navigation yoki precondition failure mavjud status/reason bilan qoladi. `finish()` `OBSERVED_ONLY`ni actionable failure deb hisoblamaydi.
 
-- [ ] **Step 5: disabled signal report kontraktini saqlash**
+- [x] **Step 5: disabled signal report kontraktini saqlash**
 
   Har registered check/diagnostic JSONda `enabled` holati bilan ko‘rinadi; disabled signal pass sifatida ko‘rsatilmaydi.
 
-- [ ] **Step 6: static verifikatsiya va commit**
+- [x] **Step 6: static verifikatsiya va commit**
 
   Syntax parse, exact API/reference search va `git diff --check`dan keyin alohida commit.
 

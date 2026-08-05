@@ -7,7 +7,7 @@ from urllib.parse import urlsplit
 from playwright.sync_api import Error as PlaywrightError
 
 from tests.smoke.test_forms.flow import canonical_form_path
-from tests.smoke.test_forms.form_checks import clean_text
+from tests.smoke.test_forms.form_checks import clean_text, normalize_enabled_names
 
 
 ALERT_SELECTORS = (
@@ -359,8 +359,18 @@ DIAGNOSTIC_FUNCTIONS = {
 
 
 def evaluate_diagnostics(state, page_events, *, enabled_names=None):
-    enabled = DIAGNOSTIC_NAMES if enabled_names is None else tuple(enabled_names)
+    enabled = set(
+        normalize_enabled_names(
+            enabled_names,
+            available=DIAGNOSTIC_NAMES,
+            option_name="diagnostics",
+        )
+    )
     return {
-        name: DIAGNOSTIC_FUNCTIONS[name](state, page_events)
-        for name in enabled
+        name: (
+            DIAGNOSTIC_FUNCTIONS[name](state, page_events)
+            if name in enabled
+            else {"enabled": False}
+        )
+        for name in DIAGNOSTIC_NAMES
     }
