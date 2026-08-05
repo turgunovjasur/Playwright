@@ -13,6 +13,22 @@ from playwright.sync_api import Error as PlaywrightError
 
 from tests.smoke.progress import emit_progress_event
 from tests.smoke.smoke_reporting import safe_page_screenshot
+from tests.smoke.test_forms.form_checks import (
+    FORM_STATUSES,
+    NOT_CHECKED,
+    NOT_OPENED,
+    OPENED_WITH_DEFECT,
+    PASSED,
+    TEST_BLOCKED,
+    allowed_warning_text as _allowed_warning_text,
+    assert_healthy_form_state as _assert_healthy_form_state,
+    classify_form_failure,
+    clean_text as _clean_text,
+    evaluate_checks,
+    normalize_allowed_warnings as _normalize_allowed_warnings,
+    reason_description,
+    title_verified as _title_verified,
+)
 from tests.smoke.test_forms.flow import (
     build_form_result,
     canonical_form_path,
@@ -21,56 +37,6 @@ from tests.smoke.test_forms.flow import (
     write_terminal_report,
 )
 from tests.smoke.test_forms.skipped_forms import skipped_form
-
-
-PASSED = "PASSED"
-OPENED_WITH_DEFECT = "OPENED_WITH_DEFECT"
-NOT_OPENED = "NOT_OPENED"
-TEST_BLOCKED = "TEST_BLOCKED"
-NOT_CHECKED = "NOT_CHECKED"
-
-FORM_STATUSES = {
-    PASSED,
-    OPENED_WITH_DEFECT,
-    NOT_OPENED,
-    TEST_BLOCKED,
-    NOT_CHECKED,
-}
-
-REASON_DESCRIPTIONS = {
-    "TITLE_MISMATCH": (
-        "Target URLga yetildi va forma kontenti yuklandi, lekin sahifa title'i "
-        "kutilgan forma nomiga mos emas."
-    ),
-    "CONTENT_VALIDATION_FAILED": (
-        "Target URLga yetildi, lekin forma uchun belgilangan tekshiruv "
-        "muvaffaqiyatli tugamadi."
-    ),
-    "URL_MISMATCH": "Navigatsiyadan keyin kutilgan forma o'rniga boshqa URL ochildi.",
-    "NAVIGATION_FAILED": (
-        "Menu, action yoki page-link bosqichida target forma URLiga o'tib bo'lmadi."
-    ),
-    "APPLICATION_ERROR": "Target sahifada aniq UI xato xabari ko'rindi.",
-    "JS_ERROR": (
-        "Forma ochilishida brauzerda JS exception yuz berdi; sahifa jim buzilgan "
-        "bo'lishi mumkin."
-    ),
-    "LOADER_NOT_FINISHED": "Forma yuklanish indikatori belgilangan vaqtda tugamadi.",
-    "CONTENT_NOT_READY": "Target URLga yetildi, ammo forma kontenti tayyor bo'lmadi.",
-    "FILIAL_SWITCH_FAILED": (
-        "Kerakli filialga o'tib bo'lmadi; forma tekshiruvi boshlanmadi."
-    ),
-    "AUTHORIZATION_FAILED": (
-        "Avtorizatsiya tugamadi; forma tekshiruvi boshlanmadi."
-    ),
-    "PRECONDITION_FAILED": (
-        "Forma testidan oldingi majburiy tayyorlov bosqichi bajarilmadi."
-    ),
-    "BLOCKED_BY_PRECONDITION": (
-        "Oldingi majburiy tayyorlov xatosi sabab bu forma tekshirilmadi."
-    ),
-    "NOT_EXECUTED": "Bu forma uchun tekshiruv ishga tushmadi.",
-}
 
 ALERT_SELECTORS = (
     "#biruniAlertExtended:visible",
@@ -179,36 +145,6 @@ EMPTY_CAPTURE_SIGNALS = {
     "promise_rejections": [],
     "promise_rejection_count": 0,
 }
-
-
-def reason_description(reason_code):
-    return REASON_DESCRIPTIONS.get(reason_code, "")
-
-
-def _clean_text(value):
-    return re.sub(r"\s+", " ", str(value or "")).strip()
-
-
-def _normalize_allowed_warnings(value):
-    if value is None:
-        return []
-    values = [value] if isinstance(value, str) else list(value)
-    return [_clean_text(item) for item in values if _clean_text(item)]
-
-
-def _allowed_warning_text(case, state):
-    visible_error = _clean_text(state.get("visible_error"))
-    warning_text = re.sub(r"^×\s*", "", visible_error).strip()
-    if warning_text in _normalize_allowed_warnings(case.get("allowed_warnings")):
-        return warning_text
-    return ""
-
-
-def _unexpected_visible_error(case, state):
-    visible_error = _clean_text(state.get("visible_error"))
-    if visible_error and _allowed_warning_text(case, state):
-        return ""
-    return visible_error
 
 
 def _safe_page_title(page):
@@ -406,175 +342,6 @@ def capture_form_state(page, *, ready=None):
         "busy_visible": busy_visible_count > 0,
         "busy_visible_count": busy_visible_count,
     }
-
-
-def _path_matches(case, state):
-    expected_path = (case.get("expected_path") or "").strip("/")
-    actual_path = (state.get("canonical_path") or "").strip("/")
-    return not expected_path or actual_path == expected_path
-
-
-def _title_candidates(state):
-    return [
-        _clean_text(candidate)
-        for candidate in (state.get("title_candidates") or [])
-        if _clean_text(candidate)
-    ]
-
-
-def _title_verified(case, state):
-    """Title haqiqatan taqqoslandimi — hisobot ``HA`` deb yolg'on aytmasligi uchun.
-
-    Legacy sahifada bironta heading topilmasa ``_title_matches`` taqqoslamasdan
-    ``True`` qaytaradi; bu bayroq o'sha holatni hisobotda ochiq ko'rsatadi.
-    """
-    if not _clean_text(case.get("title")):
-        return False
-    if not _title_candidates(state) and state.get("title_source") == "visible_heading":
-        return False
-    return True
-
-
-def _title_matches(case, state):
-    expected_title = _clean_text(case.get("title"))
-    candidates = _title_candidates(state)
-    if not expected_title:
-        return True
-    if not candidates and state.get("title_source") == "visible_heading":
-        return True
-    if not candidates:
-        candidates = [_clean_text(state.get("actual_title"))]
-    return expected_title in candidates
-
-
-def classify_form_failure(*, case, stage, detail, state):
-    """Kutilgan UI exception va sahifa signallaridan QA holatini chiqaradi."""
-    lower_detail = _clean_text(detail).lower()
-    path_matches = _path_matches(case, state)
-    title_matches = _title_matches(case, state)
-    content_ready = bool(state.get("content_ready"))
-    visible_error = _unexpected_visible_error(case, state)
-
-    if stage == "suite_precondition":
-        lowered_operation = _clean_text(case.get("failed_operation")).lower()
-        if "filial" in lowered_operation or "filial" in lower_detail:
-            reason_code = "FILIAL_SWITCH_FAILED"
-        elif any(
-            marker in lowered_operation or marker in lower_detail
-            for marker in ("login", "authorization", "avtoriz")
-        ):
-            reason_code = "AUTHORIZATION_FAILED"
-        else:
-            reason_code = "PRECONDITION_FAILED"
-        return {
-            "status": TEST_BLOCKED,
-            "reason_code": reason_code,
-            "reason_summary": reason_description(reason_code),
-            "opened": False,
-        }
-
-    if not path_matches:
-        reason_code = "URL_MISMATCH" if state.get("canonical_path") else "NAVIGATION_FAILED"
-        return {
-            "status": NOT_OPENED,
-            "reason_code": reason_code,
-            "reason_summary": reason_description(reason_code),
-            "opened": False,
-        }
-
-    if visible_error:
-        return {
-            "status": OPENED_WITH_DEFECT,
-            "reason_code": "APPLICATION_ERROR",
-            "reason_summary": reason_description("APPLICATION_ERROR"),
-            "opened": True,
-        }
-
-    if state.get("js_errors"):
-        return {
-            "status": OPENED_WITH_DEFECT,
-            "reason_code": "JS_ERROR",
-            "reason_summary": reason_description("JS_ERROR"),
-            "opened": True,
-        }
-
-    if state.get("loader_visible"):
-        return {
-            "status": OPENED_WITH_DEFECT,
-            "reason_code": "LOADER_NOT_FINISHED",
-            "reason_summary": reason_description("LOADER_NOT_FINISHED"),
-            "opened": True,
-        }
-
-    if not content_ready:
-        return {
-            "status": NOT_OPENED,
-            "reason_code": "CONTENT_NOT_READY",
-            "reason_summary": reason_description("CONTENT_NOT_READY"),
-            "opened": True,
-        }
-
-    if not title_matches:
-        return {
-            "status": OPENED_WITH_DEFECT,
-            "reason_code": "TITLE_MISMATCH",
-            "reason_summary": reason_description("TITLE_MISMATCH"),
-            "opened": True,
-        }
-
-    if stage == "navigation":
-        return {
-            "status": NOT_OPENED,
-            "reason_code": "NAVIGATION_FAILED",
-            "reason_summary": reason_description("NAVIGATION_FAILED"),
-            "opened": True,
-        }
-
-    return {
-        "status": OPENED_WITH_DEFECT,
-        "reason_code": "CONTENT_VALIDATION_FAILED",
-        "reason_summary": reason_description("CONTENT_VALIDATION_FAILED"),
-        "opened": True,
-    }
-
-
-def _assert_healthy_form_state(case, state):
-    """Custom validate qaytganidan keyin ham markaziy sog'liq shartlarini majburlaydi."""
-    if not _path_matches(case, state):
-        raise AssertionError(
-            "Markaziy holat tekshiruvi [URL_MISMATCH]: "
-            f"expected={case.get('expected_path') or '—'}, "
-            f"actual={state.get('canonical_path') or '—'}"
-        )
-    visible_error = _unexpected_visible_error(case, state)
-    if visible_error:
-        raise AssertionError(
-            "Markaziy holat tekshiruvi [APPLICATION_ERROR]: "
-            f"{visible_error}"
-        )
-    js_errors = state.get("js_errors") or []
-    if js_errors:
-        raise AssertionError(
-            f"Markaziy holat tekshiruvi [JS_ERROR] ({len(js_errors)}): "
-            f"{'; '.join(js_errors)}"
-        )
-    if state.get("loader_visible"):
-        raise AssertionError("Markaziy holat tekshiruvi [LOADER_NOT_FINISHED]")
-    if not state.get("content_ready"):
-        ready_note = (
-            f"; required selector={case.get('ready')}"
-            if case.get("ready")
-            else ""
-        )
-        raise AssertionError(
-            f"Markaziy holat tekshiruvi [CONTENT_NOT_READY]{ready_note}"
-        )
-    if not _title_matches(case, state):
-        raise AssertionError(
-            "Markaziy holat tekshiruvi [TITLE_MISMATCH]: "
-            f"expected={case.get('title') or '—'}, "
-            f"actual={state.get('actual_title') or '—'}"
-        )
 
 
 def form_case(
@@ -1232,9 +999,10 @@ class FormMonitor:
 
     @staticmethod
     def _checks(case, state):
-        path_matches = _path_matches(case, state)
+        hard_checks = evaluate_checks(case, state)
+        path_matches = hard_checks["url"]["passed"]
         allowed_warning = _allowed_warning_text(case, state)
-        visible_error = _unexpected_visible_error(case, state)
+        visible_error = hard_checks["application_error"]["actual"]
         js_errors = list(state.get("js_errors") or [])
         capture = state.get("capture_signals") or EMPTY_CAPTURE_SIGNALS
         usable = (
@@ -1265,14 +1033,14 @@ class FormMonitor:
                 capture.get("promise_rejection_count") or 0
             ),
             "url_matches": path_matches,
-            "title_matches": _title_matches(case, state),
+            "title_matches": hard_checks["title"]["passed"],
             "title_verified": _title_verified(case, state),
             "title_source": state.get("title_source") or "",
             "document_title": state.get("document_title") or "",
-            "content_ready": bool(state.get("content_ready")),
+            "content_ready": hard_checks["content_ready"]["passed"],
             "ready_required": bool(state.get("ready_required")),
             "ready_visible": bool(state.get("ready_visible")),
-            "loader_visible": bool(state.get("loader_visible")),
+            "loader_visible": not hard_checks["loader"]["passed"],
             "busy_visible": bool(state.get("busy_visible")),
             "busy_visible_count": int(state.get("busy_visible_count") or 0),
             "visible_error": visible_error,

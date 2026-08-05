@@ -30,8 +30,8 @@
 
 | Task | Holat | Commit |
 |---|---|---|
-| 1. Final plan va baseline | COMPLETED | plan commit |
-| 2. Check modulini ajratish | PENDING | — |
+| 1. Final plan va baseline | COMPLETED | `eb87ba1` |
+| 2. Check modulini ajratish | COMPLETED | task commit |
 | 3. Diagnostika modulini ajratish | PENDING | — |
 | 4. Configurable FormMonitor va `OBSERVED_ONLY` | PENDING | — |
 | 5. Case identity, avtomatik label va menu-column runner | PENDING | — |
@@ -101,11 +101,11 @@
 - Consumes: `case: dict`, `state: dict`.
 - Produces: `CHECK_NAMES`, `normalize_enabled_names(...)`, `evaluate_checks(...)`, `primary_check_failure(...)` va olti alohida evaluator.
 
-- [ ] **Step 1: joriy hard-check kontraktini muzlatish**
+- [x] **Step 1: joriy hard-check kontraktini muzlatish**
 
   Quyidagi reason priority saqlanadi: `URL_MISMATCH`, `APPLICATION_ERROR`, `JS_ERROR`, `LOADER_NOT_FINISHED`, `CONTENT_NOT_READY`, `TITLE_MISMATCH`.
 
-- [ ] **Step 2: oltita pure evaluator yaratish**
+- [x] **Step 2: oltita pure evaluator yaratish**
 
   Exact funksiyalar:
 
@@ -131,15 +131,15 @@
   }
   ```
 
-- [ ] **Step 3: ordered registry va primary failure helperini qo‘shish**
+- [x] **Step 3: ordered registry va primary failure helperini qo‘shish**
 
   `CHECK_FUNCTIONS` yuqoridagi fixed priority tartibida bo‘ladi. Barcha enabled checklar natijasi saqlanadi, overall status birinchi failed checkdan olinadi.
 
-- [ ] **Step 4: FormMonitor’ni yangi evaluatorlarga ulash**
+- [x] **Step 4: FormMonitor’ni yangi evaluatorlarga ulash**
 
   Eski `_assert_healthy_form_state()` va takroriy boolean hisoblar yangi result modelidan foydalanadi; default xatti-harakat o‘zgarmaydi.
 
-- [ ] **Step 5: static verifikatsiya va commit**
+- [x] **Step 5: static verifikatsiya va commit**
 
   Changed Python fayllari AST/syntax parse qilinadi, `git diff --check` bajariladi va task alohida commit qilinadi.
 
