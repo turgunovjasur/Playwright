@@ -36,8 +36,8 @@
 | 4. Configurable FormMonitor va `OBSERVED_ONLY` | COMPLETED | `dee5521` |
 | 5. Case identity, avtomatik label va menu-column runner | COMPLETED | `d09730a` |
 | 6. Mavjud Forms testlari va runner migratsiyasi | COMPLETED | `4ec0e24` |
-| 7. Reporting schema/analyzer/docs | COMPLETED | pending commit |
-| 8. Yakuniy static verifikatsiya | IN PROGRESS | — |
+| 7. Reporting schema/analyzer/docs | COMPLETED | `3b27f96` |
+| 8. Yakuniy static verifikatsiya | COMPLETED | `79849ed` |
 
 ## File Structure
 
@@ -371,25 +371,37 @@
 - Consumes: Task 2–7 commitlari va final worktree.
 - Produces: completed status matrix, verification evidence va clean committed `dev1` worktree.
 
-- [ ] **Step 1: barcha changed Python fayllarini syntax parse qilish**
+- [x] **Step 1: barcha changed Python fayllarini syntax parse qilish**
 
   Pytest collection yoki smoke run ishlatilmaydi.
 
-- [ ] **Step 2: contract qidiruvlarini bajarish**
+- [x] **Step 2: contract qidiruvlarini bajarish**
 
   Eski `validate=` callback, tashqi hard validation, schema-v3-only parser va duplicate inventory consumerlari qolmaganini `rg` bilan tekshirish.
 
-- [ ] **Step 3: knowledge-base validator va patch tekshiruvini bajarish**
+- [x] **Step 3: knowledge-base validator va patch tekshiruvini bajarish**
 
   `validate_knowledge_base.py` va `git diff --check` muvaffaqiyatli tugashi kerak.
 
-- [ ] **Step 4: plan statusini yakunlash**
+- [x] **Step 4: plan statusini yakunlash**
 
   Har task `COMPLETED` yoki aniq sabab bilan `BLOCKED`; commit hashlar Status jadvaliga yoziladi.
 
-- [ ] **Step 5: barcha qolgan in-scope o‘zgarishlarni commit qilish**
+- [x] **Step 5: barcha qolgan in-scope o‘zgarishlarni commit qilish**
 
   `git status --short` clean bo‘ladi. Pytest/smoke bajarilmagani final handoffda aniq yoziladi.
+
+### Final Verification Evidence
+
+- AST parse: Forms modullari, analyzer va knowledge validator — `15` fayl, xatosiz.
+- Pyflakes: barcha changed Python fayllari — xatosiz.
+- Composite identity: `19` pytest item, `19` unique identity.
+- Inventory: Forms-01 `100 = 88 active + 12 skip`; Forms-02 `22 = 21 + 1`; Forms-03 `39 = 38 + 1`.
+- Analyzer read-only sample: schema-v3 flat va schema-v4 nested resultlar normalizatsiya qilindi; `OBSERVED_ONLY` failurega kirmadi.
+- Knowledge validator: `errors=0`.
+- Forbidden contract search: `validate=`, `expect_form_open()`, eski suite runnerlari va schema-v3-only writer topilmadi.
+- `git diff --check`: xatosiz.
+- Pytest/smoke: user `run qil` demagani uchun bajarilmadi.
 
 ## Acceptance Criteria
 
