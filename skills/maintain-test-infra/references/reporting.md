@@ -25,6 +25,9 @@ Status: code-confirmed
 Verified: 2026-08-05
 Source: `tests/smoke/test_forms/form_monitor.py`,
 `tests/smoke/test_forms/flow.py`,
+`tests/smoke/test_forms/form_reporting.py`,
+`tests/smoke/test_forms/form_checks.py`,
+`tests/smoke/test_forms/form_diagnostics.py`,
 `tests/smoke/test_forms/skipped_forms.py`,
 `tests/smoke/screenshot_masking.py`
 
@@ -32,8 +35,9 @@ Source: `tests/smoke/test_forms/form_monitor.py`,
   runner avval barcha rejalashtirilgan formalarni ro'yxatdan o'tkazadi, so'ng
   har bir navigatsiyani shu monitor orqali bajaradi.
 - Har forma faqat quyidagi holatlardan birini oladi:
-  `PASSED`, `OPENED_WITH_DEFECT`, `NOT_OPENED`, `TEST_BLOCKED`,
-  `NOT_CHECKED`.
+  `PASSED`, `OBSERVED_ONLY`, `OPENED_WITH_DEFECT`, `NOT_OPENED`,
+  `TEST_BLOCKED`, `NOT_CHECKED`. `checks=[]` bilan navigatsiya bajarilib hard
+  check ishlamasa `OBSERVED_ONLY`; analyzer uni failure deb hisoblamaydi.
 - `OPENED_WITH_DEFECT` target forma/URL ochilgan, lekin title, blocking loader,
   JS yoki kontent tekshiruvida nuqson borligini bildiradi. `NOT_OPENED` target URL/kontentga
   yetilmaganini bildiradi. Login, filial yoki shell tayyorlovi yiqilsa joriy
@@ -61,7 +65,7 @@ Source: `tests/smoke/test_forms/form_monitor.py`,
   yagona `build_form_case_plan()` orqali normalizatsiya qilinadi.
 - `SKIPPED_FORMS` registry'sidagi canonical pathlar active `planned_cases`ga
   kirmaydi, ammo `build_form_case_inventory()` ularni reason bilan alohida
-  qaytaradi. Terminal/Allure va schema v3 JSON total inventory, active count va
+  qaytaradi. Terminal/Allure va schema v4 JSON total inventory, active count va
   intentional skip count/listni ko'rsatadi.
 - Har forma tugashi bilan terminal reporter orqali bitta ixcham
   `[FORM MONITOR]` qatori
@@ -89,8 +93,18 @@ Source: `tests/smoke/test_forms/form_monitor.py`,
   va empty-source resource shovqinini agregatsiya qiladi; boshqa signallarni,
   jumladan `m:load_image_v2`, forma kesimida ko'rsatadi.
 - `build_form_case_inventory()` active planned va registry-skipped formalarni
-  alohida normalizatsiya qiladi. `form-monitor.json` schema v3 `inventory` va
-  `skipped` recordlarini beradi; intentional skip `NOT_CHECKED` emas.
+  alohida normalizatsiya qiladi. `form-monitor.json` schema v4 `inventory`,
+  `skipped`, `config.enabled_checks` va `config.enabled_diagnostics`ni beradi;
+  intentional skip `NOT_CHECKED` emas. Har resultda `identity`, auto/explicit
+  `label`, schema-v4 `hard_checks` va `diagnostics` bor. Eski consumerlar uchun
+  schema-v3 flat `checks` compatibility maydoni saqlanadi.
+- Konfiguratsiya faqat test/FormMonitor darajasida: `None` barcha registered
+  signallar, `[]` hech biri, `list[str]` faqat tanlangan nomlar. Disabled signal
+  pass sifatida ko'rsatilmaydi; nested resultda `enabled: false` bo'lib qoladi.
+- Terminal/Allure human report defaultda enabled/total coverage, failed
+  checklar va counti bor actionable diagnostikalarni ko'rsatadi. Disabled va
+  muvaffaqiyatli signallar alohida uzun qatorlarga yoyilmaydi; to'liq signal
+  inventari JSONda qoladi.
 
 ## Failure artifacts
 

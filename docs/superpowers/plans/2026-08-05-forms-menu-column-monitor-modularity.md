@@ -35,9 +35,9 @@
 | 3. Diagnostika modulini ajratish | COMPLETED | `b052b6d` |
 | 4. Configurable FormMonitor va `OBSERVED_ONLY` | COMPLETED | `dee5521` |
 | 5. Case identity, avtomatik label va menu-column runner | COMPLETED | `d09730a` |
-| 6. Mavjud Forms testlari va runner migratsiyasi | COMPLETED | pending commit |
-| 7. Reporting schema/analyzer/docs | PENDING | — |
-| 8. Yakuniy static verifikatsiya | PENDING | — |
+| 6. Mavjud Forms testlari va runner migratsiyasi | COMPLETED | `4ec0e24` |
+| 7. Reporting schema/analyzer/docs | COMPLETED | pending commit |
+| 8. Yakuniy static verifikatsiya | IN PROGRESS | — |
 
 ## File Structure
 
@@ -336,27 +336,27 @@
 - Consumes: nested check/diagnostic results, `OBSERVED_ONLY`, auto-label va composite identity.
 - Produces: schema-v4 JSON, v3/v4 analyzer compatibility va user-readable terminal/Allure summary.
 
-- [ ] **Step 1: reporting helperlarini alohida modulga ko‘chirish**
+- [x] **Step 1: reporting helperlarini alohida modulga ko‘chirish**
 
   Result build, status counts, metrics, noise aggregation, duration va summary rendering behavior saqlanadi.
 
-- [ ] **Step 2: schema-v4 payloadni chiqarish**
+- [x] **Step 2: schema-v4 payloadni chiqarish**
 
   Har resultda `identity`, `label`, nested `checks` va nested `diagnostics`; payloadda enabled-name config saqlanadi. Oldingi status/URL/title/lifecycle fieldlar compatibility uchun qoladi.
 
-- [ ] **Step 3: human reportni ixcham saqlash**
+- [x] **Step 3: human reportni ixcham saqlash**
 
   Terminal/Allure default holatda failed checklar va actionable diagnosticlarni ko‘rsatadi; disabled yoki pass bo‘lgan har signal alohida uzun qatorga aylantirilmaydi. Summary tepada `enabled/total` coverage beradi.
 
-- [ ] **Step 4: analyzerga v3/v4 compatibility qo‘shish**
+- [x] **Step 4: analyzerga v3/v4 compatibility qo‘shish**
 
   Eski flat `checks` va yangi nested results ikkalasi bitta issue modeliga normalizatsiya qilinadi. `OBSERVED_ONLY` failure sifatida chiqarilmaydi.
 
-- [ ] **Step 5: current knowledge/reference fayllarini yangilash**
+- [x] **Step 5: current knowledge/reference fayllarini yangilash**
 
   Yangi grouping, label, configuration, schema va report semantikasi `code-confirmed` provenance bilan mos reference’larga yoziladi.
 
-- [ ] **Step 6: static verifikatsiya va commit**
+- [x] **Step 6: static verifikatsiya va commit**
 
   Syntax parse, knowledge-base validator va `git diff --check`dan keyin alohida commit.
 

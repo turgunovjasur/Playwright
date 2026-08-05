@@ -239,6 +239,7 @@ def _group_name(item, runner_test):
 
     if (
         "test_a2_admin_menu_forms" in combined
+        or "test_a2_menu_identity_forms" in combined
         or "test_a2_admin_forms" in combined
         or "a2 admin menu forms" in combined
         or "a2 admin forms" in combined
@@ -598,6 +599,7 @@ def _form_suite_key(item):
         return "spravochniki"
     if (
         A2_ADMIN_FORMS_TEST in identity
+        or "test_a2_menu_identity_forms" in identity
         or "test_forms_02_a2_admin" in identity
         or "a2 admin" in identity
     ):
@@ -636,7 +638,13 @@ def _a2_form_steps(item):
 
 
 def _empty_form_counts():
-    return {"checked": 0, "passed": 0, "failed": 0, "skipped": 0}
+    return {
+        "checked": 0,
+        "passed": 0,
+        "observed": 0,
+        "failed": 0,
+        "skipped": 0,
+    }
 
 
 def _form_monitor_counts(form_monitor):
@@ -656,11 +664,63 @@ def _form_monitor_counts(form_monitor):
     return {
         "checked": max(planned, len(statuses)),
         "passed": statuses.count("PASSED"),
+        "observed": statuses.count("OBSERVED_ONLY"),
         "failed": sum(
             status in FORM_MONITOR_FAILURE_STATUSES for status in statuses
         ),
         "skipped": statuses.count("NOT_CHECKED"),
     }
+
+
+def _normalized_form_signals(result):
+    """Schema-v3 flat va schema-v4 nested signal natijalarini birlashtiradi."""
+    raw_checks = result.get("checks")
+    checks = raw_checks if isinstance(raw_checks, dict) else {}
+    raw_hard_checks = result.get("hard_checks") or checks.get("hard_checks")
+    hard_checks = raw_hard_checks if isinstance(raw_hard_checks, dict) else {}
+    raw_diagnostics = result.get("diagnostics") or checks.get("diagnostics")
+    diagnostics = raw_diagnostics if isinstance(raw_diagnostics, dict) else {}
+
+    normalized = {
+        "page_reached": bool(result.get("page_reached")),
+        **{
+            key: value
+            for key, value in checks.items()
+            if key in {
+                "url_matches",
+                "title_matches",
+                "title_verified",
+                "content_ready",
+                "loader_visible",
+                "busy_visible",
+                "busy_visible_count",
+                "visible_error",
+                "js_error_count",
+                "js_error_source",
+            }
+        },
+    }
+    failed_checks = [
+        name
+        for name, item in hard_checks.items()
+        if isinstance(item, dict)
+        and item.get("enabled")
+        and item.get("passed") is False
+    ]
+    if failed_checks:
+        normalized["failed_checks"] = ", ".join(failed_checks)
+    diagnostic_signals = []
+    for name, item in diagnostics.items():
+        if not isinstance(item, dict) or not item.get("enabled"):
+            continue
+        count = int(item.get("count") or 0)
+        if name == "busy" and item.get("visible"):
+            diagnostic_signals.append(f"busy={count}")
+        elif count:
+            diagnostic_signals.append(f"{name}={count}")
+    if diagnostic_signals:
+        normalized["diagnostic_signals"] = ", ".join(diagnostic_signals)
+    return normalized
 
 
 def _form_monitor_issues(form_monitor):
@@ -677,12 +737,14 @@ def _form_monitor_issues(form_monitor):
         status = str(result.get("status") or "").upper()
         if status not in FORM_MONITOR_FAILURE_STATUSES:
             continue
-        raw_checks = result.get("checks")
-        checks = raw_checks if isinstance(raw_checks, dict) else {}
         issues.append(
             {
                 "number": result.get("number") or "",
                 "title": str(result.get("title") or "unknown"),
+                "identity": str(
+                    result.get("identity") or result.get("test_identity") or ""
+                ),
+                "label": str(result.get("label") or ""),
                 "status": status,
                 "reason_code": str(result.get("reason_code") or ""),
                 "failed_stage": str(result.get("failed_stage") or ""),
@@ -698,25 +760,7 @@ def _form_monitor_issues(form_monitor):
                     _mask_sensitive(str(result.get("detail") or "")),
                     500,
                 ),
-                "checks": {
-                    "page_reached": bool(result.get("page_reached")),
-                    **{
-                        key: value
-                        for key, value in checks.items()
-                        if key in {
-                            "url_matches",
-                            "title_matches",
-                            "title_verified",
-                            "content_ready",
-                            "loader_visible",
-                            "busy_visible",
-                            "busy_visible_count",
-                            "visible_error",
-                            "js_error_count",
-                            "js_error_source",
-                        }
-                    },
-                },
+                "checks": _normalized_form_signals(result),
             }
         )
     return issues
@@ -815,7 +859,7 @@ def build_deterministic_summary(exit_code, results):
     a2_admin_forms = (
         {
             key: int(a2_suite.get(key) or 0)
-            for key in ("checked", "passed", "failed", "skipped")
+            for key in ("checked", "passed", "observed", "failed", "skipped")
         }
         if isinstance(a2_suite, dict) and a2_suite
         else {}

@@ -472,33 +472,49 @@ Source: user;
 - Contract valyutasi order productlarini filterlaydi; boshqa valyutali contractga almashtirilsa, oldin tanlangan productlar o'chishi kutiladi.
 
 ### Form-opening smoke suite arxitekturasi
+Status: code-confirmed
+Verified: 2026-08-05
+Source: `tests/smoke/test_forms/form_cases.py`;
+`tests/smoke/test_forms/menu_column_runner.py`;
+`tests/smoke/test_forms/test_0_forms_runner.py`
+
 - Barcha forma-opening testlar `tests/smoke/test_forms/` ichida saqlanadi.
   `Справочники`, `Склад`, `Продажа` va keyingi har bir navbar tab uchun alohida
   `test_XX_<tab>_menu_forms.py` leaf modul bo'ladi. Mavjud
   `test_02_a2_admin_menu_forms.py` ham `test_life_cycle/`dan shu papkaga ko'chiriladi.
-- Har leaf modul o'zining deklarativ forma inventari,
-  `run_<tab>_menu_forms(...)` funksiyasi va standalone
-  `test_<tab>_menu_forms(...)` testiga ega bo'ladi. Tablar bir-birini import
-  qilib chain qilmaydi.
-- Suite uchun umumiy flowlar `tests/smoke/test_forms/flow.py`da saqlanadi:
-  operatsion filialni topish/tiklash, menu formani ochib tekshirish,
-  `page_link`/sub-page-link zanjirini yurish, `Создать` dropdown actionini
-  tekshirish, loader/canonical URL holatini tekshirish va batch natijalarni
-  yig'ish. `flow.py` mavjud `BasePage`/`AngularBasePage` atomik metodlarini
-  chaqiradi; ularni takrorlamaydi va umumiy page objectni suite-specific
-  biznes orchestration bilan to'ldirmaydi.
+- Har forma oddiy `list[dict]` inventarda turadi. Majburiy minimum:
+  `menu_column`, `menu_item`, `path`; kerak bo'lsa `navbar_tab`, `title`,
+  `action`, `page_links`, `ready`, `screenshot_mask`, `allowed_warnings`.
+  `label` optional va berilmasa `menu_item/action/page_links/add_icon`dan
+  avtomatik yaratiladi.
+- Pytest itemning stable identifikatori `shell + navbar_tab + menu_column`.
+  Mavjud identityga forma qo'shilsa faqat tegishli inventarga bitta dict
+  qo'shiladi. Yangi identity bo'lsa leafdagi `*_MENU_TESTS` config listiga
+  bitta yangi dict qo'shiladi; coverage validator formasiz yoki testsiz
+  identityni import vaqtida bloklaydi. Real `menu_column=None` identityda
+  `<ustunsiz>` deb ko'rsatiladi.
+- Legacy va A2 lifecycle'lari `menu_column_runner.py`dagi alohida
+  `run_legacy_menu_column_forms(...)` va `run_a2_menu_column_forms(...)`
+  funksiyalarida turadi; bitta universal mode-dispatcher yozilmaydi.
+  `flow.py` faqat navigatsiya/settle primitive'larini, `form_cases.py` case
+  normalizatsiyasini, `form_reporting.py` result/schema/reportni saqlaydi.
 - Umumiy runner `tests/smoke/test_forms/test_0_forms_runner.py` bo'ladi va har
-  leaf `run_*` funksiyasini alohida sibling pytest test sifatida chaqiradi.
+  composite identityni alohida parametrized sibling pytest item sifatida
+  chaqiradi.
   Fayl oddiy `runner.py` emas, `test_0_*_runner.py` patternida nomlanadi, chunki
   smoke collector shu patterndagi runnerlarni avtomatik topadi.
-- Runner bitta module-scoped admin page/login va topilgan operatsion filial
-  nomini bo'lishishi mumkin, ammo har bir tab `run_*` o'z filial preconditionini
-  defensive tiklaydi; bir tab failure'i boshqa tablarni to'xtatmaydi.
+- Har menu identity o'z `FormMonitor` instance'i va filial/auth/shell
+  preconditioniga ega; `independent=True` sabab bitta identity failure'i boshqa
+  identitylarni skip qilmaydi.
 - Yangi runner default/full smoke tarkibiga kirishi uchun
   `tests/smoke/smoke_config.py::full_runner_paths()` va kerak bo'lsa
   `scripts/run_tests.py` target/path mappinglari ham yangilanadi.
 - Har tab inventari oddiy `list` + `dict/tuple` bilan deklarativ yoziladi;
   dataclass, classifier yoki katta universal framework qurilmaydi.
+- Normal test check/diagnostika argumentlarini yozmaydi — `None` barchasini
+  yoqadi. Test darajasida `checks=[]` hard checklarni o'chirib natijani
+  `OBSERVED_ONLY` qiladi; `diagnostics=[]` observation signal collectionini
+  o'chiradi. Tanlangan nomlar `list[str]` bilan beriladi, per-form override yo'q.
 
 ### Ko'p-elementli (batch) smoke testlarda natija hisoboti
 - Bitta test ichida ko'plab element ketma-ket tekshirilsa (masalan a2 formalarni navbat bilan ochish), kodni SODDA saqla:

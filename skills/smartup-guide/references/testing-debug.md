@@ -157,13 +157,24 @@ Tags: runner, debug, modal, data-store
 
 ### Forms runner terminal va Allure hisoboti
 Tags: forms, report, terminal, allure, filial, menu, url, monitoring, screenshot
+Status: code-confirmed
+Verified: 2026-08-05
+Source: `tests/smoke/test_forms/form_monitor.py`;
+`tests/smoke/test_forms/form_reporting.py`;
+`tests/smoke/test_forms/form_cases.py`;
+`tests/smoke/test_forms/menu_column_runner.py`
+
 - `tests/smoke/test_forms/form_monitor.py` barcha Forms runnerlar uchun yagona
-  holat va tahlil manbasi. `flow.py` navigatsiya va umumiy result formatini
-  beradi; runner o'zicha alohida pass/fail hisoblamaydi.
+  façade/orchestrator. `form_checks.py` hard checklarni,
+  `form_diagnostics.py` browser signallarini, `form_cases.py` identity/case
+  normalizatsiyasini, `form_reporting.py` result/schema/human reportni,
+  `flow.py` esa navigatsiya primitive'larini saqlaydi. Runner o'zicha alohida
+  pass/fail yoki report qurmaydi.
 - Runner boshlanishidan oldin rejalashtirilgan formalar monitor ro'yxatiga
   kiritiladi. Shuning uchun suite filial/login/shell bosqichida to'xtasa ham
   nechta forma rejalashtirilgani va qaysilari tekshirilmagani yo'qolmaydi.
-- Forma holatlari: `PASSED` (ochildi), `OPENED_WITH_DEFECT` (URL va kontent
+- Forma holatlari: `PASSED` (ochildi), `OBSERVED_ONLY` (navigatsiya bajarildi,
+  lekin hard checklar test darajasida o'chirilgan), `OPENED_WITH_DEFECT` (URL va kontent
   ochildi, lekin title/kontent nuqsoni bor), `NOT_OPENED` (target forma
   ochilmadi), `TEST_BLOCKED` (test preconditionda to'xtadi), `NOT_CHECKED`
   (blokerdan keyin tekshiruv boshlanmadi).
@@ -190,6 +201,23 @@ Tags: forms, report, terminal, allure, filial, menu, url, monitoring, screenshot
 - `run_form_cases()` monitorsiz ishlamaydi; legacy parallel summary yo'li olib
   tashlangan. Avtorizatsiya har Forms suite ichida monitor preconditioni bo'lib,
   login xatosida ham planned coverage yo'qolmaydi.
+- Forma pytest identitysi `shell + navbar_tab + menu_column`. Mavjud identityga
+  yangi forma qo'shish tegishli inventarga bitta dict qo'shish bilan tugaydi;
+  yangi identity uchun `*_MENU_TESTS` configga bitta dict qo'shiladi.
+  `validate_menu_test_coverage()` testsiz identity yoki testsiz qolgan forma
+  guruhini import vaqtida aniq `ValueError` bilan to'xtatadi.
+- `label` optional va yo'q bo'lsa menu item/action/page-link/add-icon yo'lidan
+  avtomatik quriladi. Bitta identity ichida filial + menu item + action +
+  page-links + canonical path takrorlansa duplicate guard bloklaydi.
+- FormMonitor konfiguratsiyasi test-level: `None` barcha signalni, `[]` hech
+  birini, `list[str]` faqat tanlangan check/diagnostikani yoqadi. Per-form
+  override yo'q. `checks=[]` muvaffaqiyatli navigatsiyani `OBSERVED_ONLY`
+  qiladi va bu holat analyzerda failure emas.
+- `form-monitor.json` schema v4: `config`, `identity`, `label`, nested
+  `hard_checks`, nested `diagnostics`. Schema-v3 flat `checks` maydoni eski
+  consumerlar uchun compatibility sifatida saqlanadi. Human report disabled
+  yoki passed signallarni yoymaydi; failed check va counti bor diagnostikani
+  user o'qiydigan qisqa qatorlarda beradi.
 
 ### Legacy forma nomi document.title emas, visible headingdan olinadi
 Tags: forms, legacy, title, heading, monitoring, false-positive
