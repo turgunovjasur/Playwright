@@ -6,7 +6,6 @@ import json
 import re
 import time
 from collections import Counter
-from urllib.parse import urlsplit
 
 import allure
 from playwright.sync_api import Error as PlaywrightError
@@ -29,319 +28,32 @@ from tests.smoke.test_forms.form_checks import (
     reason_description,
     title_verified as _title_verified,
 )
+from tests.smoke.test_forms.form_diagnostics import (
+    ALERT_SELECTORS,
+    ALERT_WAIT_MS,
+    CAPTURE_JS_ERROR_SCRIPT,
+    CAPTURE_READ_SCRIPT,
+    CAPTURE_RESET_SCRIPT,
+    EMPTY_CAPTURE_SIGNALS,
+    MAX_PAGE_EVENTS,
+    capture_form_state,
+    diagnose_failed_requests,
+    evaluate_diagnostics,
+    failed_request_label as _failed_request_label,
+    js_error_label as _js_error_label,
+    reset_capture_signals as _reset_capture_signals,
+    safe_locator_visible as _safe_locator_visible,
+)
 from tests.smoke.test_forms.flow import (
     build_form_result,
-    canonical_form_path,
     form_step_title,
     format_form_result,
     write_terminal_report,
 )
 from tests.smoke.test_forms.skipped_forms import skipped_form
 
-ALERT_SELECTORS = (
-    "#biruniAlertExtended:visible",
-    "#biruniAlert:visible",
-    "[role='alert']:visible",
-    ".alert-danger:visible",
-    "[role='dialog']:visible .alert-danger:visible",
-    "[role='dialog']:visible [data-testid*='error' i]",
-)
-
-ALERT_WAIT_MS = 1200
-
-MAX_PAGE_EVENTS = 20
-
-CAPTURE_JS_ERROR_SCRIPT = """
-(() => {
-  if (window.__formMonitorCaptureInstalled) {
-    return;
-  }
-  window.__formMonitorCaptureInstalled = true;
-  window.__formMonitorCaptureErrors = [];
-  window.__formMonitorCaptureCount = 0;
-  window.__formMonitorResourceErrors = [];
-  window.__formMonitorResourceCount = 0;
-  window.__formMonitorPromiseRejections = [];
-  window.__formMonitorPromiseRejectionCount = 0;
-  const SAMPLE_LIMIT = 50;
-  const withoutQuery = (value) => String(value || "").split("?")[0];
-  window.addEventListener(
-    "error",
-    (event) => {
-      // Capture fazasi resurs yuklanish xatosini ham beradi (img/script/link).
-      // Ular JS exception emas va network kanali ularni allaqachon qamraydi,
-      // shuning uchun alohida ro'yxatga tushadi.
-      const target = event && event.target;
-      if (target && target !== window && target.tagName) {
-        window.__formMonitorResourceCount += 1;
-        if (window.__formMonitorResourceErrors.length < SAMPLE_LIMIT) {
-          window.__formMonitorResourceErrors.push(
-            target.tagName + " " + withoutQuery(target.src || target.href)
-          );
-        }
-        return;
-      }
-      const error = event && event.error;
-      const message =
-        (event && event.message) ||
-        (error && error.message) ||
-        (event && event.type) ||
-        "noma'lum error eventi";
-      let label = String(message);
-      if (event && event.filename) {
-        label += " @ " + withoutQuery(event.filename) + ":" + event.lineno;
-      }
-      window.__formMonitorCaptureCount += 1;
-      if (window.__formMonitorCaptureErrors.length < SAMPLE_LIMIT) {
-        window.__formMonitorCaptureErrors.push(label);
-      }
-    },
-    true
-  );
-  window.addEventListener(
-    "unhandledrejection",
-    (event) => {
-      const reason = event && event.reason;
-      const message =
-        (reason && reason.message) ||
-        String(reason || "noma'lum promise rejection");
-      window.__formMonitorPromiseRejectionCount += 1;
-      if (window.__formMonitorPromiseRejections.length < SAMPLE_LIMIT) {
-        window.__formMonitorPromiseRejections.push(message);
-      }
-    },
-    true
-  );
-})();
-"""
-
-CAPTURE_READ_SCRIPT = """
-({
-  js: window.__formMonitorCaptureErrors || [],
-  jsCount: window.__formMonitorCaptureCount || 0,
-  resources: window.__formMonitorResourceErrors || [],
-  resourceCount: window.__formMonitorResourceCount || 0,
-  promiseRejections: window.__formMonitorPromiseRejections || [],
-  promiseRejectionCount: window.__formMonitorPromiseRejectionCount || 0,
-})
-"""
-
-CAPTURE_RESET_SCRIPT = """
-(() => {
-  window.__formMonitorCaptureErrors = [];
-  window.__formMonitorCaptureCount = 0;
-  window.__formMonitorResourceErrors = [];
-  window.__formMonitorResourceCount = 0;
-  window.__formMonitorPromiseRejections = [];
-  window.__formMonitorPromiseRejectionCount = 0;
-})()
-"""
-
-EMPTY_CAPTURE_SIGNALS = {
-    "js_errors": [],
-    "js_error_count": 0,
-    "resource_errors": [],
-    "resource_error_count": 0,
-    "promise_rejections": [],
-    "promise_rejection_count": 0,
-}
 
 
-def _safe_page_title(page):
-    try:
-        return _clean_text(page.title())
-    except (PlaywrightError, AttributeError, TypeError):
-        return ""
-
-
-def _safe_locator_visible(locator):
-    """``is_visible`` kutmaydi — bu ataylab lahzalik surat."""
-    try:
-        return bool(locator.is_visible())
-    except (PlaywrightError, AttributeError, TypeError):
-        return False
-
-
-def _safe_locator_count(locator):
-    try:
-        return int(locator.count())
-    except (PlaywrightError, AttributeError, TypeError, ValueError):
-        return 0
-
-
-def _safe_inner_text(locator, *, timeout=750):
-    try:
-        return _clean_text(locator.inner_text(timeout=timeout))
-    except (PlaywrightError, AttributeError, TypeError):
-        return ""
-
-
-def _safe_visible_headings(page):
-    try:
-        headings = (
-            page.get_by_role("heading")
-            .filter(visible=True)
-            .all_inner_texts()
-        )
-    except (PlaywrightError, AttributeError, TypeError):
-        return []
-    return [_clean_text(heading) for heading in headings if _clean_text(heading)]
-
-
-def _failed_request_label(response):
-    """4xx/5xx javobni qisqa yorliqqa aylantiradi; query string yozilmaydi."""
-    try:
-        status = int(response.status)
-        if status < 400:
-            return ""
-        parts = urlsplit(str(response.url or ""))
-    except (AttributeError, TypeError, ValueError):
-        return ""
-    return f"{status} {parts.netloc}{parts.path}"
-
-
-def _js_error_label(error):
-    message = _clean_text(getattr(error, "message", None) or error)
-    return message[:300]
-
-
-def _read_capture_signals(page):
-    """A2 JS xatosi va observation-only browser signallarini o'qiydi.
-
-    Capture-fazadagi JS exception A2 shell uchun effective ``JS_ERROR`` manbasi.
-    Resurs xatolari va unhandled promise rejectionlar alohida kuzatiladi; ular
-    hozircha status yoki ``usable`` qiymatiga ta'sir qilmaydi.
-    """
-    try:
-        raw = page.evaluate(CAPTURE_READ_SCRIPT)
-    except (PlaywrightError, AttributeError, TypeError):
-        return dict(EMPTY_CAPTURE_SIGNALS)
-    if not isinstance(raw, dict):
-        return dict(EMPTY_CAPTURE_SIGNALS)
-
-    def labels(values):
-        return [text for text in (_clean_text(item)[:300] for item in values or []) if text]
-
-    return {
-        "js_errors": labels(raw.get("js")),
-        "js_error_count": int(raw.get("jsCount") or 0),
-        "resource_errors": labels(raw.get("resources")),
-        "resource_error_count": int(raw.get("resourceCount") or 0),
-        "promise_rejections": labels(raw.get("promiseRejections")),
-        "promise_rejection_count": int(raw.get("promiseRejectionCount") or 0),
-    }
-
-
-def _reset_capture_signals(page):
-    try:
-        page.evaluate(CAPTURE_RESET_SCRIPT)
-    except (PlaywrightError, AttributeError, TypeError):
-        pass
-
-
-def _wait_for_any_visible(page, selectors, *, timeout):
-    """Birinchi ko'rinadigan selektorni kutadi; hech biri chiqmasa jim qaytadi."""
-    try:
-        page.locator(", ".join(selectors)).first.wait_for(
-            state="visible",
-            timeout=timeout,
-        )
-    except (PlaywrightError, AttributeError, TypeError):
-        return
-
-
-def _visible_error_text(page):
-    """Faqat aniq error komponentlarini o'qiydi; oddiy dialog xato hisoblanmaydi.
-
-    Server validatsiya xatosi heading chiqqandan keyin 300-500 ms kechikib
-    kelishi mumkin, shuning uchun lahzalik surat emas — alert kutiladi.
-    """
-    _wait_for_any_visible(page, ALERT_SELECTORS, timeout=ALERT_WAIT_MS)
-    for selector in ALERT_SELECTORS:
-        locator = page.locator(selector).first
-        if not _safe_locator_visible(locator):
-            continue
-        text = _safe_inner_text(locator, timeout=500)
-        if text:
-            return text
-    return ""
-
-
-def _generic_a2_content_ready(page):
-    main = page.locator("main").first
-    if not _safe_locator_visible(main):
-        return False
-    if _safe_inner_text(main):
-        return True
-    try:
-        child = main.locator(":scope > *").filter(visible=True).first
-    except (PlaywrightError, AttributeError, TypeError):
-        return False
-    return _safe_locator_visible(child)
-
-
-def capture_form_state(page, *, ready=None):
-    """URL/title/content/error signallarini false-pass bermaydigan tarzda o'qiydi.
-
-    ``js_errors`` bo'sh boshlanadi — u sahifadan o'qilmaydi, listener orqali
-    yig'iladi va ``FormMonitor._capture_state`` uni shu yerga qo'shadi. Bitta
-    dict bo'lgani uchun klassifikatsiya, ``checks`` va assertlar bir manbadan
-    o'qiydi.
-
-    ``capture_signals`` shu yerning o'zida ``page.evaluate`` orqali o'qiladi.
-    ``FormMonitor._capture_state`` A2 shell uchun capture JS exceptionlarini,
-    legacy shell uchun esa Playwright ``pageerror`` kanalini effective manba
-    sifatida tanlaydi.
-    """
-    actual_url = getattr(page, "url", "") or ""
-    ready_visible = False
-
-    if ready:
-        ready_visible = _safe_locator_visible(page.locator(ready).first)
-        content_ready = ready_visible
-    elif "/a2/" in actual_url:
-        content_ready = _generic_a2_content_ready(page)
-    else:
-        content_ready = any(
-            _safe_locator_visible(page.locator(selector).first)
-            for selector in ("b-page:visible", ".subheader:visible")
-        )
-
-    loader_visible = any(
-        _safe_locator_visible(page.locator(selector).first)
-        for selector in (
-            ".block-ui-overlay:visible",
-            ".smt-skeleton:visible",
-        )
-    )
-    busy_visible_count = _safe_locator_count(
-        page.locator("[aria-busy='true']:visible")
-    )
-
-    document_title = _safe_page_title(page)
-    is_a2 = "/a2/" in actual_url
-    title_candidates = [document_title] if is_a2 and document_title else []
-    if not is_a2:
-        title_candidates = _safe_visible_headings(page)
-    actual_form_title = " | ".join(title_candidates) or document_title
-
-    return {
-        "actual_url": actual_url,
-        "actual_title": actual_form_title,
-        "js_errors": [],
-        "capture_signals": _read_capture_signals(page),
-        "document_title": document_title,
-        "title_candidates": title_candidates,
-        "title_source": "document" if is_a2 else "visible_heading",
-        "canonical_path": canonical_form_path(actual_url),
-        "visible_error": _visible_error_text(page),
-        "ready_required": bool(ready),
-        "ready_visible": ready_visible,
-        "content_ready": content_ready,
-        "loader_visible": loader_visible,
-        "busy_visible": busy_visible_count > 0,
-        "busy_visible_count": busy_visible_count,
-    }
 
 
 def form_case(
@@ -1000,11 +712,25 @@ class FormMonitor:
     @staticmethod
     def _checks(case, state):
         hard_checks = evaluate_checks(case, state)
+        diagnostics = evaluate_diagnostics(
+            state,
+            {},
+            enabled_names=(
+                "busy",
+                "resource_errors",
+                "promise_rejections",
+                "title_metadata",
+            ),
+        )
         path_matches = hard_checks["url"]["passed"]
         allowed_warning = _allowed_warning_text(case, state)
         visible_error = hard_checks["application_error"]["actual"]
         js_errors = list(state.get("js_errors") or [])
         capture = state.get("capture_signals") or EMPTY_CAPTURE_SIGNALS
+        resources = diagnostics["resource_errors"]
+        promises = diagnostics["promise_rejections"]
+        busy = diagnostics["busy"]
+        title_metadata = diagnostics["title_metadata"]
         usable = (
             path_matches
             and bool(state.get("content_ready"))
@@ -1020,29 +746,21 @@ class FormMonitor:
                 capture.get("js_errors") or []
             )[:MAX_PAGE_EVENTS],
             "capture_js_error_count": int(capture.get("js_error_count") or 0),
-            "capture_resource_errors": list(
-                capture.get("resource_errors") or []
-            )[:MAX_PAGE_EVENTS],
-            "capture_resource_error_count": int(
-                capture.get("resource_error_count") or 0
-            ),
-            "promise_rejections": list(
-                capture.get("promise_rejections") or []
-            )[:MAX_PAGE_EVENTS],
-            "promise_rejection_count": int(
-                capture.get("promise_rejection_count") or 0
-            ),
+            "capture_resource_errors": resources["samples"],
+            "capture_resource_error_count": resources["count"],
+            "promise_rejections": promises["samples"],
+            "promise_rejection_count": promises["count"],
             "url_matches": path_matches,
             "title_matches": hard_checks["title"]["passed"],
             "title_verified": _title_verified(case, state),
-            "title_source": state.get("title_source") or "",
-            "document_title": state.get("document_title") or "",
+            "title_source": title_metadata["source"],
+            "document_title": title_metadata["document_title"],
             "content_ready": hard_checks["content_ready"]["passed"],
             "ready_required": bool(state.get("ready_required")),
             "ready_visible": bool(state.get("ready_visible")),
             "loader_visible": not hard_checks["loader"]["passed"],
-            "busy_visible": bool(state.get("busy_visible")),
-            "busy_visible_count": int(state.get("busy_visible_count") or 0),
+            "busy_visible": busy["visible"],
+            "busy_visible_count": busy["count"],
             "visible_error": visible_error,
             "allowed_warning": allowed_warning,
             "usable": usable,
@@ -1069,8 +787,14 @@ class FormMonitor:
         ta'sir qiladi; network signallari esa hozir faqat qayd qilinadi.
         """
         checks = self._checks(case, state)
-        checks["failed_requests"] = list(self.failed_requests)
-        checks["failed_request_count"] = self.failed_request_count
+        failed_requests = diagnose_failed_requests(
+            {
+                "failed_requests": self.failed_requests,
+                "failed_request_count": self.failed_request_count,
+            }
+        )
+        checks["failed_requests"] = failed_requests["samples"]
+        checks["failed_request_count"] = failed_requests["count"]
         return checks
 
     def _failure_result(

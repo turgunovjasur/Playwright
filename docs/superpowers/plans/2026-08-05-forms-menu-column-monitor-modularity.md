@@ -31,8 +31,8 @@
 | Task | Holat | Commit |
 |---|---|---|
 | 1. Final plan va baseline | COMPLETED | `eb87ba1` |
-| 2. Check modulini ajratish | COMPLETED | task commit |
-| 3. Diagnostika modulini ajratish | PENDING | — |
+| 2. Check modulini ajratish | COMPLETED | `7a89862` |
+| 3. Diagnostika modulini ajratish | COMPLETED | task commit |
 | 4. Configurable FormMonitor va `OBSERVED_ONLY` | PENDING | — |
 | 5. Case identity, avtomatik label va menu-column runner | PENDING | — |
 | 6. Mavjud Forms testlari va runner migratsiyasi | PENDING | — |
@@ -155,11 +155,11 @@
 - Consumes: Playwright `page`, final `state`, bounded page-event buffers.
 - Produces: `DIAGNOSTIC_NAMES`, capture install/read/reset helperlari va beshta alohida diagnostic collector.
 
-- [ ] **Step 1: browser capture primitive’larini ko‘chirish**
+- [x] **Step 1: browser capture primitive’larini ko‘chirish**
 
   A2 init-script JS/resource/promise capture, legacy `pageerror`, HTTP response label, visible error/loader/content state read logiclari bitta modulga ko‘chiriladi.
 
-- [ ] **Step 2: alohida diagnostic funksiyalar yaratish**
+- [x] **Step 2: alohida diagnostic funksiyalar yaratish**
 
   Exact funksiyalar:
 
@@ -171,15 +171,15 @@
   diagnose_title_metadata(state)
   ```
 
-- [ ] **Step 3: signal sample limit va count kontraktini saqlash**
+- [x] **Step 3: signal sample limit va count kontraktini saqlash**
 
   Raw sample maksimumi `MAX_PAGE_EVENTS`; count to‘liq qoladi. Query string reportga yozilmaydi.
 
-- [ ] **Step 4: FormMonitor event lifecycle’ini yangi modulga ulash**
+- [x] **Step 4: FormMonitor event lifecycle’ini yangi modulga ulash**
 
   Listener install/reset/remove har case chegarasida ishlaydi va qo‘shni forma signali keyingi case’ga o‘tmaydi.
 
-- [ ] **Step 5: static verifikatsiya va commit**
+- [x] **Step 5: static verifikatsiya va commit**
 
   Syntax parse, import-cycle inspection va `git diff --check`dan keyin alohida commit.
 
