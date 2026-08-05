@@ -264,8 +264,17 @@ Tags: test-results, data-store, traces, allure, cleanup
 
 ### Xato Case Va Dublikat Kod
 Tags: review, duplicate, testcase
+Status: user-reported
+Verified: pending
+Source: user
 - Test yozish, migratsiya yoki debug paytida xato testcase, noto'g'ri flow, ortiqcha murakkablik yoki dublikat kod ko'rinsa, foydalanuvchiga alohida xabar ber.
 - Takrorlanadigan UI harakatlar flow/helperga chiqariladi.
+- Forms/test-infra refactorida fayllar bitta aniq mas'uliyat bo'yicha
+  modullashsin, public importlar imkon qadar barqaror qolsin va drift xavfi bor
+  dublikat result/report qurilishi yagona helperga yig'ilsin. Shu bilan birga
+  oddiy deklarativ test inventorysi dataclass, universal dispatcher yoki katta
+  generic framework bilan yashirilmasin: testning biznes qadamlari o'qishda
+  to'g'ridan-to'g'ri ko'rinib tursin.
 
 ### Ish Yakuni Knowledge Capture
 Tags: summary, knowledge-capture, dossier
