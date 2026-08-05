@@ -16,9 +16,9 @@
 | 2 | Hisobotni ishonchli qilish (#3, #4) | ✅ Bajarildi | — |
 | 3 | Aniqlashni kuchaytirish (#2, #7 bajarildi; #1 — trigger yo'q) | 🟡 Qismon | — |
 | 4 | Hisobot sifati (Taklif 3) | ✅ Bajarildi | — |
-| 5 | JS/network xatolari (Taklif 1) | ✅ Bajarildi (legacy; A2 ko'r) | — |
+| 5 | JS/network xatolari (Taklif 1) | ✅ Bajarildi (`JS_ERROR` statusi — faqat legacy) | — |
 | 6 | Shell helper refactori (Taklif 4) | ⬜ Kechiktirildi | — |
-| 7 | A2 formalarida JS xatolarini ko'rish | 🟡 1-qadam bajarildi; 2-qadam o'lchov kutmoqda | — |
+| 7 | A2 formalarida JS xatolarini ko'rish | 🟡 1-qadam + o'lchov bajarildi; **2-qadam (qattiqlashtirish) qoldi** | `1c7f2b7` |
 
 Har bosqich alohida commit. Bosqich 2 dan boshlab real run bilan tekshiriladi.
 
@@ -556,19 +556,57 @@ bilan 013/014/015-formalarga sun'iy JS exception qo'yildi (keyin olib tashlandi)
 Ya'ni **A2 ko'r nuqtasi yopildi** va yorliqlar foydali
 (`Uncaught Error: <matn> @ <fayl>:<qator>`).
 
-#### 2-qadam — qattiqlashtirish — hali qilinmadi
+##### To'liq Forms group o'lchovi (2026-08-05, 147 forma, 686 s)
 
-**Sabab:** `add_init_script` **barcha** sahifalarga qo'llanadi, ya'ni 119 legacy
-formaga ham. Shovqin esa atigi **21 formada** o'lchandi. Legacy'da bu kanal
-`pageerror` ko'rmaydigan narsalarni ushlashi mumkin — masalan Forms group'dagi
-204 ta `/page/tour/` 404 element orqali yuklansa, ular resurs xatosi bo'lib
-chiqadi. 21/147 bilan qattiqlashtirish Bosqich 5 ning o'z qoidasini buzgan
-bo'lardi.
+21 forma yetarli emas edi: `add_init_script` **barcha** sahifalarga qo'llanadi,
+ya'ni 119 legacy formaga ham, va legacy'da bu kanal `pageerror` ko'rmaydigan
+narsalarni ushlashi mumkin. Shuning uchun to'liq group o'lchandi.
 
-**Qayta ko'rish sharti:** to'liq Forms group (147 forma, ~11 daq) bilan capture
-kanalining shovqin poli o'lchansin. Undan keyin qaror:
-`state["js_errors"]` ga qo'shish (ya'ni `JS_ERROR` qilish) yoki alohida reason
-code berish.
+| Signal | Soni | Qayerda |
+|---|---|---|
+| **JS exception** | **0** | 147 formaning hech birida — legacy ham, A2 ham |
+| Resurs yuklanish xatosi | 4 formada | pastdagi jadval |
+
+| Suite | # | Forma | Shell | Resurs xatolari |
+|---|---|---|---|---|
+| Forms-01 | 057 | `Ограничения по клиенту` | legacy | 3 — 2× `SOURCE`, 1× `IMG https://smartup.online/` |
+| Forms-02 | 020 | `Plugin Marketplace` | a2 | 1 — `IMG .../api/b/biruni/m:load_image_v2` |
+| Forms-03 | 005 | `Планирование визитов` | legacy | 3 — 2× `SOURCE`, 1× `IMG https://smartup.online/` |
+| Forms-03 | 024 | `Отчет по визитам` | legacy | 3 — 2× `SOURCE`, 1× `IMG https://smartup.online/` |
+
+Legacy'dagi uchta bir xil naqsh — `src` i bo'sh `<source>`/`<img>` elementlari
+(bo'sh `src` base URLga aylanadi). Zararsiz shablon artefakti.
+
+Muhim: **204 ta `/page/tour/` 404 bu kanalga umuman tushmadi** — ular `fetch`/XHR
+orqali so'raladi, element yuklanishi orqali emas, shuning uchun `error` eventi
+chiqarmaydi. Ya'ni network va capture kanallari bir-birini takrorlamaydi.
+
+#### 2-qadam — qattiqlashtirish — qaror uchun tayyor
+
+O'lchov tugadi va **JS exception kanali 147 formada butunlay toza**. Bu Bosqich 5
+ning 2-qadamidagi bilan aynan bir xil holat: filtr kerak emas va yolg'on-fail
+xavfi yo'q. Resurs xatolari allaqachon alohida ajratilgan, ya'ni ular
+qattiqlashtirishga tushmaydi.
+
+Qolgan yagona savol — `capture_js_errors` ni `state["js_errors"]` ga qo'shish
+(mavjud `JS_ERROR` reason code'ini ishlatish) yoki alohida code berish.
+`JS_ERROR` ni ishlatish afzal: sabab bir xil (sahifada uncaught exception),
+faqat aniqlash kanali boshqa; ikkinchi code hisobotni sababsiz ikkiga bo'lardi.
+
+##### Yo'l-yo'lakay: `Коммерческий дашборд` flaky (2026-08-05)
+
+O'sha runda Forms-03 #022 `Коммерческий дашборд` `LOADER_NOT_FINISHED` bilan
+yiqildi (147 dan yagona fail). URL, title va kontent mos edi — faqat loader
+suratga tushgan lahzada hali ko'rinardi, davomiylik 6.3 s.
+
+Capture kanaliga aloqasi yo'q: o'sha yozuvda `Capture JS exceptionlar: 0`,
+`Capture resurs xatolari: 0`, `Muvaffaqiyatsiz so'rovlar: 0`. Kod jihatidan ham
+mumkin emas — `loader_visible` `capture_form_state` da `page.evaluate` dan
+**oldin** hisoblanadi. Eng kuchli dalil: **aynan o'sha forma o'sha runda
+Forms-02 #006 sifatida PASSED** bo'lgan.
+
+Ya'ni og'ir dashboard formasining timing flakyligi. Bosqich 7 qamroviga
+kiritilmadi; takrorlansa alohida ish sifatida ko'riladi.
 
 ---
 
