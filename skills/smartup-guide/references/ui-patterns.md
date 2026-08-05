@@ -232,10 +232,42 @@ Source: real Chromium probe — legacy va A2 formalarida 4 kanal;
 - Amaliy natija: `FormMonitor` ning `JS_ERROR` tekshiruvi **119 legacy formada**
   ishlaydi (sun'iy injektsiya bilan tasdiqlangan), **28 A2 formada** esa
   hech narsa ko'rmaydi. A2 da "0 JS xato" — sog'lom degani **emas**.
-- Yechim yo'li (hali qilinmagan): `page.add_init_script` bilan app bundle'dan
-  **oldin** capture-fazada `window.addEventListener("error", ..., true)`
-  o'rnatish va xatolarni `window` massividan o'qish — init script har
-  document'da birinchi ishlaydi, `preventDefault` unga ta'sir qilmaydi.
+- **Yechim (2026-08-05 da qilindi va isbotlandi):** `page.add_init_script` bilan
+  app bundle'dan **oldin** capture-fazada
+  `window.addEventListener("error", ..., true)` o'rnatiladi va xatolar `window`
+  massividan `page.evaluate` orqali o'qiladi. Init script har document'da
+  birinchi ishlagani uchun `preventDefault` unga ta'sir qilmaydi.
+  Real A2 SPA route'da sun'iy injektsiya bilan tekshirildi:
+
+  | Texnika | `page.on("pageerror")` | Capture-faza listeneri |
+  |---|---|---|
+  | `setTimeout` | ❌ jim | ✅ ushlaydi |
+  | `queueMicrotask` | ❌ jim | ✅ ushlaydi |
+  | `requestAnimationFrame` | ❌ jim | ✅ ushlaydi |
+
+  Kod: `tests/smoke/test_forms/form_monitor.py` — `CAPTURE_JS_ERROR_SCRIPT`.
+
+### Capture-faza `error` listeneri resurs xatosini ham beradi (2026-08-05)
+Tags: a2, pageerror, js-error, init-script, resource-error, forms-monitor
+Status: trace-confirmed
+Verified: 2026-08-05
+Source: real Chromium run — Forms-02, 21 A2 forma;
+`tests/smoke/test_forms/form_monitor.py`
+- Qoida: `window.addEventListener("error", ..., true)` **faqat JS exception
+  emas**, `img`/`script`/`link` yuklanmaganda chiqadigan resurs xatosini ham
+  beradi. `page.on("pageerror")` bunday eventni **hech qachon** bermaydi,
+  shuning uchun capture kanaliga o'tishda bu yangi, kutilmagan signal turi.
+- Ajratish: resurs xatosida `event.target !== window` va `event.target.tagName`
+  mavjud; JS exceptionda `event.target === window` va `event.message` bor.
+- Nega muhim: ajratmasdan qattiqlashtirilsa **buzuq rasm formani qizil qiladi**.
+  Real misol — `Plugin Marketplace` (`biruni/plg/plugin_catalog`) sahifasida
+  `IMG .../api/b/biruni/m:load_image_v2` yuklanmaydi. Ustiga bu signal network
+  kanalidagi `404 m:load_image_v2` bilan **aynan bir xil hodisa**, ya'ni
+  ikki marta hisoblanardi.
+- Diqqat: `String(event.message || event)` yozish resurs xatosida
+  **`[object Event]`** beradi — diagnostik qiymati nol. Foydali yorliq:
+  `event.message` + `event.filename:event.lineno`, resurs uchun esa
+  `target.tagName` + `target.src/href`.
 - Diqqat: `typeof window.onerror` bu yerda **yo'l ko'rsatmaydi** — ikkala shell'da
   ham `null` (`typeof null === "object"`, ya'ni "object" javobi handler bor
   degani emas). `window.Zone` ham `undefined` — zone.js sabab emas.

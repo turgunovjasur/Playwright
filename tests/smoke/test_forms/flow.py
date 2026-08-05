@@ -235,6 +235,12 @@ def format_form_result(result):
                     f"  UI error           : {checks.get('visible_error') or '—'}",
                     f"  JS xatolari        : {checks.get('js_error_count') or 0}"
                     f" {'; '.join(checks.get('js_errors') or []) or '—'}",
+                    "  Capture JS exceptionlar (kuzatuv): "
+                    f"{checks.get('capture_js_error_count') or 0}"
+                    f" {'; '.join(checks.get('capture_js_errors') or []) or '—'}",
+                    "  Capture resurs xatolari (kuzatuv): "
+                    f"{checks.get('capture_resource_error_count') or 0}"
+                    f" {'; '.join(checks.get('capture_resource_errors') or []) or '—'}",
                     "  Muvaffaqiyatsiz so'rovlar: "
                     f"{checks.get('failed_request_count') or 0}"
                     f" {'; '.join(checks.get('failed_requests') or []) or '—'}",

@@ -85,6 +85,79 @@ ALERT_WAIT_MS = 1200
 
 MAX_PAGE_EVENTS = 20
 
+CAPTURE_JS_ERROR_SCRIPT = """
+(() => {
+  if (window.__formMonitorCaptureInstalled) {
+    return;
+  }
+  window.__formMonitorCaptureInstalled = true;
+  window.__formMonitorCaptureErrors = [];
+  window.__formMonitorCaptureCount = 0;
+  window.__formMonitorResourceErrors = [];
+  window.__formMonitorResourceCount = 0;
+  const SAMPLE_LIMIT = 50;
+  const withoutQuery = (value) => String(value || "").split("?")[0];
+  window.addEventListener(
+    "error",
+    (event) => {
+      // Capture fazasi resurs yuklanish xatosini ham beradi (img/script/link).
+      // Ular JS exception emas va network kanali ularni allaqachon qamraydi,
+      // shuning uchun alohida ro'yxatga tushadi.
+      const target = event && event.target;
+      if (target && target !== window && target.tagName) {
+        window.__formMonitorResourceCount += 1;
+        if (window.__formMonitorResourceErrors.length < SAMPLE_LIMIT) {
+          window.__formMonitorResourceErrors.push(
+            target.tagName + " " + withoutQuery(target.src || target.href)
+          );
+        }
+        return;
+      }
+      const error = event && event.error;
+      const message =
+        (event && event.message) ||
+        (error && error.message) ||
+        (event && event.type) ||
+        "noma'lum error eventi";
+      let label = String(message);
+      if (event && event.filename) {
+        label += " @ " + withoutQuery(event.filename) + ":" + event.lineno;
+      }
+      window.__formMonitorCaptureCount += 1;
+      if (window.__formMonitorCaptureErrors.length < SAMPLE_LIMIT) {
+        window.__formMonitorCaptureErrors.push(label);
+      }
+    },
+    true
+  );
+})();
+"""
+
+CAPTURE_READ_SCRIPT = """
+({
+  js: window.__formMonitorCaptureErrors || [],
+  jsCount: window.__formMonitorCaptureCount || 0,
+  resources: window.__formMonitorResourceErrors || [],
+  resourceCount: window.__formMonitorResourceCount || 0,
+})
+"""
+
+CAPTURE_RESET_SCRIPT = """
+(() => {
+  window.__formMonitorCaptureErrors = [];
+  window.__formMonitorCaptureCount = 0;
+  window.__formMonitorResourceErrors = [];
+  window.__formMonitorResourceCount = 0;
+})()
+"""
+
+EMPTY_CAPTURE_SIGNALS = {
+    "js_errors": [],
+    "js_error_count": 0,
+    "resource_errors": [],
+    "resource_error_count": 0,
+}
+
 
 def reason_description(reason_code):
     return REASON_DESCRIPTIONS.get(reason_code, "")
@@ -167,6 +240,43 @@ def _js_error_label(error):
     return message[:300]
 
 
+def _read_capture_signals(page):
+    """A2'da ``preventDefault`` yutib yuboradigan JS xatosini o'qiydi.
+
+    Bosqich 7, 1-qadam — hozircha **faqat kuzatuv**, statusga ta'sir qilmaydi.
+    ``CAPTURE_JS_ERROR_SCRIPT`` app bundle'dan oldin ishlagani uchun A2
+    ilovaning global ``error`` listeneri ``preventDefault()`` chaqirsa ham bu
+    massivga yetib keladi — `page.on("pageerror")` esa aynan shu holatda ko'r.
+
+    Resurs yuklanish xatolari (`img`/`script`/`link`) **alohida** qaytadi: ular
+    JS exception emas, ularni network kanali allaqachon qamraydi va bir joyga
+    qo'shib yuborish `JS_ERROR` ni yolg'on qizil qilardi.
+    """
+    try:
+        raw = page.evaluate(CAPTURE_READ_SCRIPT)
+    except (PlaywrightError, AttributeError, TypeError):
+        return dict(EMPTY_CAPTURE_SIGNALS)
+    if not isinstance(raw, dict):
+        return dict(EMPTY_CAPTURE_SIGNALS)
+
+    def labels(values):
+        return [text for text in (_clean_text(item)[:300] for item in values or []) if text]
+
+    return {
+        "js_errors": labels(raw.get("js")),
+        "js_error_count": int(raw.get("jsCount") or 0),
+        "resource_errors": labels(raw.get("resources")),
+        "resource_error_count": int(raw.get("resourceCount") or 0),
+    }
+
+
+def _reset_capture_signals(page):
+    try:
+        page.evaluate(CAPTURE_RESET_SCRIPT)
+    except (PlaywrightError, AttributeError, TypeError):
+        pass
+
+
 def _wait_for_any_visible(page, selectors, *, timeout):
     """Birinchi ko'rinadigan selektorni kutadi; hech biri chiqmasa jim qaytadi."""
     try:
@@ -215,6 +325,11 @@ def capture_form_state(page, *, ready=None):
     yig'iladi va ``FormMonitor._capture_state`` uni shu yerga qo'shadi. Bitta
     dict bo'lgani uchun klassifikatsiya, ``checks`` va assertlar bir manbadan
     o'qiydi.
+
+    ``capture_signals`` esa shu yerning o'zida, ``page.evaluate`` orqali
+    darhol o'qiladi (Bosqich 7, 1-qadam) — A2'da ``preventDefault`` tufayli
+    ``js_errors`` ko'r bo'lgan holatni ham ko'radi, lekin hozircha faqat
+    kuzatuv: statusga, ``usable``ga yoki klassifikatsiyaga ta'sir qilmaydi.
     """
     actual_url = getattr(page, "url", "") or ""
     ready_visible = False
@@ -250,6 +365,7 @@ def capture_form_state(page, *, ready=None):
         "actual_url": actual_url,
         "actual_title": actual_form_title,
         "js_errors": [],
+        "capture_signals": _read_capture_signals(page),
         "document_title": document_title,
         "title_candidates": title_candidates,
         "title_source": "document" if is_a2 else "visible_heading",
@@ -604,6 +720,51 @@ def _page_event_lines(results):
     return lines
 
 
+def _capture_js_error_lines(results):
+    """Bosqich 7, 1-qadam: init-script orqali yig'ilgan A2 JS signallari.
+
+    ``page.on("pageerror")`` A2'da ``preventDefault`` tufayli ko'r bo'lgani
+    uchun qo'shildi (`ui-patterns.md`). Hozircha **faqat kuzatuv** — real
+    shovqin hajmi o'lchanmaguncha statusga ta'sir qilmaydi, shuning uchun bu
+    bo'lim ham statusga qaramay ro'yxatlaydi.
+    """
+    noisy = [
+        result
+        for result in results
+        if (result.get("checks") or {}).get("capture_js_error_count")
+        or (result.get("checks") or {}).get("capture_resource_error_count")
+    ]
+    if not noisy:
+        return []
+    lines = [
+        "CAPTURE-FAZA SIGNALLARI (tajriba — hozircha statusga ta'sir qilmaydi)",
+        "-" * 88,
+        "init_script orqali yig'ilgan; A2'da page.on('pageerror') preventDefault "
+        "tufayli ko'r bo'lgani uchun qo'shildi. Bosqich 7, 1-qadam — hali "
+        "qattiqlashtirilmagan.",
+        "Resurs xatosi (img/script/link yuklanmadi) JS exception EMAS va alohida "
+        "ko'rsatiladi — uni JS_ERROR ga qo'shish yolg'on qizil berardi.",
+    ]
+    for result in noisy:
+        checks = result["checks"]
+        lines.append(
+            f"• {result['number']:03d} | {result['title']} | {result['status']} | "
+            f"shell={result.get('shell') or '—'}"
+        )
+        if checks.get("capture_js_error_count"):
+            lines.append(f"    JS exceptionlar ({checks['capture_js_error_count']}):")
+            for message in checks.get("capture_js_errors") or []:
+                lines.append(f"      - {message}")
+        if checks.get("capture_resource_error_count"):
+            lines.append(
+                f"    Resurs yuklanish xatolari ({checks['capture_resource_error_count']}):"
+            )
+            for message in checks.get("capture_resource_errors") or []:
+                lines.append(f"      - {message}")
+    lines.append("")
+    return lines
+
+
 def _duration_lines(results, *, slowest_count=5):
     """Sekinlashuvni ko'rsatadi: forma ochilsa ham 2 barobar sekin bo'lishi mumkin.
 
@@ -716,6 +877,7 @@ def render_monitor_summary(*, suite_name, planned_count, results, blockers):
         lines.append("")
 
     lines.extend(_page_event_lines(results))
+    lines.extend(_capture_js_error_lines(results))
     lines.extend(_duration_lines(results))
 
     started_results = [result for result in results if result.get("test_started")]
@@ -791,6 +953,23 @@ class FormMonitor:
             self._listeners_installed = False
             return
         self._listeners_installed = True
+        self._install_capture_js_error_script()
+
+    def _install_capture_js_error_script(self):
+        """A2 uchun capture-fazali JS xato kuzatuvini yoqadi (Bosqich 7, 1-qadam).
+
+        ``add_init_script`` ni olib tashlashning Playwright'da yo'li yo'q, va
+        uch suite bitta ``page`` fixture'ni bo'lishadi — shuning uchun har
+        ``FormMonitor.__init__`` bu funksiyani qayta chaqiradi. Takroriy
+        listener ro'yxatga olinishining oldini skriptning o'zidagi
+        ``__formMonitorCaptureInstalled`` bayrog'i oladi: har document yangi
+        ``window`` bilan boshlanadi, birinchi qo'shilgan skript bayroqni
+        o'rnatadi, qolganlari jim chiqib ketadi.
+        """
+        try:
+            self.page.add_init_script(CAPTURE_JS_ERROR_SCRIPT)
+        except (PlaywrightError, AttributeError, TypeError):
+            pass
 
     def _remove_page_listeners(self):
         if not getattr(self, "_listeners_installed", False):
@@ -824,6 +1003,7 @@ class FormMonitor:
         self.failed_requests = []
         self.js_error_count = 0
         self.failed_request_count = 0
+        _reset_capture_signals(self.page)
 
     def update_filial(self, placeholder, actual_name):
         for case in self.planned_cases:
@@ -926,6 +1106,7 @@ class FormMonitor:
         allowed_warning = _allowed_warning_text(case, state)
         visible_error = _unexpected_visible_error(case, state)
         js_errors = list(state.get("js_errors") or [])
+        capture = state.get("capture_signals") or EMPTY_CAPTURE_SIGNALS
         usable = (
             path_matches
             and bool(state.get("content_ready"))
@@ -935,6 +1116,10 @@ class FormMonitor:
         )
         return {
             "js_errors": js_errors,
+            "capture_js_errors": list(capture["js_errors"])[:MAX_PAGE_EVENTS],
+            "capture_js_error_count": capture["js_error_count"],
+            "capture_resource_errors": list(capture["resource_errors"])[:MAX_PAGE_EVENTS],
+            "capture_resource_error_count": capture["resource_error_count"],
             "url_matches": path_matches,
             "title_matches": _title_matches(case, state),
             "title_verified": _title_verified(case, state),

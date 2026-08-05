@@ -108,6 +108,9 @@ class FakePage:
         self.wait_for_calls = []
         self.screenshot_kwargs = None
         self.listeners = {}
+        self.init_scripts = []
+        self.capture_js_errors = []
+        self.capture_resource_errors = []
 
     def on(self, event, handler):
         self.listeners.setdefault(event, []).append(handler)
@@ -131,6 +134,29 @@ class FakePage:
     def screenshot(self, **kwargs):
         self.screenshot_kwargs = kwargs
         return b"png"
+
+    def add_init_script(self, script):
+        self.init_scripts.append(script)
+
+    def evaluate(self, script):
+        """``form_monitor``ning o'qish/tozalash skriptlarini simulyatsiya qiladi.
+
+        A2 SPA route'da ``preventDefault`` sabab ``pageerror`` chiqmaydi —
+        test ``capture_js_errors``ni to'g'ridan-to'g'ri o'rnatib shu holatni
+        simulyatsiya qiladi (``page.emit("pageerror", ...)`` o'rniga).
+        """
+        if script == form_monitor.CAPTURE_RESET_SCRIPT:
+            self.capture_js_errors = []
+            self.capture_resource_errors = []
+            return None
+        if script == form_monitor.CAPTURE_READ_SCRIPT:
+            return {
+                "js": list(self.capture_js_errors),
+                "jsCount": len(self.capture_js_errors),
+                "resources": list(self.capture_resource_errors),
+                "resourceCount": len(self.capture_resource_errors),
+            }
+        return None
 
 
 class TerminalReporter:
@@ -884,6 +910,109 @@ def test_page_events_do_not_leak_between_forms(monkeypatch):
     monitor._remove_page_listeners()
     page.emit("pageerror", FakeJsError("finish'dan keyingi xato"))
     assert monitor.js_error_count == 0
+
+
+def test_form_monitor_installs_the_capture_js_error_script():
+    page = _a2_page("trade/tvt/visit_list", "Визиты")
+    FormMonitor(page, suite_name="Forms", planned_cases=[_case()])
+
+    assert len(page.init_scripts) == 1
+    assert "__formMonitorCaptureErrors" in page.init_scripts[0]
+
+
+def test_a2_capture_js_error_is_collected_but_does_not_fail_the_form(monkeypatch):
+    """Bosqich 7, 1-qadam: `pageerror` chiqmasa ham capture kanali ko'radi,
+    lekin hozircha faqat kuzatuv — status va `usable`ga ta'sir qilmaydi."""
+    _silence_allure(monkeypatch)
+    page = _a2_page("trade/tvt/visit_list", "Визиты")
+    case = _case()
+    monitor = FormMonitor(page, suite_name="Forms", planned_cases=[case])
+
+    def open_form_with_hidden_js_error():
+        # `pageerror` umuman emitilmaydi — bu A2 SPA route'da preventDefault
+        # tufayli kanal ko'r bo'lgan holatni simulyatsiya qiladi.
+        page.capture_js_errors = ["ReferenceError: PROBE is not defined"]
+
+    result = monitor.run_case(
+        case,
+        navigate=open_form_with_hidden_js_error,
+        validate=lambda: None,
+    )
+
+    assert result["status"] == PASSED
+    assert result["usable"] is True
+    assert result["checks"]["capture_js_error_count"] == 1
+    assert result["checks"]["capture_js_errors"] == [
+        "ReferenceError: PROBE is not defined"
+    ]
+    # Yiqitmaydigan kanal — kutilgan (legacy) js_errors bo'sh qoladi
+    assert result["checks"]["js_error_count"] == 0
+
+    summary = render_monitor_summary(
+        suite_name="Forms",
+        planned_count=1,
+        results=monitor.complete_results(),
+        blockers=[],
+    )
+    assert "CAPTURE-FAZA SIGNALLARI" in summary
+    assert "ReferenceError: PROBE is not defined" in summary
+
+
+def test_capture_resource_error_is_not_counted_as_a_js_exception(monkeypatch):
+    """Real o'lchovda topilgan holat (Plugin Marketplace): capture fazasi
+    yuklanmagan rasmning `error` eventini ham beradi, lekin bu JS exception
+    emas — aks holda buzuq rasm formani yolg'ondan qizil qilardi."""
+    _silence_allure(monkeypatch)
+    page = _a2_page("biruni/plg/plugin_catalog", "Plugin Marketplace")
+    case = _case(path="biruni/plg/plugin_catalog", title="Plugin Marketplace")
+    monitor = FormMonitor(page, suite_name="Forms", planned_cases=[case])
+
+    def open_form_with_broken_image():
+        page.capture_resource_errors = ["IMG https://smartup.online/api/b/biruni/m:load_image_v2"]
+
+    result = monitor.run_case(
+        case,
+        navigate=open_form_with_broken_image,
+        validate=lambda: None,
+    )
+
+    assert result["status"] == PASSED
+    assert result["checks"]["capture_js_error_count"] == 0
+    assert result["checks"]["capture_js_errors"] == []
+    assert result["checks"]["capture_resource_error_count"] == 1
+
+    summary = render_monitor_summary(
+        suite_name="Forms",
+        planned_count=1,
+        results=monitor.complete_results(),
+        blockers=[],
+    )
+    assert "Resurs yuklanish xatolari (1):" in summary
+    assert "JS exceptionlar" not in summary
+
+
+def test_capture_js_errors_do_not_leak_between_forms(monkeypatch):
+    _silence_allure(monkeypatch)
+    page = _a2_page("trade/tvt/visit_list", "Визиты")
+    cases = [
+        _case(1),
+        _case(2, path="trade/tvt/user_locations", title="Отслеживание"),
+    ]
+    monitor = FormMonitor(page, suite_name="Forms", planned_cases=cases)
+
+    def open_first_form():
+        page.capture_js_errors = ["Birinchi formaning capture xatosi"]
+
+    monitor.run_case(cases[0], navigate=open_first_form, validate=lambda: None)
+
+    def open_second_form():
+        page.url = "https://smartup.online/a2/trade/tvt/user_locations"
+        page.current_title = "Отслеживание"
+
+    second = monitor.run_case(cases[1], navigate=open_second_form, validate=lambda: None)
+
+    assert second["checks"]["capture_js_error_count"] == 0
+    assert second["checks"]["capture_js_errors"] == []
 
 
 def test_page_event_sample_is_capped_but_the_count_is_not(monkeypatch):

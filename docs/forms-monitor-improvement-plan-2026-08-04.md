@@ -18,7 +18,7 @@
 | 4 | Hisobot sifati (Taklif 3) | ✅ Bajarildi | — |
 | 5 | JS/network xatolari (Taklif 1) | ✅ Bajarildi (legacy; A2 ko'r) | — |
 | 6 | Shell helper refactori (Taklif 4) | ⬜ Kechiktirildi | — |
-| 7 | A2 formalarida JS xatolarini ko'rish | ⬜ Yangi, ochiq | — |
+| 7 | A2 formalarida JS xatolarini ko'rish | 🟡 1-qadam bajarildi; 2-qadam o'lchov kutmoqda | — |
 
 Har bosqich alohida commit. Bosqich 2 dan boshlab real run bilan tekshiriladi.
 
@@ -447,7 +447,11 @@ kanal ko'r.
 | Forma turi | Soni | `JS_ERROR` qamrovi |
 |---|---|---|
 | Legacy (Forms-01 87 + Forms-03 32) | **119** | ✅ ishlaydi — tasdiqlangan |
-| A2 (Forms-02 21 + Forms-01 1 + Forms-03 6) | **28** | ❌ ko'r (SPA route) |
+| A2 (Forms-02 21 + Forms-01 1 + Forms-03 6) | **28** | ❌ `pageerror` ko'r (SPA route) |
+
+> **Yangilandi 2026-08-05:** A2 ko'rligi Bosqich 7 ning capture kanali bilan
+> yopildi (`add_init_script`), lekin u hozircha faqat **kuzatadi** —
+> `JS_ERROR` statusi hamon 119 legacy formadagina beriladi.
 
 **Muhim tuzatish:** yuqorida "eng qimmatli topilma — `pageerror` kanali
 butunlay toza" deb yozilgan edi. To'g'rirog'i: **119 legacy formada toza**,
@@ -477,26 +481,94 @@ qattiqlashtirishning yolg'on-fail xavfi yo'qligi haqidagi xulosa o'zgarmaydi
 - **Muammo:** Bosqich 5 ning `JS_ERROR` tekshiruvi 119 legacy formada ishlaydi,
   28 A2 formada esa ko'r — A2 ilovasi `error` eventida `preventDefault()`
   chaqirgani uchun Playwright `pageerror` chiqmaydi (yuqoridagi jadval).
-- **Yechim (taklif):** `page.add_init_script` bilan **ilova kodidan oldin**
-  capture-fazada listener o'rnatish, chunki init script har document'da app
-  bundle'dan avval ishlaydi va `preventDefault` unga ta'sir qilmaydi:
+- **Yechim:** `page.add_init_script` bilan **ilova kodidan oldin** capture-fazada
+  listener o'rnatiladi. Init script har document'da app bundle'dan avval
+  ishlagani uchun `preventDefault` unga ta'sir qilmaydi.
 
-  ```js
-  window.__formMonitorErrors = [];
-  window.addEventListener("error", (e) => {
-      window.__formMonitorErrors.push(e.message);
-  }, true);
-  ```
+#### 1-qadam — faqat yig'ish — bajarildi (2026-08-05)
 
-  So'ng `capture_form_state` shu massivni o'qib `state["js_errors"]` ga
-  qo'shadi. `_reset_page_events` uni ham tozalaydi.
-- **Majburiy tartib:** avval **faqat yig'ish** (Bosqich 5 ning 1-qadami kabi) —
-  A2 formalarida qancha real JS shovqin borligi hech qachon o'lchanmagan, chunki
-  kanal ko'r edi. O'lchovsiz qattiqlashtirish 28 formani yolg'ondan qizil
-  qilishi mumkin.
-- **Diqqat:** `add_init_script` sahifadagi **barcha** frame'larga qo'llanadi va
-  suite'lar orasida umumiy `page` ishlatiladi — `finish()` da tozalash yo'li
-  o'ylanishi kerak.
+`CAPTURE_JS_ERROR_SCRIPT` `FormMonitor._install_page_listeners` ichida
+o'rnatiladi, `capture_form_state` uni `page.evaluate` bilan o'qiydi,
+`_reset_page_events` har case boshida tozalaydi. Natija `checks` ga
+`capture_js_errors` / `capture_resource_errors` bo'lib tushadi.
+
+Qarorlar:
+
+- **`usable` va `classify_form_failure` tegilmadi** — Bosqich 5 ning 1-qadami
+  kabi, filtr faqat shovqin o'lchangandan keyin yoziladi.
+- `add_init_script` ni olib tashlashning Playwright'da API'si yo'q va uch suite
+  bitta `page` fixture'ni bo'lishadi. Shu sabab skript o'zida
+  `__formMonitorCaptureInstalled` bayrog'i bor: har document yangi `window`
+  bilan boshlanadi, birinchi qo'shilgan nusxa bayroqni o'rnatadi, qolganlari
+  jim chiqadi. Ya'ni takroriy `FormMonitor.__init__` listener'ni ikkilantirmaydi.
+- Namuna JS tomonda 50 ta bilan cheklangan, **hisob cheklanmagan** — Bosqich 5
+  dagi `MAX_PAGE_EVENTS` qarori bilan bir xil mantiq.
+- Resurs URL'idan query string olib tashlanadi (token xavfi).
+
+##### O'lchov (Forms-02, 21 A2 forma, 4 ta real run)
+
+| Run | Kod | Natija | Vaqt |
+|---|---|---|---|
+| 1 | Capture v1 (oddiy skript) | 21/21 PASSED | 159 s |
+| 2 | Capture v2 | **12 PASSED, 9 NOT_OPENED** | 74 s |
+| 3 | Toza HEAD (kodsiz) | 21/21 PASSED | 154 s |
+| 4 | Capture v2 (takror) | 21/21 PASSED | 155 s |
+
+2-run 013-formadan boshlab 9 ta formani `URL_MISMATCH` bilan yiqitdi — hammasi
+o'sha bitta URLda (`mkw/input`) qotib qolgan, ya'ni ilova navigatsiyani
+to'xtatgan. Toza HEAD ham, o'sha kodning takroriy runi ham o'tgani uchun bu
+**flaky/muhit**, kod nuqsoni emas. Shared `autotest` serverida bunday hodisa
+bo'lishi mumkinligi qayd etildi.
+
+**Yig'ilgan signal (21 A2 forma):**
+
+| Signal | Soni | Izoh |
+|---|---|---|
+| Haqiqiy JS exception | **0** | — |
+| Resurs yuklanish xatosi | 1 | `IMG .../api/b/biruni/m:load_image_v2` (020 Plugin Marketplace) |
+
+##### Resurs xatosi JS exception emas — tuzatildi
+
+v1 skripti `String(event.message || event)` yozardi va hisobotda
+**`[object Event]`** chiqdi — diagnostik qiymati nol. Yorliq aynan
+`404 m:load_image_v2` bo'lgan **o'sha** formada chiqqani gipoteza berdi, va
+tasdiqlandi: capture fazasi `useCapture=true` bilan **resurs yuklanish**
+xatosini ham beradi (`img`/`script`/`link` yuklanmasa). Bu JS exception emas.
+
+Agar tuzatilmasdan qattiqlashtirilganda **buzuq rasm `Plugin Marketplace` ni
+qizil qilardi** — sof yolg'on fail, ustiga network kanali o'sha 404 ni
+allaqachon yozgan, ya'ni ikki marta hisoblanardi. Skript endi
+`event.target !== window && target.tagName` bo'yicha ajratadi va ikkalasi
+hisobotda alohida ko'rinadi.
+
+##### Kanal A2 SPA route'da ishlashi isbotlandi
+
+"0 JS xato" natijasi **"toza"** va **"kanal ko'r"** uchun bir xil ko'rinadi —
+Bosqich 5 da aynan shu xatoga yo'l qo'yilgan edi. Shu sabab vaqtinchalik probe
+bilan 013/014/015-formalarga sun'iy JS exception qo'yildi (keyin olib tashlandi):
+
+| Texnika | `pageerror`, A2 SPA route (Bosqich 5) | Capture kanali (yangi) |
+|---|---|---|
+| `setTimeout` | ❌ jim | ✅ `Uncaught Error: PROBE-setTimeout` |
+| `queueMicrotask` | ❌ jim | ✅ `Uncaught Error: PROBE-microtask` |
+| `requestAnimationFrame` | ❌ jim | ✅ `Uncaught Error: PROBE-rAF` |
+
+Ya'ni **A2 ko'r nuqtasi yopildi** va yorliqlar foydali
+(`Uncaught Error: <matn> @ <fayl>:<qator>`).
+
+#### 2-qadam — qattiqlashtirish — hali qilinmadi
+
+**Sabab:** `add_init_script` **barcha** sahifalarga qo'llanadi, ya'ni 119 legacy
+formaga ham. Shovqin esa atigi **21 formada** o'lchandi. Legacy'da bu kanal
+`pageerror` ko'rmaydigan narsalarni ushlashi mumkin — masalan Forms group'dagi
+204 ta `/page/tour/` 404 element orqali yuklansa, ular resurs xatosi bo'lib
+chiqadi. 21/147 bilan qattiqlashtirish Bosqich 5 ning o'z qoidasini buzgan
+bo'lardi.
+
+**Qayta ko'rish sharti:** to'liq Forms group (147 forma, ~11 daq) bilan capture
+kanalining shovqin poli o'lchansin. Undan keyin qaror:
+`state["js_errors"]` ga qo'shish (ya'ni `JS_ERROR` qilish) yoki alohida reason
+code berish.
 
 ---
 
