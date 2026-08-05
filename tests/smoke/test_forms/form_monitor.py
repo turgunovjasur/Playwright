@@ -67,6 +67,17 @@ REASON_DESCRIPTIONS = {
     "NOT_EXECUTED": "Bu forma uchun tekshiruv ishga tushmadi.",
 }
 
+ALERT_SELECTORS = (
+    "#biruniAlertExtended:visible",
+    "#biruniAlert:visible",
+    "[role='alert']:visible",
+    ".alert-danger:visible",
+    "[role='dialog']:visible .alert-danger:visible",
+    "[role='dialog']:visible [data-testid*='error' i]",
+)
+
+ALERT_WAIT_MS = 1200
+
 
 def reason_description(reason_code):
     return REASON_DESCRIPTIONS.get(reason_code, "")
@@ -105,9 +116,10 @@ def _safe_page_title(page):
         return ""
 
 
-def _safe_locator_visible(locator, *, timeout=500):
+def _safe_locator_visible(locator):
+    """``is_visible`` kutmaydi — bu ataylab lahzalik surat."""
     try:
-        return bool(locator.is_visible(timeout=timeout))
+        return bool(locator.is_visible())
     except (PlaywrightError, AttributeError, TypeError):
         return False
 
@@ -131,16 +143,25 @@ def _safe_visible_headings(page):
     return [_clean_text(heading) for heading in headings if _clean_text(heading)]
 
 
+def _wait_for_any_visible(page, selectors, *, timeout):
+    """Birinchi ko'rinadigan selektorni kutadi; hech biri chiqmasa jim qaytadi."""
+    try:
+        page.locator(", ".join(selectors)).first.wait_for(
+            state="visible",
+            timeout=timeout,
+        )
+    except (PlaywrightError, AttributeError, TypeError):
+        return
+
+
 def _visible_error_text(page):
-    """Faqat aniq error komponentlarini o'qiydi; oddiy dialog xato hisoblanmaydi."""
-    for selector in (
-        "#biruniAlertExtended:visible",
-        "#biruniAlert:visible",
-        "[role='alert']:visible",
-        ".alert-danger:visible",
-        "[role='dialog']:visible .alert-danger:visible",
-        "[role='dialog']:visible [data-testid*='error' i]",
-    ):
+    """Faqat aniq error komponentlarini o'qiydi; oddiy dialog xato hisoblanmaydi.
+
+    Server validatsiya xatosi heading chiqqandan keyin 300-500 ms kechikib
+    kelishi mumkin, shuning uchun lahzalik surat emas — alert kutiladi.
+    """
+    _wait_for_any_visible(page, ALERT_SELECTORS, timeout=ALERT_WAIT_MS)
+    for selector in ALERT_SELECTORS:
         locator = page.locator(selector).first
         if not _safe_locator_visible(locator):
             continue
@@ -180,7 +201,7 @@ def capture_form_state(page, *, ready=None):
         )
 
     loader_visible = any(
-        _safe_locator_visible(page.locator(selector).first, timeout=250)
+        _safe_locator_visible(page.locator(selector).first)
         for selector in (
             ".block-ui-overlay:visible",
             ".smt-skeleton:visible",
@@ -216,13 +237,30 @@ def _path_matches(case, state):
     return not expected_path or actual_path == expected_path
 
 
-def _title_matches(case, state):
-    expected_title = _clean_text(case.get("title"))
-    candidates = [
+def _title_candidates(state):
+    return [
         _clean_text(candidate)
         for candidate in (state.get("title_candidates") or [])
         if _clean_text(candidate)
     ]
+
+
+def _title_verified(case, state):
+    """Title haqiqatan taqqoslandimi — hisobot ``HA`` deb yolg'on aytmasligi uchun.
+
+    Legacy sahifada bironta heading topilmasa ``_title_matches`` taqqoslamasdan
+    ``True`` qaytaradi; bu bayroq o'sha holatni hisobotda ochiq ko'rsatadi.
+    """
+    if not _clean_text(case.get("title")):
+        return False
+    if not _title_candidates(state) and state.get("title_source") == "visible_heading":
+        return False
+    return True
+
+
+def _title_matches(case, state):
+    expected_title = _clean_text(case.get("title"))
+    candidates = _title_candidates(state)
     if not expected_title:
         return True
     if not candidates and state.get("title_source") == "visible_heading":
@@ -519,6 +557,24 @@ def render_monitor_summary(*, suite_name, planned_count, results, blockers):
             lines.append(format_form_result(result))
             lines.append("")
 
+    title_unverified = [
+        result
+        for result in results
+        if result.get("checks") and not result["checks"].get("title_verified")
+    ]
+    if title_unverified:
+        lines.extend(["TITLE TAQQOSLANMAGAN FORMALAR", "-" * 88])
+        lines.append(
+            "Sabab: sahifada ko'rinadigan heading topilmadi — title tekshiruvi "
+            "o'tkazib yuborildi."
+        )
+        for result in title_unverified:
+            lines.append(
+                f"⚠️ {result['number']:03d} | {result['filial']} | "
+                f"{result['track']} | {result['title']}"
+            )
+        lines.append("")
+
     not_checked = [result for result in results if result.get("status") == NOT_CHECKED]
     if not_checked:
         lines.extend(["TEKSHIRILMAGAN FORMALAR", "-" * 88])
@@ -702,6 +758,7 @@ class FormMonitor:
         return {
             "url_matches": path_matches,
             "title_matches": _title_matches(case, state),
+            "title_verified": _title_verified(case, state),
             "title_source": state.get("title_source") or "",
             "document_title": state.get("document_title") or "",
             "content_ready": bool(state.get("content_ready")),

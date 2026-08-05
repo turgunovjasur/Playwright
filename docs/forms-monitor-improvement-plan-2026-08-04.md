@@ -14,7 +14,7 @@
 | 0 | Forms-03 suite + `+add` tekshiruvini olib tashlash | ✅ Bajarildi | `e19cf60` |
 | 1 | Mexanik tozalash (#6, #8, #9, #10, #11) | ✅ Bajarildi | `8afabb3` |
 | 2 | Hisobotni ishonchli qilish (#3, #4) | ✅ Bajarildi | — |
-| 3 | Aniqlashni kuchaytirish (#1, #2, #7) | ⬜ Qolgan | — |
+| 3 | Aniqlashni kuchaytirish (#2, #7 bajarildi; #1 — trigger yo'q) | 🟡 Qismon | — |
 | 4 | Hisobot sifati (Taklif 3) | ⬜ Qolgan | — |
 | 5 | JS/network xatolari (Taklif 1) | ⬜ Qolgan | — |
 | 6 | Shell helper refactori (Taklif 4) | ⬜ Qaror kutilmoqda | — |
@@ -136,48 +136,99 @@ bazasiga yoziladi.
 
   Matnlar bir qadam surilgan ko'rinadi. Shu sabab `Возврат`ning
   `allowed_warnings` exact-match'i buzilgan.
-- **Holat:** Gipoteza — app matni o'zgargan bo'lishi ham mumkin.
-- **Yechim:** Har case'dan keyin `finally`da alertni yopib `hidden` kutish;
-  `validate`dan **oldin** "eski alert yo'q" shartini tekshirish. Matnlar
-  surilishi to'xtasa — bleed-through tasdiqlanadi.
-- **Tartib muhim:** avval state + screenshot olinadi, **keyin** alert yopiladi —
-  aks holda dalilni o'zimiz o'chiramiz.
+- **Yechim (reja):** Har case'dan keyin `finally`da alertni yopib `hidden`
+  kutish. **Tartib muhim:** avval state + screenshot olinadi, **keyin** alert
+  yopiladi — aks holda dalilni o'zimiz o'chiramiz.
 
-#### 3.2. `is_visible(timeout=...)` e'tiborga olinmaydi `#2`
-- **Joyi:** `form_monitor.py:108` (`_safe_locator_visible`), chaqiruvlari
-  `:145, 155, 163, 172, 178, 183`
-- **Muammo:** O'rnatilgan Playwright dokumentatsiyasi:
-  *"Deprecated: This option is ignored. `locator.is_visible()` does not wait."*
-  Ya'ni `timeout=500`/`timeout=250` — **o'lik parametrlar**, tekshiruv lahzalik
-  surat. Natijada **xato aniqlash bitta lahzada** bo'ladi: `expect_form_open`
-  heading/URL'ni kutib qaytadi, keyin darhol alert o'qiladi. Server validatsiya
-  xatosi 300–500 ms keyin kelsa — umuman ko'rinmaydi va forma **yolg'on PASSED**
-  bo'ladi. Hisobotda hech qanday iz qolmaydi, shuning uchun bu muammoni
-  hisobotdan topib bo'lmaydi.
-- **Yechim:** Alert uchun kutadigan usul —
-  `locator.wait_for(state="visible", timeout=~1200)`. Faqat "alert bormi?"
-  tekshiruviga kutish kerak; `loader_visible` uchun lahzalik surat aslida
-  to'g'ri. O'lik `timeout=` parametrlarini olib tashlash — ular kodni yolg'on
-  tushuntiryapti.
-- **Bog'liqlik:** #1 dan **ayirib bo'lmaydi**. #2 ni yolg'iz tuzatsak alert
-  o'qish ishonchli bo'ladi, ya'ni oldingi formadan qolgan alert ham
-  kafolatlangan o'qiladi → yolg'on `APPLICATION_ERROR` soni oshadi.
+##### Dalil yig'ildi (2026-08-05) — trigger yo'q
 
-#### 3.3. Title tekshiruvida sirg'alib o'tish yo'li `#7`
-- **Joyi:** `form_monitor.py:219` (`_title_matches`), `if not candidates and
-  state.get("title_source") == "visible_heading": return True`
-- **Muammo:** Tarjimasi: "legacy sahifada bironta heading topilmasa — title
-  tekshiruvidan o'tgan deb hisobla." Hisobotda `Title mosmi: HA` chiqadi,
-  aslida taqqoslash umuman bo'lmagan. `content_ready` (`b-page`/`.subheader`)
-  buni qismon tutadi, lekin `.subheader` bor / heading yo'q holatda ikkalasi
-  ham o'tib ketadi.
-- **Yechim (tavsiya):** `True` qaytarishni qoldirish, lekin `checks` ga
-  `title_verified: False` bayrog'i qo'shish → hisobotda "tekshirilmadi
-  (heading topilmadi)" deb yozilsin. Hech narsani buzmaydi, hisobot rostgo'y
-  bo'ladi.
-- **Muqobil (qattiq):** heading topilmasa `False` qaytarish → `TITLE_MISMATCH`.
-  Xavfi: heading ishlatmaydigan legacy sahifalar (dashboard, grafik) yiqilishi
-  mumkin — avval qaysilari borligini tekshirish kerak.
+Foydalanuvchi savol ko'tardi: `+add` case'lar olib tashlangani uchun bu muammo
+qolmaganmi? Dalil yig'ish uchun **avval 3.2 qilindi** (aks holda toza run
+"alert yo'q" emas, "alertni ushlamadik" degani bo'lishi mumkin edi), so'ng
+runlar bajarildi:
+
+| Manba | Natija |
+|---|---|
+| `grep add_icon` uchta suite'da | 0 ta ishlatish |
+| `grep allowed_warnings` uchta suite'da | 0 ta ishlatish |
+| Forms-01, 88 forma, ishonchli alert o'qish bilan | **0 ta `APPLICATION_ERROR`** |
+| Shundan 8 ta `Импорт`/`Импорт фото` action formasi | hammasi toza `PASSED` |
+| Forms-03, 38 forma | **0 ta `APPLICATION_ERROR`** |
+
+Ya'ni **126 formada bitta ham alert chiqmaydi**, shuning uchun bleed-through
+hozir yuz bera olmaydi. 039/040/041 dalili butunlay `+add` case'lardan kelgan
+va o'sha gipotezani endi tekshirib bo'lmaydi (case'lar mavjud emas).
+
+- **Holat:** Foydalanuvchi haq — hozirgi qamrovda trigger yo'q.
+- **Qayta ko'rish sharti:** biror suite'ga creation/`+add` forma qo'shilsa
+  **yoki** hisobotda birinchi real `APPLICATION_ERROR` ko'rinsa. O'sha kuni
+  tozalash bo'lmasa bitta real nuqson ikkita fail beradi va ikkinchisi yolg'on.
+- **Agar qilinsa — tavsiya etilgan shakl:** har formada shartsiz Escape bosish
+  **emas** (u o'zi flakiness manbasi bo'lishi mumkin — masalan "o'zgarishni
+  bekor qilasizmi?" dialogini chaqirib yuborishi), balki faqat o'sha case'ning
+  captured `state["visible_error"]` bo'sh bo'lmaganda tozalash. Bu bugungi 126
+  formada **no-op**, ya'ni qo'shimcha xavf ham, qo'shimcha vaqt ham nol.
+
+#### 3.2. `is_visible(timeout=...)` e'tiborga olinmaydi `#2` — hal qilindi
+
+O'lik `timeout=` parametrlari olib tashlandi (`_safe_locator_visible` dan va
+`loader_visible` chaqiruvidan) — ular kodni yolg'on tushuntirardi. Alert endi
+kutiladi: `ALERT_SELECTORS` moduldagi konstanta bo'ldi va `_visible_error_text`
+avval `_wait_for_any_visible(page, ALERT_SELECTORS, timeout=ALERT_WAIT_MS)`
+chaqiradi, keyin qaysi selektor ko'rinadi deb lahzalik skan qiladi.
+
+`loader_visible` uchun lahzalik surat **ataylab qoldirildi** — u yerda kutish
+noto'g'ri bo'lardi.
+
+**6 selektorni alohida kutish yo'li tanlanmadi** — u 6 × 1200 ms = 7.2 s har
+formaga tushardi. O'rniga vergul bilan birlashtirilgan bitta locator kutiladi:
+alert chiqsa **darhol** qaytadi, chiqmasa bir marta timeout to'laydi.
+
+Birlashtirilgan selektor real Chromium'da tekshirildi (yaroqsiz selektor
+`PlaywrightError` beradi va u jim yutiladi — ya'ni alert **umuman**
+aniqlanmasligi xavfi bor edi): yashirin `#biruniAlert` sanalmadi, ko'rinadigan
+`.alert-danger` topildi, `count()=1`.
+
+**O'lchangan narx:** Forms-03 38 forma — 3.2 dan oldin **146.78 s**, keyin
+**184.10 s** → **+0.98 s har formaga**. Bu kutish haqiqatan ishlayotganining
+dalili ham (jim yiqilsa vaqt o'zgarmasdi). To'liq Forms group (147 forma) uchun
+taxminan **+2.4 min**.
+
+`ALERT_WAIT_MS = 1200` — rejadagi qiymat. Kutilgan xato oynasi 300–500 ms
+bo'lgani uchun ~700 ms ga tushirish narxni ikki barobar kamaytiradi;
+**foydalanuvchi qarori kutilmoqda**.
+
+Regression testi: `test_late_application_error_is_not_missed_by_an_instant_snapshot`
+— `FakeLocator.wait_for` kechikkan alertni ochib beradi. Kutish qatorini
+o'chirib test yiqilishi tasdiqlandi (`visible_error == ""`).
+
+#### 3.3. Title tekshiruvida sirg'alib o'tish yo'li `#7` — yumshoq variant qilindi
+
+`_title_matches` xatti-harakati **o'zgarmadi** (hali ham `True`), lekin
+`checks` ga `title_verified` bayrog'i qo'shildi:
+
+- `_title_candidates(state)` helperi ajratildi (`_title_matches` va
+  `_title_verified` ikkisi ham ishlatadi, takrorlanish yo'q).
+- `_title_verified` faqat "taqqoslash haqiqatan bo'ldimi" degan savolga javob
+  beradi: title bo'sh bo'lsa yoki heading topilmasa `False`.
+- `format_form_result` ga `Title tekshirildimi: YOQ (heading topilmadi)` qatori
+  qo'shildi — lekin u faqat **fail** bo'lgan formalar uchun chiqadi, holbuki
+  bu teshik aynan **PASSED** formalarda yashiringan. Shuning uchun
+  `render_monitor_summary` ga alohida `TITLE TAQQOSLANMAGAN FORMALAR` bo'limi
+  qo'shildi — u status'ga qaramay ro'yxatlaydi.
+- `NOT_CHECKED` formalar bo'limga tushmaydi (`checks` bo'sh dict).
+
+**Qattiq variant uchun dalil (2026-08-05 runlar):** Forms-01 da 87 legacy +
+1 a2, Forms-03 da 32 legacy + 6 a2 forma — **119 legacy formaning hech birida**
+"heading topilmadi" holati yuz bermadi, `TITLE TAQQOSLANMAGAN` bo'limi ikkala
+runda ham bo'sh chiqdi. Ya'ni sirg'alib o'tish yo'li hozirgi qamrovda **amalda
+ishlatilmayapti**, va `False` qaytaradigan qattiq variant hech narsani
+yiqitmasdi. Forms-02 (a2, `title_source=document`) bu yo'lga umuman tushmaydi.
+
+Shunga qaramay yumshoq variant qoldirildi: qattiq variantning yagona foydasi —
+kelajakda heading yo'qolsa fail berish; lekin o'sha holatda `content_ready`
+(`b-page`/`.subheader`) ham katta ehtimol bilan yiqiladi. Hisobot bo'limi esa
+teshik ochilsa darhol ko'rinadigan qiladi.
 
 ### Bosqich 4 — Hisobot sifati
 

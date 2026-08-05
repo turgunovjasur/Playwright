@@ -65,6 +65,17 @@ class FakeLocator:
     def is_visible(self, timeout=None):
         return self.selector in self.page.visible_selectors
 
+    def wait_for(self, *, state=None, timeout=None):
+        self.page.wait_for_calls.append((self.selector, timeout))
+        revealed = [
+            selector
+            for selector in self.page.late_visible_selectors
+            if selector in self.selector
+        ]
+        if not revealed:
+            raise PlaywrightError(f"Timeout {timeout}ms exceeded")
+        self.page.visible_selectors.update(revealed)
+
     def inner_text(self, timeout=None):
         if self.selector in self.page.inner_text_errors:
             raise PlaywrightError("inner_text failed")
@@ -86,12 +97,15 @@ class FakePage:
         visible_selectors=None,
         text_by_selector=None,
         inner_text_errors=None,
+        late_visible_selectors=None,
     ):
         self.url = url
         self.current_title = title
         self.visible_selectors = set(visible_selectors or [])
         self.text_by_selector = dict(text_by_selector or {})
         self.inner_text_errors = set(inner_text_errors or [])
+        self.late_visible_selectors = set(late_visible_selectors or [])
+        self.wait_for_calls = []
         self.screenshot_kwargs = None
 
     def title(self):
@@ -373,6 +387,110 @@ def test_failure_is_classified_from_the_state_that_caused_it(monkeypatch):
     assert result["status"] == OPENED_WITH_DEFECT
     assert result["checks"]["visible_error"] == "× Нет доступа к форме"
     assert "[APPLICATION_ERROR]" in result["detail"]
+
+
+def test_late_application_error_is_not_missed_by_an_instant_snapshot():
+    late_alert = "#biruniAlert:visible"
+    page = FakePage(
+        url="https://smartup.online/a2/trade/tvt/visit_list",
+        title="Визиты",
+        visible_selectors={"main"},
+        text_by_selector={
+            "main": "Forma kontenti",
+            late_alert: "Нет доступа к форме",
+        },
+        late_visible_selectors={late_alert},
+    )
+
+    state = capture_form_state(page)
+
+    assert state["visible_error"] == "Нет доступа к форме"
+    waited_selector, waited_timeout = page.wait_for_calls[0]
+    assert late_alert in waited_selector
+    assert waited_timeout == form_monitor.ALERT_WAIT_MS
+
+
+def test_missing_page_signals_are_read_without_a_dead_timeout_argument():
+    page = FakePage(
+        url="https://smartup.online/#/!token/anor/mr/region_list",
+        title="Регионы",
+        visible_selectors={"b-page:visible"},
+    )
+
+    state = capture_form_state(page)
+
+    assert state["content_ready"] is True
+    assert state["loader_visible"] is False
+    assert "timeout" not in inspect.signature(form_monitor._safe_locator_visible).parameters
+
+
+def test_legacy_page_without_heading_reports_an_unverified_title():
+    case = form_case(
+        number=4,
+        filial="Администрирование",
+        navbar_tab="Справочники",
+        menu_column="Справочники",
+        menu_item="Дашборд",
+        title="Дашборд",
+        expected_path="anor/mcg/mml_dashboard",
+        shell="legacy",
+    )
+    state = {
+        "canonical_path": "anor/mcg/mml_dashboard",
+        "title_candidates": [],
+        "title_source": "visible_heading",
+        "actual_title": "",
+        "content_ready": True,
+        "visible_error": "",
+        "loader_visible": False,
+    }
+
+    checks = FormMonitor._checks(case, state)
+
+    assert checks["title_matches"] is True
+    assert checks["title_verified"] is False
+
+    state["title_candidates"] = ["Дашборд"]
+    assert FormMonitor._checks(case, state)["title_verified"] is True
+
+
+def test_summary_lists_forms_whose_title_was_never_compared():
+    unverified = build_form_result(
+        number=1,
+        filial="Администрирование",
+        navbar_tab="Справочники",
+        menu_column="Справочники",
+        menu_item="Дашборд",
+        title="Дашборд",
+        expected_path="anor/mcg/mml_dashboard",
+        actual_url="https://smartup.online/#/!token/anor/mcg/mml_dashboard",
+        status=PASSED,
+        checks={"title_matches": True, "title_verified": False},
+    )
+    not_checked = build_form_result(
+        number=2,
+        filial="Администрирование",
+        navbar_tab="Справочники",
+        menu_column="Справочники",
+        menu_item="Цены",
+        title="Цены",
+        expected_path="anor/mr/price_list",
+        actual_url="",
+        status=NOT_CHECKED,
+        reason_code="NOT_EXECUTED",
+        checks={},
+    )
+
+    summary = render_monitor_summary(
+        suite_name="Forms-01",
+        planned_count=2,
+        results=[unverified, not_checked],
+        blockers=[],
+    )
+
+    assert "TITLE TAQQOSLANMAGAN FORMALAR" in summary
+    assert summary.count("⚠️ 001") == 1
+    assert "⚠️ 002" not in summary
 
 
 def test_form_monitor_classifies_loaded_page_with_wrong_title_as_defect():

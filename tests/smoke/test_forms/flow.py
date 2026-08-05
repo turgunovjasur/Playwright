@@ -227,6 +227,8 @@ def format_form_result(result):
                 [
                     f"  Joriy URL mosmi    : {'HA' if checks.get('url_matches') else 'YOQ'}",
                     f"  Title mosmi        : {'HA' if checks.get('title_matches') else 'YOQ'}",
+                    "  Title tekshirildimi: "
+                    f"{'HA' if checks.get('title_verified') else 'YOQ (heading topilmadi)'}",
                     f"  Title manbasi      : {checks.get('title_source') or '—'}",
                     f"  Kontent yuklandimi : {'HA' if checks.get('content_ready') else 'YOQ'}",
                     f"  Loader qoldimi     : {'HA' if checks.get('loader_visible') else 'YOQ'}",
