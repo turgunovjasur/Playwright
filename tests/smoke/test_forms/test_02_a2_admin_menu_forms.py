@@ -257,22 +257,18 @@ HEAD profil → operatsion filial (1 ta)
 import allure
 import pytest
 
-from tests.smoke.flows.flow_authorization import authorization, company_url
-from tests.smoke.test_forms.flow import (
-    first_operational_filial,
-    run_form_cases,
+from tests.smoke.test_forms.form_cases import (
+    form_test_identity,
+    select_form_definitions,
+    validate_menu_test_coverage,
 )
-from tests.smoke.test_forms.form_monitor import (
-    FormMonitor,
-    build_form_case_inventory,
-)
-from utils.angular_base_page import AngularBasePage
-from utils.base_page import BasePage
+from tests.smoke.test_forms.menu_column_runner import run_a2_menu_column_forms
 
 
 pytestmark = [
     pytest.mark.smoke_group(
         "A2 Admin Menu Forms",
+        independent=True,
         setup_independent=True,
     ),
     allure.epic("Smoke"),
@@ -429,141 +425,143 @@ PAGE_LINK_A2_FORMS = [
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def _open_a2_dashboard_shell(page, angular):
-    """Target formani bootstrap uchun ikki marta ochmasdan A2 shellga kiradi."""
-    page.goto(
-        f"{company_url()}/a2/trade/intro/dashboard",
-        wait_until="domcontentloaded",
-        timeout=30_000,
+A2_MENU_TESTS = [
+    {
+        "shell": "a2",
+        "navbar_tab": "Главное",
+        "menu_column": "Дополнительное",
+        "progress_test_id": "forms_02_a2_main_extra",
+    },
+    {
+        "shell": "a2",
+        "navbar_tab": "Продажа",
+        "menu_column": "Визиты",
+        "progress_test_id": "forms_02_a2_sales_visits",
+    },
+    {
+        "shell": "a2",
+        "navbar_tab": "Продажа",
+        "menu_column": "Отчеты по продажам",
+        "progress_test_id": "forms_02_a2_sales_reports",
+    },
+    {
+        "shell": "a2",
+        "navbar_tab": "Продажа",
+        "menu_column": "Отчеты по визитам",
+        "progress_test_id": "forms_02_a2_visit_reports",
+    },
+    {
+        "shell": "a2",
+        "navbar_tab": "Склад",
+        "menu_column": "Справочники",
+        "progress_test_id": "forms_02_a2_warehouse_references",
+    },
+    {
+        "shell": "a2",
+        "navbar_tab": "Склад",
+        "menu_column": "Отчеты",
+        "progress_test_id": "forms_02_a2_warehouse_reports",
+    },
+    {
+        "shell": "a2",
+        "navbar_tab": "Финансы",
+        "menu_column": "Отчеты",
+        "progress_test_id": "forms_02_a2_finance_reports",
+    },
+    {
+        "shell": "a2",
+        "navbar_tab": "Торговый маркетинг",
+        "menu_column": "Отчеты",
+        "progress_test_id": "forms_02_a2_marketing_reports",
+    },
+    {
+        "shell": "a2",
+        "navbar_tab": "Оборудование",
+        "menu_column": "Дополнительное",
+        "progress_test_id": "forms_02_a2_equipment_extra",
+    },
+    {
+        "shell": "a2",
+        "navbar_tab": "Плагин",
+        "menu_column": None,
+        "progress_test_id": "forms_02_a2_plugin_no_column",
+    },
+    {
+        "shell": "a2",
+        "navbar_tab": "Справочники",
+        "menu_column": "Маркетинг",
+        "progress_test_id": "forms_02_a2_references_marketing",
+    },
+    {
+        "shell": "a2",
+        "navbar_tab": "Склад",
+        "menu_column": "Документы",
+        "progress_test_id": "forms_02_a2_warehouse_documents",
+    },
+]
+
+for _menu_test in A2_MENU_TESTS:
+    _menu_test["test_identity"] = form_test_identity(
+        shell=_menu_test["shell"],
+        navbar_tab=_menu_test["navbar_tab"],
+        menu_column=_menu_test["menu_column"],
     )
-    angular.wait_for_loader(timeout=30_000)
+
+validate_menu_test_coverage(
+    A2_MENU_TESTS,
+    ADMIN_A2_FORMS,
+    OPERATIONAL_A2_FORMS,
+    PAGE_LINK_A2_FORMS,
+    default_shell="a2",
+)
 
 
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-def run_a2_admin_menu_forms(page, *, terminal_reporter=None):
-    """21 ta active A2 formani markaziy monitor bilan kuzatib tekshiradi."""
-    base = BasePage(page)
-    angular = AngularBasePage(page)
-    operational_placeholder = "<operatsion filial>"
-
-    admin_inventory = build_form_case_inventory(
+def run_a2_menu_identity_forms(
+    page,
+    *,
+    menu_test,
+    terminal_reporter=None,
+    checks=None,
+    diagnostics=None,
+):
+    """Bitta A2 ``navbar_tab + menu_column`` formasini monitor bilan ochadi."""
+    navbar_tab = menu_test["navbar_tab"]
+    menu_column = menu_test["menu_column"]
+    admin_forms = select_form_definitions(
         ADMIN_A2_FORMS,
-        start_number=1,
-        filial="Администрирование",
-        section="admin",
-        shell="a2",
+        navbar_tab=navbar_tab,
+        menu_column=menu_column,
     )
-    admin_cases = admin_inventory["planned"]
-    operational_inventory = build_form_case_inventory(
+    operational_forms = select_form_definitions(
         OPERATIONAL_A2_FORMS,
-        start_number=1 + len(admin_cases),
-        filial=operational_placeholder,
-        section="operational-menu",
-        shell="a2",
-    )
-    operational_cases = operational_inventory["planned"]
-    page_link_inventory = build_form_case_inventory(
         PAGE_LINK_A2_FORMS,
-        start_number=1 + len(admin_cases) + len(operational_cases),
-        filial=operational_placeholder,
-        section="operational-page-link",
-        shell="a2",
+        navbar_tab=navbar_tab,
+        menu_column=menu_column,
     )
-    page_link_cases = page_link_inventory["planned"]
-    planned_cases = admin_cases + operational_cases + page_link_cases
-    skipped_cases = (
-        admin_inventory["skipped"]
-        + operational_inventory["skipped"]
-        + page_link_inventory["skipped"]
-    )
-    admin_first = admin_cases[0]["number"] if admin_cases else None
-    operational_first = operational_cases[0]["number"] if operational_cases else None
-    monitor = FormMonitor(
+    return run_a2_menu_column_forms(
         page,
-        suite_name="Forms-02 — A2 admin",
-        planned_cases=planned_cases,
-        skipped_cases=skipped_cases,
+        suite_name=f"Forms-02 — {menu_test['test_identity']}",
+        navbar_tab=navbar_tab,
+        menu_column=menu_column,
+        admin_forms=admin_forms,
+        operational_forms=operational_forms,
         terminal_reporter=terminal_reporter,
-        progress_test_id="test_forms_02_a2_admin",
+        progress_test_id=menu_test["progress_test_id"],
+        checks=checks,
+        diagnostics=diagnostics,
     )
 
-    try:
-        monitor.precondition(
-            "Admin avtorizatsiyasi",
-            lambda: authorization(page, who="admin"),
-            affected_case_number=admin_first,
-        )
-        if monitor.blocked:
-            return
 
-        monitor.precondition(
-            "Legacy shellni 'Администрирование' filialiga o'tkazish",
-            lambda: base.switch_filial(name="Администрирование"),
-            affected_case_number=admin_first,
-        )
-        if monitor.blocked:
-            return
-
-        operational_filial = monitor.precondition(
-            "Operatsion filialni aniqlash",
-            lambda: first_operational_filial(page),
-            affected_case_number=admin_first,
-        )
-        if monitor.blocked:
-            return
-        monitor.update_filial(operational_placeholder, operational_filial)
-        admin_cases = monitor.cases(section="admin")
-        operational_cases = monitor.cases(section="operational-menu")
-        page_link_cases = monitor.cases(section="operational-page-link")
-
-        with allure.step("1 - 'Администрирование' filialidagi OAuth2 list forma"):
-            monitor.precondition(
-                "A2 dashboard shellga kirish",
-                lambda: _open_a2_dashboard_shell(page, angular),
-                affected_case_number=admin_first,
-            )
-            if monitor.blocked:
-                return
-
-            monitor.precondition(
-                "A2 filialini 'Администрирование' bilan sinxronlash",
-                lambda: angular.switch_filial(name="Администрирование"),
-                affected_case_number=admin_first,
-            )
-            if monitor.blocked:
-                return
-
-            run_form_cases(page, admin_cases, monitor=monitor)
-
-        monitor.precondition(
-            f"A2 shellni '{operational_filial}' filialiga o'tkazish",
-            lambda: angular.switch_filial(name=operational_filial),
-            affected_case_number=operational_first,
-        )
-        if monitor.blocked:
-            return
-
-        with allure.step(f"2 - '{operational_filial}' filialidagi menu formalar"):
-            run_form_cases(page, operational_cases, monitor=monitor)
-
-        with allure.step(
-            "3 - Parent forma yuqorisidagi page link orqali ochiladigan formalar"
-        ):
-            run_form_cases(page, page_link_cases, monitor=monitor)
-    finally:
-        with allure.step(f"4 - {len(planned_cases)} ta A2 forma natijalarini jamlash"):
-            monitor.finish()
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-@allure.title("A2 admin formalar — aniq menyu qadamlari orqali ochilish smoke")
-def test_a2_admin_menu_forms(page, pytestconfig):
-    run_a2_admin_menu_forms(
+@pytest.mark.parametrize(
+    "menu_test",
+    A2_MENU_TESTS,
+    ids=[item["test_identity"] for item in A2_MENU_TESTS],
+)
+def test_a2_menu_identity_forms(page, pytestconfig, menu_test):
+    allure.dynamic.title(f"{menu_test['test_identity']} formalarini ochish")
+    run_a2_menu_identity_forms(
         page,
+        menu_test=menu_test,
         terminal_reporter=pytestconfig.pluginmanager.get_plugin(
             "terminalreporter"
         ),

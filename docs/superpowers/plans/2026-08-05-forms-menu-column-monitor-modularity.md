@@ -34,8 +34,8 @@
 | 2. Check modulini ajratish | COMPLETED | `7a89862` |
 | 3. Diagnostika modulini ajratish | COMPLETED | `b052b6d` |
 | 4. Configurable FormMonitor va `OBSERVED_ONLY` | COMPLETED | `dee5521` |
-| 5. Case identity, avtomatik label va menu-column runner | COMPLETED | pending commit |
-| 6. Mavjud Forms testlari va runner migratsiyasi | IN PROGRESS | — |
+| 5. Case identity, avtomatik label va menu-column runner | COMPLETED | `d09730a` |
+| 6. Mavjud Forms testlari va runner migratsiyasi | COMPLETED | pending commit |
 | 7. Reporting schema/analyzer/docs | PENDING | — |
 | 8. Yakuniy static verifikatsiya | PENDING | — |
 
@@ -291,31 +291,31 @@
 - Consumes: `run_legacy_menu_column_forms(...)`, `run_a2_menu_column_forms(...)` va mavjud form definitionlar.
 - Produces: har unique `shell + navbar_tab + menu_column` uchun alohida pytest wrapper va o‘zgarmagan total active/skipped inventory.
 
-- [ ] **Step 1: mavjud definitionlarni composite identity bo‘yicha inventory qilish**
+- [x] **Step 1: mavjud definitionlarni composite identity bo‘yicha inventory qilish**
 
   Har forma aynan bitta groupda qolishi, admin/operational/direct/page-link/action sectioni saqlanishi tekshiriladi.
 
-- [ ] **Step 2: `Справочники` leafini menu-column run funksiyalariga ajratish**
+- [x] **Step 2: `Справочники` leafini menu-column run funksiyalariga ajratish**
 
   `Справочники`, `Основное`, `Маркетинг` identitylari alohida test bo‘ladi; admin-only va operational sectionlar tegishli identity ichida qoladi.
 
-- [ ] **Step 3: `Продажа` leafini menu-column run funksiyalariga ajratish**
+- [x] **Step 3: `Продажа` leafini menu-column run funksiyalariga ajratish**
 
   Har mavjud `menu_column` alohida test; active/intentional skip pathlar yo‘qolmaydi.
 
-- [ ] **Step 4: A2 leafini composite identitylarga ajratish**
+- [x] **Step 4: A2 leafini composite identitylarga ajratish**
 
   Takrorlanuvchi column nomlari `navbar_tab` bilan ajratiladi; admin va operational filial konteksti saqlanadi.
 
-- [ ] **Step 5: Forms runner wrapperlarini yangilash**
+- [x] **Step 5: Forms runner wrapperlarini yangilash**
 
-  Har wrapperda stable `@allure.title`, `progress_test_id` va bitta `run_*` chaqiruvi bo‘ladi. Bir leaf test boshqa leaf testni chain qilmaydi.
+  Har parametrized wrapperda stable `allure.dynamic.title`, `progress_test_id` va bitta `run_*` chaqiruvi bo‘ladi. Bir leaf test boshqa leaf testni chain qilmaydi.
 
-- [ ] **Step 6: total inventory va duplicate consumerlarni read-only tekshirish**
+- [x] **Step 6: total inventory va duplicate consumerlarni read-only tekshirish**
 
   Migrationdan oldingi active/intentional skip total bilan keyingi total teng bo‘lishi kerak; bir forma ikki testda takrorlanmasligi kerak.
 
-- [ ] **Step 7: static verifikatsiya va commit**
+- [x] **Step 7: static verifikatsiya va commit**
 
   Syntax parse va `git diff --check`dan keyin alohida commit.
 

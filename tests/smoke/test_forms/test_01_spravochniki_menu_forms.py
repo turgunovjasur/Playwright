@@ -13,16 +13,12 @@ haqiqiy URL bilan hisobot qilinadi.
 import allure
 import pytest
 
-from tests.smoke.flows.flow_authorization import authorization
-from tests.smoke.test_forms.flow import (
-    first_operational_filial,
-    run_form_cases,
-    switch_forms_filial,
+from tests.smoke.test_forms.form_cases import (
+    form_test_identity,
+    select_form_definitions,
+    validate_menu_test_coverage,
 )
-from tests.smoke.test_forms.form_monitor import (
-    FormMonitor,
-    build_form_case_inventory,
-)
+from tests.smoke.test_forms.menu_column_runner import run_legacy_menu_column_forms
 
 
 pytestmark = [
@@ -719,139 +715,96 @@ ADMIN_HIDDEN_FORMS = [
 ]
 
 
-def run_spravochniki_menu_forms(page, *, terminal_reporter=None):
-    """Testcase: ``Справочники`` tabidagi barcha user-visible forma yo'llarini ochish.
+SPRAVOCHNIKI_MENU_TESTS = [
+    {
+        "shell": "legacy",
+        "navbar_tab": NAVBAR_TAB,
+        "menu_column": "Справочники",
+        "progress_test_id": "forms_01_spravochniki_references",
+    },
+    {
+        "shell": "legacy",
+        "navbar_tab": NAVBAR_TAB,
+        "menu_column": "Основное",
+        "progress_test_id": "forms_01_spravochniki_main",
+    },
+    {
+        "shell": "legacy",
+        "navbar_tab": NAVBAR_TAB,
+        "menu_column": "Маркетинг",
+        "progress_test_id": "forms_01_spravochniki_marketing",
+    },
+]
 
-    1. Birinchi operatsion filialni topib, 33 ta aktiv direct menu formani tekshirish.
-    2. Operatsion filialdagi page-link, nested link va hidden formalarni tekshirish.
-    3. ``Администрирование``ga o'tib, faqat shu filialga xos yo'llarni tekshirish.
-    4. Jami 88 ta aktiv navigatsiya natijasini terminal va Allurega biriktirish.
-
-    ``Продавцы`` va ``Публикация в бот`` parentlari ostidagi 12 ta yo'l
-    umumiy ``SKIPPED_FORMS`` registry'si orqali test rejasiga qo'shilmaydi.
-    """
-    operational_placeholder = "<operatsion filial>"
-    planned_cases = []
-    skipped_cases = []
-    number = 1
-    for cases, filial, section in (
-        (OPERATIONAL_DIRECT_FORMS, operational_placeholder, "operational-direct"),
-        (OPERATIONAL_PAGE_LINK_FORMS, operational_placeholder, "operational-page-link"),
-        (OPERATIONAL_HIDDEN_FORMS, operational_placeholder, "operational-hidden"),
-        (ADMIN_DIRECT_FORMS, "Администрирование", "admin-direct"),
-        (ADMIN_PAGE_LINK_FORMS, "Администрирование", "admin-page-link"),
-        (ADMIN_HIDDEN_FORMS, "Администрирование", "admin-hidden"),
-    ):
-        inventory = build_form_case_inventory(
-            cases,
-            navbar_tab=NAVBAR_TAB,
-            start_number=number,
-            filial=filial,
-            section=section,
-        )
-        planned = inventory["planned"]
-        planned_cases.extend(planned)
-        skipped_cases.extend(inventory["skipped"])
-        number += len(planned)
-    expected_count = len(planned_cases)
-
-    monitor = FormMonitor(
-        page,
-        suite_name="Forms-01 — Справочники",
-        planned_cases=planned_cases,
-        skipped_cases=skipped_cases,
-        terminal_reporter=terminal_reporter,
-        progress_test_id="test_forms_01_spravochniki",
+for _menu_test in SPRAVOCHNIKI_MENU_TESTS:
+    _menu_test["test_identity"] = form_test_identity(
+        shell=_menu_test["shell"],
+        navbar_tab=_menu_test["navbar_tab"],
+        menu_column=_menu_test["menu_column"],
     )
-    try:
-        monitor.precondition(
-            "Admin avtorizatsiyasi",
-            lambda: authorization(page, who="admin"),
-            affected_case_number=1,
-        )
-        if monitor.blocked:
-            return
 
-        operational_filial = monitor.precondition(
-            "Operatsion filialni aniqlash",
-            lambda: first_operational_filial(page),
-            affected_case_number=1,
-        )
-        if monitor.blocked:
-            return
-        monitor.update_filial(operational_placeholder, operational_filial)
-
-        with allure.step(f"1 - '{operational_filial}' filialidagi direct menu formalar"):
-            operational_direct_cases = monitor.cases(section="operational-direct")
-            monitor.precondition(
-                f"'{operational_filial}' filialiga o'tish",
-                lambda: switch_forms_filial(page, operational_filial),
-                affected_case_number=(
-                    operational_direct_cases[0]["number"]
-                    if operational_direct_cases
-                    else None
-                ),
-            )
-            if monitor.blocked:
-                return
-            run_form_cases(
-                page,
-                operational_direct_cases,
-                monitor=monitor,
-            )
-
-        with allure.step(
-            f"2 - '{operational_filial}' filialidagi page-link va hidden formalar"
-        ):
-            run_form_cases(
-                page,
-                monitor.cases(section="operational-page-link"),
-                monitor=monitor,
-            )
-            run_form_cases(
-                page,
-                monitor.cases(section="operational-hidden"),
-                monitor=monitor,
-            )
-
-        with allure.step("3 - 'Администрирование' filialiga xos formalar"):
-            admin_direct_cases = monitor.cases(section="admin-direct")
-            monitor.precondition(
-                "'Администрирование' filialiga o'tish",
-                lambda: switch_forms_filial(page, "Администрирование"),
-                affected_case_number=(
-                    admin_direct_cases[0]["number"] if admin_direct_cases else None
-                ),
-            )
-            if monitor.blocked:
-                return
-            run_form_cases(
-                page,
-                admin_direct_cases,
-                monitor=monitor,
-            )
-            run_form_cases(
-                page,
-                monitor.cases(section="admin-page-link"),
-                monitor=monitor,
-            )
-            run_form_cases(
-                page,
-                monitor.cases(section="admin-hidden"),
-                monitor=monitor,
-            )
-    finally:
-        with allure.step(f"4 - {expected_count} ta navigatsiya natijasini tekshirish"):
-            monitor.finish()
+validate_menu_test_coverage(
+    SPRAVOCHNIKI_MENU_TESTS,
+    OPERATIONAL_DIRECT_FORMS,
+    OPERATIONAL_PAGE_LINK_FORMS,
+    OPERATIONAL_HIDDEN_FORMS,
+    ADMIN_DIRECT_FORMS,
+    ADMIN_PAGE_LINK_FORMS,
+    ADMIN_HIDDEN_FORMS,
+    default_shell="legacy",
+    default_navbar_tab=NAVBAR_TAB,
+)
 
 
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-@allure.title("Справочники — menu, page-link va hidden formalarni ochish smoke")
-def test_spravochniki_menu_forms(page, pytestconfig):
-    run_spravochniki_menu_forms(
+def run_spravochniki_menu_column_forms(
+    page,
+    *,
+    menu_test,
+    terminal_reporter=None,
+    checks=None,
+    diagnostics=None,
+):
+    """Bitta ``Справочники`` menu column formasini markaziy monitor bilan ochadi."""
+    navbar_tab = menu_test["navbar_tab"]
+    menu_column = menu_test["menu_column"]
+    operational_forms = select_form_definitions(
+        OPERATIONAL_DIRECT_FORMS,
+        OPERATIONAL_PAGE_LINK_FORMS,
+        OPERATIONAL_HIDDEN_FORMS,
+        navbar_tab=navbar_tab,
+        menu_column=menu_column,
+    )
+    admin_forms = select_form_definitions(
+        ADMIN_DIRECT_FORMS,
+        ADMIN_PAGE_LINK_FORMS,
+        ADMIN_HIDDEN_FORMS,
+        navbar_tab=navbar_tab,
+        menu_column=menu_column,
+    )
+    return run_legacy_menu_column_forms(
         page,
+        suite_name=f"Forms-01 — {menu_test['test_identity']}",
+        navbar_tab=navbar_tab,
+        menu_column=menu_column,
+        operational_forms=operational_forms,
+        admin_forms=admin_forms,
+        terminal_reporter=terminal_reporter,
+        progress_test_id=menu_test["progress_test_id"],
+        checks=checks,
+        diagnostics=diagnostics,
+    )
+
+
+@pytest.mark.parametrize(
+    "menu_test",
+    SPRAVOCHNIKI_MENU_TESTS,
+    ids=[item["test_identity"] for item in SPRAVOCHNIKI_MENU_TESTS],
+)
+def test_spravochniki_menu_column_forms(page, pytestconfig, menu_test):
+    allure.dynamic.title(f"{menu_test['test_identity']} formalarini ochish")
+    run_spravochniki_menu_column_forms(
+        page,
+        menu_test=menu_test,
         terminal_reporter=pytestconfig.pluginmanager.get_plugin(
             "terminalreporter"
         ),
