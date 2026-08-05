@@ -262,7 +262,10 @@ from tests.smoke.test_forms.flow import (
     first_operational_filial,
     run_form_cases,
 )
-from tests.smoke.test_forms.form_monitor import FormMonitor, build_form_case_plan
+from tests.smoke.test_forms.form_monitor import (
+    FormMonitor,
+    build_form_case_inventory,
+)
 from utils.angular_base_page import AngularBasePage
 from utils.base_page import BasePage
 
@@ -445,34 +448,43 @@ def run_a2_admin_menu_forms(page, *, terminal_reporter=None):
     angular = AngularBasePage(page)
     operational_placeholder = "<operatsion filial>"
 
-    admin_cases = build_form_case_plan(
+    admin_inventory = build_form_case_inventory(
         ADMIN_A2_FORMS,
         start_number=1,
         filial="Администрирование",
         section="admin",
         shell="a2",
     )
-    operational_cases = build_form_case_plan(
+    admin_cases = admin_inventory["planned"]
+    operational_inventory = build_form_case_inventory(
         OPERATIONAL_A2_FORMS,
         start_number=1 + len(admin_cases),
         filial=operational_placeholder,
         section="operational-menu",
         shell="a2",
     )
-    page_link_cases = build_form_case_plan(
+    operational_cases = operational_inventory["planned"]
+    page_link_inventory = build_form_case_inventory(
         PAGE_LINK_A2_FORMS,
         start_number=1 + len(admin_cases) + len(operational_cases),
         filial=operational_placeholder,
         section="operational-page-link",
         shell="a2",
     )
+    page_link_cases = page_link_inventory["planned"]
     planned_cases = admin_cases + operational_cases + page_link_cases
+    skipped_cases = (
+        admin_inventory["skipped"]
+        + operational_inventory["skipped"]
+        + page_link_inventory["skipped"]
+    )
     admin_first = admin_cases[0]["number"] if admin_cases else None
     operational_first = operational_cases[0]["number"] if operational_cases else None
     monitor = FormMonitor(
         page,
         suite_name="Forms-02 — A2 admin",
         planned_cases=planned_cases,
+        skipped_cases=skipped_cases,
         terminal_reporter=terminal_reporter,
         progress_test_id="test_forms_02_a2_admin",
     )

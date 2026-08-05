@@ -29,10 +29,19 @@ Smartup yangi formalari (yangi Angular/modern app) eski AngularJS Biruni app ust
   - `{path}` = `new_forms.md` dagi yo'l, masalan `biruni/md/company_list`, `anor/rep/mbi/mkw/purchase`.
 - **Sog'lom forma signali:** `document.title` forma nomiga aylanadi (masalan "Компании", "Логистика").
   Content async yuklanadi — dashboard/list/catalog formalar title resolve bo'lgach ham 1-1.5s kontent yuklaydi.
+- **Dashboard readiness:** nested `[aria-busy=true]` sahifa to'liq render
+  bo'lgandan keyin ham qolishi mumkin; u post-validationda o'zicha blocking
+  loader emas. Blocking signal — visible `.smt-skeleton` yoki
+  `.block-ui-overlay`. Monitor busy countni diagnostika sifatida saqlaydi.
 - **Muammo signallari** (title "Smartup Online" da qoladi):
   - `Страница не найдена` — 404 (forma yo'q).
   - `Нет доступа к форме {name}` / `Не удалось загрузить` / `Что-то пошло не так` — ruxsat yo'q yoki load error.
   - `+edit`/`_view`/`_details` yakka URL bilan ochilmaydi — id (record) kerak; title shell'da qoladi.
+- 2026-08-05 real Chrome auditida joriy `SFA Администрирование` rolida direct
+  `Визиты` va `Коммерческий дашборд` route'lari expected URLga o'tib, taxminan
+  500 ms ichida `[role=alert]` orqali `Нет доступа к форме ...` ko'rsatdi.
+  Shuning uchun form monitorning 1200 ms visible-error oynasi kerak; URL/title
+  tekshiruvi yakka o'zi dostup muammosini sog'lom deb o'tkazishi mumkin.
 
 ## Yangi Angular component kontrakti (Company'da live tasdiqlangan, 2026-07-23)
 

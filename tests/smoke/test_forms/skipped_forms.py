@@ -85,3 +85,12 @@ def is_form_skipped(definition):
     """Definition canonical pathi skip registry'da borligini qaytaradi."""
     path = definition.get("expected_path") or definition.get("path")
     return path in SKIPPED_FORM_PATHS
+
+
+def skipped_form(definition):
+    """Definition uchun skip metadata nusxasini qaytaradi, aks holda ``None``."""
+    path = definition.get("expected_path") or definition.get("path")
+    return next(
+        (dict(item) for item in SKIPPED_FORMS if item["path"] == path),
+        None,
+    )

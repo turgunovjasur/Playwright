@@ -20,7 +20,7 @@ from tests.smoke.test_forms.flow import (
     format_form_result,
     write_terminal_report,
 )
-from tests.smoke.test_forms.skipped_forms import is_form_skipped
+from tests.smoke.test_forms.skipped_forms import skipped_form
 
 
 PASSED = "PASSED"
@@ -95,6 +95,8 @@ CAPTURE_JS_ERROR_SCRIPT = """
   window.__formMonitorCaptureCount = 0;
   window.__formMonitorResourceErrors = [];
   window.__formMonitorResourceCount = 0;
+  window.__formMonitorPromiseRejections = [];
+  window.__formMonitorPromiseRejectionCount = 0;
   const SAMPLE_LIMIT = 50;
   const withoutQuery = (value) => String(value || "").split("?")[0];
   window.addEventListener(
@@ -130,6 +132,20 @@ CAPTURE_JS_ERROR_SCRIPT = """
     },
     true
   );
+  window.addEventListener(
+    "unhandledrejection",
+    (event) => {
+      const reason = event && event.reason;
+      const message =
+        (reason && reason.message) ||
+        String(reason || "noma'lum promise rejection");
+      window.__formMonitorPromiseRejectionCount += 1;
+      if (window.__formMonitorPromiseRejections.length < SAMPLE_LIMIT) {
+        window.__formMonitorPromiseRejections.push(message);
+      }
+    },
+    true
+  );
 })();
 """
 
@@ -139,6 +155,8 @@ CAPTURE_READ_SCRIPT = """
   jsCount: window.__formMonitorCaptureCount || 0,
   resources: window.__formMonitorResourceErrors || [],
   resourceCount: window.__formMonitorResourceCount || 0,
+  promiseRejections: window.__formMonitorPromiseRejections || [],
+  promiseRejectionCount: window.__formMonitorPromiseRejectionCount || 0,
 })
 """
 
@@ -148,6 +166,8 @@ CAPTURE_RESET_SCRIPT = """
   window.__formMonitorCaptureCount = 0;
   window.__formMonitorResourceErrors = [];
   window.__formMonitorResourceCount = 0;
+  window.__formMonitorPromiseRejections = [];
+  window.__formMonitorPromiseRejectionCount = 0;
 })()
 """
 
@@ -156,6 +176,8 @@ EMPTY_CAPTURE_SIGNALS = {
     "js_error_count": 0,
     "resource_errors": [],
     "resource_error_count": 0,
+    "promise_rejections": [],
+    "promise_rejection_count": 0,
 }
 
 
@@ -204,6 +226,13 @@ def _safe_locator_visible(locator):
         return False
 
 
+def _safe_locator_count(locator):
+    try:
+        return int(locator.count())
+    except (PlaywrightError, AttributeError, TypeError, ValueError):
+        return 0
+
+
 def _safe_inner_text(locator, *, timeout=750):
     try:
         return _clean_text(locator.inner_text(timeout=timeout))
@@ -241,16 +270,11 @@ def _js_error_label(error):
 
 
 def _read_capture_signals(page):
-    """A2'da ``preventDefault`` yutib yuboradigan JS xatosini o'qiydi.
+    """A2 JS xatosi va observation-only browser signallarini o'qiydi.
 
-    Bosqich 7, 1-qadam — hozircha **faqat kuzatuv**, statusga ta'sir qilmaydi.
-    ``CAPTURE_JS_ERROR_SCRIPT`` app bundle'dan oldin ishlagani uchun A2
-    ilovaning global ``error`` listeneri ``preventDefault()`` chaqirsa ham bu
-    massivga yetib keladi — `page.on("pageerror")` esa aynan shu holatda ko'r.
-
-    Resurs yuklanish xatolari (`img`/`script`/`link`) **alohida** qaytadi: ular
-    JS exception emas, ularni network kanali allaqachon qamraydi va bir joyga
-    qo'shib yuborish `JS_ERROR` ni yolg'on qizil qilardi.
+    Capture-fazadagi JS exception A2 shell uchun effective ``JS_ERROR`` manbasi.
+    Resurs xatolari va unhandled promise rejectionlar alohida kuzatiladi; ular
+    hozircha status yoki ``usable`` qiymatiga ta'sir qilmaydi.
     """
     try:
         raw = page.evaluate(CAPTURE_READ_SCRIPT)
@@ -267,6 +291,8 @@ def _read_capture_signals(page):
         "js_error_count": int(raw.get("jsCount") or 0),
         "resource_errors": labels(raw.get("resources")),
         "resource_error_count": int(raw.get("resourceCount") or 0),
+        "promise_rejections": labels(raw.get("promiseRejections")),
+        "promise_rejection_count": int(raw.get("promiseRejectionCount") or 0),
     }
 
 
@@ -326,10 +352,10 @@ def capture_form_state(page, *, ready=None):
     dict bo'lgani uchun klassifikatsiya, ``checks`` va assertlar bir manbadan
     o'qiydi.
 
-    ``capture_signals`` esa shu yerning o'zida, ``page.evaluate`` orqali
-    darhol o'qiladi (Bosqich 7, 1-qadam) — A2'da ``preventDefault`` tufayli
-    ``js_errors`` ko'r bo'lgan holatni ham ko'radi, lekin hozircha faqat
-    kuzatuv: statusga, ``usable``ga yoki klassifikatsiyaga ta'sir qilmaydi.
+    ``capture_signals`` shu yerning o'zida ``page.evaluate`` orqali o'qiladi.
+    ``FormMonitor._capture_state`` A2 shell uchun capture JS exceptionlarini,
+    legacy shell uchun esa Playwright ``pageerror`` kanalini effective manba
+    sifatida tanlaydi.
     """
     actual_url = getattr(page, "url", "") or ""
     ready_visible = False
@@ -350,8 +376,10 @@ def capture_form_state(page, *, ready=None):
         for selector in (
             ".block-ui-overlay:visible",
             ".smt-skeleton:visible",
-            "[aria-busy='true']:visible",
         )
+    )
+    busy_visible_count = _safe_locator_count(
+        page.locator("[aria-busy='true']:visible")
     )
 
     document_title = _safe_page_title(page)
@@ -375,6 +403,8 @@ def capture_form_state(page, *, ready=None):
         "ready_visible": ready_visible,
         "content_ready": content_ready,
         "loader_visible": loader_visible,
+        "busy_visible": busy_visible_count > 0,
+        "busy_visible_count": busy_visible_count,
     }
 
 
@@ -470,7 +500,7 @@ def classify_form_failure(*, case, stage, detail, state):
 
     if state.get("loader_visible"):
         return {
-            "status": NOT_OPENED,
+            "status": OPENED_WITH_DEFECT,
             "reason_code": "LOADER_NOT_FINISHED",
             "reason_summary": reason_description("LOADER_NOT_FINISHED"),
             "opened": True,
@@ -610,10 +640,29 @@ def build_form_case_plan(
     section=None,
 ):
     """Skip registry'ni chiqarib, yagona ``FormCase`` rejasini yaratadi."""
+    return build_form_case_inventory(
+        definitions,
+        start_number=start_number,
+        filial=filial,
+        navbar_tab=navbar_tab,
+        shell=shell,
+        section=section,
+    )["planned"]
+
+
+def build_form_case_inventory(
+    definitions,
+    *,
+    start_number,
+    filial,
+    navbar_tab=None,
+    shell=None,
+    section=None,
+):
+    """Aktiv va ataylab skip qilingan formalarni bitta inventoryda qaytaradi."""
     planned = []
+    skipped = []
     for definition in definitions:
-        if is_form_skipped(definition):
-            continue
         links = list(definition.get("page_links") or [])
         title = (
             definition.get("title")
@@ -621,6 +670,22 @@ def build_form_case_plan(
             or definition.get("action")
             or definition["menu_item"]
         )
+        expected_path = definition.get("expected_path") or definition.get("path")
+        skip_metadata = skipped_form(definition)
+        if skip_metadata:
+            skipped.append(
+                {
+                    "filial": filial,
+                    "navbar_tab": definition.get("navbar_tab") or navbar_tab,
+                    "menu_column": definition.get("menu_column"),
+                    "menu_item": definition["menu_item"],
+                    "title": title,
+                    "expected_path": expected_path,
+                    "section": definition.get("section") or section,
+                    "reason": skip_metadata["reason"],
+                }
+            )
+            continue
         planned.append(
             form_case(
                 number=start_number + len(planned),
@@ -629,9 +694,7 @@ def build_form_case_plan(
                 menu_column=definition.get("menu_column"),
                 menu_item=definition["menu_item"],
                 title=title,
-                expected_path=(
-                    definition.get("expected_path") or definition.get("path")
-                ),
+                expected_path=expected_path,
                 page_links=links,
                 action=definition.get("action"),
                 add_icon=definition.get("add_icon", False),
@@ -642,7 +705,7 @@ def build_form_case_plan(
                 allowed_warnings=definition.get("allowed_warnings"),
             )
         )
-    return planned
+    return {"planned": planned, "skipped": skipped}
 
 
 def _status_counts(results):
@@ -667,12 +730,26 @@ def _monitor_metrics(results):
     }
 
 
-def build_monitor_payload(*, suite_name, planned_count, results, blockers):
+def build_monitor_payload(
+    *,
+    suite_name,
+    planned_count,
+    results,
+    blockers,
+    skipped_cases=None,
+):
     """Allure JSON va boshqa consumerlar uchun versionlangan yagona payload."""
+    skipped = [dict(case) for case in (skipped_cases or [])]
     return {
-        "schema_version": 2,
+        "schema_version": 3,
         "suite": suite_name,
         "planned": planned_count,
+        "inventory": {
+            "total": planned_count + len(skipped),
+            "active": planned_count,
+            "intentional_skips": len(skipped),
+        },
+        "skipped": skipped,
         "metrics": _monitor_metrics(results),
         "counts": dict(_status_counts(results)),
         "blockers": list(blockers),
@@ -680,87 +757,118 @@ def build_monitor_payload(*, suite_name, planned_count, results, blockers):
     }
 
 
-def _page_event_lines(results):
-    """JS va network signallarining to'liq inventarini beradi.
+def _known_request_noise(label):
+    """Tasdiqlangan, observation-only request shovqinini bucketlaydi."""
+    if "/page/tour/" in label:
+        return "legacy tour 404"
+    if "/a2/assets/i18n/kernel-overlay/" in label:
+        return "A2 optional i18n 404"
+    return ""
 
-    JS xatosi formani `JS_ERROR` nuqsoni qiladi; network signallari esa hozircha
-    faqat kuzatiladi, shuning uchun signal ko'rinadigan forma `PASSED` bo'lib
-    qolishi mumkin va bu bo'lim statusga qaramay ro'yxatlaydi.
-    """
-    noisy = [
-        result
-        for result in results
-        if (result.get("checks") or {}).get("js_error_count")
-        or (result.get("checks") or {}).get("failed_request_count")
-    ]
-    if not noisy:
+
+def _known_resource_noise(label):
+    """URLsiz browser resource eventlarini bitta tushunarli bucketka yig'adi."""
+    if label.strip() in {"SOURCE", "IMG https://smartup.online/"}:
+        return "empty resource source"
+    return ""
+
+
+def _page_event_lines(results):
+    """Effective JS kanalini va actionable network signallarini ko'rsatadi."""
+    rows = []
+    known_noise = Counter()
+    for result in results:
+        checks = result.get("checks") or {}
+        actionable_requests = []
+        for label in checks.get("failed_requests") or []:
+            bucket = _known_request_noise(label)
+            if bucket:
+                known_noise[bucket] += 1
+            else:
+                actionable_requests.append(label)
+        if checks.get("js_error_count") or actionable_requests:
+            rows.append((result, checks, actionable_requests))
+
+    if not rows and not known_noise:
         return []
     lines = [
-        "JS VA NETWORK SIGNALLARI",
+        "BRAUZER JS VA NETWORK SIGNALLARI",
         "-" * 88,
-        "JS xatosi formani nuqsonli qiladi (faqat legacy shell — A2 da kanal "
-        "ko'r); network signallari faqat kuzatiladi.",
+        "JS uchun shellga mos yagona effective kanal ishlatiladi; network "
+        "signallari statusga ta'sir qilmaydi.",
     ]
-    for result in noisy:
-        checks = result["checks"]
+    for result, checks, actionable_requests in rows:
         lines.append(
             f"• {result['number']:03d} | {result['title']} | {result['status']}"
         )
         if checks.get("js_error_count"):
-            lines.append(f"    JS xatolari ({checks['js_error_count']}):")
+            source = checks.get("js_error_source") or "unknown"
+            lines.append(
+                f"    JS xatolari ({checks['js_error_count']}, manba={source}):"
+            )
             for message in checks.get("js_errors") or []:
                 lines.append(f"      - {message}")
-        if checks.get("failed_request_count"):
+        if actionable_requests:
             lines.append(
-                f"    Muvaffaqiyatsiz so'rovlar ({checks['failed_request_count']}):"
+                f"    Tekshirilishi kerak bo'lgan so'rovlar ({len(actionable_requests)}):"
             )
-            for label in checks.get("failed_requests") or []:
+            for label in actionable_requests:
                 lines.append(f"      - {label}")
+    if known_noise:
+        lines.append("    Ma'lum request shovqini (agregatsiya):")
+        for bucket, count in sorted(known_noise.items()):
+            lines.append(f"      - {bucket}: {count}")
     lines.append("")
     return lines
 
 
-def _capture_js_error_lines(results):
-    """Bosqich 7, 1-qadam: init-script orqali yig'ilgan A2 JS signallari.
+def _observation_signal_lines(results):
+    """Statusga ta'sir qilmaydigan resource va promise signallarini ko'rsatadi."""
+    rows = []
+    known_noise = Counter()
+    for result in results:
+        checks = result.get("checks") or {}
+        actionable_resources = []
+        for label in checks.get("capture_resource_errors") or []:
+            bucket = _known_resource_noise(label)
+            if bucket:
+                known_noise[bucket] += 1
+            else:
+                actionable_resources.append(label)
+        promise_rejections = list(checks.get("promise_rejections") or [])
+        if actionable_resources or promise_rejections:
+            rows.append(
+                (result, checks, actionable_resources, promise_rejections)
+            )
 
-    ``page.on("pageerror")`` A2'da ``preventDefault`` tufayli ko'r bo'lgani
-    uchun qo'shildi (`ui-patterns.md`). Hozircha **faqat kuzatuv** — real
-    shovqin hajmi o'lchanmaguncha statusga ta'sir qilmaydi, shuning uchun bu
-    bo'lim ham statusga qaramay ro'yxatlaydi.
-    """
-    noisy = [
-        result
-        for result in results
-        if (result.get("checks") or {}).get("capture_js_error_count")
-        or (result.get("checks") or {}).get("capture_resource_error_count")
-    ]
-    if not noisy:
+    if not rows and not known_noise:
         return []
     lines = [
-        "CAPTURE-FAZA SIGNALLARI (tajriba — hozircha statusga ta'sir qilmaydi)",
+        "BROWSER KUZATUV SIGNALLARI (statusga ta'sir qilmaydi)",
         "-" * 88,
-        "init_script orqali yig'ilgan; A2'da page.on('pageerror') preventDefault "
-        "tufayli ko'r bo'lgani uchun qo'shildi. Bosqich 7, 1-qadam — hali "
-        "qattiqlashtirilmagan.",
-        "Resurs xatosi (img/script/link yuklanmadi) JS exception EMAS va alohida "
-        "ko'rsatiladi — uni JS_ERROR ga qo'shish yolg'on qizil berardi.",
+        "Resource yuklanish xatolari va unhandled promise rejectionlar "
+        "diagnostika uchun saqlanadi; raw JSON to'liq inventarni beradi.",
     ]
-    for result in noisy:
-        checks = result["checks"]
+    for result, checks, resources, promises in rows:
         lines.append(
             f"• {result['number']:03d} | {result['title']} | {result['status']} | "
             f"shell={result.get('shell') or '—'}"
         )
-        if checks.get("capture_js_error_count"):
-            lines.append(f"    JS exceptionlar ({checks['capture_js_error_count']}):")
-            for message in checks.get("capture_js_errors") or []:
-                lines.append(f"      - {message}")
-        if checks.get("capture_resource_error_count"):
+        if resources:
             lines.append(
-                f"    Resurs yuklanish xatolari ({checks['capture_resource_error_count']}):"
+                f"    Tekshirilishi kerak bo'lgan resource xatolari ({len(resources)}):"
             )
-            for message in checks.get("capture_resource_errors") or []:
+            for message in resources:
                 lines.append(f"      - {message}")
+        if promises:
+            count = checks.get("promise_rejection_count") or len(promises)
+            lines.append(f"    Unhandled promise rejectionlar ({count}):")
+            for message in promises:
+                lines.append(f"      - {message}")
+    if known_noise:
+        lines.append("    Ma'lum resource shovqini (agregatsiya):")
+        for bucket, count in sorted(known_noise.items()):
+            lines.append(f"      - {bucket}: {count}")
     lines.append("")
     return lines
 
@@ -796,15 +904,25 @@ def _duration_lines(results, *, slowest_count=5):
     return lines
 
 
-def render_monitor_summary(*, suite_name, planned_count, results, blockers):
+def render_monitor_summary(
+    *,
+    suite_name,
+    planned_count,
+    results,
+    blockers,
+    skipped_cases=None,
+):
     """Terminal va Allure uchun bir xil, takrorsiz markaziy hisobot yasaydi."""
     counts = _status_counts(results)
     metrics = _monitor_metrics(results)
+    skipped = [dict(case) for case in (skipped_cases or [])]
     lines = [
         "FORMA MARKAZIY MONITORING HISOBOTI",
         "=" * 88,
         f"Suite: {suite_name}",
+        f"Inventory jami         : {planned_count + len(skipped)}",
         f"Rejalashtirilgan       : {planned_count}",
+        f"Ataylab skip qilingan  : {len(skipped)}",
         f"Testi boshlangan       : {metrics['started']}",
         f"Tekshiruvi yakunlangan : {metrics['completed']}",
         f"Target URLga yetilgan  : {metrics['page_reached']}",
@@ -818,6 +936,16 @@ def render_monitor_summary(*, suite_name, planned_count, results, blockers):
         f"⬜ Tekshirilmadi         : {counts[NOT_CHECKED]}",
         "",
     ]
+
+    if skipped:
+        lines.extend(["ATAYLAB SKIP QILINGAN FORMALAR", "-" * 88])
+        for case in skipped:
+            lines.append(
+                f"⬜ {case.get('title') or case.get('menu_item') or '—'} | "
+                f"Path: {case.get('expected_path') or '—'} | "
+                f"Sabab: {case.get('reason') or '—'}"
+            )
+        lines.append("")
 
     issues = [
         result
@@ -877,7 +1005,7 @@ def render_monitor_summary(*, suite_name, planned_count, results, blockers):
         lines.append("")
 
     lines.extend(_page_event_lines(results))
-    lines.extend(_capture_js_error_lines(results))
+    lines.extend(_observation_signal_lines(results))
     lines.extend(_duration_lines(results))
 
     started_results = [result for result in results if result.get("test_started")]
@@ -913,10 +1041,12 @@ class FormMonitor:
         terminal_reporter=None,
         progress_runner="test_0_forms_runner.py",
         progress_test_id="forms",
+        skipped_cases=None,
     ):
         self.page = page
         self.suite_name = suite_name
         self.planned_cases = [dict(case) for case in planned_cases]
+        self.skipped_cases = [dict(case) for case in (skipped_cases or [])]
         self.terminal_reporter = terminal_reporter
         self.progress_runner = progress_runner
         self.progress_test_id = progress_test_id
@@ -940,7 +1070,7 @@ class FormMonitor:
         """``pageerror`` va 4xx/5xx javoblarni yig'ishni yoqadi.
 
         JS xatosi formani ``JS_ERROR`` nuqsoni qiladi; network signallari esa
-        faqat qayd qilinadi (shovqinning 99% i `/page/tour/` 404 lari).
+        raw payload uchun qayd qilinadi va human hisobotda agregatsiya qilinadi.
 
         Diqqat: ``pageerror`` **faqat legacy shell'da** ishlaydi. A2 ilovasi
         global ``error`` eventida ``preventDefault()`` chaqiradi, shuning uchun
@@ -956,7 +1086,7 @@ class FormMonitor:
         self._install_capture_js_error_script()
 
     def _install_capture_js_error_script(self):
-        """A2 uchun capture-fazali JS xato kuzatuvini yoqadi (Bosqich 7, 1-qadam).
+        """A2 uchun canonical capture-fazali JS xato kuzatuvini yoqadi.
 
         ``add_init_script`` ni olib tashlashning Playwright'da yo'li yo'q, va
         uch suite bitta ``page`` fixture'ni bo'lishadi — shuning uchun har
@@ -1006,7 +1136,7 @@ class FormMonitor:
         _reset_capture_signals(self.page)
 
     def update_filial(self, placeholder, actual_name):
-        for case in self.planned_cases:
+        for case in self.planned_cases + self.skipped_cases:
             if case.get("filial") == placeholder:
                 case["filial"] = actual_name
 
@@ -1116,10 +1246,24 @@ class FormMonitor:
         )
         return {
             "js_errors": js_errors,
-            "capture_js_errors": list(capture["js_errors"])[:MAX_PAGE_EVENTS],
-            "capture_js_error_count": capture["js_error_count"],
-            "capture_resource_errors": list(capture["resource_errors"])[:MAX_PAGE_EVENTS],
-            "capture_resource_error_count": capture["resource_error_count"],
+            "js_error_count": int(state.get("js_error_count") or 0),
+            "js_error_source": state.get("js_error_source") or "",
+            "capture_js_errors": list(
+                capture.get("js_errors") or []
+            )[:MAX_PAGE_EVENTS],
+            "capture_js_error_count": int(capture.get("js_error_count") or 0),
+            "capture_resource_errors": list(
+                capture.get("resource_errors") or []
+            )[:MAX_PAGE_EVENTS],
+            "capture_resource_error_count": int(
+                capture.get("resource_error_count") or 0
+            ),
+            "promise_rejections": list(
+                capture.get("promise_rejections") or []
+            )[:MAX_PAGE_EVENTS],
+            "promise_rejection_count": int(
+                capture.get("promise_rejection_count") or 0
+            ),
             "url_matches": path_matches,
             "title_matches": _title_matches(case, state),
             "title_verified": _title_verified(case, state),
@@ -1129,15 +1273,25 @@ class FormMonitor:
             "ready_required": bool(state.get("ready_required")),
             "ready_visible": bool(state.get("ready_visible")),
             "loader_visible": bool(state.get("loader_visible")),
+            "busy_visible": bool(state.get("busy_visible")),
+            "busy_visible_count": int(state.get("busy_visible_count") or 0),
             "visible_error": visible_error,
             "allowed_warning": allowed_warning,
             "usable": usable,
         }
 
     def _capture_state(self, case=None):
-        """Sahifa holatiga shu oynada yig'ilgan JS xatolarini qo'shib qaytaradi."""
+        """Shellga mos yagona effective JS kanalini sahifa holatiga qo'shadi."""
         state = capture_form_state(self.page, ready=(case or {}).get("ready"))
-        state["js_errors"] = list(self.js_errors)
+        capture = state.get("capture_signals") or EMPTY_CAPTURE_SIGNALS
+        if "/a2/" in state.get("actual_url", ""):
+            state["js_errors"] = list(capture["js_errors"])
+            state["js_error_count"] = capture["js_error_count"]
+            state["js_error_source"] = "capture"
+        else:
+            state["js_errors"] = list(self.js_errors)
+            state["js_error_count"] = self.js_error_count
+            state["js_error_source"] = "pageerror"
         return state
 
     def _case_checks(self, case, state):
@@ -1147,7 +1301,6 @@ class FormMonitor:
         ta'sir qiladi; network signallari esa hozir faqat qayd qilinadi.
         """
         checks = self._checks(case, state)
-        checks["js_error_count"] = self.js_error_count
         checks["failed_requests"] = list(self.failed_requests)
         checks["failed_request_count"] = self.failed_request_count
         return checks
@@ -1423,6 +1576,7 @@ class FormMonitor:
             planned_count=len(self.planned_cases),
             results=ordered_results,
             blockers=self.blockers,
+            skipped_cases=self.skipped_cases,
         )
         write_terminal_report(summary, terminal_reporter=self.terminal_reporter)
         allure.attach(
@@ -1435,6 +1589,7 @@ class FormMonitor:
             planned_count=len(self.planned_cases),
             results=ordered_results,
             blockers=self.blockers,
+            skipped_cases=self.skipped_cases,
         )
         allure.attach(
             json.dumps(payload, ensure_ascii=False, indent=2),

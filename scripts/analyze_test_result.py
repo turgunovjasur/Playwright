@@ -29,6 +29,7 @@ SPRAVOCHNIKI_FORM_STEP_PATTERN = re.compile(r"^\d{3}\s+\|\s+Filial:")
 FORM_SUITE_LABELS = {
     "spravochniki": "Справочники",
     "a2_admin": "A2 Admin",
+    "prodaja": "Продажа",
 }
 FORM_MONITOR_FAILURE_STATUSES = {
     "OPENED_WITH_DEFECT",
@@ -96,11 +97,20 @@ def _auth_diagnostic_attachment(item, results_dir):
 
 
 def _form_monitor_attachment(item, results_dir):
-    attachments = item.get("attachments")
-    if not isinstance(attachments, list):
-        return {}
+    """Top-level yoki nested Allure stepdagi form-monitor payloadini topadi."""
 
-    for attachment in attachments:
+    def iter_attachments(node):
+        if not isinstance(node, dict):
+            return
+        attachments = node.get("attachments")
+        if isinstance(attachments, list):
+            yield from attachments
+        steps = node.get("steps")
+        if isinstance(steps, list):
+            for step in steps:
+                yield from iter_attachments(step)
+
+    for attachment in iter_attachments(item):
         if not isinstance(attachment, dict):
             continue
         name = str(attachment.get("name") or "").strip()
@@ -448,6 +458,8 @@ def _humanize_failure(item):
     trace_source = _inner_source_from_trace(trace)
     step_info = _failed_step_info(item)
     runner_test = _runner_test(item)
+    form_issues = _form_monitor_issues(item.get("form_monitor"))
+    form_reason = _form_issue_reason(form_issues[0]) if form_issues else ""
     return {
         "name": item.get("name") or item.get("fullName") or "unknown",
         "status": item.get("status") or "unknown",
@@ -487,9 +499,10 @@ def _humanize_failure(item):
         "timeout": _timeout_text(failure_text) if "Timeout" in failure_text else "",
         "reason": (
             auth_diagnostic.get("summary")
+            or form_reason
             or _human_reason(failure_text)
         ),
-        "form_issues": _form_monitor_issues(item.get("form_monitor")),
+        "form_issues": form_issues,
     }
 
 
@@ -589,6 +602,14 @@ def _form_suite_key(item):
         or "a2 admin" in identity
     ):
         return "a2_admin"
+    if (
+        "test_forms_03_prodaja" in identity
+        or "test_prodaja_menu_forms" in identity
+        or "forms-03" in identity
+        or "продажа" in identity
+        or "prodaja" in identity
+    ):
+        return "prodaja"
     return ""
 
 
@@ -596,7 +617,7 @@ def _form_steps(item, *, form_suite=None):
     suite = form_suite or _form_suite_key(item)
     if suite == "a2_admin":
         pattern = A2_FORM_STEP_PATTERN
-    elif suite == "spravochniki":
+    elif suite in {"spravochniki", "prodaja"}:
         pattern = SPRAVOCHNIKI_FORM_STEP_PATTERN
     else:
         return []
@@ -654,14 +675,21 @@ def _form_monitor_issues(form_monitor):
         if not isinstance(result, dict):
             continue
         status = str(result.get("status") or "").upper()
-        if not status or status == "PASSED":
+        if status not in FORM_MONITOR_FAILURE_STATUSES:
             continue
+        raw_checks = result.get("checks")
+        checks = raw_checks if isinstance(raw_checks, dict) else {}
         issues.append(
             {
                 "number": result.get("number") or "",
                 "title": str(result.get("title") or "unknown"),
                 "status": status,
                 "reason_code": str(result.get("reason_code") or ""),
+                "failed_stage": str(result.get("failed_stage") or ""),
+                "expected_url": str(result.get("expected_path") or ""),
+                "actual_url": str(result.get("actual_url") or ""),
+                "expected_title": str(result.get("expected_title") or ""),
+                "actual_title": str(result.get("actual_title") or ""),
                 "reason": _truncate(
                     _mask_sensitive(str(result.get("reason_summary") or "")),
                     350,
@@ -670,9 +698,42 @@ def _form_monitor_issues(form_monitor):
                     _mask_sensitive(str(result.get("detail") or "")),
                     500,
                 ),
+                "checks": {
+                    "page_reached": bool(result.get("page_reached")),
+                    **{
+                        key: value
+                        for key, value in checks.items()
+                        if key in {
+                            "url_matches",
+                            "title_matches",
+                            "title_verified",
+                            "content_ready",
+                            "loader_visible",
+                            "busy_visible",
+                            "busy_visible_count",
+                            "visible_error",
+                            "js_error_count",
+                            "js_error_source",
+                        }
+                    },
+                },
             }
         )
     return issues
+
+
+def _form_issue_reason(issue):
+    """Structured form-monitor issue'ni user o'qiydigan qisqa sababga aylantiradi."""
+    if not isinstance(issue, dict):
+        return ""
+    title = issue.get("title") or "Forma"
+    status = issue.get("status") or "FAILED"
+    reason = issue.get("reason") or issue.get("detail") or "Sabab ko'rsatilmagan."
+    location = issue.get("actual_url") or issue.get("expected_url") or ""
+    text = f"{title} formasi {status}: {reason}"
+    if location:
+        text += f" URL: {location}."
+    return _truncate(text, 700)
 
 
 def _form_coverage_summary(results):
@@ -937,25 +998,62 @@ def render_markdown(
         for item in failed_tests:
             if not isinstance(item, dict):
                 continue
-            lines.extend(
-                [
-                    "",
-                    f"### {item.get('name', 'unknown')}",
-                    f"- Group: `{item.get('group', '')}`",
-                    f"- Runner test: `{item.get('runner_test', '')}`",
-                    f"- Inner test: `{item.get('inner_test', '')}`",
-                    f"- Failed step: `{item.get('failed_step', '')}`",
-                    f"- Before page: `{item.get('before_page', '')}`",
-                    f"- Action: `{item.get('action', '')}`",
-                    f"- Expected: `{item.get('expected', '')}`",
-                    f"- Actual: `{item.get('actual', '')}`",
-                    f"- UI error: `{item.get('ui_error', '')}`",
-                    f"- Auth diagnostic: `{item.get('auth_diagnostic', '')}`",
-                    f"- Error type: `{item.get('error_type', 'unknown')}`",
-                    f"- Location: `{item.get('location', 'unknown')}`",
-                    f"- Reason: {item.get('reason', '')}",
-                ]
-            )
+            lines.extend(["", f"### {item.get('name', 'unknown')}"])
+            for label, key in (
+                ("Group", "group"),
+                ("Runner test", "runner_test"),
+                ("Inner test", "inner_test"),
+                ("Failed step", "failed_step"),
+                ("Before page", "before_page"),
+                ("Action", "action"),
+                ("Expected", "expected"),
+                ("Actual", "actual"),
+                ("UI error", "ui_error"),
+                ("Auth diagnostic", "auth_diagnostic"),
+                ("Error type", "error_type"),
+                ("Location", "location"),
+            ):
+                value = item.get(key)
+                if value:
+                    lines.append(f"- {label}: `{value}`")
+            if item.get("reason"):
+                lines.append(f"- Reason: {item['reason']}")
+
+            form_issues = item.get("form_issues")
+            if isinstance(form_issues, list) and form_issues:
+                lines.append("- Form monitor issues:")
+                for issue in form_issues:
+                    if not isinstance(issue, dict):
+                        continue
+                    lines.append(
+                        "  - "
+                        f"{issue.get('number') or '—'} | "
+                        f"{issue.get('title') or 'unknown'} | "
+                        f"{issue.get('status') or 'FAILED'} | "
+                        f"{issue.get('reason_code') or '—'} | "
+                        f"{issue.get('reason') or issue.get('detail') or '—'}"
+                    )
+                    if issue.get("actual_url") or issue.get("expected_url"):
+                        lines.append(
+                            "    - URL: "
+                            f"actual=`{issue.get('actual_url') or '—'}`, "
+                            f"expected=`{issue.get('expected_url') or '—'}`"
+                        )
+                    if issue.get("actual_title") or issue.get("expected_title"):
+                        lines.append(
+                            "    - Title: "
+                            f"actual=`{issue.get('actual_title') or '—'}`, "
+                            f"expected=`{issue.get('expected_title') or '—'}`"
+                        )
+                    checks = issue.get("checks")
+                    if isinstance(checks, dict) and checks:
+                        check_text = ", ".join(
+                            f"{key}={value}"
+                            for key, value in checks.items()
+                            if value not in {"", None}
+                        )
+                        if check_text:
+                            lines.append(f"    - Checks: `{check_text}`")
     skipped = summary.get("skipped")
     if isinstance(skipped, dict) and skipped.get("count"):
         lines.extend(["", "## Skipped", f"- Count: `{skipped.get('count')}`", f"- Reason: {skipped.get('reason', '')}"])

@@ -19,7 +19,10 @@ from tests.smoke.test_forms.flow import (
     run_form_cases,
     switch_forms_filial,
 )
-from tests.smoke.test_forms.form_monitor import FormMonitor, build_form_case_plan
+from tests.smoke.test_forms.form_monitor import (
+    FormMonitor,
+    build_form_case_inventory,
+)
 
 
 pytestmark = [
@@ -729,6 +732,7 @@ def run_spravochniki_menu_forms(page, *, terminal_reporter=None):
     """
     operational_placeholder = "<operatsion filial>"
     planned_cases = []
+    skipped_cases = []
     number = 1
     for cases, filial, section in (
         (OPERATIONAL_DIRECT_FORMS, operational_placeholder, "operational-direct"),
@@ -738,14 +742,16 @@ def run_spravochniki_menu_forms(page, *, terminal_reporter=None):
         (ADMIN_PAGE_LINK_FORMS, "Администрирование", "admin-page-link"),
         (ADMIN_HIDDEN_FORMS, "Администрирование", "admin-hidden"),
     ):
-        planned = build_form_case_plan(
+        inventory = build_form_case_inventory(
             cases,
             navbar_tab=NAVBAR_TAB,
             start_number=number,
             filial=filial,
             section=section,
         )
+        planned = inventory["planned"]
         planned_cases.extend(planned)
+        skipped_cases.extend(inventory["skipped"])
         number += len(planned)
     expected_count = len(planned_cases)
 
@@ -753,6 +759,7 @@ def run_spravochniki_menu_forms(page, *, terminal_reporter=None):
         page,
         suite_name="Forms-01 — Справочники",
         planned_cases=planned_cases,
+        skipped_cases=skipped_cases,
         terminal_reporter=terminal_reporter,
         progress_test_id="test_forms_01_spravochniki",
     )

@@ -232,18 +232,22 @@ def format_form_result(result):
                     f"  Title manbasi      : {checks.get('title_source') or '—'}",
                     f"  Kontent yuklandimi : {'HA' if checks.get('content_ready') else 'YOQ'}",
                     f"  Loader qoldimi     : {'HA' if checks.get('loader_visible') else 'YOQ'}",
+                    "  Busy elementlar (kuzatuv): "
+                    f"{checks.get('busy_visible_count') or 0}",
                     f"  UI error           : {checks.get('visible_error') or '—'}",
-                    f"  JS xatolari        : {checks.get('js_error_count') or 0}"
+                    "  JS xatolari        : "
+                    f"{checks.get('js_error_count') or 0} "
+                    f"(manba: {checks.get('js_error_source') or '—'}) "
                     f" {'; '.join(checks.get('js_errors') or []) or '—'}",
-                    "  Capture JS exceptionlar (kuzatuv): "
-                    f"{checks.get('capture_js_error_count') or 0}"
-                    f" {'; '.join(checks.get('capture_js_errors') or []) or '—'}",
+                    "  Promise rejectionlar (kuzatuv): "
+                    f"{checks.get('promise_rejection_count') or 0} "
+                    "(tafsilot markaziy kuzatuv bo'limi/raw JSONda)",
                     "  Capture resurs xatolari (kuzatuv): "
-                    f"{checks.get('capture_resource_error_count') or 0}"
-                    f" {'; '.join(checks.get('capture_resource_errors') or []) or '—'}",
+                    f"{checks.get('capture_resource_error_count') or 0} "
+                    "(tafsilot markaziy kuzatuv bo'limi/raw JSONda)",
                     "  Muvaffaqiyatsiz so'rovlar: "
-                    f"{checks.get('failed_request_count') or 0}"
-                    f" {'; '.join(checks.get('failed_requests') or []) or '—'}",
+                    f"{checks.get('failed_request_count') or 0} "
+                    "(tafsilot markaziy signal bo'limi/raw JSONda)",
                 ]
             )
         if result.get("screenshot"):

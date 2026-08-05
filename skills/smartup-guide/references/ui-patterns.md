@@ -10,6 +10,7 @@
 - [Masked inputs](#masked-dateamount-inputs)
 - [Biruni confirm va error](#biruni-confirm)
 - [Alert kutish va o'lik timeout](#alert-kutish--is_visibletimeout-olik-parametr)
+- [Blocking loader va aria-busy](#blocking-loader-va-aria-busy-2026-08-05)
 - [A2 sahifada `pageerror` chiqmaydi](#a2-sahifada-pageerror-chiqmaydi-2026-08-05)
 - [List va grid setting](#list-va-grid-setting)
 - [Screenshot arxivi](#screenshot-arxivi)
@@ -204,8 +205,32 @@ Source: Playwright API docstring; real Chromium tekshiruvi;
 - Diqqat: yaroqsiz selektor `PlaywrightError` beradi va u jim yutiladi —
   natija "alert yo'q" bilan **bir xil** ko'rinadi. Selektor ro'yxati o'zgarsa
   real brauzerda tekshir.
-- Loader (`.block-ui-overlay`, `.smt-skeleton`, `[aria-busy='true']`) uchun
-  lahzalik surat **to'g'ri** — u yerda kutish noto'g'ri bo'lardi.
+- Loader/busy uchun post-validation lahzalik surat **to'g'ri** — u yerda yana
+  kutish forma vaqtini o'zgartiradi. Blocking va observation signallarini
+  quyidagi qoida bo'yicha ajrat.
+
+### Blocking loader va `aria-busy` (2026-08-05)
+Tags: loader, aria-busy, a2, dashboard, forms-monitor, false-fail
+Status: live-ui-confirmed
+Verified: 2026-08-05
+Source: Forms-03 Allure artifact; real Chrome audit — A2 dashboard va Plugin Marketplace;
+`tests/smoke/test_forms/form_monitor.py`; `utils/angular_base_page.py`
+- Post-validation `loader_visible` faqat ko'rinadigan `.block-ui-overlay` yoki
+  `.smt-skeleton`. Ular blocking loading surface va qolib ketsa forma
+  `OPENED_WITH_DEFECT / LOADER_NOT_FINISHED`.
+- `[aria-busy=true]` o'zicha blocking loader emas. Dashboard ichidagi nested
+  widget to'liq sahifa render bo'lgandan keyin ham busy qolishi mumkin.
+  Forms-03 `Коммерческий дашборд` artifactida expected URL/title/content va
+  screenshot sog'lom bo'lsa ham aynan shu signal eski monitorni yolg'on
+  `NOT_OPENED` qilgan.
+- Monitor busy'ni `busy_visible`/`busy_visible_count` sifatida qayd qiladi,
+  lekin status yoki `usable`ni o'zgartirmaydi. Navigatsiya paytidagi
+  `AngularBasePage.wait_for_loader()` esa transition tugashi uchun skeleton va
+  busy yo'qolishini kutishda davom etadi; monitor snapshoti yakuniy
+  klassifikatsiya manbasi.
+- Expected pathga yetgan blocking loader `NOT_OPENED` emas: sahifa ochilgan,
+  lekin nuqsonli. `NOT_OPENED` noto'g'ri/missing route yoki yetib bo'lmagan
+  content uchun saqlanadi.
 
 ### A2 sahifada `pageerror` chiqmaydi (2026-08-05)
 Tags: a2, angular, pageerror, js-error, forms-monitor, listener
@@ -229,9 +254,9 @@ Source: real Chromium probe — legacy va A2 formalarida 4 kanal;
   kanallar hali ishlaydi, lekin ilova ishga tushib SPA navigatsiyaga o'tgach
   hammasi jim bo'ladi. Forms suite A2 formalarini aynan SPA route bilan
   ochadi — demak ular uchun kanal **ko'r**.
-- Amaliy natija: `FormMonitor` ning `JS_ERROR` tekshiruvi **119 legacy formada**
-  ishlaydi (sun'iy injektsiya bilan tasdiqlangan), **28 A2 formada** esa
-  hech narsa ko'rmaydi. A2 da "0 JS xato" — sog'lom degani **emas**.
+- Tarixiy amaliy natija: Playwright `pageerror` signali **119 legacy formada**
+  ishlagan (sun'iy injektsiya bilan tasdiqlangan), **28 A2 formada** esa
+  ko'r bo'lgan. Capture yechimidan oldin A2 da "0 JS xato" sog'lom degani emas edi.
 - **Yechim (2026-08-05 da qilindi va isbotlandi):** `page.add_init_script` bilan
   app bundle'dan **oldin** capture-fazada
   `window.addEventListener("error", ..., true)` o'rnatiladi va xatolar `window`
@@ -246,6 +271,12 @@ Source: real Chromium probe — legacy va A2 formalarida 4 kanal;
   | `requestAnimationFrame` | ❌ jim | ✅ ushlaydi |
 
   Kod: `tests/smoke/test_forms/form_monitor.py` — `CAPTURE_JS_ERROR_SCRIPT`.
+- Joriy monitor shellga mos **bitta canonical kanal** ishlatadi: legacyda
+  `pageerror`, A2 da capture listener. Human reportda xato takrorlanmaydi;
+  ikkalasi bir xil `OPENED_WITH_DEFECT / JS_ERROR` semantikasiga ega.
+- Shu init-script `unhandledrejection`ni ham bounded sample + true count bilan
+  yig'adi. Promise rejection hozircha observation-only; baseline dalilisiz
+  formani qizil qilmaydi.
 
 ### Capture-faza `error` listeneri resurs xatosini ham beradi (2026-08-05)
 Tags: a2, pageerror, js-error, init-script, resource-error, forms-monitor

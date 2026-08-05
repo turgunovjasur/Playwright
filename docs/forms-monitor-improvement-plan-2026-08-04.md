@@ -1,8 +1,8 @@
 # Forms Suite va FormMonitor Tahlili — Yaxshilanish Rejasi
 
 **Sana:** 2026-08-04
-**Qamrov:** `tests/smoke/test_forms/` — `form_monitor.py` (1026 qator), `flow.py` (543), `skipped_forms.py`, uchta suite (`test_01` 88 forma, `test_02` 21, `test_03` 38) va `test_0_forms_runner.py`
-**Usul:** Kod o'qish + da'volarni tasdiqlash — Playwright API introspeksiyasi, forma sonlarini skript bilan hisoblash, HEAD bilan solishtirish uchun vaqtinchalik git worktree
+**Qamrov:** `tests/smoke/test_forms/` — `form_monitor.py` (1622 qator), `flow.py` (560), `skipped_forms.py`, uchta suite (`test_01` 88 forma, `test_02` 21, `test_03` 38), `test_0_forms_runner.py` va `scripts/analyze_test_result.py`
+**Usul:** Kod/Allure artifact tahlili + real Chrome audit + pure-function/statik probe; pytest/smoke faqat alohida `run qil` ruxsati bilan
 **Branch:** `dev1`
 
 ---
@@ -16,11 +16,14 @@
 | 2 | Hisobotni ishonchli qilish (#3, #4) | ✅ Bajarildi | — |
 | 3 | Aniqlashni kuchaytirish (#2, #7 bajarildi; #1 — trigger yo'q) | 🟡 Qismon | — |
 | 4 | Hisobot sifati (Taklif 3) | ✅ Bajarildi | — |
-| 5 | JS/network xatolari (Taklif 1) | ✅ Bajarildi (`JS_ERROR` statusi — faqat legacy) | — |
+| 5 | JS/network xatolari (Taklif 1) | ✅ Bajarildi (`JS_ERROR` — legacy va A2 uchun shellga mos kanal) | — |
 | 6 | Shell helper refactori (Taklif 4) | ⬜ Kechiktirildi | — |
-| 7 | A2 formalarida JS xatolarini ko'rish | 🟡 1-qadam + o'lchov bajarildi; **2-qadam (qattiqlashtirish) qoldi** | `1c7f2b7` |
+| 7 | A2 formalarida JS xatolarini ko'rish | ✅ Bajarildi — capture kanali A2 uchun canonical `JS_ERROR` manbasi | `1c7f2b7` + joriy hardening |
+| 8 | Real-browser signal va reporting hardening | ✅ Bajarildi — loader/busy, noise aggregation, skip inventory, Forms-03 summary | joriy hardening |
 
-Har bosqich alohida commit. Bosqich 2 dan boshlab real run bilan tekshiriladi.
+Oldingi bosqichlar real runlar bilan tekshirilgan. Bosqich 8 userning repo
+qoidasiga ko'ra pytest/smoke ishlatmasdan statik/pure-function probe bilan
+tekshirildi; real run alohida `run qil` ruxsatidan keyin bajariladi.
 
 ---
 
@@ -323,7 +326,7 @@ sekinlik emas, **cold-start** effekti. Aynan shu narsa oldin ko'rinmasdi.
 
 ---
 
-## Qolgan Ishlar
+## Batafsil Bosqichlar
 
 ### Bosqich 5 — JS va network xatolari `Taklif 1`
 
@@ -404,9 +407,9 @@ assertlar bitta joydan o'qiydi. `capture_form_state` `js_errors: []` bilan
 qaytaradi — u sahifadan o'qilmaydi, listener orqali keladi. Network hisoblari
 esa monitor'da qoladi (cheklanmagan hisob `state`ga tegishli emas).
 
-Network hozircha yiqitmaydi, shuning uchun hisobot bo'limi sarlavhasi
-`JS VA NETWORK SIGNALLARI` bo'lib, ostida "JS xatosi formani nuqsonli qiladi;
-network signallari faqat kuzatiladi" izohi turadi.
+Network hozircha yiqitmaydi. Raw signal `form-monitor.json`da saqlanadi;
+odam o'qiydigan hisobot `/page/tour/` va optional A2 i18n 404larini bucket
+bo'yicha agregatsiya qiladi, boshqa so'rovlarni forma kesimida ko'rsatadi.
 
 ##### Real brauzerda tasdiqlash (2026-08-05) — legacy ishlaydi, A2 ko'r
 
@@ -449,9 +452,10 @@ kanal ko'r.
 | Legacy (Forms-01 87 + Forms-03 32) | **119** | ✅ ishlaydi — tasdiqlangan |
 | A2 (Forms-02 21 + Forms-01 1 + Forms-03 6) | **28** | ❌ `pageerror` ko'r (SPA route) |
 
-> **Yangilandi 2026-08-05:** A2 ko'rligi Bosqich 7 ning capture kanali bilan
-> yopildi (`add_init_script`), lekin u hozircha faqat **kuzatadi** —
-> `JS_ERROR` statusi hamon 119 legacy formadagina beriladi.
+> **Yangilandi 2026-08-05:** A2 ko'rligi Bosqich 7 capture kanali bilan yopildi.
+> Legacy shell `pageerror`, A2 shell esa init-script capture kanalini yagona
+> effective JS manbasi sifatida ishlatadi; ikkala shell'da ham uncaught
+> exception `OPENED_WITH_DEFECT / JS_ERROR` beradi.
 
 **Muhim tuzatish:** yuqorida "eng qimmatli topilma — `pageerror` kanali
 butunlay toza" deb yozilgan edi. To'g'rirog'i: **119 legacy formada toza**,
@@ -581,19 +585,21 @@ Muhim: **204 ta `/page/tour/` 404 bu kanalga umuman tushmadi** — ular `fetch`/
 orqali so'raladi, element yuklanishi orqali emas, shuning uchun `error` eventi
 chiqarmaydi. Ya'ni network va capture kanallari bir-birini takrorlamaydi.
 
-#### 2-qadam — qattiqlashtirish — qaror uchun tayyor
+#### 2-qadam — qattiqlashtirish — bajarildi
 
 O'lchov tugadi va **JS exception kanali 147 formada butunlay toza**. Bu Bosqich 5
 ning 2-qadamidagi bilan aynan bir xil holat: filtr kerak emas va yolg'on-fail
 xavfi yo'q. Resurs xatolari allaqachon alohida ajratilgan, ya'ni ular
 qattiqlashtirishga tushmaydi.
 
-Qolgan yagona savol — `capture_js_errors` ni `state["js_errors"]` ga qo'shish
-(mavjud `JS_ERROR` reason code'ini ishlatish) yoki alohida code berish.
-`JS_ERROR` ni ishlatish afzal: sabab bir xil (sahifada uncaught exception),
-faqat aniqlash kanali boshqa; ikkinchi code hisobotni sababsiz ikkiga bo'lardi.
+Qaror implement qilindi: A2 `capture_js_errors` va legacy `pageerror` shellga
+mos ravishda `state["js_errors"]`ning **yagona effective manbasi** bo'ladi.
+Ikkalasi mavjud `JS_ERROR` reason code'ini ishlatadi; raw capture maydonlari
+schema compatibility va diagnostika uchun saqlanadi, human hisobotda JS ikki
+marta chiqmaydi. Capture init-script `unhandledrejection`ni ham yig'adi, ammo
+promise rejection hozircha observation-only.
 
-##### Yo'l-yo'lakay: `Коммерческий дашборд` flaky (2026-08-05)
+##### `Коммерческий дашборд`: false-fail sababi aniqlandi (2026-08-05)
 
 O'sha runda Forms-03 #022 `Коммерческий дашборд` `LOADER_NOT_FINISHED` bilan
 yiqildi (147 dan yagona fail). URL, title va kontent mos edi — faqat loader
@@ -605,15 +611,48 @@ mumkin emas — `loader_visible` `capture_form_state` da `page.evaluate` dan
 **oldin** hisoblanadi. Eng kuchli dalil: **aynan o'sha forma o'sha runda
 Forms-02 #006 sifatida PASSED** bo'lgan.
 
-Ya'ni og'ir dashboard formasining timing flakyligi. Bosqich 7 qamroviga
-kiritilmadi; takrorlansa alohida ish sifatida ko'riladi.
+Allure screenshoti va real Chrome auditidan keyin bu oddiy timing flakyligi
+emasligi aniqlandi: sahifa to'liq render bo'lgan, lekin ichki widgetdagi
+`[aria-busy=true]` saqlanib qolgan. Endi `loader_visible` faqat visible
+`.block-ui-overlay`/`.smt-skeleton`; `aria-busy` esa `busy_visible_count`
+sifatida observation-only. Target pathga yetgan haqiqiy blocking loader ham
+`NOT_OPENED` emas, `OPENED_WITH_DEFECT / LOADER_NOT_FINISHED` bo'ladi.
+
+### Bosqich 8 — Real-browser signal va reporting hardening — bajarildi
+
+2026-08-05 real Chrome auditida joriy `SFA Администрирование` roli bilan A2
+route'lari tekshirildi: `Нет доступа к форме ...` alerti ~500 ms ichida
+ko'rindi, `Plugin Marketplace` ~400 ms ichida render bo'ldi va
+`m:load_image_v2` rasmi singanicha qoldi. Shu dalil asosida:
+
+- `ALERT_WAIT_MS=1200` saqlandi — access/error alertini o'tkazib yuborish
+  tezlikdan muhimroq;
+- blocking loader va nested busy state ajratildi;
+- resource/network/promise signallari fail qilmaydi, ammo raw JSON va ixcham
+  human observation bo'limida qoladi;
+- `/page/tour/`, A2 optional i18n va empty-source resource artefaktlari human
+  outputda agregatsiya qilinadi; `m:load_image_v2` ignore qilinmaydi;
+- `form-monitor.json` `schema_version: 3` bo'ldi: `inventory.total`,
+  `inventory.active`, `inventory.intentional_skips` va normalized `skipped`
+  records qo'shildi;
+- Forms-01 `88+12`, Forms-02 `21+1`, Forms-03 `38+1` inventarlari terminal va
+  Allure reportda active/not-checked bilan aralashtirilmaydi;
+- `scripts/analyze_test_result.py` Forms-03 ni `prodaja` suite sifatida taniydi
+  va nested Allure step ichidagi `form-monitor.json`ni topib, generic
+  AssertionError o'rniga structured form reason/URL/title/checklarni
+  `system-summary.md`ga chiqaradi; bo'sh diagnostika qatorlari render qilinmaydi.
+
+Katta modul split qilinmadi: `form_monitor.py` va `flow.py`da takroriy result
+construction bor, lekin signal semantikasini modular refactor bilan bir commitda
+aralashtirish xavfi yuqori. Bu keyingi alohida, behavior-preserving ish.
 
 ---
 
-## Qamrovdan Tashqarida Qoldirilganlar
+## Keyingi Alohida Ishlar
 
-### Skip qilingan formalar hisobotda ko'rinmaydi `#5`
-Foydalanuvchi bu topilmani hozirgi rejaga qo'shmadi. Yozib qo'yiladi:
+### Skip qilingan formalar hisobotda ko'rinmaydi `#5` — hal qilindi
+
+Bosqich 8 da aktiv va intentional skip inventory alohida chiqarildi:
 
 | Suite | Ro'yxatda | Aktiv | Skip |
 |---|---|---|---|
@@ -621,10 +660,9 @@ Foydalanuvchi bu topilmani hozirgi rejaga qo'shmadi. Yozib qo'yiladi:
 | Forms-02 | 22 | 21 | 1 |
 | Forms-03 | 39 | 38 | 1 |
 
-Summary faqat `Rejalashtirilgan: 88` deydi. Hisobotni o'qigan odam 12 forma
-tekshirilmaganini bilmaydi — "hammasi qoplangan" degan taassurot qoladi.
-Yechim: `build_form_case_plan` (`:404`) skip'larni ham qaytarsin, monitor
-`SKIP QILINGAN FORMALAR` bo'limini chiqarsin.
+`build_form_case_inventory()` ikkala ro'yxatni normalizatsiya qiladi. Summary
+inventory jami, active planned va intentional skip sonini hamda har skipning
+title/path/reason qiymatini ko'rsatadi. Registry skip `NOT_CHECKED` emas.
 
 ### `allowed_warnings` exact-match mo'rtligi `Taklif 2`
 `form_monitor.py:86` whitespace normalizatsiya + `×` prefiks olib tashlash +
@@ -635,7 +673,7 @@ hech qaysi suite ishlatmaydi. Kelajakda creation forma tekshirilsa qaytiladi.
 
 ### Natija dict'idagi `"ok"` kaliti
 Bosqich 1 da `ok` **parametri** olib tashlandi, lekin natijadagi `"ok"` kaliti
-qoldi. U `form-monitor.json` (`schema_version: 2`) ichida va tashqi consumer
+qoldi. U `form-monitor.json` (`schema_version: 3`) ichida va tashqi consumer
 o'qishi mumkin — o'chirish schema o'zgarishi bo'ladi.
 
 ---
@@ -660,21 +698,25 @@ Alohida ish sifatida hal qilinadi.
 
 ---
 
-## Har Commit'dan Oldin Tekshiruv Ro'yxati
+## Joriy Tekshiruv Ro'yxati
 
 ```bash
-# 1. Kompilyatsiya
-.venv/bin/python -m py_compile tests/smoke/test_forms/*.py
+# 1. O'zgargan production Python fayllari kompilyatsiyasi
+.venv/bin/python -m py_compile tests/smoke/test_forms/*.py scripts/analyze_test_result.py utils/angular_base_page.py
 
-# 2. Unit testlar — 6 dan oshmasligi kerak
-.venv/bin/python -m pytest tests/unit -q --maxfail=999 2>&1 | grep -c "^FAILED"
+# 2. Pure-function probe
+# loader/busy, signal aggregation, schema v3, system summary va 88+12/21+1/38+1
 
-# 3. Raqamlash uzluksizligi va forma sonlari (88 / 21 / 38)
-
-# 4. Bilim bazasi validatori
+# 3. Bilim bazasi validatori
 .venv/bin/python skills/smartup-guide/scripts/validate_knowledge_base.py
 
-# 5. Bosqich 2 dan boshlab — real run
-#    Tez feedback: Forms-03 (38 forma, ~2.5 min)
-#    Yakuniy: to'liq Forms group (147 forma, ~10 min)
+# 4. Patch tozaligi
+git diff --check
+
+# 5. Faqat user aynan "run qil" deganda pytest/smoke
+#    Tez feedback: Forms-03 (38 active forma)
+#    Yakuniy: to'liq Forms group (147 active + 14 intentional skip)
 ```
+
+Bosqich 8 implementatsiyasida unit test fayllari o'zgartirilmadi va pytest/smoke
+ishga tushirilmadi — bu repo authoritysi bilan ataylab cheklangan.

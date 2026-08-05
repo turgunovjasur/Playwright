@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-05
 **Branch:** `dev1`
-**Status:** Approved design, awaiting written-spec review
+**Status:** Approved and implemented on `dev1`; pytest/smoke verification awaits explicit user run permission
 
 ## Goal
 

@@ -16,7 +16,10 @@ from tests.smoke.test_forms.flow import (
     run_form_cases,
     switch_forms_filial,
 )
-from tests.smoke.test_forms.form_monitor import FormMonitor, build_form_case_plan
+from tests.smoke.test_forms.form_monitor import (
+    FormMonitor,
+    build_form_case_inventory,
+)
 
 
 pytestmark = [
@@ -266,19 +269,22 @@ def run_prodaja_menu_forms(page, *, terminal_reporter=None):
     """
     operational_placeholder = "<operatsion filial>"
     planned_cases = []
+    skipped_cases = []
     number = 1
     for cases, section in (
         (OPERATIONAL_DIRECT_FORMS, "operational-direct"),
         (OPERATIONAL_PAGE_LINK_FORMS, "operational-page-link"),
     ):
-        planned = build_form_case_plan(
+        inventory = build_form_case_inventory(
             cases,
             navbar_tab=NAVBAR_TAB,
             start_number=number,
             filial=operational_placeholder,
             section=section,
         )
+        planned = inventory["planned"]
         planned_cases.extend(planned)
+        skipped_cases.extend(inventory["skipped"])
         number += len(planned)
     expected_count = len(planned_cases)
 
@@ -286,6 +292,7 @@ def run_prodaja_menu_forms(page, *, terminal_reporter=None):
         page,
         suite_name="Forms-03 — Продажа",
         planned_cases=planned_cases,
+        skipped_cases=skipped_cases,
         terminal_reporter=terminal_reporter,
         progress_test_id="test_forms_03_prodaja",
     )

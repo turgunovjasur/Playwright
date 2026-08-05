@@ -22,23 +22,23 @@ Source: `tests/smoke/smoke_reporting.py`, `scripts/open_allure_report.py`
 ## Forms central monitoring
 
 Status: code-confirmed
-Verified: 2026-08-04
+Verified: 2026-08-05
 Source: `tests/smoke/test_forms/form_monitor.py`,
 `tests/smoke/test_forms/flow.py`,
 `tests/smoke/test_forms/skipped_forms.py`,
 `tests/smoke/screenshot_masking.py`
 
-- Forms-01 va Forms-02 bir xil `FormMonitor` orqali ishlaydi. Yangi Forms
+- Forms-01, Forms-02 va Forms-03 bir xil `FormMonitor` orqali ishlaydi. Yangi Forms
   runner avval barcha rejalashtirilgan formalarni ro'yxatdan o'tkazadi, so'ng
   har bir navigatsiyani shu monitor orqali bajaradi.
 - Har forma faqat quyidagi holatlardan birini oladi:
   `PASSED`, `OPENED_WITH_DEFECT`, `NOT_OPENED`, `TEST_BLOCKED`,
   `NOT_CHECKED`.
-- `OPENED_WITH_DEFECT` forma va URL ochilgan, lekin title yoki kontent
-  tekshiruvida nuqson borligini bildiradi. `NOT_OPENED` target URL/kontentga
+- `OPENED_WITH_DEFECT` target forma/URL ochilgan, lekin title, blocking loader,
+  JS yoki kontent tekshiruvida nuqson borligini bildiradi. `NOT_OPENED` target URL/kontentga
   yetilmaganini bildiradi. Login, filial yoki shell tayyorlovi yiqilsa joriy
   forma `TEST_BLOCKED`, boshlanmagan qolgan formalar `NOT_CHECKED` bo'ladi.
-- Har xatoda monitor actual URL/title, URL mosligi, kontent tayyorligi, loader,
+- Har xatoda monitor actual URL/title, URL mosligi, kontent tayyorligi, blocking loader,
   ko'rinadigan UI error, xato bosqichi va qisqa QA sababini yig'adi. Bundan
   tashqari `test_started`, `test_completed`, `page_reached`,
   `validation_completed`, `validation_passed` va `usable` alohida saqlanadi.
@@ -59,9 +59,10 @@ Source: `tests/smoke/test_forms/form_monitor.py`,
 - `run_form_cases()` uchun `FormMonitor` majburiy. Eski parallel
   `finish_form_results()`/`results` hisoboti yo'q; barcha yangi forma rejalari
   yagona `build_form_case_plan()` orqali normalizatsiya qilinadi.
-- `SKIPPED_FORMS` registry'sidagi canonical pathlar `build_form_case_plan()`
-  boshida chiqariladi. Ular `planned_cases`ga kirmagani uchun tekshirilmaydi va
-  terminal, Allure hamda `form-monitor.json` hisobotlarida ko'rsatilmaydi.
+- `SKIPPED_FORMS` registry'sidagi canonical pathlar active `planned_cases`ga
+  kirmaydi, ammo `build_form_case_inventory()` ularni reason bilan alohida
+  qaytaradi. Terminal/Allure va schema v3 JSON total inventory, active count va
+  intentional skip count/listni ko'rsatadi.
 - Har forma tugashi bilan terminal reporter orqali bitta ixcham
   `[FORM MONITOR]` qatori
   chiqariladi; uzoq Forms run vaqtida joriy progress va oxirgi forma holati
@@ -74,6 +75,22 @@ Source: `tests/smoke/test_forms/form_monitor.py`,
 - A2 uchun forma nomi manbasi browser `document.title`; legacy uchun visible
   page heading. JSONdagi `checks.title_source` qaysi signal ishlatilganini,
   `checks.document_title` esa diagnostika uchun asl browser title'ini saqlaydi.
+- Post-validation snapshotda `loader_visible` faqat ko'rinadigan
+  `.block-ui-overlay` yoki `.smt-skeleton`ni anglatadi. `[aria-busy=true]`
+  `busy_visible`/`busy_visible_count` sifatida observation-only: nested widget
+  busy bo'lsa ham sahifa usable bo'lishi mumkin.
+- Effective JS manbasi shellga bog'liq va human outputda bir marta chiqadi:
+  legacy uchun `pageerror`, A2 uchun app `preventDefault()`idan oldin ishlaydigan
+  init-script capture listeneri. Ikkalasida uncaught exception
+  `OPENED_WITH_DEFECT / JS_ERROR`; resource error va unhandled promise rejection
+  observation-only.
+- Failed request/resource raw namunalari va haqiqiy countlar
+  `form-monitor.json`da saqlanadi. Human report `/page/tour/`, optional A2 i18n
+  va empty-source resource shovqinini agregatsiya qiladi; boshqa signallarni,
+  jumladan `m:load_image_v2`, forma kesimida ko'rsatadi.
+- `build_form_case_inventory()` active planned va registry-skipped formalarni
+  alohida normalizatsiya qiladi. `form-monitor.json` schema v3 `inventory` va
+  `skipped` recordlarini beradi; intentional skip `NOT_CHECKED` emas.
 
 ## Failure artifacts
 

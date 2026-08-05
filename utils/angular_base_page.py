@@ -563,9 +563,12 @@ class AngularBasePage:
         root = self._resolve_root(root)
         skeleton = root.locator(".smt-skeleton:visible")
         busy = root.locator("[aria-busy='true']:visible")
+        loader = root.locator(
+            ".smt-skeleton:visible, [aria-busy='true']:visible"
+        )
 
         try:
-            expect(skeleton.first).to_be_visible(timeout=appear_timeout)
+            expect(loader.first).to_be_visible(timeout=appear_timeout)
         except (AssertionError, PlaywrightTimeoutError):
             pass
 
