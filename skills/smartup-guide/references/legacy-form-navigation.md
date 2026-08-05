@@ -9,6 +9,8 @@
 - [Form-opening smoke verifikatsiyasi](#справочники-form-opening-smoke-verifikatsiyasi-2026-07-29)
 - [Продажа mega-menu inventari](#продажа-mega-menu-inventari-2026-08-04-live)
 - [Продажа page-link va +add inventari](#продажа-page-link-va-add-inventari-2026-08-04-live)
+- [Alert bleed-through gipotezasi yopildi](#alert-bleed-through--trigger-add-bilan-ketdi-2026-08-05)
+- [Legacy formalarda heading har doim topiladi](#legacy-formalarda-heading-har-doim-topiladi-2026-08-05)
 - [Group-0 moliyaviy sahifalari](#group-0-moliyaviy-sahifalari-2026-07-31-live)
 
 Tags: legacy, forms, navigation, menu, navbar, page-link, dropdown, filial, administration
@@ -498,6 +500,43 @@ Source: user; `tests/smoke/test_forms/form_monitor.py`
   `checks.allowed_warning`da saqlanadi va formani `APPLICATION_ERROR` qilmaydi.
 - Forms-03 da bu mexanizm endi ishlatilmaydi — `+add` case'lar olib tashlandi.
   Boshqa suite creation formasini tekshirsa, shu pattern ishlatilishi mumkin.
+
+### Alert bleed-through — trigger `+add` bilan ketdi (2026-08-05)
+Tags: forms-monitor, alert, bleed-through, add-icon, hypothesis-closed
+Status: trace-confirmed
+Verified: 2026-08-05
+Source: user; Forms-01 va Forms-03 `--headless` runlari (88 + 38 forma)
+- Gipoteza edi: forma N da chiqqan alert ekranda qolib, forma N+1 ni yolg'ondan
+  `APPLICATION_ERROR` qiladi (2026-08-04 runda 039/040/041 alert matnlari bir
+  qadam surilgan ko'rinardi).
+- Foydalanuvchi to'g'ri aniqladi: o'sha alertlarning **yagona manbasi** `+add`
+  creation formalari edi. Ular Forms-03 rejasidan olib tashlangach trigger
+  qolmadi, gipoteza esa tekshirib bo'lmaydigan holga o'tdi.
+- Dalil (ishonchli alert kutish o'rnatilgandan **keyin** yig'ilgan): Forms-01
+  (88 forma, shundan 8 ta `Импорт`/`Импорт фото` action formasi) va Forms-03
+  (38 forma) — jami **126 forma, 0 ta `APPLICATION_ERROR`**. Hech bir suite
+  `add_icon` yoki `allowed_warnings` ishlatmaydi.
+- Shu sabab formalar orasida alert tozalash kodi **qo'shilmadi**.
+- Qayta ko'rish sharti: suite'ga creation/`+add` forma qo'shilsa **yoki**
+  hisobotda birinchi real `APPLICATION_ERROR` ko'rinsa. O'sha holda tozalash
+  faqat case'ning captured `state["visible_error"]` bo'sh bo'lmaganda qilinishi
+  kerak — har formada shartsiz Escape bosish o'zi flakiness manbasi (masalan
+  "o'zgarishni bekor qilasizmi?" dialogini chaqirib yuborishi mumkin).
+
+### Legacy formalarda heading har doim topiladi (2026-08-05)
+Tags: legacy, heading, title, forms-monitor
+Status: trace-confirmed
+Verified: 2026-08-05
+Source: Forms-01 va Forms-03 `--headless` runlari
+- `form_monitor._title_matches` da sirg'alib o'tish yo'li bor: legacy sahifada
+  bironta `role=heading` topilmasa taqqoslamasdan `True` qaytaradi.
+- Dalil: Forms-01 (87 legacy) + Forms-03 (32 legacy) = **119 legacy formaning
+  hech biri** bu yo'lga tushmadi — hisobotdagi `TITLE TAQQOSLANMAGAN FORMALAR`
+  bo'limi ikkala runda ham bo'sh chiqdi.
+- Shu sabab qattiq variant (heading yo'q → `TITLE_MISMATCH`) hozir hech narsani
+  yiqitmasdi, lekin foydasi ham yo'q. `checks.title_verified` bayrog'i va
+  hisobot bo'limi yetarli: teshik ochilsa darhol ko'rinadi.
+- A2 formalar (`title_source=document`) bu yo'lga umuman tushmaydi.
 
 ## Group-0 moliyaviy sahifalari (2026-07-31 live)
 

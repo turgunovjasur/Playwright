@@ -9,6 +9,7 @@
 - [UI select](#ui-select)
 - [Masked inputs](#masked-dateamount-inputs)
 - [Biruni confirm va error](#biruni-confirm)
+- [Alert kutish va o'lik timeout](#alert-kutish--is_visibletimeout-olik-parametr)
 - [List va grid setting](#list-va-grid-setting)
 - [Screenshot arxivi](#screenshot-arxivi)
 - [Umumiy forma helperlari](#umumiy-forma-helperlari-dry)
@@ -163,6 +164,36 @@ Source: user; live UI `*/anor/mr/product/inventory+add`;
 - Modal yopilmasa menu/list clicklari intercept bo'lishi mumkin. Save/transition
   debugda kutilgan list/view ochilmasa joriy heading va URL bilan birga ikkala
   Biruni alertning visible matnini tekshir.
+
+### Alert Kutish — `is_visible(timeout=...)` O'lik Parametr
+Tags: locator, alert, timeout, is_visible, wait_for, forms-monitor
+Status: code-confirmed
+Verified: 2026-08-05
+Source: Playwright API docstring; real Chromium tekshiruvi;
+`tests/smoke/test_forms/form_monitor.py`
+- Qoida: `locator.is_visible(timeout=...)` — **o'lik parametr**. O'rnatilgan
+  Playwright dokumentatsiyasi: *"Deprecated: This option is ignored.
+  `locator.is_visible()` does not wait."* Ya'ni `is_visible` doim lahzalik
+  surat, `timeout=` yozilsa kod yolg'on tushuntiradi. Kutish kerak bo'lsa
+  `locator.wait_for(state="visible", timeout=...)` ishlatiladi.
+- Nega muhim: forma ochilgandan keyin server validatsiya xatosi 300–500 ms
+  kechikib kelishi mumkin. Lahzalik surat uni ko'rmaydi va forma **yolg'on
+  PASSED** bo'ladi — hisobotda hech qanday iz qolmaydi, ya'ni bu muammoni
+  hisobotdan topib bo'lmaydi.
+- Bir nechta alert selektorini kutish kerak bo'lsa, ularni **vergul bilan bitta
+  locatorga birlashtir**:
+  `page.locator(", ".join(ALERT_SELECTORS)).first.wait_for(state="visible", timeout=...)`.
+  Alert chiqsa darhol qaytadi, chiqmasa bir marta timeout to'laydi. Har
+  selektorni alohida kutish 6 × timeout ga tushadi.
+- Real Chromium'da tekshirildi: `:visible` pseudo-klassi vergulli listda
+  ishlaydi — `display:none` element sanalmaydi, ko'rinadigani topiladi.
+- Narxi: sog'lom sahifaga bir marta to'liq timeout. `ALERT_WAIT_MS = 1200` bilan
+  Forms-03 (38 forma) 146.78 s → 184.10 s, ya'ni **+0.98 s har formaga**.
+- Diqqat: yaroqsiz selektor `PlaywrightError` beradi va u jim yutiladi —
+  natija "alert yo'q" bilan **bir xil** ko'rinadi. Selektor ro'yxati o'zgarsa
+  real brauzerda tekshir.
+- Loader (`.block-ui-overlay`, `.smt-skeleton`, `[aria-busy='true']`) uchun
+  lahzalik surat **to'g'ri** — u yerda kutish noto'g'ri bo'lardi.
 
 ### List va Grid Setting
 Tags: list, grid, search, column
