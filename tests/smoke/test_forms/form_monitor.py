@@ -12,6 +12,12 @@ from playwright.sync_api import Error as PlaywrightError
 
 from tests.smoke.progress import emit_progress_event
 from tests.smoke.smoke_reporting import safe_page_screenshot
+from tests.smoke.test_forms.form_cases import (
+    build_form_case_inventory,
+    build_form_case_plan,
+    form_case,
+    form_case_key,
+)
 from tests.smoke.test_forms.form_checks import (
     CHECK_NAMES,
     FORM_STATUSES,
@@ -26,7 +32,6 @@ from tests.smoke.test_forms.form_checks import (
     classify_form_failure,
     clean_text as _clean_text,
     evaluate_checks,
-    normalize_allowed_warnings as _normalize_allowed_warnings,
     normalize_enabled_names,
     reason_description,
     title_verified as _title_verified,
@@ -54,141 +59,6 @@ from tests.smoke.test_forms.flow import (
     settle_form_open,
     write_terminal_report,
 )
-from tests.smoke.test_forms.skipped_forms import skipped_form
-
-
-
-
-
-def form_case(
-    *,
-    number,
-    filial,
-    navbar_tab,
-    menu_column,
-    menu_item,
-    title,
-    expected_path,
-    page_links=None,
-    action=None,
-    add_icon=False,
-    ready=None,
-    shell=None,
-    section=None,
-    screenshot_mask=None,
-    allowed_warnings=None,
-):
-    """Monitor uchun barcha runnerlarda bir xil planned-case yozuvini yaratadi."""
-    if not isinstance(number, int) or number < 1:
-        raise ValueError(f"Forma raqami musbat int bo'lishi kerak: {number!r}")
-    for field_name, value in (
-        ("filial", filial),
-        ("navbar_tab", navbar_tab),
-        ("menu_item", menu_item),
-        ("title", title),
-        ("expected_path", expected_path),
-    ):
-        if not _clean_text(value):
-            raise ValueError(f"Forma case uchun {field_name} majburiy")
-    if action is not None and add_icon:
-        raise ValueError("Forma case bir vaqtda action va add_icon ishlata olmaydi")
-    case = {
-        "number": number,
-        "filial": filial,
-        "navbar_tab": navbar_tab,
-        "menu_column": menu_column,
-        "menu_item": menu_item,
-        "title": title,
-        "expected_path": expected_path,
-        "page_links": list(page_links or []),
-        "action": action,
-        "add_icon": bool(add_icon),
-        "ready": ready,
-        "shell": shell,
-        "section": section,
-        "allowed_warnings": _normalize_allowed_warnings(allowed_warnings),
-    }
-    if screenshot_mask is not None:
-        case["screenshot_mask"] = screenshot_mask
-    return case
-
-
-def build_form_case_plan(
-    definitions,
-    *,
-    start_number,
-    filial,
-    navbar_tab=None,
-    shell=None,
-    section=None,
-):
-    """Skip registry'ni chiqarib, yagona ``FormCase`` rejasini yaratadi."""
-    return build_form_case_inventory(
-        definitions,
-        start_number=start_number,
-        filial=filial,
-        navbar_tab=navbar_tab,
-        shell=shell,
-        section=section,
-    )["planned"]
-
-
-def build_form_case_inventory(
-    definitions,
-    *,
-    start_number,
-    filial,
-    navbar_tab=None,
-    shell=None,
-    section=None,
-):
-    """Aktiv va ataylab skip qilingan formalarni bitta inventoryda qaytaradi."""
-    planned = []
-    skipped = []
-    for definition in definitions:
-        links = list(definition.get("page_links") or [])
-        title = (
-            definition.get("title")
-            or (links[-1] if links else None)
-            or definition.get("action")
-            or definition["menu_item"]
-        )
-        expected_path = definition.get("expected_path") or definition.get("path")
-        skip_metadata = skipped_form(definition)
-        if skip_metadata:
-            skipped.append(
-                {
-                    "filial": filial,
-                    "navbar_tab": definition.get("navbar_tab") or navbar_tab,
-                    "menu_column": definition.get("menu_column"),
-                    "menu_item": definition["menu_item"],
-                    "title": title,
-                    "expected_path": expected_path,
-                    "section": definition.get("section") or section,
-                    "reason": skip_metadata["reason"],
-                }
-            )
-            continue
-        planned.append(
-            form_case(
-                number=start_number + len(planned),
-                filial=filial,
-                navbar_tab=definition.get("navbar_tab") or navbar_tab,
-                menu_column=definition.get("menu_column"),
-                menu_item=definition["menu_item"],
-                title=title,
-                expected_path=expected_path,
-                page_links=links,
-                action=definition.get("action"),
-                add_icon=definition.get("add_icon", False),
-                ready=definition.get("ready"),
-                shell=definition.get("shell") or shell,
-                section=definition.get("section") or section,
-                screenshot_mask=definition.get("screenshot_mask"),
-                allowed_warnings=definition.get("allowed_warnings"),
-            )
-        )
-    return {"planned": planned, "skipped": skipped}
 
 
 def _status_counts(results):
@@ -559,6 +429,16 @@ class FormMonitor:
         duplicates = sorted(number for number, count in Counter(numbers).items() if count > 1)
         if duplicates:
             raise ValueError(f"Takrorlangan forma raqami bor: {duplicates}")
+
+        case_keys = [form_case_key(case) for case in self.planned_cases]
+        duplicate_keys = sorted(
+            key for key, count in Counter(case_keys).items() if count > 1
+        )
+        if duplicate_keys:
+            raise ValueError(
+                "Bitta form testida takrorlangan forma definition bor: "
+                f"{duplicate_keys}"
+            )
 
         self._install_page_listeners()
 
@@ -952,6 +832,8 @@ class FormMonitor:
             shell=_shell_from_url(state["actual_url"], case.get("shell")),
             suite=self.suite_name,
             duration_ms=int((time.monotonic() - started_at) * 1000),
+            label=case.get("label"),
+            test_identity=case.get("test_identity"),
         )
         return self._append_result(result)
 
@@ -1040,6 +922,8 @@ class FormMonitor:
                     shell=_shell_from_url(state["actual_url"], case.get("shell")),
                     suite=self.suite_name,
                     duration_ms=int((time.monotonic() - started_at) * 1000),
+                    label=case.get("label"),
+                    test_identity=case.get("test_identity"),
                 )
                 self._append_result(result)
                 result_label = "KUZATILDI" if observed_only else "OCHILDI"
@@ -1172,6 +1056,8 @@ class FormMonitor:
                 shell=case.get("shell"),
                 suite=self.suite_name,
                 duration_ms=None,
+                label=case.get("label"),
+                test_identity=case.get("test_identity"),
             )
             self._append_result(result)
 

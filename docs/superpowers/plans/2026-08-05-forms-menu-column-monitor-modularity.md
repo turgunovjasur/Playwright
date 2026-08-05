@@ -33,9 +33,9 @@
 | 1. Final plan va baseline | COMPLETED | `eb87ba1` |
 | 2. Check modulini ajratish | COMPLETED | `7a89862` |
 | 3. Diagnostika modulini ajratish | COMPLETED | `b052b6d` |
-| 4. Configurable FormMonitor va `OBSERVED_ONLY` | COMPLETED | task commit |
-| 5. Case identity, avtomatik label va menu-column runner | PENDING | — |
-| 6. Mavjud Forms testlari va runner migratsiyasi | PENDING | — |
+| 4. Configurable FormMonitor va `OBSERVED_ONLY` | COMPLETED | `dee5521` |
+| 5. Case identity, avtomatik label va menu-column runner | COMPLETED | pending commit |
+| 6. Mavjud Forms testlari va runner migratsiyasi | IN PROGRESS | — |
 | 7. Reporting schema/analyzer/docs | PENDING | — |
 | 8. Yakuniy static verifikatsiya | PENDING | — |
 
@@ -238,7 +238,7 @@
 - Consumes: oddiy forma definition listlari va `shell`, `navbar_tab`, `menu_column`.
 - Produces: normalized planned cases, stable `test_identity`, generated `label`, shell-specific reusable runnerlar.
 
-- [ ] **Step 1: composite identity helperini qo‘shish**
+- [x] **Step 1: composite identity helperini qo‘shish**
 
   Exact helper:
 
@@ -246,17 +246,19 @@
   form_test_identity(*, shell, navbar_tab, menu_column)
   ```
 
-  Normalized identity uchala qismni saqlaydi; missing value `ValueError`.
+  Normalized identity uchala qismni saqlaydi. `shell` va `navbar_tab` missing
+  bo‘lsa `ValueError`; real ustunsiz menu (`menu_column=None`) identity’da
+  `<ustunsiz>` nomi bilan aniq ko‘rsatiladi.
 
-- [ ] **Step 2: optional labelni normalizatsiya qilish**
+- [x] **Step 2: optional labelni normalizatsiya qilish**
 
   `label` berilgan bo‘lsa whitespace-normalized qiymat ishlatiladi. Bo‘lmasa user-visible track `menu_item → Создать dropdown/action → page_links → +add icon`dan avtomatik yaratiladi; `navbar_tab` va `menu_column` Allure test identityda allaqachon ko‘rsatilgani sabab labelda takrorlanmaydi.
 
-- [ ] **Step 3: duplicate definition guard qo‘shish**
+- [x] **Step 3: duplicate definition guard qo‘shish**
 
   Bitta composite test ichida `filial + menu_item + action + page_links + canonical path` bir xil bo‘lsa inventory construction `ValueError` beradi.
 
-- [ ] **Step 4: shell-specific menu-column runnerlarni yaratish**
+- [x] **Step 4: shell-specific menu-column runnerlarni yaratish**
 
   Exact public APIlar:
 
@@ -267,11 +269,11 @@
 
   Helperlar inventory/monitor/finalizationni takrorlamaydi, ammo legacy va A2 filial/shell kontraktlarini bitta mode-dispatcherga aralashtirmaydi.
 
-- [ ] **Step 5: normal leaf testni data-only qilish**
+- [x] **Step 5: normal leaf testni data-only qilish**
 
   Leaf modulda constants, separate form lists, bitta qisqa `run_*` va standalone `test_*` qoladi. Default check/diagnostika argumentlari yozilmaydi.
 
-- [ ] **Step 6: static verifikatsiya va commit**
+- [x] **Step 6: static verifikatsiya va commit**
 
   Syntax parse, duplicate inventory read-only inspection va `git diff --check`dan keyin alohida commit.
 

@@ -99,6 +99,8 @@ def build_form_result(
     validation_completed=None,
     validation_passed=None,
     usable=None,
+    label=None,
+    test_identity=None,
 ):
     """Terminal va Allure uchun yagona strukturali forma natijasini yaratadi."""
     links = list(page_links or [])
@@ -137,6 +139,15 @@ def build_form_result(
         "page_links": links,
         "action": action,
         "add_icon": bool(add_icon),
+        "label": label or form_navigation_track(
+            navbar_tab=None,
+            menu_column=None,
+            menu_item=menu_item,
+            page_links=links,
+            action=action,
+            add_icon=add_icon,
+        ),
+        "test_identity": test_identity or "",
         "track": form_navigation_track(
             navbar_tab=navbar_tab,
             menu_column=menu_column,
@@ -202,6 +213,8 @@ def format_form_result(result):
         f"  Menu               : {menu}",
         f"  Menyu formasi      : {result['menu_item']}",
         f"  Tekshirilgan forma : {result['title']}",
+        f"  Label              : {result.get('label') or '—'}",
+        f"  Test identifikatori: {result.get('test_identity') or '—'}",
         f"  Action             : {action}",
         f"  +add ikonka-link   : {add_icon}",
         f"  Page linklar       : {links}",
