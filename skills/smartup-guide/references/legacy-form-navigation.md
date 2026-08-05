@@ -492,8 +492,19 @@ Source: user; `tests/smoke/test_forms/form_monitor.py`
   `anor/mdeal/return/return+add`.
 - Biznes qoida: `Проведение транзакции администратором невозможна...`
   alerti application error emas. U administrator hujjatni faqat `Черновик`
-  statusida saqlashi mumkinligini bildiradigan kutilgan ogohlantirish. Shu alert
-  barcha `+add` creation formalarida (order, return, lead) chiqadi.
+  statusida saqlashi mumkinligini bildiradigan kutilgan ogohlantirish.
+- **Tuzatish (2026-08-05, o'lchov bilan):** alert **barcha uchta** creation
+  formasida chiqmaydi — bu avvalgi yozuv xato edi:
+
+  | `+add` formasi | Alert | Matn oxiri |
+  |---|---|---|
+  | `Заказы` → `order+add` | ✅ chiqadi | ...транзакции администратором **невозможно** |
+  | `Возвраты` → `return+add` | ✅ chiqadi | ...транзакции администратором **невозможна** |
+  | `Лиды` → `lead+add` | ❌ **chiqmaydi** | 15 s kutishda 3 marta — hech narsa |
+
+  Ya'ni `Заказы` va `Возвраты` matnlari **bir harf bilan farq qiladi**
+  (`невозможно` / `невозможна`), `Лиды` esa toza ochiladi. `allowed_warnings`
+  exact-match ishlatilsa har forma uchun **o'z** matni yozilishi kerak.
 - Monitor `allowed_warnings` mexanizmi: case uchun ogohlantirishning to'liq
   matni berilsa, monitor whitespace'ni normalizatsiya qilib exact taqqoslaydi va
   alert boshidagi `×` close belgisini hisobga olmaydi. Mos kelgan warning
@@ -501,27 +512,39 @@ Source: user; `tests/smoke/test_forms/form_monitor.py`
 - Forms-03 da bu mexanizm endi ishlatilmaydi — `+add` case'lar olib tashlandi.
   Boshqa suite creation formasini tekshirsa, shu pattern ishlatilishi mumkin.
 
-### Alert bleed-through — trigger `+add` bilan ketdi (2026-08-05)
-Tags: forms-monitor, alert, bleed-through, add-icon, hypothesis-closed
+### Alert bleed-through — mexanizm tasdiqlandi, trigger hozir yo'q (2026-08-05)
+Tags: forms-monitor, alert, bleed-through, add-icon, reproduced
 Status: trace-confirmed
 Verified: 2026-08-05
-Source: user; Forms-01 va Forms-03 `--headless` runlari (88 + 38 forma)
+Source: `+add` creation formalarida qo'lda o'lchov; Forms-01 va Forms-03
+`--headless` runlari (88 + 38 forma)
 - Gipoteza edi: forma N da chiqqan alert ekranda qolib, forma N+1 ni yolg'ondan
   `APPLICATION_ERROR` qiladi (2026-08-04 runda 039/040/041 alert matnlari bir
   qadam surilgan ko'rinardi).
-- Foydalanuvchi to'g'ri aniqladi: o'sha alertlarning **yagona manbasi** `+add`
-  creation formalari edi. Ular Forms-03 rejasidan olib tashlangach trigger
-  qolmadi, gipoteza esa tekshirib bo'lmaydigan holga o'tdi.
-- Dalil (ishonchli alert kutish o'rnatilgandan **keyin** yig'ilgan): Forms-01
-  (88 forma, shundan 8 ta `Импорт`/`Импорт фото` action formasi) va Forms-03
-  (38 forma) — jami **126 forma, 0 ta `APPLICATION_ERROR`**. Hech bir suite
-  `add_icon` yoki `allowed_warnings` ishlatmaydi.
-- Shu sabab formalar orasida alert tozalash kodi **qo'shilmadi**.
+- **Qayta ishlab chiqarildi (2026-08-05):** `Заказы → Возвраты → Лиды` `+add`
+  ketma-ketligi, alert tozalanmagan holda:
+
+  | Navigatsiya | O'qilgan matn | Kutish | Kimning alerti |
+  |---|---|---|---|
+  | `Заказы` | ...невозмож**но** | 867 ms | o'zining (cold) |
+  | `Возвраты` | ...невозмож**но** | 25 ms | **`Заказы` ning** — o'zi `невозможна` bo'lishi kerak |
+  | `Лиды` | ...невозмож**но** | 20 ms | **`Заказы` ning** — `Лиды` da alert umuman yo'q |
+
+  Har forma orasida alert yopilgan holda esa `Возвраты` o'zining
+  `невозможна` matnini berdi, `Лиды` esa 15 s kutishda hech narsa bermadi.
+  Ya'ni 20–25 ms lik "darhol" o'qishlar — eski alert. Mexanizm **haqiqiy**,
+  avval "tekshirib bo'lmaydi" deb yopilgan edi.
+- Lekin **hozirgi qamrovda trigger yo'q**: Forms-01 (88 forma, shundan 8 ta
+  `Импорт`/`Импорт фото` action formasi) va Forms-03 (38 forma) — jami
+  **126 forma, 0 ta `APPLICATION_ERROR`**. Hech bir suite `add_icon` yoki
+  `allowed_warnings` ishlatmaydi.
 - Qayta ko'rish sharti: suite'ga creation/`+add` forma qo'shilsa **yoki**
-  hisobotda birinchi real `APPLICATION_ERROR` ko'rinsa. O'sha holda tozalash
-  faqat case'ning captured `state["visible_error"]` bo'sh bo'lmaganda qilinishi
-  kerak — har formada shartsiz Escape bosish o'zi flakiness manbasi (masalan
-  "o'zgarishni bekor qilasizmi?" dialogini chaqirib yuborishi mumkin).
+  hisobotda birinchi real `APPLICATION_ERROR` ko'rinsa. Endi bu "ehtimol" emas —
+  o'sha kuni **albatta** yolg'on fail beradi.
+- Tozalash shakli: faqat case'ning captured `state["visible_error"]` bo'sh
+  bo'lmaganda qilinadi va **screenshot/state olingandan keyin** — har formada
+  shartsiz Escape bosish o'zi flakiness manbasi (masalan "o'zgarishni bekor
+  qilasizmi?" dialogini chaqirib yuborishi mumkin).
 
 ### Legacy formalarda heading har doim topiladi (2026-08-05)
 Tags: legacy, heading, title, forms-monitor

@@ -755,14 +755,13 @@ class FakeJsError:
         self.message = message
 
 
-def test_js_and_network_signals_are_recorded_without_failing_the_form(monkeypatch):
+def test_failed_requests_are_recorded_without_failing_the_form(monkeypatch):
     _silence_allure(monkeypatch)
     page = _a2_page("trade/tvt/visit_list", "Визиты")
     case = _case()
     monitor = FormMonitor(page, suite_name="Forms", planned_cases=[case])
 
     def open_form_with_broken_backend():
-        page.emit("pageerror", FakeJsError("TypeError: filter is not a function"))
         page.emit(
             "response",
             FakeResponse(500, "https://smartup.online/b/anor/mr/list?token=secret"),
@@ -777,8 +776,6 @@ def test_js_and_network_signals_are_recorded_without_failing_the_form(monkeypatc
 
     assert result["status"] == PASSED
     assert result["usable"] is True
-    assert result["checks"]["js_error_count"] == 1
-    assert result["checks"]["js_errors"] == ["TypeError: filter is not a function"]
     assert result["checks"]["failed_request_count"] == 1
     assert result["checks"]["failed_requests"] == ["500 smartup.online/b/anor/mr/list"]
 
@@ -791,6 +788,73 @@ def test_js_and_network_signals_are_recorded_without_failing_the_form(monkeypatc
     assert "JS VA NETWORK SIGNALLARI" in summary
     assert "500 smartup.online/b/anor/mr/list" in summary
     assert "token=secret" not in summary
+
+
+def test_js_error_turns_an_otherwise_healthy_form_into_a_defect(monkeypatch):
+    _silence_allure(monkeypatch)
+    page = _a2_page("trade/tvt/visit_list", "Визиты")
+    case = _case()
+    monitor = FormMonitor(page, suite_name="Forms", planned_cases=[case])
+
+    result = monitor.run_case(
+        case,
+        navigate=lambda: page.emit(
+            "pageerror", FakeJsError("TypeError: filter is not a function")
+        ),
+        validate=lambda: None,
+    )
+
+    assert result["status"] == OPENED_WITH_DEFECT
+    assert result["reason_code"] == "JS_ERROR"
+    assert result["opened"] is True
+    assert result["usable"] is False
+    assert result["checks"]["js_errors"] == ["TypeError: filter is not a function"]
+    assert result["checks"]["js_error_count"] == 1
+    assert "TypeError: filter is not a function" in result["detail"]
+
+
+def test_visible_ui_error_outranks_a_js_error():
+    case = {"expected_path": "trade/tvt/visit_list", "title": "Визиты"}
+    state = {
+        "canonical_path": "trade/tvt/visit_list",
+        "actual_title": "Визиты",
+        "title_candidates": ["Визиты"],
+        "title_source": "document",
+        "content_ready": True,
+        "visible_error": "Нет доступа к форме",
+        "js_errors": ["TypeError: x is not a function"],
+        "loader_visible": False,
+    }
+
+    assert classify_form_failure(
+        case=case, stage="validation", detail="UI error", state=state
+    )["reason_code"] == "APPLICATION_ERROR"
+
+    state["visible_error"] = ""
+    assert classify_form_failure(
+        case=case, stage="validation", detail="JS", state=state
+    )["reason_code"] == "JS_ERROR"
+
+
+def test_js_error_outranks_a_stuck_loader_and_blank_content():
+    case = {"expected_path": "trade/tvt/visit_list", "title": "Визиты"}
+    state = {
+        "canonical_path": "trade/tvt/visit_list",
+        "actual_title": "Визиты",
+        "title_candidates": ["Визиты"],
+        "title_source": "document",
+        "content_ready": False,
+        "visible_error": "",
+        "js_errors": ["TypeError: x is not a function"],
+        "loader_visible": True,
+    }
+
+    analysis = classify_form_failure(
+        case=case, stage="validation", detail="JS", state=state
+    )
+
+    assert analysis["reason_code"] == "JS_ERROR"
+    assert analysis["status"] == OPENED_WITH_DEFECT
 
 
 def test_page_events_do_not_leak_between_forms(monkeypatch):

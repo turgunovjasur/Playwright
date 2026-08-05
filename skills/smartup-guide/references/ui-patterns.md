@@ -10,6 +10,7 @@
 - [Masked inputs](#masked-dateamount-inputs)
 - [Biruni confirm va error](#biruni-confirm)
 - [Alert kutish va o'lik timeout](#alert-kutish--is_visibletimeout-olik-parametr)
+- [A2 sahifada `pageerror` chiqmaydi](#a2-sahifada-pageerror-chiqmaydi-2026-08-05)
 - [List va grid setting](#list-va-grid-setting)
 - [Screenshot arxivi](#screenshot-arxivi)
 - [Umumiy forma helperlari](#umumiy-forma-helperlari-dry)
@@ -176,10 +177,21 @@ Source: Playwright API docstring; real Chromium tekshiruvi;
   `locator.is_visible()` does not wait."* Ya'ni `is_visible` doim lahzalik
   surat, `timeout=` yozilsa kod yolg'on tushuntiradi. Kutish kerak bo'lsa
   `locator.wait_for(state="visible", timeout=...)` ishlatiladi.
-- Nega muhim: forma ochilgandan keyin server validatsiya xatosi 300–500 ms
-  kechikib kelishi mumkin. Lahzalik surat uni ko'rmaydi va forma **yolg'on
-  PASSED** bo'ladi — hisobotda hech qanday iz qolmaydi, ya'ni bu muammoni
-  hisobotdan topib bo'lmaydi.
+- Nega muhim: forma ochilgandan keyin server validatsiya xatosi kechikib
+  kelishi mumkin. Lahzalik surat uni ko'rmaydi va forma **yolg'on PASSED**
+  bo'ladi — hisobotda hech qanday iz qolmaydi, ya'ni bu muammoni hisobotdan
+  topib bo'lmaydi.
+- **O'lchangan kechikish (2026-08-05, `Заказы`/`Возвраты` `+add`, 6 o'lchov):**
+  min **24 ms**, o'rtacha **227 ms**, maksimum **849 ms**. Taymer navigatsiya
+  tugagan zahoti boshlandi, `capture_form_state` esa alert kutishiga qadar yana
+  URL/title/content o'qiydi — ya'ni monitorning haqiqiy zaxirasi shundan
+  kattaroq. Maksimum **birinchi (cold) navigatsiyada** chiqdi; keyingi
+  takrorlarda 20–30 ms.
+- Shu sabab `ALERT_WAIT_MS = 1200` **o'zgartirilmadi**. 700 ms ga tushirish
+  taklifi bor edi (avvalgi "300–500 ms" raqami kuzatuvdan, o'lchovdan emas
+  edi) — o'lchov uni **rad etdi**: cold-start 849 ms o'tkazib yuborilardi va
+  natija yolg'on PASSED bo'lardi. Local 849 ms, CI sekinroq, 1200 ms zaxirasi
+  ~1.4×.
 - Bir nechta alert selektorini kutish kerak bo'lsa, ularni **vergul bilan bitta
   locatorga birlashtir**:
   `page.locator(", ".join(ALERT_SELECTORS)).first.wait_for(state="visible", timeout=...)`.
@@ -194,6 +206,42 @@ Source: Playwright API docstring; real Chromium tekshiruvi;
   real brauzerda tekshir.
 - Loader (`.block-ui-overlay`, `.smt-skeleton`, `[aria-busy='true']`) uchun
   lahzalik surat **to'g'ri** — u yerda kutish noto'g'ri bo'lardi.
+
+### A2 sahifada `pageerror` chiqmaydi (2026-08-05)
+Tags: a2, angular, pageerror, js-error, forms-monitor, listener
+Status: trace-confirmed
+Verified: 2026-08-05
+Source: real Chromium probe — legacy va A2 formalarida 4 kanal;
+`tests/smoke/test_forms/form_monitor.py`
+- Qoida: **A2 (`/a2/...`) sahifalarida `page.on("pageerror")` ishlamaydi.**
+  Ilova global `error` eventida `preventDefault()` chaqiradi, shuning uchun
+  Chrome xatoni "handled" deb hisoblaydi va Playwright'ga uncaught exception
+  sifatida yubormaydi. Legacy sahifalarda esa kanal normal ishlaydi.
+- O'lchov (bir xil forma, ikki xil kelish yo'li bilan):
+
+  | Sahifa / yo'l | `error` eventi `preventDefault` | `setTimeout` | `queueMicrotask` | `rAF` | inline `script` |
+  |---|---|---|---|---|---|
+  | Legacy forma (`#/!<code>/...`) | ❌ yo'q | ✅ | ✅ | ✅ | ✅ |
+  | A2 forma — to'liq sahifa yuklanishi | ❌ yo'q | ✅ | ✅ | ❌ | ❌ |
+  | A2 forma — **SPA route** o'zgarishi | ✅ **bor** | ❌ | ❌ | ❌ | ❌ |
+
+- Ya'ni A2 ga **birinchi** kirishda (legacy shell'dan to'liq yuklanish) ba'zi
+  kanallar hali ishlaydi, lekin ilova ishga tushib SPA navigatsiyaga o'tgach
+  hammasi jim bo'ladi. Forms suite A2 formalarini aynan SPA route bilan
+  ochadi — demak ular uchun kanal **ko'r**.
+- Amaliy natija: `FormMonitor` ning `JS_ERROR` tekshiruvi **119 legacy formada**
+  ishlaydi (sun'iy injektsiya bilan tasdiqlangan), **28 A2 formada** esa
+  hech narsa ko'rmaydi. A2 da "0 JS xato" — sog'lom degani **emas**.
+- Yechim yo'li (hali qilinmagan): `page.add_init_script` bilan app bundle'dan
+  **oldin** capture-fazada `window.addEventListener("error", ..., true)`
+  o'rnatish va xatolarni `window` massividan o'qish — init script har
+  document'da birinchi ishlaydi, `preventDefault` unga ta'sir qilmaydi.
+- Diqqat: `typeof window.onerror` bu yerda **yo'l ko'rsatmaydi** — ikkala shell'da
+  ham `null` (`typeof null === "object"`, ya'ni "object" javobi handler bor
+  degani emas). `window.Zone` ham `undefined` — zone.js sabab emas.
+- Diqqat: sun'iy JS xato injektsiyasi bilan test qilganda `setTimeout` ichida
+  `throw` legacy'da ishonchli, A2 da esa **hech narsa isbotlamaydi** — jim
+  natija "xato yo'q" va "kanal ko'r" uchun bir xil ko'rinadi.
 
 ### List va Grid Setting
 Tags: list, grid, search, column

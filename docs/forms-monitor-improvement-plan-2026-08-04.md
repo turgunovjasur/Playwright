@@ -16,8 +16,9 @@
 | 2 | Hisobotni ishonchli qilish (#3, #4) | ✅ Bajarildi | — |
 | 3 | Aniqlashni kuchaytirish (#2, #7 bajarildi; #1 — trigger yo'q) | 🟡 Qismon | — |
 | 4 | Hisobot sifati (Taklif 3) | ✅ Bajarildi | — |
-| 5 | JS/network xatolari (Taklif 1) | 🟡 1-qadam bajarildi | — |
-| 6 | Shell helper refactori (Taklif 4) | ⬜ Qaror kutilmoqda | — |
+| 5 | JS/network xatolari (Taklif 1) | ✅ Bajarildi (legacy; A2 ko'r) | — |
+| 6 | Shell helper refactori (Taklif 4) | ⬜ Kechiktirildi | — |
+| 7 | A2 formalarida JS xatolarini ko'rish | ⬜ Yangi, ochiq | — |
 
 Har bosqich alohida commit. Bosqich 2 dan boshlab real run bilan tekshiriladi.
 
@@ -154,18 +155,45 @@ runlar bajarildi:
 | Forms-03, 38 forma | **0 ta `APPLICATION_ERROR`** |
 
 Ya'ni **126 formada bitta ham alert chiqmaydi**, shuning uchun bleed-through
-hozir yuz bera olmaydi. 039/040/041 dalili butunlay `+add` case'lardan kelgan
-va o'sha gipotezani endi tekshirib bo'lmaydi (case'lar mavjud emas).
+hozir yuz bera olmaydi.
 
-- **Holat:** Foydalanuvchi haq — hozirgi qamrovda trigger yo'q.
+##### Mexanizm qayta ishlab chiqarildi (2026-08-05)
+
+Yuqorida "039/040/041 gipotezasini endi tekshirib bo'lmaydi" deb yozilgan edi.
+Bu **noto'g'ri bo'lib chiqdi** — `ALERT_WAIT_MS` o'lchovi paytida creation
+formalar qo'lda ochilgani uchun trigger qaytib keldi va gipoteza to'g'ridan-to'g'ri
+sinaldi. `Заказы → Возвраты → Лиды`, alert tozalanmagan holda:
+
+| Navigatsiya | O'qilgan matn | Kutish | Kimning alerti |
+|---|---|---|---|
+| `Заказы` | ...невозмож**но** | 867 ms | o'zining (cold) |
+| `Возвраты` | ...невозмож**но** | 25 ms | **`Заказы` ning** |
+| `Лиды` | ...невозмож**но** | 20 ms | **`Заказы` ning** |
+
+Solishtirish uchun, alert har forma orasida yopilganda: `Возвраты` o'zining
+`невозмож**на**` matnini berdi, `Лиды` esa 15 s kutishda 3 marta hech narsa
+bermadi. 20–25 ms lik "darhol" o'qishlar — eski, ekranda qolgan alert.
+
+Ya'ni 2026-08-04 dagi matn siljishi **aynan shu** ekan: `Лиды` da o'z alerti
+yo'q, shuning uchun u qo'shnisining matnini o'qigan.
+
+- **Holat:** mexanizm **tasdiqlangan** (gipoteza emas), lekin hozirgi qamrovda
+  **trigger yo'q** — 126 formada 0 alert.
+- **Kod qo'shilmadi.** Sabab: tozalash bugun 126 formada **hech qachon
+  ishlamaydi**, ya'ni hech qanday run uni tekshira olmaydi — doim o'lik yo'l
+  bo'lib qoladi va kelajakda birinchi marta ishlaganda xato bo'lsa, buni
+  hech kim sezmaydi. Creation forma qo'shilgan kuni tozalash **o'sha formaning
+  o'z `allowed_warnings` matni bilan birga** yozilishi kerak (matnlar bir harf
+  bilan farq qiladi), va o'sha kuni uni real trigger bilan tekshirish mumkin.
 - **Qayta ko'rish sharti:** biror suite'ga creation/`+add` forma qo'shilsa
-  **yoki** hisobotda birinchi real `APPLICATION_ERROR` ko'rinsa. O'sha kuni
-  tozalash bo'lmasa bitta real nuqson ikkita fail beradi va ikkinchisi yolg'on.
-- **Agar qilinsa — tavsiya etilgan shakl:** har formada shartsiz Escape bosish
-  **emas** (u o'zi flakiness manbasi bo'lishi mumkin — masalan "o'zgarishni
-  bekor qilasizmi?" dialogini chaqirib yuborishi), balki faqat o'sha case'ning
-  captured `state["visible_error"]` bo'sh bo'lmaganda tozalash. Bu bugungi 126
-  formada **no-op**, ya'ni qo'shimcha xavf ham, qo'shimcha vaqt ham nol.
+  **yoki** hisobotda birinchi real `APPLICATION_ERROR` ko'rinsa. Endi bu
+  "ehtimol" emas — o'sha kuni **albatta** bitta real nuqson ikkita fail beradi
+  va ikkinchisi yolg'on.
+- **Tayyor retsept:** har formada shartsiz Escape bosish **emas** (u o'zi
+  flakiness manbasi — masalan "o'zgarishni bekor qilasizmi?" dialogini chaqirib
+  yuborishi mumkin), balki faqat o'sha case'ning captured
+  `state["visible_error"]` bo'sh bo'lmaganda, **screenshot va state olingandan
+  keyin** tozalash.
 
 #### 3.2. `is_visible(timeout=...)` e'tiborga olinmaydi `#2` — hal qilindi
 
@@ -192,9 +220,30 @@ aniqlanmasligi xavfi bor edi): yashirin `#biruniAlert` sanalmadi, ko'rinadigan
 dalili ham (jim yiqilsa vaqt o'zgarmasdi). To'liq Forms group (147 forma) uchun
 taxminan **+2.4 min**.
 
-`ALERT_WAIT_MS = 1200` — rejadagi qiymat. Kutilgan xato oynasi 300–500 ms
-bo'lgani uchun ~700 ms ga tushirish narxni ikki barobar kamaytiradi;
-**foydalanuvchi qarori kutilmoqda**.
+##### `ALERT_WAIT_MS` — o'lchandi, 1200 ms qoldi (2026-08-05)
+
+~700 ms ga tushirish taklifi bor edi ("kutilgan xato oynasi 300–500 ms"). Lekin
+o'sha raqam **kuzatuvdan, o'lchovdan emas** edi — 126 formada bitta ham alert
+chiqmagani uchun alert kechikishi hech qachon o'lchanmagan. Shuning uchun alert
+**haqiqatan chiqadigan** formada (admin `+add` creation formasi) o'lchandi:
+navigatsiya tugagan zahoti taymer boshlanib, birlashtirilgan alert locatori
+15 s timeout bilan kutildi, har forma orasida alert yopildi, 3 takror.
+
+| `+add` formasi | 1-takror | 2-takror | 3-takror |
+|---|---|---|---|
+| `Заказы` | **849 ms** | 24 ms | 223 ms |
+| `Возвраты` | 212 ms | 31 ms | 24 ms |
+| `Лиды` | alert yo'q | alert yo'q | alert yo'q |
+
+Min 24 ms, o'rtacha 227 ms, **maksimum 849 ms** — va u aynan birinchi (cold)
+navigatsiyada. Ya'ni **700 ms o'sha alertni o'tkazib yuborardi** va natija
+yolg'on `PASSED` bo'lardi. Local 849 ms, CI sekinroq, `1200` zaxirasi ~1.4×.
+Qiymat **o'zgartirilmadi**; o'lchov `ui-patterns.md` ga yozildi.
+
+Yo'l-yo'lakay ikki fakt: `Лиды` `+add` da ogohlantirish **umuman chiqmaydi**
+(KB "uchtasida ham chiqadi" deb yozgan edi — tuzatildi), va `Заказы`
+`невозмож**но**` / `Возвраты` `невозмож**на**` — matnlar bir harf bilan farq
+qiladi.
 
 Regression testi: `test_late_application_error_is_not_missed_by_an_instant_snapshot`
 — `FakeLocator.wait_for` kechikkan alertni ochib beradi. Kutish qatorini
@@ -329,17 +378,82 @@ Jami 206 muvaffaqiyatsiz so'rov, 123/147 formada signal ko'rindi. Ya'ni
 Eng qimmatli topilma — **`pageerror` kanali butunlay toza**. Ya'ni JS xatosini
 qattiqlashtirish uchun filtr **umuman kerak emas**.
 
-#### 2-qadam — qattiqlashtirish — foydalanuvchi qarori kutilmoqda
+#### 2-qadam — qattiqlashtirish — faqat JS xatolari
 
-1-qadam dalili quyidagini imkon beradi:
+**Foydalanuvchi qarori:** JS xatolari qattiqlashtiriladi, network signallari
+kuzatuvda qoladi. Sabab: `pageerror` kanalida 147 formada 0 shovqin bo'lgani
+uchun filtr kerak emas va yolg'on fail xavfi yo'q; network esa 99% shovqin va
+qolgan yagona signal (`m:load_image_v2` 404) alohida tekshirishga arziydi,
+uni hozir qizil qilish shart emas.
 
-- **JS xatolari:** filtrsiz `_assert_healthy_form_state` ga qo'shish. 147 formada
-  0 shovqin, ya'ni xavf minimal, foyda katta ("JS exception, filtr paneli
-  chizilmadi" holati hozir jim o'tadi).
-- **Network:** `/page/tour/` va `/assets/i18n/` ni ma'lum-shovqin ro'yxatiga
-  yozib, qolgan 4xx/5xx ni nuqson deb hisoblash. Bunda `Plugin Marketplace`
-  (`m:load_image_v2` 404) qizil bo'ladi — bu real nuqsonmi yoki yana bir
-  shovqinmi degan qaror kerak.
+Amalga oshirilgani:
+
+- Yangi `JS_ERROR` reason code va tavsifi.
+- `_assert_healthy_form_state` JS xatosini `[JS_ERROR] (N): <xabarlar>` bilan
+  yiqitadi; `classify_form_failure` `OPENED_WITH_DEFECT` / `JS_ERROR` qaytaradi.
+- `checks["usable"]` endi JS xatosi bo'lsa `False`.
+- **Ustuvorlik tartibi:** `URL_MISMATCH` → `APPLICATION_ERROR` → **`JS_ERROR`** →
+  `LOADER_NOT_FINISHED` → `CONTENT_NOT_READY` → `TITLE_MISMATCH`. JS xatosi
+  loader va bo'sh kontentdan **yuqorida**, chunki ko'pincha ularning sababi
+  aynan o'sha exception; lekin `APPLICATION_ERROR` dan **pastda**, chunki
+  foydalanuvchi ko'radigan xato xabari muhimroq.
+
+**Yagona manba qarori:** `js_errors` `state` dict'iga qo'yiladi (yangi
+`FormMonitor._capture_state` orqali), shuning uchun klassifikatsiya, `checks` va
+assertlar bitta joydan o'qiydi. `capture_form_state` `js_errors: []` bilan
+qaytaradi — u sahifadan o'qilmaydi, listener orqali keladi. Network hisoblari
+esa monitor'da qoladi (cheklanmagan hisob `state`ga tegishli emas).
+
+Network hozircha yiqitmaydi, shuning uchun hisobot bo'limi sarlavhasi
+`JS VA NETWORK SIGNALLARI` bo'lib, ostida "JS xatosi formani nuqsonli qiladi;
+network signallari faqat kuzatiladi" izohi turadi.
+
+##### Real brauzerda tasdiqlash (2026-08-05) — legacy ishlaydi, A2 ko'r
+
+Unit testlar `FakePage` bilan ishlaydi, ya'ni listener real Chromium'da ulanganini
+isbotlamaydi. Shuning uchun Forms-03 ga sun'iy JS exception qo'yib run qilindi.
+
+**Legacy formada (006 `Планы`) — uchdan-uchiga ishlaydi.** Ikkala injektsiya
+texnikasi (`setTimeout` ichida throw va inline `<script>` ichida throw) ham
+ushlandi va butun zanjir to'g'ri chiqdi:
+
+```
+006 | Планы | OPENED_WITH_DEFECT | JS_ERROR | Markaziy holat tekshiruvi [JS_ERROR] (2): PROBE-setTimeout; PROBE-script
+  Xato turi   : JS_ERROR
+  JS xatolari : 2 PROBE-setTimeout; PROBE-script
+  Screenshot  : 006-Планы-OPENED_WITH_DEFECT-JS_ERROR-evidence
+```
+
+Ya'ni `checks`, klassifikatsiya, assert matni, screenshot, `SMARTUP_PROGRESS`
+eventi va yakuniy summary — hammasi mos.
+
+**A2 formada (003 `Отслеживание пользователей`) — hech narsa ushlanmadi.**
+Sababi aniqlandi: A2 ilovasi global `error` listenerida `preventDefault()`
+chaqiradi, natijada Chrome xatoni "handled" deb hisoblaydi va Playwright
+`pageerror` **umuman chiqmaydi**. Bu faqat ilova ishga tushgandan keyin, ya'ni
+SPA route o'zgarishlarida yuz beradi:
+
+| A2 formasiga qanday kelingan | `error` eventi `preventDefault` | `setTimeout` | `queueMicrotask` | `rAF` | inline `script` |
+|---|---|---|---|---|---|
+| To'liq sahifa yuklanishi (legacy shell'dan) | ❌ yo'q | ✅ | ✅ | ❌ | ❌ |
+| **SPA route** (001 → 002 → 003) | ✅ **bor** | ❌ | ❌ | ❌ | ❌ |
+| Legacy forma (solishtirish uchun) | ❌ yo'q | ✅ | ✅ | ✅ | ✅ |
+
+Suite A2 formalarining ko'pini aynan SPA route bilan ochadi, ya'ni ular uchun
+kanal ko'r.
+
+**Shu sabab qamrov aniqlashtirildi:**
+
+| Forma turi | Soni | `JS_ERROR` qamrovi |
+|---|---|---|
+| Legacy (Forms-01 87 + Forms-03 32) | **119** | ✅ ishlaydi — tasdiqlangan |
+| A2 (Forms-02 21 + Forms-01 1 + Forms-03 6) | **28** | ❌ ko'r (SPA route) |
+
+**Muhim tuzatish:** yuqorida "eng qimmatli topilma — `pageerror` kanali
+butunlay toza" deb yozilgan edi. To'g'rirog'i: **119 legacy formada toza**,
+28 A2 formada esa nol "sog'lom" degani emas, **"ko'rmadik"** degani. JS
+qattiqlashtirishning yolg'on-fail xavfi yo'qligi haqidagi xulosa o'zgarmaydi
+(legacy 119 formada 0 shovqin), lekin ishonch A2 ga tarqatilmaydi.
 
 ### Bosqich 6 — Shell helper refactori `Taklif 4`
 
@@ -350,8 +464,39 @@ qattiqlashtirish uchun filtr **umuman kerak emas**.
   xato sababi tushunarsiz bo'ladi.
 - **Yechim:** `shell_page(page)` helperi — `AngularBasePage` yoki `BasePage`
   qaytaradi.
-- **Holat:** Bu struktura refactori, nuqta-fix emas. **Foydalanuvchi qarori
-  kutilmoqda**, majburiy emas.
+- **Holat: kechiktirildi (2026-08-05).** Ortida hech qanday nuqson yo'q — 5 ta
+  tarmoqlanish hozir to'g'ri ishlaydi va bironta ham fail bermagan. Foyda faqat
+  kelajakda shell-ga bog'liq **yangi amal** qo'shilganda paydo bo'ladi, bunday
+  ish esa rejada yo'q. Narxi esa real: `flow.py` navigatsiya yadrosi
+  o'zgargani uchun 147 formani qayta run qilish kerak.
+- **Qayta ko'rish sharti:** `flow.py` ga shell-ga bog'liq oltinchi tarmoqlanish
+  qo'shilishi kerak bo'lganda — o'sha o'zgarish bilan birga qilinadi.
+
+### Bosqich 7 — A2 formalarida JS xatolarini ko'rish `yangi, 2026-08-05`
+
+- **Muammo:** Bosqich 5 ning `JS_ERROR` tekshiruvi 119 legacy formada ishlaydi,
+  28 A2 formada esa ko'r — A2 ilovasi `error` eventida `preventDefault()`
+  chaqirgani uchun Playwright `pageerror` chiqmaydi (yuqoridagi jadval).
+- **Yechim (taklif):** `page.add_init_script` bilan **ilova kodidan oldin**
+  capture-fazada listener o'rnatish, chunki init script har document'da app
+  bundle'dan avval ishlaydi va `preventDefault` unga ta'sir qilmaydi:
+
+  ```js
+  window.__formMonitorErrors = [];
+  window.addEventListener("error", (e) => {
+      window.__formMonitorErrors.push(e.message);
+  }, true);
+  ```
+
+  So'ng `capture_form_state` shu massivni o'qib `state["js_errors"]` ga
+  qo'shadi. `_reset_page_events` uni ham tozalaydi.
+- **Majburiy tartib:** avval **faqat yig'ish** (Bosqich 5 ning 1-qadami kabi) —
+  A2 formalarida qancha real JS shovqin borligi hech qachon o'lchanmagan, chunki
+  kanal ko'r edi. O'lchovsiz qattiqlashtirish 28 formani yolg'ondan qizil
+  qilishi mumkin.
+- **Diqqat:** `add_init_script` sahifadagi **barcha** frame'larga qo'llanadi va
+  suite'lar orasida umumiy `page` ishlatiladi — `finish()` da tozalash yo'li
+  o'ylanishi kerak.
 
 ---
 

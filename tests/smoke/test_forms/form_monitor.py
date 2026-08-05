@@ -51,6 +51,10 @@ REASON_DESCRIPTIONS = {
         "Menu, action yoki page-link bosqichida target forma URLiga o'tib bo'lmadi."
     ),
     "APPLICATION_ERROR": "Target sahifada aniq UI xato xabari ko'rindi.",
+    "JS_ERROR": (
+        "Forma ochilishida brauzerda JS exception yuz berdi; sahifa jim buzilgan "
+        "bo'lishi mumkin."
+    ),
     "LOADER_NOT_FINISHED": "Forma yuklanish indikatori belgilangan vaqtda tugamadi.",
     "CONTENT_NOT_READY": "Target URLga yetildi, ammo forma kontenti tayyor bo'lmadi.",
     "FILIAL_SWITCH_FAILED": (
@@ -205,7 +209,13 @@ def _generic_a2_content_ready(page):
 
 
 def capture_form_state(page, *, ready=None):
-    """URL/title/content/error signallarini false-pass bermaydigan tarzda o'qiydi."""
+    """URL/title/content/error signallarini false-pass bermaydigan tarzda o'qiydi.
+
+    ``js_errors`` bo'sh boshlanadi — u sahifadan o'qilmaydi, listener orqali
+    yig'iladi va ``FormMonitor._capture_state`` uni shu yerga qo'shadi. Bitta
+    dict bo'lgani uchun klassifikatsiya, ``checks`` va assertlar bir manbadan
+    o'qiydi.
+    """
     actual_url = getattr(page, "url", "") or ""
     ready_visible = False
 
@@ -239,6 +249,7 @@ def capture_form_state(page, *, ready=None):
     return {
         "actual_url": actual_url,
         "actual_title": actual_form_title,
+        "js_errors": [],
         "document_title": document_title,
         "title_candidates": title_candidates,
         "title_source": "document" if is_a2 else "visible_heading",
@@ -333,6 +344,14 @@ def classify_form_failure(*, case, stage, detail, state):
             "opened": True,
         }
 
+    if state.get("js_errors"):
+        return {
+            "status": OPENED_WITH_DEFECT,
+            "reason_code": "JS_ERROR",
+            "reason_summary": reason_description("JS_ERROR"),
+            "opened": True,
+        }
+
     if state.get("loader_visible"):
         return {
             "status": NOT_OPENED,
@@ -386,6 +405,12 @@ def _assert_healthy_form_state(case, state):
         raise AssertionError(
             "Markaziy holat tekshiruvi [APPLICATION_ERROR]: "
             f"{visible_error}"
+        )
+    js_errors = state.get("js_errors") or []
+    if js_errors:
+        raise AssertionError(
+            f"Markaziy holat tekshiruvi [JS_ERROR] ({len(js_errors)}): "
+            f"{'; '.join(js_errors)}"
         )
     if state.get("loader_visible"):
         raise AssertionError("Markaziy holat tekshiruvi [LOADER_NOT_FINISHED]")
@@ -540,11 +565,11 @@ def build_monitor_payload(*, suite_name, planned_count, results, blockers):
 
 
 def _page_event_lines(results):
-    """JS va network signallarini alohida ko'rsatadi — ular statusga ta'sir qilmaydi.
+    """JS va network signallarining to'liq inventarini beradi.
 
-    Maqsad: filtr yozishdan oldin shovqin hajmini o'lchash. Signal ko'rinadigan
-    forma `PASSED` bo'lib qolishi mumkin, shuning uchun bu bo'lim statusga
-    qaramay ro'yxatlaydi.
+    JS xatosi formani `JS_ERROR` nuqsoni qiladi; network signallari esa hozircha
+    faqat kuzatiladi, shuning uchun signal ko'rinadigan forma `PASSED` bo'lib
+    qolishi mumkin va bu bo'lim statusga qaramay ro'yxatlaydi.
     """
     noisy = [
         result
@@ -555,8 +580,10 @@ def _page_event_lines(results):
     if not noisy:
         return []
     lines = [
-        "JS VA NETWORK SIGNALLARI (kuzatuv — formani yiqitmaydi)",
+        "JS VA NETWORK SIGNALLARI",
         "-" * 88,
+        "JS xatosi formani nuqsonli qiladi (faqat legacy shell — A2 da kanal "
+        "ko'r); network signallari faqat kuzatiladi.",
     ]
     for result in noisy:
         checks = result["checks"]
@@ -750,9 +777,12 @@ class FormMonitor:
     def _install_page_listeners(self):
         """``pageerror`` va 4xx/5xx javoblarni yig'ishni yoqadi.
 
-        Bu bosqichda signallar faqat **qayd qilinadi** — formani yiqitmaydi.
-        Avval shovqin hajmi (analytics, favicon 404 va shunga o'xshash) real
-        runda o'lchanishi kerak, filtr keyin yoziladi.
+        JS xatosi formani ``JS_ERROR`` nuqsoni qiladi; network signallari esa
+        faqat qayd qilinadi (shovqinning 99% i `/page/tour/` 404 lari).
+
+        Diqqat: ``pageerror`` **faqat legacy shell'da** ishlaydi. A2 ilovasi
+        global ``error`` eventida ``preventDefault()`` chaqiradi, shuning uchun
+        A2 formalarida bu kanal ko'r — batafsil `ui-patterns.md`.
         """
         try:
             self.page.on("pageerror", self._record_js_error)
@@ -895,13 +925,16 @@ class FormMonitor:
         path_matches = _path_matches(case, state)
         allowed_warning = _allowed_warning_text(case, state)
         visible_error = _unexpected_visible_error(case, state)
+        js_errors = list(state.get("js_errors") or [])
         usable = (
             path_matches
             and bool(state.get("content_ready"))
             and not bool(state.get("loader_visible"))
             and not bool(visible_error)
+            and not js_errors
         )
         return {
+            "js_errors": js_errors,
             "url_matches": path_matches,
             "title_matches": _title_matches(case, state),
             "title_verified": _title_verified(case, state),
@@ -916,14 +949,19 @@ class FormMonitor:
             "usable": usable,
         }
 
-    def _case_checks(self, case, state):
-        """Sof holat tekshiruvlariga shu oynada yig'ilgan page eventlarini qo'shadi.
+    def _capture_state(self, case=None):
+        """Sahifa holatiga shu oynada yig'ilgan JS xatolarini qo'shib qaytaradi."""
+        state = capture_form_state(self.page, ready=(case or {}).get("ready"))
+        state["js_errors"] = list(self.js_errors)
+        return state
 
-        ``usable`` ataylab o'zgarmaydi — JS/network signallari hozir formani
-        yiqitmaydi.
+    def _case_checks(self, case, state):
+        """Sof holat tekshiruvlariga cheklanmagan hisoblar va network signalini qo'shadi.
+
+        JS xatolari ``state`` orqali ``_checks`` ga yetib boradi va statusga
+        ta'sir qiladi; network signallari esa hozir faqat qayd qilinadi.
         """
         checks = self._checks(case, state)
-        checks["js_errors"] = list(self.js_errors)
         checks["js_error_count"] = self.js_error_count
         checks["failed_requests"] = list(self.failed_requests)
         checks["failed_request_count"] = self.failed_request_count
@@ -940,7 +978,7 @@ class FormMonitor:
         test_completed,
         state=None,
     ):
-        state = state or capture_form_state(self.page, ready=case.get("ready"))
+        state = state or self._capture_state(case)
         detail = _clean_text(exc)
         analysis = classify_form_failure(
             case=case,
@@ -1010,7 +1048,7 @@ class FormMonitor:
                         f"Kutilgan URL: {case.get('expected_path') or '—'}"
                     ):
                         validate()
-                        state = capture_form_state(self.page, ready=case.get("ready"))
+                        state = self._capture_state(case)
                         _assert_healthy_form_state(case, state)
                 except (AssertionError, PlaywrightError) as exc:
                     failure_result = self._failure_result(
@@ -1100,10 +1138,7 @@ class FormMonitor:
             )
             if case is not None:
                 affected_case_number = case["number"]
-        state = capture_form_state(
-            self.page,
-            ready=case.get("ready") if case else None,
-        )
+        state = self._capture_state(case)
         analysis_case = dict(case or {})
         analysis_case["failed_operation"] = operation
         analysis = classify_form_failure(
