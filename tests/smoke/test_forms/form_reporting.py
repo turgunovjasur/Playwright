@@ -325,7 +325,7 @@ def write_terminal_report(text, terminal_reporter=None):
 
 
 
-def _status_counts(results):
+def status_counts(results):
     counts = Counter(result.get("status") for result in results)
     for status in FORM_STATUSES:
         counts.setdefault(status, 0)
@@ -400,7 +400,7 @@ def build_monitor_payload(
         },
         "skipped": skipped,
         "metrics": _monitor_metrics(results),
-        "counts": dict(_status_counts(results)),
+        "counts": dict(status_counts(results)),
         "blockers": list(blockers),
         "results": list(results),
     }
@@ -562,7 +562,7 @@ def render_monitor_summary(
     skipped_cases=None,
 ):
     """Terminal va Allure uchun bir xil, takrorsiz markaziy hisobot yasaydi."""
-    counts = _status_counts(results)
+    counts = status_counts(results)
     metrics = _monitor_metrics(results)
     coverage = _signal_coverage(results)
     skipped = [dict(case) for case in (skipped_cases or [])]

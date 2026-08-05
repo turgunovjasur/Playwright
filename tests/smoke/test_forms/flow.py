@@ -6,14 +6,21 @@ from playwright.sync_api import expect
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 from tests.smoke.test_forms.form_reporting import (
-    build_form_result,
+    build_form_result as _build_form_result,
     form_navigation_track,
-    form_step_title,
-    format_form_result,
-    write_terminal_report,
+    form_step_title as _form_step_title,
+    format_form_result as _format_form_result,
+    write_terminal_report as _write_terminal_report,
 )
 from utils.angular_base_page import AngularBasePage
 from utils.base_page import BasePage
+
+
+# Reporting helperlari oldingi consumerlar uchun shu moduldan re-export qilinadi.
+build_form_result = _build_form_result
+form_step_title = _form_step_title
+format_form_result = _format_form_result
+write_terminal_report = _write_terminal_report
 
 
 FORM_TIMEOUT = 15_000

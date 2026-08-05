@@ -13,9 +13,9 @@ from playwright.sync_api import Error as PlaywrightError
 from tests.smoke.progress import emit_progress_event
 from tests.smoke.smoke_reporting import safe_page_screenshot
 from tests.smoke.test_forms.form_cases import (
-    build_form_case_inventory,
-    build_form_case_plan,
-    form_case,
+    build_form_case_inventory as _build_form_case_inventory,
+    build_form_case_plan as _build_form_case_plan,
+    form_case as _form_case,
     form_case_key,
 )
 from tests.smoke.test_forms.form_checks import (
@@ -36,11 +36,11 @@ from tests.smoke.test_forms.form_checks import (
     title_verified as _title_verified,
 )
 from tests.smoke.test_forms.form_diagnostics import (
-    ALERT_SELECTORS,
-    ALERT_WAIT_MS,
+    ALERT_SELECTORS as _ALERT_SELECTORS,
+    ALERT_WAIT_MS as _ALERT_WAIT_MS,
     CAPTURE_JS_ERROR_SCRIPT,
-    CAPTURE_READ_SCRIPT,
-    CAPTURE_RESET_SCRIPT,
+    CAPTURE_READ_SCRIPT as _CAPTURE_READ_SCRIPT,
+    CAPTURE_RESET_SCRIPT as _CAPTURE_RESET_SCRIPT,
     DIAGNOSTIC_NAMES,
     EMPTY_CAPTURE_SIGNALS,
     MAX_PAGE_EVENTS,
@@ -49,7 +49,7 @@ from tests.smoke.test_forms.form_diagnostics import (
     failed_request_label as _failed_request_label,
     js_error_label as _js_error_label,
     reset_capture_signals as _reset_capture_signals,
-    safe_locator_visible as _safe_locator_visible,
+    safe_locator_visible,
 )
 from tests.smoke.test_forms.flow import settle_form_open
 from tests.smoke.test_forms.form_reporting import (
@@ -58,8 +58,20 @@ from tests.smoke.test_forms.form_reporting import (
     form_step_title,
     format_form_result,
     render_monitor_summary,
+    status_counts,
     write_terminal_report,
 )
+
+
+# Modulga ajratishdan oldingi public/test consumer importlari buzilmasin.
+ALERT_SELECTORS = _ALERT_SELECTORS
+ALERT_WAIT_MS = _ALERT_WAIT_MS
+CAPTURE_READ_SCRIPT = _CAPTURE_READ_SCRIPT
+CAPTURE_RESET_SCRIPT = _CAPTURE_RESET_SCRIPT
+_safe_locator_visible = safe_locator_visible
+build_form_case_inventory = _build_form_case_inventory
+build_form_case_plan = _build_form_case_plan
+form_case = _form_case
 
 
 def _shell_from_url(url, fallback=None):
@@ -781,7 +793,7 @@ class FormMonitor:
             attachment_type=allure.attachment_type.JSON,
         )
 
-        counts = _status_counts(ordered_results)
+        counts = status_counts(ordered_results)
         actionable = [
             result
             for result in ordered_results
