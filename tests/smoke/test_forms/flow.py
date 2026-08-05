@@ -233,6 +233,11 @@ def format_form_result(result):
                     f"  Kontent yuklandimi : {'HA' if checks.get('content_ready') else 'YOQ'}",
                     f"  Loader qoldimi     : {'HA' if checks.get('loader_visible') else 'YOQ'}",
                     f"  UI error           : {checks.get('visible_error') or '—'}",
+                    f"  JS xatolari        : {checks.get('js_error_count') or 0}"
+                    f" {'; '.join(checks.get('js_errors') or []) or '—'}",
+                    "  Muvaffaqiyatsiz so'rovlar: "
+                    f"{checks.get('failed_request_count') or 0}"
+                    f" {'; '.join(checks.get('failed_requests') or []) or '—'}",
                 ]
             )
         if result.get("screenshot"):

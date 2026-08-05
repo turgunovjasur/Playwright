@@ -6,6 +6,7 @@ import json
 import re
 import time
 from collections import Counter
+from urllib.parse import urlsplit
 
 import allure
 from playwright.sync_api import Error as PlaywrightError
@@ -78,6 +79,8 @@ ALERT_SELECTORS = (
 
 ALERT_WAIT_MS = 1200
 
+MAX_PAGE_EVENTS = 20
+
 
 def reason_description(reason_code):
     return REASON_DESCRIPTIONS.get(reason_code, "")
@@ -141,6 +144,23 @@ def _safe_visible_headings(page):
     except (PlaywrightError, AttributeError, TypeError):
         return []
     return [_clean_text(heading) for heading in headings if _clean_text(heading)]
+
+
+def _failed_request_label(response):
+    """4xx/5xx javobni qisqa yorliqqa aylantiradi; query string yozilmaydi."""
+    try:
+        status = int(response.status)
+        if status < 400:
+            return ""
+        parts = urlsplit(str(response.url or ""))
+    except (AttributeError, TypeError, ValueError):
+        return ""
+    return f"{status} {parts.netloc}{parts.path}"
+
+
+def _js_error_label(error):
+    message = _clean_text(getattr(error, "message", None) or error)
+    return message[:300]
 
 
 def _wait_for_any_visible(page, selectors, *, timeout):
@@ -519,6 +539,44 @@ def build_monitor_payload(*, suite_name, planned_count, results, blockers):
     }
 
 
+def _page_event_lines(results):
+    """JS va network signallarini alohida ko'rsatadi — ular statusga ta'sir qilmaydi.
+
+    Maqsad: filtr yozishdan oldin shovqin hajmini o'lchash. Signal ko'rinadigan
+    forma `PASSED` bo'lib qolishi mumkin, shuning uchun bu bo'lim statusga
+    qaramay ro'yxatlaydi.
+    """
+    noisy = [
+        result
+        for result in results
+        if (result.get("checks") or {}).get("js_error_count")
+        or (result.get("checks") or {}).get("failed_request_count")
+    ]
+    if not noisy:
+        return []
+    lines = [
+        "JS VA NETWORK SIGNALLARI (kuzatuv — formani yiqitmaydi)",
+        "-" * 88,
+    ]
+    for result in noisy:
+        checks = result["checks"]
+        lines.append(
+            f"• {result['number']:03d} | {result['title']} | {result['status']}"
+        )
+        if checks.get("js_error_count"):
+            lines.append(f"    JS xatolari ({checks['js_error_count']}):")
+            for message in checks.get("js_errors") or []:
+                lines.append(f"      - {message}")
+        if checks.get("failed_request_count"):
+            lines.append(
+                f"    Muvaffaqiyatsiz so'rovlar ({checks['failed_request_count']}):"
+            )
+            for label in checks.get("failed_requests") or []:
+                lines.append(f"      - {label}")
+    lines.append("")
+    return lines
+
+
 def _duration_lines(results, *, slowest_count=5):
     """Sekinlashuvni ko'rsatadi: forma ochilsa ham 2 barobar sekin bo'lishi mumkin.
 
@@ -630,6 +688,7 @@ def render_monitor_summary(*, suite_name, planned_count, results, blockers):
             )
         lines.append("")
 
+    lines.extend(_page_event_lines(results))
     lines.extend(_duration_lines(results))
 
     started_results = [result for result in results if result.get("test_started")]
@@ -676,11 +735,65 @@ class FormMonitor:
         self.blockers = []
         self.blocked = False
         self._results_by_number = {}
+        self.js_errors = []
+        self.failed_requests = []
+        self.js_error_count = 0
+        self.failed_request_count = 0
 
         numbers = [case["number"] for case in self.planned_cases]
         duplicates = sorted(number for number, count in Counter(numbers).items() if count > 1)
         if duplicates:
             raise ValueError(f"Takrorlangan forma raqami bor: {duplicates}")
+
+        self._install_page_listeners()
+
+    def _install_page_listeners(self):
+        """``pageerror`` va 4xx/5xx javoblarni yig'ishni yoqadi.
+
+        Bu bosqichda signallar faqat **qayd qilinadi** — formani yiqitmaydi.
+        Avval shovqin hajmi (analytics, favicon 404 va shunga o'xshash) real
+        runda o'lchanishi kerak, filtr keyin yoziladi.
+        """
+        try:
+            self.page.on("pageerror", self._record_js_error)
+            self.page.on("response", self._record_failed_request)
+        except (AttributeError, TypeError):
+            self._listeners_installed = False
+            return
+        self._listeners_installed = True
+
+    def _remove_page_listeners(self):
+        if not getattr(self, "_listeners_installed", False):
+            return
+        try:
+            self.page.remove_listener("pageerror", self._record_js_error)
+            self.page.remove_listener("response", self._record_failed_request)
+        except (AttributeError, TypeError, ValueError, KeyError):
+            pass
+        self._listeners_installed = False
+
+    def _record_js_error(self, error):
+        label = _js_error_label(error)
+        if not label:
+            return
+        self.js_error_count += 1
+        if len(self.js_errors) < MAX_PAGE_EVENTS:
+            self.js_errors.append(label)
+
+    def _record_failed_request(self, response):
+        label = _failed_request_label(response)
+        if not label:
+            return
+        self.failed_request_count += 1
+        if len(self.failed_requests) < MAX_PAGE_EVENTS:
+            self.failed_requests.append(label)
+
+    def _reset_page_events(self):
+        """Har case/precondition o'z oynasini oladi — signal qo'shnisiga o'tmaydi."""
+        self.js_errors = []
+        self.failed_requests = []
+        self.js_error_count = 0
+        self.failed_request_count = 0
 
     def update_filial(self, placeholder, actual_name):
         for case in self.planned_cases:
@@ -803,6 +916,19 @@ class FormMonitor:
             "usable": usable,
         }
 
+    def _case_checks(self, case, state):
+        """Sof holat tekshiruvlariga shu oynada yig'ilgan page eventlarini qo'shadi.
+
+        ``usable`` ataylab o'zgarmaydi — JS/network signallari hozir formani
+        yiqitmaydi.
+        """
+        checks = self._checks(case, state)
+        checks["js_errors"] = list(self.js_errors)
+        checks["js_error_count"] = self.js_error_count
+        checks["failed_requests"] = list(self.failed_requests)
+        checks["failed_request_count"] = self.failed_request_count
+        return checks
+
     def _failure_result(
         self,
         *,
@@ -822,7 +948,7 @@ class FormMonitor:
             detail=detail,
             state=state,
         )
-        checks = self._checks(case, state)
+        checks = self._case_checks(case, state)
         result = build_form_result(
             number=case["number"],
             filial=case["filial"],
@@ -861,6 +987,7 @@ class FormMonitor:
         if self.blocked:
             return None
         case = dict(self.planned_case(case["number"]))
+        self._reset_page_events()
         started_at = time.monotonic()
         stage = "navigation"
         failure_result = None
@@ -898,7 +1025,7 @@ class FormMonitor:
                     self._attach_case_evidence(failure_result, case=case)
                     raise
 
-                checks = self._checks(case, state)
+                checks = self._case_checks(case, state)
                 result = build_form_result(
                     number=case["number"],
                     filial=case["filial"],
@@ -940,6 +1067,7 @@ class FormMonitor:
         """Login/filial/shell kabi suite amallarini forma xatosidan ajratadi."""
         if self.blocked:
             return None
+        self._reset_page_events()
         started_at = time.monotonic()
         value = None
         try:
@@ -1068,6 +1196,7 @@ class FormMonitor:
 
     def finish(self):
         """Har qanday yakunda to'liq planned coverage va yagona hisobot chiqaradi."""
+        self._remove_page_listeners()
         ordered_results = self.complete_results()
         summary = render_monitor_summary(
             suite_name=self.suite_name,

@@ -107,6 +107,17 @@ class FakePage:
         self.late_visible_selectors = set(late_visible_selectors or [])
         self.wait_for_calls = []
         self.screenshot_kwargs = None
+        self.listeners = {}
+
+    def on(self, event, handler):
+        self.listeners.setdefault(event, []).append(handler)
+
+    def remove_listener(self, event, handler):
+        self.listeners.get(event, []).remove(handler)
+
+    def emit(self, event, payload):
+        for handler in list(self.listeners.get(event, [])):
+            handler(payload)
 
     def title(self):
         return self.current_title
@@ -731,6 +742,107 @@ def test_summary_does_not_duplicate_not_checked_forms():
     assert summary.count("⬜ 002") == 1
     assert "BARCHA FORMA NATIJALARI" not in summary
     assert "BOSHLANGAN FORMA TESTLARI" not in summary
+
+
+class FakeResponse:
+    def __init__(self, status, url):
+        self.status = status
+        self.url = url
+
+
+class FakeJsError:
+    def __init__(self, message):
+        self.message = message
+
+
+def test_js_and_network_signals_are_recorded_without_failing_the_form(monkeypatch):
+    _silence_allure(monkeypatch)
+    page = _a2_page("trade/tvt/visit_list", "Визиты")
+    case = _case()
+    monitor = FormMonitor(page, suite_name="Forms", planned_cases=[case])
+
+    def open_form_with_broken_backend():
+        page.emit("pageerror", FakeJsError("TypeError: filter is not a function"))
+        page.emit(
+            "response",
+            FakeResponse(500, "https://smartup.online/b/anor/mr/list?token=secret"),
+        )
+        page.emit("response", FakeResponse(200, "https://smartup.online/b/ok"))
+
+    result = monitor.run_case(
+        case,
+        navigate=open_form_with_broken_backend,
+        validate=lambda: None,
+    )
+
+    assert result["status"] == PASSED
+    assert result["usable"] is True
+    assert result["checks"]["js_error_count"] == 1
+    assert result["checks"]["js_errors"] == ["TypeError: filter is not a function"]
+    assert result["checks"]["failed_request_count"] == 1
+    assert result["checks"]["failed_requests"] == ["500 smartup.online/b/anor/mr/list"]
+
+    summary = render_monitor_summary(
+        suite_name="Forms",
+        planned_count=1,
+        results=monitor.complete_results(),
+        blockers=[],
+    )
+    assert "JS VA NETWORK SIGNALLARI" in summary
+    assert "500 smartup.online/b/anor/mr/list" in summary
+    assert "token=secret" not in summary
+
+
+def test_page_events_do_not_leak_between_forms(monkeypatch):
+    _silence_allure(monkeypatch)
+    page = _a2_page("trade/tvt/visit_list", "Визиты")
+    cases = [
+        _case(1),
+        _case(2, path="trade/tvt/user_locations", title="Отслеживание"),
+    ]
+    monitor = FormMonitor(page, suite_name="Forms", planned_cases=cases)
+
+    monitor.run_case(
+        cases[0],
+        navigate=lambda: page.emit("pageerror", FakeJsError("Birinchi formaning JS xatosi")),
+        validate=lambda: None,
+    )
+
+    def open_second_form():
+        page.url = "https://smartup.online/a2/trade/tvt/user_locations"
+        page.current_title = "Отслеживание"
+
+    second = monitor.run_case(cases[1], navigate=open_second_form, validate=lambda: None)
+
+    assert second["checks"]["js_error_count"] == 0
+    assert second["checks"]["js_errors"] == []
+
+    monitor._remove_page_listeners()
+    page.emit("pageerror", FakeJsError("finish'dan keyingi xato"))
+    assert monitor.js_error_count == 0
+
+
+def test_page_event_sample_is_capped_but_the_count_is_not(monkeypatch):
+    _silence_allure(monkeypatch)
+    page = _a2_page("trade/tvt/visit_list", "Визиты")
+    case = _case()
+    monitor = FormMonitor(page, suite_name="Forms", planned_cases=[case])
+
+    def open_form_with_many_failures():
+        for number in range(form_monitor.MAX_PAGE_EVENTS + 5):
+            page.emit(
+                "response",
+                FakeResponse(404, f"https://smartup.online/b/missing/{number}"),
+            )
+
+    result = monitor.run_case(
+        case,
+        navigate=open_form_with_many_failures,
+        validate=lambda: None,
+    )
+
+    assert result["checks"]["failed_request_count"] == form_monitor.MAX_PAGE_EVENTS + 5
+    assert len(result["checks"]["failed_requests"]) == form_monitor.MAX_PAGE_EVENTS
 
 
 def test_summary_reports_total_average_and_slowest_forms():

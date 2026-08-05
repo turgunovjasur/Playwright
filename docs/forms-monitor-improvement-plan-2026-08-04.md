@@ -16,7 +16,7 @@
 | 2 | Hisobotni ishonchli qilish (#3, #4) | ✅ Bajarildi | — |
 | 3 | Aniqlashni kuchaytirish (#2, #7 bajarildi; #1 — trigger yo'q) | 🟡 Qismon | — |
 | 4 | Hisobot sifati (Taklif 3) | ✅ Bajarildi | — |
-| 5 | JS/network xatolari (Taklif 1) | ⬜ Qolgan | — |
+| 5 | JS/network xatolari (Taklif 1) | 🟡 1-qadam bajarildi | — |
 | 6 | Shell helper refactori (Taklif 4) | ⬜ Qaror kutilmoqda | — |
 
 Har bosqich alohida commit. Bosqich 2 dan boshlab real run bilan tekshiriladi.
@@ -290,17 +290,56 @@ sekinlik emas, **cold-start** effekti. Aynan shu narsa oldin ko'rinmasdi.
   | Ma'lumot so'rovi timeout bo'ldi | heading bor, spinner o'chgan | ✅ PASSED |
 
   Ya'ni suite hozir faqat "ochiladimi" qismini o'lchayapti, "ishlaydimi" ni yo'q.
-- **Yechim, ikki qadam:**
-  1. **Faqat yig'ish** — har case boshida ro'yxatni tozalab,
-     `page.on("pageerror")` va `page.on("response")` (4xx/5xx) natijasini
-     `checks` ga yozish (`js_errors`, `failed_requests`). Formani
-     **yiqitmaydi**. To'liq Forms group ishlatib "shovqin" hajmini ko'rish
-     (analytics, favicon 404 kabi).
-  2. **Qattiqlashtirish** — 1-qadam natijasiga qarab filtr yozish va
-     `_assert_healthy_form_state` ga qo'shish.
 - **Yaxshi tomoni:** pattern loyihada bor — `tests/smoke/smoke_reporting.py:80`
   (`page.on("response", remember_first_unauthorized)`).
-- **Hajmi:** bir necha suhbat oladi, shuning uchun oxirida.
+
+#### 1-qadam — faqat yig'ish — bajarildi
+
+`FormMonitor.__init__` `page.on("pageerror")` va `page.on("response")` ni
+ro'yxatga oladi, `finish()` ularni olib tashlaydi. Har `run_case` va
+`precondition` boshida oyna tozalanadi (`_reset_page_events`), shuning uchun
+signal qo'shni formaga yozilmaydi.
+
+Qarorlar:
+
+- **`usable` va `classify_form_failure` tegilmadi** — signal statusga ta'sir
+  qilmaydi. Bu ataylab: filtr faqat real shovqin ko'rilgandan keyin yoziladi.
+- `_checks` sof funksiya bo'lib qoldi (case + state); page eventlari yangi
+  `_case_checks` wrapperida qo'shiladi.
+- **URLdan query string olib tashlanadi** (`404 host/path` ko'rinishi) — so'rov
+  URLida token bo'lishi mumkin va hisobotga tushmasligi kerak.
+- Namuna `MAX_PAGE_EVENTS=20` bilan cheklangan, **hisob cheklanmagan** — aks
+  holda 200 ta 404 bo'lgan sahifa hisobotda "20 ta" bo'lib yolg'on aytardi.
+- `remove_listener` bound method bilan real Chromium'da tekshirildi (aks holda
+  listener suite'lar orasida oqib ketardi — `page` fixture uchta suite uchun
+  umumiy).
+
+**O'lchangan shovqin (to'liq Forms group, 2026-08-05, 147/147 PASSED, 667 s):**
+
+| Signal | Soni | Izoh |
+|---|---|---|
+| `404 /page/tour/<path>.json` | **204** | Legacy UI tour/hint fayli — sahifada mavjud emas. Sof shovqin. |
+| `404 /a2/assets/i18n/kernel-overlay/.../ru.json` | 1 | A2 i18n overlay, ixtiyoriy. Sof shovqin. |
+| `404 /api/b/biruni/m:load_image_v2` | 1 | `Plugin Marketplace` (Forms-02 #020). **Yagona haqiqiy API chaqiruvi.** |
+| JS `pageerror` | **0** | 147 formaning hech birida bitta ham JS exception yo'q. |
+
+Jami 206 muvaffaqiyatsiz so'rov, 123/147 formada signal ko'rindi. Ya'ni
+**shovqinning 99% i bitta pattern** (`/page/tour/`) va uni filtrlash oson.
+
+Eng qimmatli topilma — **`pageerror` kanali butunlay toza**. Ya'ni JS xatosini
+qattiqlashtirish uchun filtr **umuman kerak emas**.
+
+#### 2-qadam — qattiqlashtirish — foydalanuvchi qarori kutilmoqda
+
+1-qadam dalili quyidagini imkon beradi:
+
+- **JS xatolari:** filtrsiz `_assert_healthy_form_state` ga qo'shish. 147 formada
+  0 shovqin, ya'ni xavf minimal, foyda katta ("JS exception, filtr paneli
+  chizilmadi" holati hozir jim o'tadi).
+- **Network:** `/page/tour/` va `/assets/i18n/` ni ma'lum-shovqin ro'yxatiga
+  yozib, qolgan 4xx/5xx ni nuqson deb hisoblash. Bunda `Plugin Marketplace`
+  (`m:load_image_v2` 404) qizil bo'ladi — bu real nuqsonmi yoki yana bir
+  shovqinmi degan qaror kerak.
 
 ### Bosqich 6 — Shell helper refactori `Taklif 4`
 
