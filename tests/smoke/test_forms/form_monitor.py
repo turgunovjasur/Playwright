@@ -519,6 +519,37 @@ def build_monitor_payload(*, suite_name, planned_count, results, blockers):
     }
 
 
+def _duration_lines(results, *, slowest_count=5):
+    """Sekinlashuvni ko'rsatadi: forma ochilsa ham 2 barobar sekin bo'lishi mumkin.
+
+    Faqat testi boshlangan formalar hisoblanadi — ``TEST_BLOCKED`` yozuvidagi
+    ``duration_ms`` precondition vaqti, forma ochilish vaqti emas.
+    """
+    timed = [
+        result
+        for result in results
+        if result.get("test_started") and result.get("duration_ms") is not None
+    ]
+    if not timed:
+        return []
+    total_ms = sum(result["duration_ms"] for result in timed)
+    slowest = sorted(timed, key=lambda result: result["duration_ms"], reverse=True)
+    lines = [
+        "FORMA DAVOMIYLIGI",
+        "-" * 88,
+        f"Jami                   : {total_ms / 1000:.1f} s ({len(timed)} forma)",
+        f"O'rtacha bitta formaga : {total_ms / len(timed) / 1000:.1f} s",
+        f"Eng sekin {min(slowest_count, len(slowest))} forma:",
+    ]
+    for position, result in enumerate(slowest[:slowest_count], start=1):
+        lines.append(
+            f"  {position}. {result['number']:03d} | {result['title']} | "
+            f"{result['duration_ms'] / 1000:.1f} s"
+        )
+    lines.append("")
+    return lines
+
+
 def render_monitor_summary(*, suite_name, planned_count, results, blockers):
     """Terminal va Allure uchun bir xil, takrorsiz markaziy hisobot yasaydi."""
     counts = _status_counts(results)
@@ -598,6 +629,8 @@ def render_monitor_summary(*, suite_name, planned_count, results, blockers):
                 f"{blocker['detail']}"
             )
         lines.append("")
+
+    lines.extend(_duration_lines(results))
 
     started_results = [result for result in results if result.get("test_started")]
     if started_results:

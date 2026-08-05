@@ -733,6 +733,77 @@ def test_summary_does_not_duplicate_not_checked_forms():
     assert "BOSHLANGAN FORMA TESTLARI" not in summary
 
 
+def test_summary_reports_total_average_and_slowest_forms():
+    def timed_result(number, title, duration_ms, **overrides):
+        return build_form_result(
+            number=number,
+            filial="filial-pw{code}",
+            navbar_tab="Продажа",
+            menu_column="Визиты",
+            menu_item=title,
+            title=title,
+            expected_path=f"trade/tvt/form_{number}",
+            actual_url=f"https://smartup.online/a2/trade/tvt/form_{number}",
+            status=overrides.pop("status", PASSED),
+            duration_ms=duration_ms,
+            **overrides,
+        )
+
+    results = [
+        timed_result(1, "Тихая", 1_000),
+        timed_result(2, "Средняя", 3_000),
+        timed_result(3, "Медленная", 8_000),
+        timed_result(
+            4,
+            "Заблокированная",
+            60_000,
+            status=TEST_BLOCKED,
+            reason_code="FILIAL_SWITCH_FAILED",
+            test_started=False,
+            test_completed=False,
+        ),
+    ]
+
+    summary = render_monitor_summary(
+        suite_name="Forms",
+        planned_count=4,
+        results=results,
+        blockers=[],
+    )
+
+    assert "Jami                   : 12.0 s (3 forma)" in summary
+    assert "O'rtacha bitta formaga : 4.0 s" in summary
+    assert "Eng sekin 3 forma:" in summary
+    assert "  1. 003 | Медленная | 8.0 s" in summary
+    assert "  3. 001 | Тихая | 1.0 s" in summary
+    assert "Заблокированная | 60.0 s" not in summary
+
+
+def test_summary_skips_duration_section_when_nothing_was_timed():
+    not_checked = build_form_result(
+        number=1,
+        filial="filial-pw{code}",
+        navbar_tab="Продажа",
+        menu_column="Визиты",
+        menu_item="Визиты",
+        title="Визиты",
+        expected_path="trade/tvt/visit_list",
+        actual_url="",
+        status=NOT_CHECKED,
+        reason_code="NOT_EXECUTED",
+        duration_ms=None,
+    )
+
+    summary = render_monitor_summary(
+        suite_name="Forms",
+        planned_count=1,
+        results=[not_checked],
+        blockers=[],
+    )
+
+    assert "FORMA DAVOMIYLIGI" not in summary
+
+
 def test_safe_screenshot_masks_inputs_and_secret_columns():
     page = FakePage(
         url="https://smartup.online/a2/biruni/kauth/company_client_list"

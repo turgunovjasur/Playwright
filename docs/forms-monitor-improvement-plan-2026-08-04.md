@@ -15,7 +15,7 @@
 | 1 | Mexanik tozalash (#6, #8, #9, #10, #11) | ✅ Bajarildi | `8afabb3` |
 | 2 | Hisobotni ishonchli qilish (#3, #4) | ✅ Bajarildi | — |
 | 3 | Aniqlashni kuchaytirish (#2, #7 bajarildi; #1 — trigger yo'q) | 🟡 Qismon | — |
-| 4 | Hisobot sifati (Taklif 3) | ⬜ Qolgan | — |
+| 4 | Hisobot sifati (Taklif 3) | ✅ Bajarildi | — |
 | 5 | JS/network xatolari (Taklif 1) | ⬜ Qolgan | — |
 | 6 | Shell helper refactori (Taklif 4) | ⬜ Qaror kutilmoqda | — |
 
@@ -109,15 +109,13 @@ Yo'l-yo'lakay: `test_authorization_is_monitored_inside_each_forms_suite`
 indentatsiyaga bog'liq literal taqqoslash qilardi (`try` bloki indentni
 o'zgartirgani uchun yiqilardi) — regexga o'tkazildi.
 
----
-
-## Qolgan Ishlar
-
 ### Bosqich 3 — Aniqlashni kuchaytirish
 
-⚠️ **Bu bosqich yangi fail keltirishi mumkin — maqsad ham shu.** Har yangi fail
-uchun "real nuqsonmi yoki test artefaktimi" degan qaror kerak; qaror bilim
-bazasiga yoziladi.
+Reja bu bosqich yangi fail keltirishini kutgan edi. **Keltirmadi:** 3.2 aniqlashni
+ishonchli qildi, lekin 126 forma ustida bitta ham yangi alert topilmadi; 3.3
+esa ataylab hisobot-only. Forms-01 88/88 va Forms-03 38/38 yashil qoldi.
+Shu sabab "real nuqsonmi yoki artefaktmi" degan qaror hech bir formaga
+kerak bo'lmadi.
 
 #### 3.1. Alert formalar orasida tozalanmaydi `#1`
 - **Joyi:** Forms suite'da alert yopadigan kod **umuman yo'q**. Loyihada helper
@@ -230,16 +228,53 @@ kelajakda heading yo'qolsa fail berish; lekin o'sha holatda `content_ready`
 (`b-page`/`.subheader`) ham katta ehtimol bilan yiqiladi. Hisobot bo'limi esa
 teshik ochilsa darhol ko'rinadigan qiladi.
 
-### Bosqich 4 — Hisobot sifati
+### Bosqich 4 — Hisobot sifati `Taklif 3` — bajarildi
 
-#### 4.1. `duration_ms` yig'iladi, lekin ishlatilmaydi `Taklif 3`
-- **Joyi:** `form_monitor.py:765, 839` (o'lchanadi) →
-  `render_monitor_summary` (`:484`) da vaqt haqida **hech narsa yo'q**
-- **Muammo:** Run 155 s davom etdi. Ertaga 240 s bo'lsa — qaysi forma
-  sekinlashganini bilishning yo'li yo'q. Bu server degradatsiyasining eng erta
-  signali: forma hali ochiladi (test yashil), lekin 2 barobar sekin.
-- **Yechim:** Summary'ga "eng sekin 5 forma + o'rtacha + jami" bo'limi.
-  Ma'lumot allaqachon yig'ilgan, qo'shimcha o'lchov shart emas.
+`duration_ms` o'lchanardi (`form_monitor.py:765, 839`), lekin hisobotda vaqt
+haqida hech narsa yo'q edi: run 155 s dan 240 s ga chiqsa qaysi forma
+sekinlashganini bilishning yo'li yo'q. Bu server degradatsiyasining eng erta
+signali — forma hali ochiladi (test yashil), lekin 2 barobar sekin.
+
+`_duration_lines` helperi `render_monitor_summary` ga `FORMA DAVOMIYLIGI`
+bo'limini qo'shadi: jami, o'rtacha va eng sekin 5 forma. Qo'shimcha o'lchov
+kiritilmadi — ma'lumot allaqachon yig'ilgan edi.
+
+Ikki nozik joy:
+
+- Faqat `test_started` formalar hisoblanadi. `TEST_BLOCKED` yozuvidagi
+  `duration_ms` — precondition vaqti (login/filial), forma ochilish vaqti emas;
+  u o'rtachani buzardi (test'da 60 s bloker chiqarib tasdiqlandi).
+- Hech narsa o'lchanmagan bo'lsa (hammasi `NOT_CHECKED`) bo'lim umuman
+  chiqmaydi.
+
+CI ta'siri tekshirildi: `scripts/analyze_test_result.py` faqat strukturali
+`form-monitor.json` ni o'qiydi (`| form-monitor.json` attachment nomi bo'yicha),
+matn hisobotini parse qilmaydi — yangi bo'lim Telegram/CI summary'ni buzmaydi.
+
+**Real run bilan tasdiqlandi (Forms-03, 2026-08-05, 38/38 PASSED):**
+
+```
+FORMA DAVOMIYLIGI
+Jami                   : 172.2 s (38 forma)
+O'rtacha bitta formaga : 4.5 s
+Eng sekin 5 forma:
+  1. 001 | Визиты | 7.6 s
+  2. 003 | Отслеживание пользователей | 7.3 s
+  3. 005 | Планирование визитов | 7.1 s
+  4. 004 | Отслеживание мобильных представителей | 6.8 s
+  5. 024 | Отчет по визитам | 6.4 s
+```
+
+Kelajakdagi solishtiruv uchun **Forms-03 baseline: o'rtacha 4.5 s, jami 172 s**
+(pytest wall-clock 187.7 s — farq auth, filial switch va hisobot overheadi).
+
+Bu birinchi o'lchov allaqachon bir narsani ko'rsatdi: eng sekin 5 formaning
+4 tasi — reja boshidagi formalar (001, 003, 004, 005). Ya'ni ular formaga xos
+sekinlik emas, **cold-start** effekti. Aynan shu narsa oldin ko'rinmasdi.
+
+---
+
+## Qolgan Ishlar
 
 ### Bosqich 5 — JS va network xatolari `Taklif 1`
 
