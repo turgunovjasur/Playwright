@@ -331,7 +331,7 @@ Run the knowledge-base validator and `git diff --check`. Expected: both exit 0.
 Confirm no unit-test file changed, no credential/session value entered docs,
 schema-v2 analyzer reads remain defensive, and unrelated files are untouched.
 
-- [ ] **Step 5: Commit implementation**
+- [x] **Step 5: Commit implementation**
 
 Commit the reviewed implementation on `dev1` with a concise message describing
 loader, signal, and report hardening.

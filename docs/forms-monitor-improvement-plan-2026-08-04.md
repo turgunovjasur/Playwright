@@ -18,8 +18,8 @@
 | 4 | Hisobot sifati (Taklif 3) | ✅ Bajarildi | — |
 | 5 | JS/network xatolari (Taklif 1) | ✅ Bajarildi (`JS_ERROR` — legacy va A2 uchun shellga mos kanal) | — |
 | 6 | Shell helper refactori (Taklif 4) | ⬜ Kechiktirildi | — |
-| 7 | A2 formalarida JS xatolarini ko'rish | ✅ Bajarildi — capture kanali A2 uchun canonical `JS_ERROR` manbasi | `1c7f2b7` + joriy hardening |
-| 8 | Real-browser signal va reporting hardening | ✅ Bajarildi — loader/busy, noise aggregation, skip inventory, Forms-03 summary | joriy hardening |
+| 7 | A2 formalarida JS xatolarini ko'rish | ✅ Bajarildi — capture kanali A2 uchun canonical `JS_ERROR` manbasi | `1c7f2b7`, `27a0b3e` |
+| 8 | Real-browser signal va reporting hardening | ✅ Bajarildi — loader/busy, noise aggregation, skip inventory, Forms-03 summary | `27a0b3e` |
 
 Oldingi bosqichlar real runlar bilan tekshirilgan. Bosqich 8 userning repo
 qoidasiga ko'ra pytest/smoke ishlatmasdan statik/pure-function probe bilan
