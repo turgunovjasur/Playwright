@@ -756,83 +756,86 @@ def run_spravochniki_menu_forms(page, *, terminal_reporter=None):
         terminal_reporter=terminal_reporter,
         progress_test_id="test_forms_01_spravochniki",
     )
-    monitor.precondition(
-        "Admin avtorizatsiyasi",
-        lambda: authorization(page, who="admin"),
-        affected_case_number=1,
-    )
-    if monitor.blocked:
-        monitor.finish()
-
-    operational_filial = monitor.precondition(
-        "Operatsion filialni aniqlash",
-        lambda: first_operational_filial(page),
-        affected_case_number=1,
-    )
-    if monitor.blocked:
-        monitor.finish()
-    monitor.update_filial(operational_placeholder, operational_filial)
-
-    with allure.step(f"1 - '{operational_filial}' filialidagi direct menu formalar"):
-        operational_direct_cases = monitor.cases(section="operational-direct")
+    try:
         monitor.precondition(
-            f"'{operational_filial}' filialiga o'tish",
-            lambda: switch_forms_filial(page, operational_filial),
-            affected_case_number=(
-                operational_direct_cases[0]["number"]
-                if operational_direct_cases
-                else None
-            ),
+            "Admin avtorizatsiyasi",
+            lambda: authorization(page, who="admin"),
+            affected_case_number=1,
         )
         if monitor.blocked:
-            monitor.finish()
-        run_form_cases(
-            page,
-            operational_direct_cases,
-            monitor=monitor,
-        )
+            return
 
-    with allure.step(f"2 - '{operational_filial}' filialidagi page-link va hidden formalar"):
-        run_form_cases(
-            page,
-            monitor.cases(section="operational-page-link"),
-            monitor=monitor,
-        )
-        run_form_cases(
-            page,
-            monitor.cases(section="operational-hidden"),
-            monitor=monitor,
-        )
-
-    with allure.step("3 - 'Администрирование' filialiga xos formalar"):
-        admin_direct_cases = monitor.cases(section="admin-direct")
-        monitor.precondition(
-            "'Администрирование' filialiga o'tish",
-            lambda: switch_forms_filial(page, "Администрирование"),
-            affected_case_number=(
-                admin_direct_cases[0]["number"] if admin_direct_cases else None
-            ),
+        operational_filial = monitor.precondition(
+            "Operatsion filialni aniqlash",
+            lambda: first_operational_filial(page),
+            affected_case_number=1,
         )
         if monitor.blocked:
-            monitor.finish()
-        run_form_cases(
-            page,
-            admin_direct_cases,
-            monitor=monitor,
-        )
-        run_form_cases(
-            page,
-            monitor.cases(section="admin-page-link"),
-            monitor=monitor,
-        )
-        run_form_cases(
-            page,
-            monitor.cases(section="admin-hidden"),
-            monitor=monitor,
-        )
+            return
+        monitor.update_filial(operational_placeholder, operational_filial)
 
-    with allure.step(f"4 - {expected_count} ta navigatsiya natijasini tekshirish"):
-        monitor.finish()
+        with allure.step(f"1 - '{operational_filial}' filialidagi direct menu formalar"):
+            operational_direct_cases = monitor.cases(section="operational-direct")
+            monitor.precondition(
+                f"'{operational_filial}' filialiga o'tish",
+                lambda: switch_forms_filial(page, operational_filial),
+                affected_case_number=(
+                    operational_direct_cases[0]["number"]
+                    if operational_direct_cases
+                    else None
+                ),
+            )
+            if monitor.blocked:
+                return
+            run_form_cases(
+                page,
+                operational_direct_cases,
+                monitor=monitor,
+            )
+
+        with allure.step(
+            f"2 - '{operational_filial}' filialidagi page-link va hidden formalar"
+        ):
+            run_form_cases(
+                page,
+                monitor.cases(section="operational-page-link"),
+                monitor=monitor,
+            )
+            run_form_cases(
+                page,
+                monitor.cases(section="operational-hidden"),
+                monitor=monitor,
+            )
+
+        with allure.step("3 - 'Администрирование' filialiga xos formalar"):
+            admin_direct_cases = monitor.cases(section="admin-direct")
+            monitor.precondition(
+                "'Администрирование' filialiga o'tish",
+                lambda: switch_forms_filial(page, "Администрирование"),
+                affected_case_number=(
+                    admin_direct_cases[0]["number"] if admin_direct_cases else None
+                ),
+            )
+            if monitor.blocked:
+                return
+            run_form_cases(
+                page,
+                admin_direct_cases,
+                monitor=monitor,
+            )
+            run_form_cases(
+                page,
+                monitor.cases(section="admin-page-link"),
+                monitor=monitor,
+            )
+            run_form_cases(
+                page,
+                monitor.cases(section="admin-hidden"),
+                monitor=monitor,
+            )
+    finally:
+        with allure.step(f"4 - {expected_count} ta navigatsiya natijasini tekshirish"):
+            monitor.finish()
 
 
 # ----------------------------------------------------------------------------------------------------------------------

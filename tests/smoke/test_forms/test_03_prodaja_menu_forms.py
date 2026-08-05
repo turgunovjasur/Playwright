@@ -289,45 +289,46 @@ def run_prodaja_menu_forms(page, *, terminal_reporter=None):
         terminal_reporter=terminal_reporter,
         progress_test_id="test_forms_03_prodaja",
     )
-    monitor.precondition(
-        "Admin avtorizatsiyasi",
-        lambda: authorization(page, who="admin"),
-        affected_case_number=1,
-    )
-    if monitor.blocked:
-        monitor.finish()
-
-    operational_filial = monitor.precondition(
-        "Operatsion filialni aniqlash",
-        lambda: first_operational_filial(page),
-        affected_case_number=1,
-    )
-    if monitor.blocked:
-        monitor.finish()
-    monitor.update_filial(operational_placeholder, operational_filial)
-
-    with allure.step(f"1 - '{operational_filial}' filialidagi direct menu formalar"):
-        direct_cases = monitor.cases(section="operational-direct")
+    try:
         monitor.precondition(
-            f"'{operational_filial}' filialiga o'tish",
-            lambda: switch_forms_filial(page, operational_filial),
-            affected_case_number=(
-                direct_cases[0]["number"] if direct_cases else None
-            ),
+            "Admin avtorizatsiyasi",
+            lambda: authorization(page, who="admin"),
+            affected_case_number=1,
         )
         if monitor.blocked:
-            monitor.finish()
-        run_form_cases(page, direct_cases, monitor=monitor)
+            return
 
-    with allure.step(f"2 - '{operational_filial}' filialidagi page-link formalar"):
-        run_form_cases(
-            page,
-            monitor.cases(section="operational-page-link"),
-            monitor=monitor,
+        operational_filial = monitor.precondition(
+            "Operatsion filialni aniqlash",
+            lambda: first_operational_filial(page),
+            affected_case_number=1,
         )
+        if monitor.blocked:
+            return
+        monitor.update_filial(operational_placeholder, operational_filial)
 
-    with allure.step(f"3 - {expected_count} ta navigatsiya natijasini tekshirish"):
-        monitor.finish()
+        with allure.step(f"1 - '{operational_filial}' filialidagi direct menu formalar"):
+            direct_cases = monitor.cases(section="operational-direct")
+            monitor.precondition(
+                f"'{operational_filial}' filialiga o'tish",
+                lambda: switch_forms_filial(page, operational_filial),
+                affected_case_number=(
+                    direct_cases[0]["number"] if direct_cases else None
+                ),
+            )
+            if monitor.blocked:
+                return
+            run_form_cases(page, direct_cases, monitor=monitor)
+
+        with allure.step(f"2 - '{operational_filial}' filialidagi page-link formalar"):
+            run_form_cases(
+                page,
+                monitor.cases(section="operational-page-link"),
+                monitor=monitor,
+            )
+    finally:
+        with allure.step(f"3 - {expected_count} ta navigatsiya natijasini tekshirish"):
+            monitor.finish()
 
 
 # ----------------------------------------------------------------------------------------------------------------------

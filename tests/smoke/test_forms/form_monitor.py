@@ -774,6 +774,7 @@ class FormMonitor:
         started_at = time.monotonic()
         stage = "navigation"
         failure_result = None
+        state = None
         step_title = form_step_title(
             number=case["number"],
             filial=case["filial"],
@@ -802,6 +803,7 @@ class FormMonitor:
                         started_at=started_at,
                         test_started=True,
                         test_completed=True,
+                        state=state,
                     )
                     self._attach_case_evidence(failure_result, case=case)
                     raise

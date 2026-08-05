@@ -13,7 +13,7 @@
 |---|---|---|---|
 | 0 | Forms-03 suite + `+add` tekshiruvini olib tashlash | ✅ Bajarildi | `e19cf60` |
 | 1 | Mexanik tozalash (#6, #8, #9, #10, #11) | ✅ Bajarildi | `8afabb3` |
-| 2 | Hisobotni ishonchli qilish (#3, #4) | ⬜ Qolgan | — |
+| 2 | Hisobotni ishonchli qilish (#3, #4) | ✅ Bajarildi | — |
 | 3 | Aniqlashni kuchaytirish (#1, #2, #7) | ⬜ Qolgan | — |
 | 4 | Hisobot sifati (Taklif 3) | ⬜ Qolgan | — |
 | 5 | JS/network xatolari (Taklif 1) | ⬜ Qolgan | — |
@@ -64,42 +64,54 @@ t03 `1..38` — uzluksiz.
 
 Yo'l-yo'lakay: `detail_text` → `lower_detail` bir qatorga yig'ildi.
 
+### Bosqich 2 — Hisobotni ishonchli qilish
+
+#### 2.1. Kutilmagan exception butun hisobotni yo'q qiladi `#3` — hal qilindi
+
+Uchta suite tanasi `try/finally` ichiga olindi, `finish()` `finally` da. Har
+suite'da endi **bitta** `finish()` chaqiruvi bor: oldingi
+`if monitor.blocked: monitor.finish()` bloklari (t01 4 ta, t02 6 ta, t03 3 ta)
+`return` ga aylandi — `finally` allaqachon hisobotni chiqaradi.
+
+`run_case` da `except Exception` **qilinmadi** — kod xatosi "forma nuqsoni"
+bo'lib ko'rinmasligi kerak.
+
+**Real run bilan tasdiqlandi** (Forms-03, `--headless`): 3-formaga sun'iy
+`AttributeError` qo'yilib run qilindi. Natija — hisobot chiqdi (2 PASSED,
+36 `NOT_CHECKED`/`NOT_EXECUTED`), pytest tracebackida ikkalasi ham ko'rinadi:
+
+```
+E   AttributeError: SUN'IY TEKSHIRUV: kutilmagan kod xatosi
+During handling of the above exception, another exception occurred:
+E   AssertionError: Forms-03 — Продажа: reja=38, muvaffaqiyatli=2, ... tekshirilmadi=36.
+```
+
+Ya'ni kod xatosi maskalanmaydi, hisobot esa yo'qolmaydi. Injektsiya
+qaytarilgandan keyingi toza run: **38/38 PASSED, 146 s**.
+
+#### 2.2. Yiqilganda holat ikki marta o'qiladi `#4` — hal qilindi
+
+`run_case` da `state = None` bilan boshlanadi va fail bo'lganda
+`_failure_result(..., state=state)` uzatiladi. Endi xatoni yiqitgan holat va
+uni klassifikatsiya qiladigan holat — bitta o'qish.
+
+Regression testi: `test_failure_is_classified_from_the_state_that_caused_it` —
+alerti ikkinchi o'qishda yo'qoladigan fake page. Fix'siz `alert_reads == 2` va
+`reason_code == CONTENT_VALIDATION_FAILED`; fix bilan `alert_reads == 1` va
+`reason_code == APPLICATION_ERROR`. Test bugni tutishi fixni vaqtincha
+qaytarib tasdiqlandi.
+
+Struktura testi: `test_forms_suites_report_even_when_an_unexpected_error_escapes`
+— AST orqali har `run_*` suite'da aynan bitta `finish()` borligini va u
+`Try.finalbody` ichida ekanini tekshiradi.
+
+Yo'l-yo'lakay: `test_authorization_is_monitored_inside_each_forms_suite`
+indentatsiyaga bog'liq literal taqqoslash qilardi (`try` bloki indentni
+o'zgartirgani uchun yiqilardi) — regexga o'tkazildi.
+
 ---
 
 ## Qolgan Ishlar
-
-### Bosqich 2 — Hisobotni ishonchli qilish
-
-#### 2.1. Kutilmagan exception butun hisobotni yo'q qiladi `#3`
-- **Joyi:** `form_monitor.py:797, 842` (`run_case` except bloklari); `finish()`
-  chaqiruvlari — `test_01` 5 ta, `test_02` 7 ta, `test_03` 4 ta
-- **Muammo:** `run_case` faqat `AssertionError` va `PlaywrightError` tutadi.
-  Suite o'rtasida `AttributeError`/`KeyError`/`TypeError` chiqsa exception
-  yuqoriga otiladi va `monitor.finish()` **ishlamaydi**: summary yo'q,
-  `form-monitor.json` yo'q, qolgan formalar `NOT_CHECKED` bo'lib yozilmaydi.
-  Monitorning asosiy va'dasi — "reja bo'yicha har forma hisobotda bo'ladi" —
-  aynan kod buzilgan paytda buziladi.
-- **Yechim:** Uchta suite tanasini `try/finally` ichiga olib `finish()` ni
-  kafolatlash. `run_case` da `except Exception` ga o'tmaslik — aks holda kod
-  xatosi "forma nuqsoni" bo'lib ko'rinadi.
-- **Tekshirish:** Bitta formaga vaqtincha sun'iy `AttributeError` qo'yib,
-  hisobot **chiqishini** ko'rish, keyin qaytarish.
-
-#### 2.2. Yiqilganda holat ikki marta o'qiladi `#4`
-- **Joyi:** `form_monitor.py:795-796` (`state` olinadi va tekshiriladi) →
-  `:798` (`_failure_result` ga `state` **uzatilmaydi**) → `:727`
-  (`state = state or capture_form_state(...)` — ikkinchi o'qish)
-- **Muammo:** Xatoni yiqitgan holat va uni klassifikatsiya qiladigan holat —
-  ikki xil o'qish. Alert oraliqda yo'qolsa `detail` da `[APPLICATION_ERROR]`,
-  `reason_code` da `CONTENT_VALIDATION_FAILED`, `UI error` da `—` chiqadi —
-  uch qatorning uchtasi bir-biriga qarama-qarshi. Screenshot ham bu paytda
-  olinadi. Ustiga har fail uchun ortiqcha 6 selektor probe.
-- **Yechim:** `:798` chaqiruviga `state=state` qo'shish. `state` ni `None` deb
-  boshlash kerak, chunki `navigate()` yiqilsa u hali mavjud emas —
-  `_failure_result` ning `state or capture_form_state(...)` logikasi buni
-  qo'llab-quvvatlaydi.
-- **Diqqat:** Kod boshqa joyda buni to'g'ri qiladi — `_block_suite` da
-  `state=state` aniq uzatilgan. Pattern ma'lum, faqat bu joyda tushib qolgan.
 
 ### Bosqich 3 — Aniqlashni kuchaytirish
 
@@ -170,7 +182,7 @@ bazasiga yoziladi.
 ### Bosqich 4 — Hisobot sifati
 
 #### 4.1. `duration_ms` yig'iladi, lekin ishlatilmaydi `Taklif 3`
-- **Joyi:** `form_monitor.py:765, 837` (o'lchanadi) →
+- **Joyi:** `form_monitor.py:765, 839` (o'lchanadi) →
   `render_monitor_summary` (`:484`) da vaqt haqida **hech narsa yo'q**
 - **Muammo:** Run 155 s davom etdi. Ertaga 240 s bo'lsa — qaysi forma
   sekinlashganini bilishning yo'li yo'q. Bu server degradatsiyasining eng erta

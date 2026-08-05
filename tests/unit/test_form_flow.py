@@ -1,6 +1,7 @@
 import ast
 import inspect
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -291,8 +292,87 @@ def test_authorization_is_monitored_inside_each_forms_suite():
     ).read_text(encoding="utf-8")
 
     assert "forms_admin_page" not in runner_source
-    assert 'monitor.precondition(\n        "Admin avtorizatsiyasi"' in forms_01_source
-    assert 'monitor.precondition(\n        "Admin avtorizatsiyasi"' in forms_02_source
+    monitored_login = re.compile(r'monitor\.precondition\(\s*"Admin avtorizatsiyasi"')
+    assert monitored_login.search(forms_01_source)
+    assert monitored_login.search(forms_02_source)
+
+
+def test_forms_suites_report_even_when_an_unexpected_error_escapes():
+    for relative_path, suite_function in (
+        (
+            "tests/smoke/test_forms/test_01_spravochniki_menu_forms.py",
+            "run_spravochniki_menu_forms",
+        ),
+        (
+            "tests/smoke/test_forms/test_02_a2_admin_menu_forms.py",
+            "run_a2_admin_menu_forms",
+        ),
+        (
+            "tests/smoke/test_forms/test_03_prodaja_menu_forms.py",
+            "run_prodaja_menu_forms",
+        ),
+    ):
+        module = ast.parse((ROOT / relative_path).read_text(encoding="utf-8"))
+        suite = next(
+            node
+            for node in module.body
+            if isinstance(node, ast.FunctionDef) and node.name == suite_function
+        )
+        finish_calls = [
+            node
+            for node in ast.walk(suite)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "finish"
+        ]
+        assert len(finish_calls) == 1, suite_function
+        guaranteed = any(
+            finish_calls[0] in list(ast.walk(statement))
+            for node in ast.walk(suite)
+            if isinstance(node, ast.Try)
+            for statement in node.finalbody
+        )
+        assert guaranteed, suite_function
+
+
+def test_failure_is_classified_from_the_state_that_caused_it(monkeypatch):
+    _silence_allure(monkeypatch)
+
+    class VanishingAlertPage(FakePage):
+        """Alert ikkinchi o'qishda yo'qoladi — holat qayta o'qilganini fosh qiladi."""
+
+        alert_selector = "#biruniAlert:visible"
+
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            self.alert_reads = 0
+
+        def locator(self, selector):
+            if selector == self.alert_selector:
+                self.alert_reads += 1
+                if self.alert_reads > 1:
+                    self.visible_selectors.discard(self.alert_selector)
+            return FakeLocator(self, selector)
+
+    page = VanishingAlertPage(
+        url="https://smartup.online/a2/trade/tvt/visit_list",
+        title="Визиты",
+        visible_selectors={"main", VanishingAlertPage.alert_selector},
+        text_by_selector={
+            "main": "Forma kontenti",
+            VanishingAlertPage.alert_selector: "× Нет доступа к форме",
+        },
+    )
+    case = _case()
+    monitor = FormMonitor(page, suite_name="Forms", planned_cases=[case])
+
+    result = monitor.run_case(case, navigate=lambda: None, validate=lambda: None)
+
+    assert page.alert_reads == 1
+    assert result["reason_code"] == "APPLICATION_ERROR"
+    assert result["status"] == OPENED_WITH_DEFECT
+    assert result["checks"]["visible_error"] == "× Нет доступа к форме"
+    assert "[APPLICATION_ERROR]" in result["detail"]
 
 
 def test_form_monitor_classifies_loaded_page_with_wrong_title_as_defect():
