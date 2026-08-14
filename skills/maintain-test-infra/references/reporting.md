@@ -42,20 +42,41 @@ Source: `tests/smoke/test_forms/monitoring/monitor.py`,
 
 - Forms-01 (`Главное`), Forms-02 (`Продажа`), Forms-03 (`Склад`), Forms-04
   (`Финансы`), Forms-05 (`Справочники`) va standalone `A2Angular` bir xil
-  `FormMonitor` orqali ishlaydi. Asosiy Forms runner beshta navbar suite'ni
-  shu tartibda non-parametrized pytest item sifatida collect qiladi;
-  `A2Angular` runnerga kirmaydi. Navbar testlarida Allure ierarxiyasi
-  `menu_column → menu_item`; cross-navbar `A2Angular` testida
+  `FormMonitor` orqali ishlaydi. Asosiy Forms runner beshta navbar inventorydagi
+  har bir formani alohida parametrized pytest/Allure item sifatida collect
+  qiladi; `A2Angular` runnerga kirmaydi. Navbar testlarida Allure ierarxiyasi
+  `Forms — navbar → menu_column → forma`; cross-navbar `A2Angular` testida
   `navbar_tab → menu_column → menu_item`.
-- Har top-level test o'z leaf modulida aynan bitta `FormMonitor` yaratadi va
-  barcha menu guruhlar tugagach `finish()`ni bir marta chaqiradi. Forma xatosi
-  monitor natijasiga yozilib keyingi forma davom etadi; intentional skip
-  menu-item stepi va sabab bilan ko'rinadi, ammo failure hisoblanmaydi.
-- Login, filial va shell preconditionlarini har leaf `run_*` funksiyasi o'z
-  tartibida bevosita bajaradi. `FormMonitor` precondition callbackini
-  ishlatmaydi; leaf xatoni `record_precondition_failure(...)` bilan qayd etadi,
-  monitor esa `TEST_BLOCKED`/`NOT_CHECKED`, evidence va yakuniy hisobotni
-  yaratadi.
+
+### Forma kesimidagi canonical runner
+
+Status: code-confirmed
+Verified: 2026-08-14
+Source: `tests/smoke/test_forms/test_0_forms_runner.py`,
+`tests/smoke/test_forms/monitoring/recovery.py`,
+`tests/smoke/test_forms/inventory/`
+
+- `test_0_forms_runner.py` asosiy smoke/CI runner bo'lib, markaziy inventorydagi
+  har bir active forma va intentional skipni bittadan parametrized pytest/Allure
+  itemga aylantiradi. Forma definitionlari runnerda takrorlanmaydi; inventory
+  yagona ma'lumot manbasi bo'lib qoladi. Allure total soni navbarlar sonini emas,
+  jami active + intentional-skip formalar sonini ko'rsatadi.
+- Canonical runner har formani `monitoring/recovery.py`dagi fail-closed policy
+  orqali bajaradi. Joriy `session_unauthorized` qoidasi shu test davomida yozilgan HTTP
+  `401` diagnostikasi yoki joriy `login.html` redirectini ko'rsagina admin
+  authorizationni yangilaydi, filial state'ni tozalaydi va ayni formani bir
+  marta qayta bajaradi. Maksimum ikki urinish bor; ikkinchi xato yoki registryga
+  mos kelmagan har qanday birinchi xato original exception bilan `FAILED`
+  bo'lib qoladi. Yangi recoverable holat umumiy exception retry orqali emas,
+  alohida matcher/action qoidasi sifatida registryga qo'shiladi.
+- Har parametrized active forma itemi aynan bitta `FormMonitor` yaratadi va
+  joriy forma tugagach `finish()`ni bir marta chaqiradi. Forma xatosi shu pytest
+  itemini failed qiladi, keyingi forma esa alohida item sifatida davom etadi;
+  intentional skip pytest mark va sabab bilan ko'rinadi.
+- Admin login module-scoped `forms_session` fixture'da bir marta bajariladi;
+  kerakli filial har item oldidan session state asosida almashtiriladi. Filial
+  preconditioni yiqilsa monitor `record_precondition_failure(...)` orqali
+  `TEST_BLOCKED` evidence va yakuniy hisobotni yaratadi.
 - Har forma faqat quyidagi holatlardan birini oladi:
   `PASSED`, `OBSERVED_ONLY`, `OPENED_WITH_DEFECT`, `NOT_OPENED`,
   `TEST_BLOCKED`, `NOT_CHECKED`. `checks=[]` bilan navigatsiya bajarilib hard
@@ -181,6 +202,23 @@ Source: `tests/smoke/test_forms/monitoring/monitor.py`,
 - Terminal/Allure human report enabled/total coverage, failed hard checklar va
   counti bor HTTP diagnostikasini ko'rsatadi. Disabled yoki counti `0` signal
   alohida uzun qatorga yoyilmaydi; to'liq signal inventari JSONda qoladi.
+- Har bir forma uchun ko'p qatorli human report bitta umumiy skeletdan
+  foydalanadi: header, forma, filial, to'liq navigatsiya yo'li va kutilgan URL.
+  Failure bo'lsa xato bosqichi, reason-code va bitta aniq sabab ko'rsatiladi;
+  menu/title/label, status va generic/technical sabablar dublikat qilinmaydi.
+  Bo'sh action, page-link, direct-probe yoki diagnostika maydonlari chiqarilmaydi.
+- Human report hard checkni faqat uning `execution_status` qiymati
+  `PASSED` yoki `FAILED` bo'lsa bajarilgan deb ko'rsatadi. Navigatsiya,
+  precondition yoki not-started bosqichida olingan compatibility snapshot
+  checklari failure sifatida talqin qilinmaydi: barcha enabled hard checklar
+  aniq sabab bilan `Bajarilmadi` bo'ladi. Validation gate xatosida undan oldingi
+  checklar `✅/❌`, `NOT_RUN` checklar esa bloklovchi gate bilan ko'rsatiladi.
+- Diagnostika reason-code bo'yicha shartli: navigation uchun joriy sahifa,
+  URL uchun actual URL/timeout va faqat bajarilgan direct probe, loader uchun
+  visible loaderlar, application error uchun UI xato signali, content-ready
+  uchun kontent kuzatuvi, title uchun expected/actual title ko'rsatiladi.
+  Screenshot va davomiylik human reportda qoladi; to'liq schema-v4 metadata va
+  compatibility maydonlari `form-monitor.json`da saqlanadi.
 
 ## Failure artifacts
 

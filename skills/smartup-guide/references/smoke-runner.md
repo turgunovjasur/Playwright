@@ -27,45 +27,46 @@ Source: `tests/smoke/test_setup/test_0_setup_runner.py`; `tests/smoke/test_setup
 ### Runner Qoidasi
 Tags: smoke, setup, dependency, data-store
 Status: code-confirmed
-Verified: 2026-08-11
+Verified: 2026-08-14
 Source: `scripts/run_tests.py`; `tests/smoke/test_setup/test_0_setup_runner.py`;
 `tests/smoke/test_forms/test_0_forms_runner.py`;
 `tests/smoke/test_forms/test_04_finansy_forms.py`;
-`tests/smoke/test_forms/test_05_spravochniki_forms.py`; `tests/smoke/conftest.py`
-- GitHub Actions `.github/workflows/daily-smoke.yml` va Telegram CI bot targetni
-  qat'iy `setup-forms`ga mahkamlaydi: avval `test_0_setup_runner.py`, keyin
-  `test_0_forms_runner.py` ishlaydi; Report group testlari CI dispatchga
-  kiritilmaydi. `setup-report` va `setup-a2-admin` lokal runner targetlari
-  sifatida saqlangan.
+`tests/smoke/test_forms/test_05_spravochniki_forms.py`; `tests/smoke/conftest.py`;
+`.github/workflows/daily-smoke.yml`; `.github/workflows/run-smartup-suite.yml`;
+`scripts/telegram_ci_bot.py`
+- GitHub Actions cron har soatda ikkita alohida job ishlatadi: avval
+  `setup-group-0` targetli Online Smoke, keyin Smoke natijasidan qat'i nazar
+  `forms` targetli Online Forms. Har job alohida Telegram progress/final xabar,
+  Allure report va result artifact yaratadi; Report group CI dispatchga
+  kiritilmaydi.
 - `setup-forms` existing-company rejimida 22 ta Setup case va Forms runnerdagi
-  beshta composite navbar testni (`Главное`, `Продажа`, `Склад`, `Финансы`,
-  `Справочники`) tanlaydi;
+  `Главное`, `Продажа`, `Склад`, `Финансы`, `Справочники` inventorylarining har
+  bir formasini alohida parametrized pytest item sifatida tanlaydi;
   `test_00_company` skip emas, collectiondan deselect qilinadi.
-- Telegram botda smoke/regression scope tanlovi yo'q. `/run`dan keyin faqat
-  `Online` (`smartup.online`) yoki `Xtrade` (`app3.greenwhite.uz/xtrade`)
-  tugmasi tanlanadi.
+- Telegram bot faqat manual trigger qiladi. `/run`dan keyin `Smoke` yoki
+  `Forms`, keyin `Online` (`smartup.online`) yoki `Xtrade`
+  (`app3.greenwhite.uz/xtrade`) tanlanadi; botning alohida auto-runi yo'q.
 - CI ikkala serverda ham `CREATE_COMPANY=0` va `DISABLE_LICENSE_POLICY=0`
   existing-company rejimida ishlaydi; serverga mos company credentiallari
   GitHub Secrets'dan olinadi.
-- Workflow eski, hali restart qilinmagan bot processlari yuboradigan
-  `target=all`ni compatibility input sifatida qabul qiladi, lekin uni
-  ishlatmaydi.
+- Manual dispatch `suite=smoke|forms` inputi orqali faqat tanlangan targetni
+  ishlatadi. Bot GitHub'dagi scheduled yoki manual active runni ko'rsa yangi
+  triggerni queue'ga qo'ymaydi va busy xabar bilan rad etadi.
 - Full run `scripts/run_tests.py` orqali `test_0_setup_runner.py`, keyin Group-0,
   Report runnerlari va `test_forms/test_0_forms_runner.py`ni shu tartibda bitta
   pytest sessiyasida collect qiladi.
 - `setup-forms` setupdan keyin Forms runnerni, `forms` esa setupni
-  ishlatmasdan faqat Forms runnerni collect qiladi. Forms runner aynan beshta
-  pytest itemni Smartup navbar tartibida collect qiladi: `Главное`, `Продажа`,
-  `Склад`, `Финансы`, `Справочники`.
-  `menu_column` pytest parametr emas. Navbar testlari shell turidan qat'i nazar
-  shu navbar ostidagi legacy va A2 formalarni qamraydi va
-  `menu_column → menu_item` ierarxiyasidan foydalanadi. Runnerga kirmaydigan,
+  ishlatmasdan faqat Forms runnerni collect qiladi. Forms runner Smartup navbar
+  tartibidagi beshta inventorydan har bir active forma va intentional skipni
+  alohida pytest/Allure item sifatida collect qiladi. Allure ierarxiyasi
+  `Forms — navbar → menu_column → forma`; item metadata'sida navbar, filial,
+  expected URL va shell ham ko'rsatiladi. Runnerga kirmaydigan,
   alohida ishga tushiriladigan cross-navbar `A2Angular` esa
   `navbar_tab → menu_column → menu_item` ichki Allure ierarxiyasidan
   foydalanadi.
-- Hozir runnerda beshta test bor. Har bir keyingi oddiy navbar o'z leaf
-  inventari/`run_*` funksiyasi hamda runnerdagi bitta yupqa wrapper bilan yangi
-  sibling pytest item sifatida qo'shiladi.
+- Har bir keyingi oddiy navbar o'z leaf inventari/`run_*` funksiyasini saqlaydi
+  va canonical runnerning `NAVBAR_SUITES` ro'yxatiga qo'shiladi; runner uning
+  formalarini markaziy inventorydan parametr qiladi.
 - `setup-group-0` target setup va Group-0 runnerni bitta pytest sessiyasida
   yangi code bilan collect qiladi. `groups` target setupni ishlatmasdan faqat
   Group-0 va Report runner fayllarini collect qiladi; alohida `group-0` va
@@ -165,8 +166,8 @@ Tags: smoke, setup, runner, allure, collection
 - Runner targetlari: `all`, `setup`, `setup-group-0`, `setup-report`,
   `setup-a2-admin`, `setup-forms`, `company`, `groups`, `group-0`,
   `group-report`, `forms`; foydalanuvchi odatda
-  bo'laklarga bo'lib run qilmaydi, normal lokal run `all`, CI targeti
-  `setup-forms`.
+  bo'laklarga bo'lib run qilmaydi, normal lokal run `all`; CI Smoke targeti
+  `setup-group-0`, CI Forms targeti `forms`.
 
 ### Smoke Credentiallari Majburiy
 Tags: setup, runner, credential

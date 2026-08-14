@@ -1,20 +1,26 @@
-name: Daily Setup and Forms Tests
+name: Hourly Smoke and Forms Tests
 
 on:
   schedule:
     - cron: "0 * * * *"
   workflow_dispatch:
     inputs:
-      server_url:
-        description: Server URL
+      suite:
+        description: Test suite
         required: true
-        default: https://smartup.online/
-        type: string
-      target:
-        description: Compatibility only; this workflow always runs setup-forms
-        required: false
-        default: setup-forms
-        type: string
+        default: smoke
+        type: choice
+        options:
+          - smoke
+          - forms
+      server:
+        description: Server
+        required: true
+        default: smartup
+        type: choice
+        options:
+          - smartup
+          - app3
       ai_summary:
         description: Add Gemini AI conclusion
         required: false
@@ -32,170 +38,26 @@ concurrency:
 
 jobs:
   smoke:
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
-    env:
-      TEST_SERVER_URL: ${{ github.event.inputs.server_url || 'https://smartup.online/' }}
-      TEST_TARGET: setup-forms
-      CREATE_COMPANY: "0"
-      DISABLE_LICENSE_POLICY: "0"
-      TEST_AI_SUMMARY: ${{ github.event.inputs.ai_summary || 'false' }}
-      TEST_TELEGRAM_PROGRESS_MESSAGE_ID: ${{ github.event.inputs.telegram_progress_message_id || '' }}
-      SMARTUP_COMPANY_CODE: ${{ secrets.SMARTUP_COMPANY_CODE }}
-      SMARTUP_COMPANY_PASSWORD: ${{ secrets.SMARTUP_COMPANY_PASSWORD }}
-      APP3_COMPANY_CODE: ${{ secrets.APP3_COMPANY_CODE }}
-      APP3_COMPANY_PASSWORD: ${{ secrets.APP3_COMPANY_PASSWORD }}
-      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+    name: Smoke
+    if: ${{ github.event_name == 'schedule' || inputs.suite == 'smoke' }}
+    uses: ./.github/workflows/run-smartup-suite.yml
+    with:
+      target: setup-group-0
+      server_key: ${{ inputs.server || 'smartup' }}
+      ai_summary: ${{ inputs.ai_summary || false }}
+      telegram_progress_message_id: ${{ inputs.suite == 'smoke' && inputs.telegram_progress_message_id || '' }}
+      artifact_name: smoke-test-results
+    secrets: inherit
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-          cache: "pip"
-
-      - name: Start Telegram progress
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          mkdir -p test-results
-          python scripts/telegram_progress.py start \
-            --server "$TEST_SERVER_URL" \
-            --target "$TEST_TARGET" \
-            --message-id "$TEST_TELEGRAM_PROGRESS_MESSAGE_ID" \
-            --status "Installing requirements"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Mark requirements installed
-        if: ${{ success() }}
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python scripts/telegram_progress.py update --status "Requirements installed"
-
-      - name: Mark browser install started
-        if: ${{ success() }}
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python scripts/telegram_progress.py update --status "Installing browser"
-
-      - name: Install Playwright browser
-        run: python -m playwright install --with-deps chromium
-
-      - name: Mark browser installed
-        if: ${{ success() }}
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python scripts/telegram_progress.py update --status "Browser installed"
-
-      - name: Select and mask company credentials
-        run: |
-          NORMALIZED_TEST_SERVER_URL="${TEST_SERVER_URL%/}"
-          echo "TEST_SERVER_URL=$NORMALIZED_TEST_SERVER_URL" >> "$GITHUB_ENV"
-          if [ "$NORMALIZED_TEST_SERVER_URL" = "https://app3.greenwhite.uz/xtrade" ]; then
-            SELECTED_COMPANY_SOURCE="APP3 secrets"
-            SELECTED_COMPANY_CODE="$APP3_COMPANY_CODE"
-            SELECTED_COMPANY_PASSWORD="$APP3_COMPANY_PASSWORD"
-          else
-            SELECTED_COMPANY_SOURCE="SMARTUP secrets"
-            SELECTED_COMPANY_CODE="$SMARTUP_COMPANY_CODE"
-            SELECTED_COMPANY_PASSWORD="$SMARTUP_COMPANY_PASSWORD"
-          fi
-          echo "TEST_COMPANY_SOURCE=$SELECTED_COMPANY_SOURCE" >> "$GITHUB_ENV"
-          echo "TEST_COMPANY_CODE=$SELECTED_COMPANY_CODE" >> "$GITHUB_ENV"
-          echo "TEST_COMPANY_PASSWORD=$SELECTED_COMPANY_PASSWORD" >> "$GITHUB_ENV"
-          [ -n "$SMARTUP_COMPANY_CODE" ] && echo "::add-mask::$SMARTUP_COMPANY_CODE"
-          [ -n "$SMARTUP_COMPANY_PASSWORD" ] && echo "::add-mask::$SMARTUP_COMPANY_PASSWORD"
-          [ -n "$APP3_COMPANY_CODE" ] && echo "::add-mask::$APP3_COMPANY_CODE"
-          [ -n "$APP3_COMPANY_PASSWORD" ] && echo "::add-mask::$APP3_COMPANY_PASSWORD"
-          [ -n "$SELECTED_COMPANY_CODE" ] && echo "::add-mask::$SELECTED_COMPANY_CODE"
-          [ -n "$SELECTED_COMPANY_PASSWORD" ] && echo "::add-mask::$SELECTED_COMPANY_PASSWORD"
-          [ -n "$GEMINI_API_KEY" ] && echo "::add-mask::$GEMINI_API_KEY"
-
-      - name: Run setup and forms tests
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          mkdir -p test-results
-          AI_SUMMARY_ARGS=()
-          if [ "$TEST_AI_SUMMARY" = "true" ]; then
-            AI_SUMMARY_ARGS+=(--ai-summary)
-          fi
-          set -o pipefail
-          python -u scripts/telegram_progress.py run -- python -u scripts/run_tests.py "$TEST_TARGET" \
-            --url "$TEST_SERVER_URL" \
-            --company-code "$TEST_COMPANY_CODE" \
-            --company-password "$TEST_COMPANY_PASSWORD" \
-            --headless \
-            "${AI_SUMMARY_ARGS[@]}" \
-            -s 2>&1 | tee test-results/ci-test-output.log
-
-      - name: Upload test results
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: daily-smoke-test-results
-          path: test-results/
-          retention-days: 7
-
-      - name: Finalize Telegram progress
-        if: ${{ always() }}
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          JOB_STATUS: ${{ job.status }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
-            echo "Telegram secrets are not configured; skipping notification."
-            exit 0
-          fi
-
-          SUMMARY=$(grep -E "={2,} .* (passed|failed|errors?|skipped|xfailed|xpassed).* in .* ={2,}" \
-            test-results/ci-test-output.log 2>/dev/null | tail -1 | sed -E 's/^=+ //; s/ =+$//' || true)
-
-          RUN_CODE=$(python - <<'PY' || true
-          import json
-          from pathlib import Path
-
-          path = Path("test-results/data/data_store.json")
-          if path.exists():
-              try:
-                  data = json.loads(path.read_text(encoding="utf-8"))
-              except json.JSONDecodeError:
-                  data = {}
-              code = data.get("code") if isinstance(data, dict) else None
-              if code not in (None, ""):
-                  print(str(code))
-          PY
-          )
-
-          python scripts/telegram_progress.py finish \
-            --result "$JOB_STATUS" \
-            --run-url "$RUN_URL" \
-            --run-code "$RUN_CODE" \
-            --summary "$SUMMARY"
-
-          if [ "$JOB_STATUS" != "success" ]; then
-            SCREENSHOT=$(find test-results -type f -name "*.png" 2>/dev/null | sort | tail -1 || true)
-            if [ -n "$SCREENSHOT" ]; then
-              curl --fail-with-body -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto" \
-                -F "chat_id=${TELEGRAM_CHAT_ID}" \
-                -F "caption=Failed screenshot" \
-                -F "photo=@${SCREENSHOT}" \
-                || echo "Telegram screenshot upload failed."
-            else
-              echo "Failed screenshot not found; trace/log is in the artifact."
-            fi
-          fi
+  forms:
+    name: Forms
+    needs: smoke
+    if: ${{ always() && (github.event_name == 'schedule' || inputs.suite == 'forms') }}
+    uses: ./.github/workflows/run-smartup-suite.yml
+    with:
+      target: forms
+      server_key: ${{ inputs.server || 'smartup' }}
+      ai_summary: ${{ inputs.ai_summary || false }}
+      telegram_progress_message_id: ${{ inputs.suite == 'forms' && inputs.telegram_progress_message_id || '' }}
+      artifact_name: forms-test-results
+    secrets: inherit

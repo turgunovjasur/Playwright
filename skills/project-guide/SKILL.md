@@ -18,8 +18,8 @@ Ko'rsatmalar ziddiyatida yuqoridan pastga:
 3. tanlangan local task skill;
 4. tashqi yoki generic skill.
 
-Generic TDD yoki verification qoidasi foydalanuvchi bermagan test yozish yoki
-test run qilish ruxsatini yaratmaydi. Faktlar ziddiyatida dalil kuchi:
+Tashqi yoki generic verification qoidasi foydalanuvchi bermagan test yozish
+yoki test run qilish ruxsatini yaratmaydi. Faktlar ziddiyatida dalil kuchi:
 `trace/live UI > code > user-reported > legacy`.
 
 ## Ownership Va Routing

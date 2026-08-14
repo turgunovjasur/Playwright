@@ -11,54 +11,34 @@
 ## Current architecture
 
 Status: code-confirmed
-Verified: 2026-08-11
-Source: `scripts/telegram_ci_bot.py`, `.github/workflows/daily-smoke.yml`
+Verified: 2026-08-14
+Source: `scripts/telegram_ci_bot.py`; `.github/workflows/daily-smoke.yml`;
+`.github/workflows/run-smartup-suite.yml`
 
-- Bir vaqtning o'zida faqat bitta active run bo'ladi; yangi `/run` oldingi run
-  tugaguncha bloklanadi.
-- Bot workflow'ni `main` ref va `daily-smoke.yml` bilan dispatch qiladi.
-- Workflow targeti hozir `setup-forms`; setupdan keyin Forms runnerdagi beshta
-  navbar suite (`Главное`, `Продажа`, `Склад`, `Финансы`, `Справочники`)
-  ishlaydi. Standalone `A2Angular` bu targetga kirmaydi.
-- Windowsdagi botning o'z auto-run loopi default yoqilgan: interval
-  `AUTO_RUN_INTERVAL_SECONDS` orqali boshqariladi (default `3600` soniya),
-  interval chegarasiga tekislanadi va default `smartup` serverida
-  `setup-forms`ni dispatch qiladi. `AUTO_RUN_ENABLED=0` bilan o'chiriladi;
-  bot kuzatayotgan run faol bo'lsa navbatdagi bot auto-runi skip qilinadi.
-- GitHub workflow'ning o'zida ham `cron: "0 * * * *"` schedule bor. Bot
-  auto-runi va workflow cron bir vaqtda yoqilgan bo'lsa bir soatda ikkita
-  workflow run yaratilishi mumkin: botning in-memory active-run locki mustaqil
-  GitHub schedule runini ko'rmaydi. Workflow `concurrency`si
-  `cancel-in-progress: false` bo'lgani uchun ular parallel ishlash o'rniga
-  navbatga tushishi mumkin; bitta scheduling authority tanlash kerak.
-- Bot `smartup` va `app3` serverlarini alohida secret source bilan tanlaydi.
+- GitHub Actions test execution va har soatlik schedulingning yagona
+  authoritysi; `daily-smoke.yml`dagi `cron: "0 * * * *"` saqlangan.
+- Cron har soatda avval `Online Smoke`, keyin `Online Forms`ni alohida reusable
+  workflow job sifatida ishlatadi. Forms job `if: always()` bilan Smoke
+  natijasidan qat'i nazar boshlanadi.
+- `Smoke` `scripts/run_tests.py setup-group-0`, `Forms` esa
+  `scripts/run_tests.py forms` targetini bajaradi. Har job o'z Telegram
+  progress/final xabari, `test-results`, HTML Allure reporti va artifactiga ega.
+- Windows serverdagi bot faqat manual trigger qiladi; bot auto-run loopi va
+  `AUTO_RUN_*` konfiguratsiyasi olib tashlangan.
+- Manual flow: avval suite (`Smoke` yoki `Forms`), keyin server (`Online` yoki
+  `Xtrade`), so'ng run password authorizationi tanlanadi.
+- Workflow erkin URL qabul qilmaydi: `smartup` yoki `app3` keyidan URL hamda
+  secret source ichkarida hosil qilinadi, boshqa key fail-closed rad etiladi.
+- Bot in-memory manual run bilan birga GitHub API orqali scheduled/manual active
+  workflow runlarni ham tekshiradi. Active run bo'lsa yangi manual dispatch
+  queue'ga qo'shilmaydi va `Test jarayonda, yangi run boshlanmadi` mazmunidagi
+  Telegram xabari bilan rad etiladi.
+- Bot workflow'ni `main` ref va `daily-smoke.yml` bilan dispatch qiladi;
+  `smartup` va `app3` serverlari alohida secret source ishlatadi.
 - GitHub status polling vaqtinchalik API/network xatosini retry qiladi; ketma-ket
   5 xatodan keyin failure sifatida chiqaradi.
-
-## Desired Windows-local architecture
-
-Status: user-reported
-Verified: pending
-Source: user
-
-- GitHub Actions workflow test execution va schedulingdan chiqariladi;
-  `telegram_ci_bot.py` Windows serverda manual hamda har soatlik runlarni lokal
-  boshqaradigan yagona authority bo'ladi.
-- Testlar ikki mustaqil run turiga ajratiladi: `Smoke` va `Forms`.
-- `Smoke` run `setup` hamda `Group-0`ni ketma-ket bitta target sifatida
-  bajaradi (`scripts/run_tests.py setup-group-0`).
-- `Forms` run faqat markaziy Forms runnerni bajaradi
-  (`scripts/run_tests.py forms`).
-- Smoke va Forms bir-biridan mustaqil lifecycle, Telegram progress/final xabar,
-  result artifactlari va Allure report yaratishi kerak.
-- Soatlik tartib qat'iy: avval `Online Smoke`, keyin `Online Forms`; Smoke
-  failed bo'lsa ham Forms run boshlanadi.
-- Manual flow: avval suite (`Smoke` yoki `Forms`), keyin server, so'ng run
-  password authorizationi tanlanadi.
-- Active run bor paytda yangi manual yoki schedule trigger queue'ga qo'shilmaydi;
-  aniq `busy` javobi bilan rad etiladi.
-- Har suite alohida state, progress/final message, artifact va Allure lifecycle
-  oladi. Telegramga ZIP yuborilmaydi; faqat qisqa matn va kerakli link beriladi.
+- Telegramga ZIP yuborilmaydi; final xabarda qisqa natija va GitHub run linki
+  beriladi, to'liq test natijalari suite'ga mos artifactda saqlanadi.
 
 ## Progress va final xabar
 
@@ -66,31 +46,38 @@ Source: user
   xabardan keyin progress message'ni yakunlaydi.
 - Pytest progress eventlari `tests/smoke/smoke_reporting.py` va
   `scripts/telegram_progress.py` orqali group/runner/test/title asosida chiqadi.
+- Canonical Forms runnerda har bir forma alohida pytest/Allure item bo'ladi;
+  analyzer parametr IDidagi navbarni tanib, barcha beshta navbar coverage'ini
+  umumiy `Forms: muvaffaqiyatli/jami` metrikasiga qo'shadi.
 - Final xabarda credential emas, faqat data-store'dagi parametrik run `code`
   ko'rsatilishi mumkin.
 - Failure tafsiloti log va Allure'dagi faktlardan tuziladi: group, runner test,
   ichki test, nested step va error turi. Taxminiy `Ta'sir`/`Yechim` qo'shilmaydi.
 
-### Setup + Forms final coverage
+### Legacy `setup-forms` final coverage
 Status: code-confirmed
 Verified: 2026-08-04
 Source: GitHub Actions runs `30528649258`, `30878853396`; `scripts/analyze_test_result.py`; `scripts/telegram_progress.py`
+- Bu kesim eski birlashtirilgan `setup-forms` runlari va lokal compatibility
+  targetiga tegishli. Joriy CI'da Smoke hamda Forms alohida final xabar oladi;
+  Forms finali Setup metrikasini kutmaydi.
 - Pytest summarydagi `22 passed` forma soni emas: existing-company
   `setup-forms` runida bu 20 ta Setup case va 2 ta Forms runner case'dan iborat.
 - Shu run logida `Справочники` suite `89/89`, A2 Admin suite `22/22` forma
   ochgan — jami `111/111`.
-- Telegram final xabari `Pytest cases` deb aniq belgilangan case summarydan tashqari
-  `Setup` passed/failed/skipped qadamlar, umumiy Forms muvaffaqiyatli/jami va
-  `Справочники` hamda `A2 Admin` kesimini alohida ko'rsatishi shart.
+- Birlashtirilgan `setup-forms` final xabari `Pytest cases` deb aniq belgilangan
+  case summarydan tashqari `Setup` passed/failed/skipped qadamlar, umumiy Forms
+  muvaffaqiyatli/jami va `Справочники` hamda `A2 Admin` kesimini alohida
+  ko'rsatadi.
 - Forms coverage uchun asosiy manba Allure'dagi versionlangan
   `form-monitor.json`; markaziy monitor attachmenti bo'lmagan eski runlarda
   `NNN | Filial: ...` va legacy `NN — ...` Allure steplari fallback bo'ladi.
 - Bitta Forms wrapper ichida bir nechta forma muammosi bo'lsa Telegram faqat
   birinchi failed stepni emas, monitor payloadidagi barcha `PASSED` bo'lmagan
   formalarni raqami, holati va sababi bilan ko'rsatadi.
-- Coverage parser direct leaf testlar bilan birga joriy
-  `test_forms_04_finansy` va `test_forms_05_spravochniki` wrapper
-  identitylarini taniydi. Qayta raqamlashdan oldingi natijalar uchun
+- Coverage parser joriy parametrized `test_form_case[...]` itemlaridagi beshta
+  navbar identitysini taniydi. Eski result artifactlar uchun
+  `test_forms_04_finansy` va `test_forms_05_spravochniki` wrapperlari hamda
   `test_forms_04_spravochniki`, `test_forms_01_spravochniki` va
   `test_forms_02_a2_admin` tarixiy compatibility aliaslari sifatida qoladi.
 
@@ -101,7 +88,8 @@ Source: GitHub Actions runs `30528649258`, `30878853396`; `scripts/analyze_test_
 - Bot chat allow-listga tayanmaydi; manual run faqat
   `hmac.compare_digest` bilan tekshirilgan run password orqali ochiladi.
 - Parol xabari qabul qilingach chatdan o'chiriladi.
-- `TELEGRAM_CHAT_ID` ixtiyoriy auto-run destination; manual run authoritysi emas.
+- `TELEGRAM_CHAT_ID` GitHub workflow progress/final xabarlari uchun destination;
+  manual run authoritysi emas.
 
 ## Windows deploy
 

@@ -28,9 +28,12 @@ A2_FORM_STEP_PATTERN = re.compile(
 )
 SPRAVOCHNIKI_FORM_STEP_PATTERN = re.compile(r"^\d{3}\s+\|\s+Filial:")
 FORM_SUITE_LABELS = {
+    "glavnoe": "Главное",
+    "prodaja": "Продажа",
+    "sklad": "Склад",
+    "finansy": "Финансы",
     "spravochniki": "Справочники",
     "a2_admin": "A2Angular",
-    "prodaja": "Продажа",
 }
 FORM_MONITOR_FAILURE_STATUSES = {
     "OPENED_WITH_DEFECT",
@@ -624,6 +627,12 @@ def _form_suite_key(item):
         or "prodaja" in identity
     ):
         return "prodaja"
+    if "главное" in identity or "glavnoe" in identity:
+        return "glavnoe"
+    if "склад" in identity or "sklad" in identity:
+        return "sklad"
+    if "финансы" in identity or "finansy" in identity:
+        return "finansy"
     main_runner_match = re.search(r"test_forms_\d+_([a-z0-9_]+)", identity)
     if main_runner_match:
         return main_runner_match.group(1)

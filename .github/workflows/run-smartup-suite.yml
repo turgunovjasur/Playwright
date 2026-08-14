@@ -1,0 +1,241 @@
+name: Run Smartup Test Suite
+
+on:
+  workflow_call:
+    inputs:
+      target:
+        description: scripts/run_tests.py target
+        required: true
+        type: string
+      server_key:
+        description: Server key
+        required: true
+        type: string
+      ai_summary:
+        description: Add Gemini AI conclusion
+        required: false
+        default: false
+        type: boolean
+      telegram_progress_message_id:
+        description: Existing Telegram progress message id
+        required: false
+        default: ""
+        type: string
+      artifact_name:
+        description: Result artifact name
+        required: true
+        type: string
+
+jobs:
+  suite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      TEST_SERVER_KEY: ${{ inputs.server_key }}
+      TEST_TARGET: ${{ inputs.target }}
+      CREATE_COMPANY: "0"
+      DISABLE_LICENSE_POLICY: "0"
+      TEST_AI_SUMMARY: ${{ inputs.ai_summary }}
+      TEST_TELEGRAM_PROGRESS_MESSAGE_ID: ${{ inputs.telegram_progress_message_id }}
+      SMARTUP_COMPANY_CODE: ${{ secrets.SMARTUP_COMPANY_CODE }}
+      SMARTUP_COMPANY_PASSWORD: ${{ secrets.SMARTUP_COMPANY_PASSWORD }}
+      APP3_COMPANY_CODE: ${{ secrets.APP3_COMPANY_CODE }}
+      APP3_COMPANY_PASSWORD: ${{ secrets.APP3_COMPANY_PASSWORD }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Resolve server
+        run: |
+          case "$TEST_SERVER_KEY" in
+            smartup)
+              TEST_SERVER_URL="https://smartup.online"
+              ;;
+            app3)
+              TEST_SERVER_URL="https://app3.greenwhite.uz/xtrade"
+              ;;
+            *)
+              echo "Unsupported server key: $TEST_SERVER_KEY" >&2
+              exit 2
+              ;;
+          esac
+          echo "TEST_SERVER_URL=$TEST_SERVER_URL" >> "$GITHUB_ENV"
+
+      - name: Start Telegram progress
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          mkdir -p test-results
+          python scripts/telegram_progress.py start \
+            --server "$TEST_SERVER_URL" \
+            --target "$TEST_TARGET" \
+            --message-id "$TEST_TELEGRAM_PROGRESS_MESSAGE_ID" \
+            --status "Installing requirements"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Mark requirements installed
+        if: ${{ success() }}
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python scripts/telegram_progress.py update --status "Requirements installed"
+
+      - name: Mark browser install started
+        if: ${{ success() }}
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python scripts/telegram_progress.py update --status "Installing browser"
+
+      - name: Install Playwright browser
+        run: python -m playwright install --with-deps chromium
+
+      - name: Mark browser installed
+        if: ${{ success() }}
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python scripts/telegram_progress.py update --status "Browser installed"
+
+      - name: Select and mask company credentials
+        run: |
+          case "$TEST_SERVER_KEY" in
+            smartup)
+              SELECTED_COMPANY_SOURCE="SMARTUP secrets"
+              SELECTED_COMPANY_CODE="$SMARTUP_COMPANY_CODE"
+              SELECTED_COMPANY_PASSWORD="$SMARTUP_COMPANY_PASSWORD"
+              ;;
+            app3)
+              SELECTED_COMPANY_SOURCE="APP3 secrets"
+              SELECTED_COMPANY_CODE="$APP3_COMPANY_CODE"
+              SELECTED_COMPANY_PASSWORD="$APP3_COMPANY_PASSWORD"
+              ;;
+            *)
+              echo "Unsupported server key: $TEST_SERVER_KEY" >&2
+              exit 2
+              ;;
+          esac
+          echo "TEST_COMPANY_SOURCE=$SELECTED_COMPANY_SOURCE" >> "$GITHUB_ENV"
+          echo "TEST_COMPANY_CODE=$SELECTED_COMPANY_CODE" >> "$GITHUB_ENV"
+          echo "TEST_COMPANY_PASSWORD=$SELECTED_COMPANY_PASSWORD" >> "$GITHUB_ENV"
+          [ -n "$SMARTUP_COMPANY_CODE" ] && echo "::add-mask::$SMARTUP_COMPANY_CODE"
+          [ -n "$SMARTUP_COMPANY_PASSWORD" ] && echo "::add-mask::$SMARTUP_COMPANY_PASSWORD"
+          [ -n "$APP3_COMPANY_CODE" ] && echo "::add-mask::$APP3_COMPANY_CODE"
+          [ -n "$APP3_COMPANY_PASSWORD" ] && echo "::add-mask::$APP3_COMPANY_PASSWORD"
+          [ -n "$SELECTED_COMPANY_CODE" ] && echo "::add-mask::$SELECTED_COMPANY_CODE"
+          [ -n "$SELECTED_COMPANY_PASSWORD" ] && echo "::add-mask::$SELECTED_COMPANY_PASSWORD"
+          [ -n "$GEMINI_API_KEY" ] && echo "::add-mask::$GEMINI_API_KEY"
+
+      - name: Run test suite
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          mkdir -p test-results
+          AI_SUMMARY_ARGS=()
+          if [ "$TEST_AI_SUMMARY" = "true" ]; then
+            AI_SUMMARY_ARGS+=(--ai-summary)
+          fi
+          set -o pipefail
+          python -u scripts/telegram_progress.py run -- python -u scripts/run_tests.py "$TEST_TARGET" \
+            --url "$TEST_SERVER_URL" \
+            --company-code "$TEST_COMPANY_CODE" \
+            --company-password "$TEST_COMPANY_PASSWORD" \
+            --headless \
+            "${AI_SUMMARY_ARGS[@]}" \
+            -s 2>&1 | tee test-results/ci-test-output.log
+
+      - name: Generate Allure report
+        if: ${{ always() }}
+        run: |
+          if [ ! -d test-results/allure-results ]; then
+            echo "Allure results not found; report generation skipped."
+            exit 0
+          fi
+          npm install --global allure-commandline
+          allure generate test-results/allure-results \
+            --output test-results/allure-report \
+            --clean
+
+      - name: Finalize Telegram progress
+        if: ${{ always() }}
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          JOB_STATUS: ${{ job.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "Telegram secrets are not configured; skipping notification."
+            exit 0
+          fi
+
+          SUMMARY=$(grep -E "={2,} .* (passed|failed|errors?|skipped|xfailed|xpassed).* in .* ={2,}" \
+            test-results/ci-test-output.log 2>/dev/null | tail -1 | sed -E 's/^=+ //; s/ =+$//' || true)
+
+          RUN_CODE=$(python - <<'PY' || true
+          import json
+          from pathlib import Path
+
+          path = Path("test-results/data/data_store.json")
+          if path.exists():
+              try:
+                  data = json.loads(path.read_text(encoding="utf-8"))
+              except json.JSONDecodeError:
+                  data = {}
+              code = data.get("code") if isinstance(data, dict) else None
+              if code not in (None, ""):
+                  print(str(code))
+          PY
+          )
+
+          python scripts/telegram_progress.py finish \
+            --result "$JOB_STATUS" \
+            --run-url "$RUN_URL" \
+            --run-code "$RUN_CODE" \
+            --summary "$SUMMARY"
+
+          if [ "$JOB_STATUS" != "success" ]; then
+            SCREENSHOT=$(find test-results -type f -name "*.png" 2>/dev/null | sort | tail -1 || true)
+            if [ -n "$SCREENSHOT" ]; then
+              curl --fail-with-body -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto" \
+                -F "chat_id=${TELEGRAM_CHAT_ID}" \
+                -F "caption=Failed screenshot" \
+                -F "photo=@${SCREENSHOT}" \
+                || echo "Telegram screenshot upload failed."
+            else
+              echo "Failed screenshot not found; trace/log is in the artifact."
+            fi
+          fi
+
+      - name: Upload test results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: test-results/
+          retention-days: 7

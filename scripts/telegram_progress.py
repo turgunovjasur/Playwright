@@ -25,6 +25,7 @@ TASHKENT_TZ = timezone(timedelta(hours=5))
 TARGET_LABELS = {
     "all": "All",
     "setup": "Setup",
+    "setup-group-0": "Smoke",
     "setup-report": "Setup + Report",
     "setup-a2-admin": "Setup + A2 Admin Forms",
     "setup-forms": "Setup + Forms",

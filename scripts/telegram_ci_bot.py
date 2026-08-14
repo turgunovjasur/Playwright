@@ -15,9 +15,13 @@ import requests
 DEFAULT_REPOSITORY = "turgunovjasur/Playwright"
 DEFAULT_WORKFLOW = "daily-smoke.yml"
 DEFAULT_REF = "main"
-DEFAULT_TARGET = "setup-forms"
 STATUS_POLL_INTERVAL_SECONDS = 30
 STATUS_POLL_ERROR_LIMIT = 5
+
+SUITES = {
+    "smoke": "Smoke",
+    "forms": "Forms",
+}
 
 SERVERS = {
     "smartup": "https://smartup.online",
@@ -31,16 +35,12 @@ class ConfigError(RuntimeError):
 
 @dataclass(frozen=True)
 class RunRequest:
+    suite_key: str
     server_key: str
-    server_url: str
-    target: str = DEFAULT_TARGET
 
     @property
-    def company_source(self):
-        if self.server_key == "app3":
-            return "APP3 secrets"
-        return "SMARTUP secrets"
-
+    def suite_label(self):
+        return SUITES[self.suite_key]
 
 @dataclass(frozen=True)
 class WorkflowRun:
@@ -137,10 +137,6 @@ class BotConfig:
     workflow: str
     ref: str
     allowed_server_keys: set[str]
-    auto_run_enabled: bool
-    auto_run_interval_seconds: int
-    auto_run_chat_id: str
-    auto_run_request: RunRequest
 
 
 def env_required(name, *fallbacks):
@@ -154,34 +150,6 @@ def env_required(name, *fallbacks):
 
 def env_value(name, default):
     return os.getenv(name, default).strip() or default
-
-
-def env_bool(name, default):
-    raw = os.getenv(name, "").strip().lower()
-    if not raw:
-        return default
-    return raw in {"1", "true", "yes", "on"}
-
-
-def env_int(name, default):
-    raw = os.getenv(name, "").strip()
-    if not raw:
-        return default
-    try:
-        value = int(raw)
-    except ValueError:
-        return default
-    return value if value > 0 else default
-
-
-def resolve_server_key(value, default="smartup"):
-    lowered = value.strip().lower().rstrip("/")
-    if lowered in SERVERS:
-        return lowered
-    for key, url in SERVERS.items():
-        if lowered == url.rstrip("/"):
-            return key
-    return default
 
 
 def split_csv(value):
@@ -210,19 +178,6 @@ def load_config():
     # Botdan hamma foydalana oladi; testni run qilish faqat to'g'ri parol bilan ochiladi.
     run_password = env_required("TELEGRAM_RUN_PASSWORD")
 
-    # Auto-run xabarlari uchun maqsad chat (ixtiyoriy: TELEGRAM_CHAT_ID yoki ro'yxatdagi birinchisi).
-    auto_run_chat_id = os.getenv("TELEGRAM_CHAT_ID", "").strip()
-    if not auto_run_chat_id:
-        fallback = split_csv(os.getenv("TELEGRAM_ALLOWED_CHAT_IDS", ""))
-        auto_run_chat_id = fallback[0] if fallback else ""
-
-    auto_run_server_key = resolve_server_key(env_value("AUTO_RUN_SERVER", "smartup"))
-    auto_run_request = RunRequest(
-        server_key=auto_run_server_key,
-        server_url=SERVERS[auto_run_server_key],
-        target=DEFAULT_TARGET,
-    )
-
     return BotConfig(
         telegram_token=env_required("TELEGRAM_BOT_TOKEN"),
         run_password=run_password,
@@ -231,10 +186,6 @@ def load_config():
         workflow=env_value("GITHUB_WORKFLOW_FILE", DEFAULT_WORKFLOW),
         ref=env_value("GITHUB_REF", DEFAULT_REF),
         allowed_server_keys=allowed_server_keys,
-        auto_run_enabled=env_bool("AUTO_RUN_ENABLED", True),
-        auto_run_interval_seconds=env_int("AUTO_RUN_INTERVAL_SECONDS", 3600),
-        auto_run_chat_id=auto_run_chat_id,
-        auto_run_request=auto_run_request,
     )
 
 
@@ -322,7 +273,8 @@ class GitHubActionsClient:
         started_at = datetime.now(timezone.utc)
         url = f"https://api.github.com/repos/{self.repository}/actions/workflows/{self.workflow}/dispatches"
         inputs = {
-            "server_url": request.server_url,
+            "suite": request.suite_key,
+            "server": request.server_key,
         }
         if telegram_progress_message_id is not None:
             inputs["telegram_progress_message_id"] = str(telegram_progress_message_id)
@@ -338,6 +290,27 @@ class GitHubActionsClient:
             raise RuntimeError(f"GitHub dispatch failed: {response.status_code} {response.text}")
 
         return self.find_new_run(started_at)
+
+    def find_active_run(self):
+        """Scheduled yoki manual workflow hozir active bo'lsa qaytaradi."""
+        url = f"https://api.github.com/repos/{self.repository}/actions/workflows/{self.workflow}/runs"
+        response = self.session.get(
+            url,
+            params={"branch": self.ref, "per_page": "20"},
+            timeout=30,
+        )
+        response.raise_for_status()
+        runs = response.json().get("workflow_runs", [])
+        for item in runs:
+            if str(item.get("event", "")) not in {"schedule", "workflow_dispatch"}:
+                continue
+            if str(item.get("status", "")) in {"", "completed"}:
+                continue
+            run_id = item.get("id")
+            html_url = item.get("html_url")
+            if isinstance(run_id, int) and isinstance(html_url, str):
+                return WorkflowRun(run_id=run_id, html_url=html_url)
+        return None
 
     def find_new_run(self, started_at):
         deadline = time.monotonic() + 30
@@ -388,28 +361,22 @@ def parse_github_time(value):
 def help_text():
     return (
         "Test run qilish uchun /run yuboring.\n\n"
-        "Bot avval serverni so'raydi.\n"
-        "So'ngra parol so'raladi — to'g'ri parol kiritilsa test ishga tushadi.\n"
+        "Bot avval Smoke yoki Forms suite'ini, keyin serverni so'raydi.\n"
+        "So'ngra parol so'raladi — to'g'ri parol kiritilsa tanlangan test ishga tushadi.\n"
         "Company code/password GitHub Secrets'dan olinadi.\n"
-        "User setup testlaridan keyin barcha Forms testlari ishlaydi; Report group CI'ga kiritilmaydi.\n"
+        "Smoke: User setup va Group-0. Forms: faqat markaziy Forms runner.\n"
         "Yakuniy test natijasini GitHub Actions workflow yuboradi.\n"
-        "Test jarayonda bo'lsa yangi /run bloklanadi.\n"
-        "Avto-run har soatda mustaqil ishga tushadi (run ketayotgan bo'lsa o'tkazib yuboriladi).\n\n"
+        "Manual yoki GitHub cron testi jarayonda bo'lsa yangi /run rad etiladi.\n"
+        "Soatlik runni faqat GitHub cron boshqaradi; bot faqat manual trigger uchun.\n\n"
         "To'liq qo'llanma uchun /start yuboring."
     )
 
 
 def start_text(config):
     servers = "\n".join(f"  • {SERVERS[key]}" for key in sorted(config.allowed_server_keys))
-    interval_minutes = max(1, config.auto_run_interval_seconds // 60)
-    auto_run = (
-        f"Har {interval_minutes} daqiqada avtomatik run "
-        "ishga tushadi (run ketayotgan bo'lsa o'tkazib yuboriladi)."
-        if config.auto_run_enabled
-        else "Avto-run hozir o'chirilgan."
-    )
     return (
-        "👋 Salom! Bu — Playwright Setup va Forms testlarini GitHub Actions orqali ishga tushiradigan CI bot.\n"
+        "👋 Salom! Bu — Playwright Smoke va Forms testlarini GitHub Actions "
+        "orqali manual ishga tushiradigan CI bot.\n"
         "\n"
         "📌 Nima qiladi:\n"
         "Testlarni GitHub Actions workflowda ishga tushiradi va natijani shu chatga yuboradi. "
@@ -417,36 +384,47 @@ def start_text(config):
         "\n"
         "🚀 Qanday run qilinadi:\n"
         "1. /run yuboring\n"
-        "2. Bot serverni so'raydi — tugmadan tanlang\n"
-        "3. Bot parol so'raydi — to'g'ri parolni kiriting (parol QA jamoasida)\n"
-        "4. Parol to'g'ri bo'lsa test boshlanadi, bitta xabar jonli yangilanadi\n"
-        "5. Tugagach yakuniy natija (passed/failed) shu xabarda chiqadi\n"
+        "2. Smoke yoki Forms suite'ini tanlang\n"
+        "3. Serverni tanlang — Online yoki Xtrade\n"
+        "4. Bot parol so'raydi — to'g'ri parolni kiriting (parol QA jamoasida)\n"
+        "5. Parol to'g'ri bo'lsa test boshlanadi, bitta xabar jonli yangilanadi\n"
+        "6. Tugagach yakuniy natija (passed/failed) shu xabarda chiqadi\n"
         "\n"
         "🌐 Serverlar:\n"
         f"{servers}\n"
         "\n"
         "🧪 Nima test qilinadi:\n"
-        "User setup → barcha Forms testlari (Справочники va A2 admin formalar). "
-        "Report group testlari CI runiga kiritilmaydi.\n"
+        "Smoke — User setup → Group-0. Forms — faqat markaziy Forms runner.\n"
         "\n"
         "📊 Natija xabari:\n"
         "Status, hozirgi qadam, passed ro'yxati; failed bo'lsa Group / Runner test / "
         "Ichki test / Step / Error turi ko'rsatiladi.\n"
         "\n"
-        f"⏱ Avto-run:\n{auto_run}\n"
+        "⏱ Soatlik run:\nGitHub cron avval Online Smoke, keyin Online Forms'ni ishga tushiradi.\n"
         "\n"
-        "⚠️ Bir vaqtda faqat bitta run — test ketayotganda yangi /run bloklanadi.\n"
+        "⚠️ Test ketayotganda yangi /run xabar bilan rad etiladi.\n"
         "\n"
         "Buyruqlar: /run  /servers  /help  /start"
     )
 
 
-def server_keyboard(config):
+def suite_keyboard():
+    return {
+        "inline_keyboard": [
+            [
+                {"text": "Smoke", "callback_data": "suite:smoke"},
+                {"text": "Forms", "callback_data": "suite:forms"},
+            ]
+        ]
+    }
+
+
+def server_keyboard(config, suite_key):
     rows = []
     if "smartup" in config.allowed_server_keys:
-        rows.append([{"text": "Online", "callback_data": "server:smartup"}])
+        rows.append([{"text": "Online", "callback_data": f"server:{suite_key}:smartup"}])
     if "app3" in config.allowed_server_keys:
-        rows.append([{"text": "Xtrade", "callback_data": "server:app3"}])
+        rows.append([{"text": "Xtrade", "callback_data": f"server:{suite_key}:app3"}])
     return {"inline_keyboard": rows}
 
 
@@ -455,6 +433,17 @@ def active_run_text(active):
     elapsed_minutes = elapsed_seconds // 60
     elapsed_text = "1 daqiqadan kam" if elapsed_minutes == 0 else f"{elapsed_minutes} daqiqa"
     return f"Test jarayonda: {elapsed_text}. Run: {active.workflow_run.html_url}"
+
+
+def busy_run_text(workflow_run):
+    return f"Test jarayonda, yangi run boshlanmadi. Run: {workflow_run.html_url}"
+
+
+def find_busy_run(github, active_store):
+    active = active_store.get()
+    if active is not None:
+        return active.workflow_run, active
+    return github.find_active_run(), None
 
 
 def transient_status_message_ids(active):
@@ -483,16 +472,23 @@ def safe_delete_transient_messages(telegram, active):
 
 def show_run_start(
     telegram,
+    github,
     chat_id,
     config,
     active_store,
 ):
-    active = active_store.get()
-    if active is not None:
-        message_id = telegram.send_message(chat_id, active_run_text(active))
-        active_store.add_status_message(active.workflow_run.run_id, message_id)
+    try:
+        workflow_run, local_active = find_busy_run(github, active_store)
+    except Exception as exc:
+        print(f"GitHub active run check failed: {exc}", file=sys.stderr)
+        telegram.send_message(chat_id, "Test holatini tekshirib bo'lmadi. Iltimos, qayta urinib ko'ring.")
         return
-    telegram.send_message(chat_id, "Qaysi serverda run qilamiz?", reply_markup=server_keyboard(config))
+    if workflow_run is not None:
+        message_id = telegram.send_message(chat_id, busy_run_text(workflow_run))
+        if local_active is not None:
+            active_store.add_status_message(workflow_run.run_id, message_id)
+        return
+    telegram.send_message(chat_id, "Qaysi testni run qilamiz?", reply_markup=suite_keyboard())
 
 
 def password_matches(expected, provided):
@@ -517,10 +513,21 @@ def verify_run_password(
     # Parol xabari chatda qolmasligi uchun foydalanuvchi yuborgan matnni o'chiramiz.
     safe_delete_message(telegram, chat_id, user_message_id)
 
-    active = active_store.get()
-    if active is not None:
+    try:
+        workflow_run, _local_active = find_busy_run(github, active_store)
+    except Exception as exc:
+        print(f"GitHub active run check failed: {exc}", file=sys.stderr)
+        telegram.edit_message(
+            chat_id,
+            pending.prompt_message_id,
+            "Test holatini tekshirib bo'lmadi. /run bilan qayta urinib ko'ring.",
+        )
         pending_store.clear(chat_id)
-        telegram.edit_message(chat_id, pending.prompt_message_id, active_run_text(active))
+        return
+
+    if workflow_run is not None:
+        pending_store.clear(chat_id)
+        telegram.edit_message(chat_id, pending.prompt_message_id, busy_run_text(workflow_run))
         return
 
     if password_matches(config.run_password, text):
@@ -569,7 +576,7 @@ def handle_message(
         telegram.send_message(chat_id, "Mavjud serverlar:\n" + "\n".join(lines))
         return
     if command == "/run":
-        show_run_start(telegram, chat_id, config, active_store)
+        show_run_start(telegram, github, chat_id, config, active_store)
         return
 
     telegram.send_message(chat_id, "Noto'g'ri command. Test run qilish uchun /run yuboring.")
@@ -594,25 +601,64 @@ def handle_callback(
         telegram.answer_callback(callback_id)
         return
 
-    active = active_store.get()
-    if active is not None:
+    try:
+        workflow_run, local_active = find_busy_run(github, active_store)
+    except Exception as exc:
+        print(f"GitHub active run check failed: {exc}", file=sys.stderr)
+        telegram.answer_callback(callback_id, "Statusni tekshirib bo'lmadi")
+        telegram.edit_message(
+            chat_id,
+            message_id,
+            "Test holatini tekshirib bo'lmadi. /run bilan qayta urinib ko'ring.",
+        )
+        return
+
+    if workflow_run is not None:
         telegram.answer_callback(callback_id, "Test jarayonda")
-        active_message_id = telegram.send_message(chat_id, active_run_text(active))
-        active_store.add_status_message(active.workflow_run.run_id, active_message_id)
+        active_message_id = telegram.send_message(chat_id, busy_run_text(workflow_run))
+        if local_active is not None:
+            active_store.add_status_message(workflow_run.run_id, active_message_id)
+        return
+
+    if data.startswith("suite:"):
+        suite_key = data.split(":", 1)[1]
+        if suite_key not in SUITES:
+            telegram.answer_callback(callback_id, "Unknown suite")
+            return
+        telegram.answer_callback(callback_id, "Serverni tanlang")
+        telegram.edit_message(
+            chat_id,
+            message_id,
+            f"{SUITES[suite_key]}: qaysi serverda run qilamiz?",
+            reply_markup=server_keyboard(config, suite_key),
+        )
         return
 
     if data.startswith("server:"):
-        server_key = data.split(":", 1)[1]
+        parts = data.split(":")
+        if len(parts) != 3:
+            telegram.answer_callback(callback_id, "Unknown server action")
+            return
+        _action, suite_key, server_key = parts
+        if suite_key not in SUITES:
+            telegram.answer_callback(callback_id, "Unknown suite")
+            return
         if server_key not in config.allowed_server_keys or server_key not in SERVERS:
             telegram.answer_callback(callback_id, "Server not allowed")
             return
         telegram.answer_callback(callback_id, "Parol kerak")
-        request = RunRequest(server_key=server_key, server_url=SERVERS[server_key])
+        request = RunRequest(
+            suite_key=suite_key,
+            server_key=server_key,
+        )
         pending_store.set(chat_id, PendingRun(request=request, prompt_message_id=message_id))
         telegram.edit_message(
             chat_id,
             message_id,
-            f"🔒 {SERVERS[server_key]}\n\nTestni run qilish uchun parolni yuboring:",
+            (
+                f"🔒 {SUITES[suite_key]} · {SERVERS[server_key]}\n\n"
+                "Testni run qilish uchun parolni yuboring:"
+            ),
         )
         return
 
@@ -627,10 +673,24 @@ def start_run(
     request,
     active_store,
 ):
+    try:
+        busy_run, _local_active = find_busy_run(github, active_store)
+    except Exception as exc:
+        print(f"GitHub active run check failed: {exc}", file=sys.stderr)
+        telegram.edit_message(
+            chat_id,
+            message_id,
+            "Test holatini tekshirib bo'lmadi. /run bilan qayta urinib ko'ring.",
+        )
+        return
+    if busy_run is not None:
+        telegram.edit_message(chat_id, message_id, busy_run_text(busy_run))
+        return
+
     telegram.edit_message(
         chat_id,
         message_id,
-        "Test boshlanyapti...",
+        f"{request.suite_label} testi boshlanyapti...",
     )
     try:
         workflow_run = github.dispatch(request, telegram_progress_message_id=message_id)
@@ -638,7 +698,11 @@ def start_run(
         telegram.edit_message(chat_id, message_id, f"Testni boshlashda xato: {exc}")
         return
 
-    telegram.edit_message(chat_id, message_id, f"Run boshlandi: {workflow_run.html_url}")
+    telegram.edit_message(
+        chat_id,
+        message_id,
+        f"{request.suite_label} run boshlandi: {workflow_run.html_url}",
+    )
 
     if workflow_run.run_id is not None:
         active = ActiveRun(
@@ -660,7 +724,7 @@ def start_run(
 
     thread = threading.Thread(
         target=monitor_run,
-        args=(telegram, github, chat_id, workflow_run, request, active_store),
+        args=(telegram, github, chat_id, workflow_run, active_store),
         daemon=True,
     )
     thread.start()
@@ -671,7 +735,6 @@ def monitor_run(
     github,
     chat_id,
     workflow_run,
-    request,
     active_store,
 ):
     assert workflow_run.run_id is not None
@@ -713,50 +776,6 @@ def monitor_run(
         time.sleep(STATUS_POLL_INTERVAL_SECONDS)
 
 
-def auto_run_label(request):
-    server_label = "online" if request.server_key == "smartup" else "xtrade"
-    return f"{server_label} / {request.target}"
-
-
-def trigger_auto_run(
-    telegram,
-    github,
-    config,
-    active_store,
-):
-    if not config.auto_run_chat_id:
-        return
-    if active_store.get() is not None:
-        print("Auto-run skipped: a run is already active.", file=sys.stderr)
-        return
-
-    request = config.auto_run_request
-    chat_id = config.auto_run_chat_id
-    message_id = telegram.send_message(
-        chat_id,
-        f"Soatlik avto-test ({auto_run_label(request)}) boshlanyapti...",
-    )
-    if message_id is None:
-        return
-    start_run(telegram, github, chat_id, message_id, request, active_store)
-
-
-def auto_run_loop(
-    telegram,
-    github,
-    config,
-    active_store,
-):
-    interval = config.auto_run_interval_seconds
-    while True:
-        # Align to the interval boundary (top of the hour for 3600s, in UTC == local for whole-hour offsets).
-        time.sleep(interval - (time.time() % interval))
-        try:
-            trigger_auto_run(telegram, github, config, active_store)
-        except Exception as exc:
-            print(f"Auto-run trigger error: {exc}", file=sys.stderr)
-
-
 def main():
     try:
         config = load_config()
@@ -771,19 +790,7 @@ def main():
 
     offset = None
     print(f"Telegram CI bot started for {config.repository}/{config.workflow} on {config.ref}")
-
-    if config.auto_run_enabled and config.auto_run_chat_id:
-        threading.Thread(
-            target=auto_run_loop,
-            args=(telegram, github, config, active_store),
-            daemon=True,
-        ).start()
-        print(
-            f"Auto-run enabled: every {config.auto_run_interval_seconds}s "
-            f"-> {auto_run_label(config.auto_run_request)} in chat {config.auto_run_chat_id}"
-        )
-    else:
-        print("Auto-run disabled.")
+    print("Bot manual trigger rejimida; soatlik schedule GitHub cron tomonidan boshqariladi.")
 
     while True:
         try:

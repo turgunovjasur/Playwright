@@ -225,7 +225,8 @@ def parse_args():
         nargs="?",
         default="all",
         help=(
-            "Default: all. CI uchun: setup-forms. Debug uchun: setup, setup-group-0, "
+            "Default: all. CI uchun: setup-group-0 yoki forms. Debug uchun: setup, "
+            "setup-group-0, "
             "setup-report, setup-a2-admin, "
             "company, groups, group-0, group-report, "
             "forms yoki pytest target path."

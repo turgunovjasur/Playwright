@@ -210,19 +210,24 @@ progress_test_id="forms_XX_<navbar_slug>"
 ```
 
 `XX` keyingi bo'sh raqam emas — u Smartup navbarining joriy ko'rinish
-tartibidir. Leaf fayli, runner wrapperi, `suite_name` va `progress_test_id`
-bir xil raqamda bo'ladi. Yangi suite navbar tartibining o'rtasiga tushsa,
-undan keyingi navbar suite'lar qayta raqamlanadi. `A2Angular` bu raqamlashga
-kirmaydi.
+tartibidir. Leaf fayli, `NAVBAR_SUITES` entrysi, `suite_name` va
+`progress_test_id` bir xil raqamda bo'ladi. Yangi suite navbar tartibining
+o'rtasiga tushsa, undan keyingi navbar suite'lar qayta raqamlanadi.
+`A2Angular` bu raqamlashga kirmaydi.
 
 ## Forms runner
 
-`tests/smoke/test_forms/test_0_forms_runner.py` faqat navbar suite'larni
-jamlaydi. Yangi item:
+`tests/smoke/test_forms/test_0_forms_runner.py` navbar inventorylaridagi har bir
+active forma va intentional skipni alohida parametrized pytest/Allure itemga
+aylantiradi. Yangi navbar suite `NAVBAR_SUITES`ga Smartup navbar tartibida
+qo'shiladi; forma definitionlari runnerda takrorlanmaydi.
 
-- non-parametrized sibling pytest test;
-- leafdagi `run_*`ni bevosita chaqiradigan thin wrapper;
-- `@allure.title("<Navbar>")` bilan Smartup navbar tartibiga mos bo'ladi.
+Har item:
+
+- barqaror global raqam, navbar raqami va canonical pathli pytest ID oladi;
+- `Forms — <Navbar>` feature va `menu_column` story labelini oladi;
+- bitta umumiy module-scoped admin/browser sessionidan foydalanadi;
+- o'z `FormMonitor` lifecycle'i va fail-closed recovery policy'si bilan ishlaydi.
 
 `A2Angular` importi yoki wrapperi Forms runnerga qo'shilmaydi.
 
@@ -255,7 +260,7 @@ Execution authority bo'lmasa quyidagi statik tekshiruvlar bilan cheklan:
 `run-smoke` executionga ruxsat bersa:
 
 1. inventory normalization sonlarini;
-2. runner va standalone collectionni;
+2. canonical runner va standalone leaf collectionni;
 3. yangi navbar leaf smoke'ini;
 4. kerak bo'lsa Forms runner va standalone A2Angular'ni
 
@@ -272,7 +277,7 @@ tekshir. Failure bo'lsa log, trace, screenshot va Allure artefaktlarini
 - [ ] Skip formalar registry orqali saqlangan.
 - [ ] Inventory registryga navbar qo'shilgan.
 - [ ] Leaf uch qadamli façade patternida.
-- [ ] Forms runnerda bitta yangi navbar wrapper bor.
+- [ ] Forms runner `NAVBAR_SUITES` ro'yxatida yangi navbar bor.
 - [ ] A2Angular Forms runnerga qo'shilmagan.
 - [ ] A2 formalar standalone A2Angular inventorysida ham saqlangan.
 - [ ] Docstring, knowledge-base va inventory sonlari sinxron.
@@ -288,5 +293,6 @@ tekshir. Failure bo'lsa log, trace, screenshot va Allure artefaktlarini
 | Bir xil canonical pathli turli user trace'larni o'chirish | Parent va `page_links` farq qilsa alohida case sifatida saqla |
 | Dostup yo'q formani inventorydan o'chirish | Umumiy skip registryga qo'sh |
 | Visible heading yo'q bo'lsa taxminiy `menu_column` yozish | `menu_column=None` ishlat |
+| Canonical runnerga navbar wrapper qo'shish | Navbarni `NAVBAR_SUITES`ga qo'sh; runner formalarni inventorydan parametr qiladi |
 | Leaf ichida monitor orchestrationini takrorlash | `run_legacy_form_monitoring(...)` façade'idan foydalan |
 | Execution authorityni reference'dan taxmin qilish | `run-smoke`ni yagona authority sifatida o'qi |

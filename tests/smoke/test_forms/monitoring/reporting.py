@@ -231,127 +231,256 @@ def build_form_result(
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def _failed_check_lines(result):
+def _hard_checks(result):
     checks = result.get("checks") or {}
-    hard_checks = result.get("hard_checks") or checks.get("hard_checks") or {}
+    return result.get("hard_checks") or checks.get("hard_checks") or {}
+
+
+def _check_summary_lines(result):
+    """Faqat real bajarilgan hard checklarni success/failure deb ko'rsatadi."""
+    hard_checks = _hard_checks(result)
     enabled = [name for name, item in hard_checks.items() if item.get("enabled")]
-    lines = [f"  Yoqilgan checklar   : {', '.join(enabled) or 'o‘chirilgan'}"]
+    stage = result.get("failed_stage") or ""
+
+    if result.get("status") == "OBSERVED_ONLY":
+        return ["  Tekshiruvlar       : O‘CHIRILGAN"]
+
+    if stage in {"navigation", "suite_precondition", "not_started"}:
+        blocked_reasons = {
+            "navigation": "navigatsiya tugamadi",
+            "suite_precondition": "testga tayyorlov tugamadi",
+            "not_started": "test boshlanmadi",
+        }
+        not_run = ", ".join(enabled) if enabled else "barcha hard checklar"
+        return [
+            "  Tekshiruvlar:",
+            "    Bajarildi         : yo‘q",
+            f"    Bajarilmadi       : {not_run} — {blocked_reasons[stage]}",
+        ]
+
+    executed = []
+    not_run = []
+    blocked_by = set()
     for name, item in hard_checks.items():
-        if not item.get("enabled") or item.get("passed") is not False:
+        if not item.get("enabled"):
             continue
-        actual = item.get("actual")
-        if isinstance(actual, list):
-            actual = "; ".join(str(value) for value in actual)
-        lines.append(
-            f"  Failed check        : {name} | "
-            f"{item.get('reason_code') or '—'} | "
-            f"actual={actual if actual not in (None, '') else '—'}"
-        )
-        if name == "loader":
-            lines.append(
-                f"  Loader timeout      : {item.get('timeout_ms') or '—'} ms | "
-                f"count={item.get('loader_count') or 0} | "
-                f"visible={item.get('visible_loaders') or []}"
-            )
-        if name == "application_error":
-            lines.append(
-                f"  Error kutish        : {item.get('timeout_ms') or '—'} ms | "
-                f"selector={item.get('matched_selector') or '—'} | "
-                f"matn={item.get('error_text') or '—'}"
-            )
-            cleanup_status = (
-                "BAJARILMADI"
-                if not item.get("modal_cleanup_attempted")
-                else (
-                    "MUVAFFAQIYATLI"
-                    if item.get("modal_cleanup_succeeded")
-                    else "MUVAFFAQIYATSIZ"
-                )
-            )
-            lines.append(
-                f"  Biruni cleanup      : {cleanup_status}"
-                + (
-                    f" | {item.get('modal_cleanup_error')}"
-                    if item.get("modal_cleanup_error")
-                    else ""
-                )
-            )
-        if name == "content_ready":
-            lines.append(
-                f"  Kontent kutish      : {item.get('timeout_ms') or '—'} ms | "
-                f"source={item.get('ready_source') or '—'}"
-            )
-            lines.append(
-                f"  Kutilgan kontent    : {item.get('expected_ready') or '—'} | "
-                f"topildi={item.get('matched_selector') or '—'}"
-            )
-            lines.append(
-                f"  Kontent kuzatuvi    : "
-                f"{item.get('content_observation') or '—'}"
-            )
-        if name == "title":
-            lines.append(
-                f"  Title kutish        : {item.get('timeout_ms') or '—'} ms | "
-                f"source={item.get('title_source') or '—'}"
-            )
-            lines.append(
-                f"  Kutilgan title      : {item.get('expected_title') or item.get('expected') or '—'}"
-            )
-            lines.append(
-                f"  Haqiqiy title       : {item.get('actual_title') or item.get('actual') or '—'} | "
-                f"candidates={item.get('title_candidates') or []}"
-            )
-    not_run_items = [
-        (name, item)
-        for name, item in hard_checks.items()
-        if item.get("enabled") and item.get("execution_status") == "NOT_RUN"
+        execution_status = item.get("execution_status")
+        if execution_status == "PASSED":
+            executed.append(f"{name} ✅")
+        elif execution_status == "FAILED":
+            executed.append(f"{name} ❌")
+        elif execution_status == "NOT_RUN":
+            not_run.append(name)
+            if item.get("blocked_by"):
+                blocked_by.add(item["blocked_by"])
+
+    not_run_text = ", ".join(not_run) or "yo‘q"
+    if not_run and blocked_by:
+        not_run_text += f" — bloklovchi gate: {', '.join(sorted(blocked_by))}"
+    return [
+        "  Tekshiruvlar:",
+        f"    Bajarildi         : {', '.join(executed) or 'yo‘q'}",
+        f"    Bajarilmadi       : {not_run_text}",
     ]
-    not_run = [name for name, _ in not_run_items]
-    if not_run:
-        blocked_by = sorted(
-            {
-                item.get("blocked_by")
-                for _, item in not_run_items
-                if item.get("blocked_by")
-            }
+
+
+def _append_diagnostic(lines, label, value, *, suffix=""):
+    if isinstance(value, list):
+        value = "; ".join(str(item) for item in value)
+    if value not in (None, "", [], {}):
+        lines.append(f"    {label:<18}: {value}{suffix}")
+
+
+def _failure_diagnostic_lines(result):
+    """Reason-code uchun faqat qaror chiqarishga yordam beradigan dalilni beradi."""
+    reason_code = result.get("reason_code") or ""
+    hard_checks = _hard_checks(result)
+    lines = []
+    if not reason_code:
+        return lines
+
+    if reason_code == "NAVIGATION_FAILED":
+        url_snapshot = (hard_checks.get("url") or {}).get("actual")
+        _append_diagnostic(
+            lines,
+            "Joriy sahifa URL",
+            url_snapshot or result.get("actual_url"),
         )
-        lines.append(
-            "  Bajarilmagan checklar: "
-            f"{', '.join(not_run)} | "
-            f"bloklovchi gate={', '.join(blocked_by) or '—'}"
+        _append_diagnostic(lines, "Joriy sahifa nomi", result.get("actual_title"))
+    elif reason_code == "EXPECTED_URL_NOT_REACHED":
+        url_check = hard_checks.get("url") or {}
+        _append_diagnostic(
+            lines,
+            "Haqiqiy URL",
+            url_check.get("actual") or result.get("actual_url"),
         )
+        _append_diagnostic(
+            lines,
+            "Kutish vaqti",
+            url_check.get("timeout_ms"),
+            suffix=" ms",
+        )
+        if url_check.get("direct_probe_executed"):
+            _append_diagnostic(
+                lines,
+                "Direct URL",
+                url_check.get("direct_actual_url"),
+            )
+            _append_diagnostic(
+                lines,
+                "Direct natija",
+                (
+                    "targetga yetdi"
+                    if url_check.get("direct_url_reached")
+                    else "targetga yetmadi"
+                ),
+            )
+            _append_diagnostic(
+                lines,
+                "Direct xulosa",
+                url_check.get("direct_summary"),
+            )
+            _append_diagnostic(lines, "Direct xato", url_check.get("direct_error"))
+    elif reason_code == "LOADER_NOT_FINISHED":
+        loader_check = hard_checks.get("loader") or {}
+        _append_diagnostic(lines, "Haqiqiy URL", result.get("actual_url"))
+        _append_diagnostic(lines, "Loaderlar", loader_check.get("visible_loaders"))
+        _append_diagnostic(lines, "Loader soni", loader_check.get("loader_count"))
+        _append_diagnostic(
+            lines,
+            "Kutish vaqti",
+            loader_check.get("timeout_ms"),
+            suffix=" ms",
+        )
+    elif reason_code == "APPLICATION_ERROR":
+        error_check = hard_checks.get("application_error") or {}
+        _append_diagnostic(lines, "Haqiqiy URL", result.get("actual_url"))
+        _append_diagnostic(
+            lines,
+            "UI xato matni",
+            error_check.get("error_text"),
+        )
+        _append_diagnostic(lines, "Selector", error_check.get("matched_selector"))
+        _append_diagnostic(
+            lines,
+            "Kutish vaqti",
+            error_check.get("timeout_ms"),
+            suffix=" ms",
+        )
+        if error_check.get("modal_cleanup_attempted"):
+            cleanup = (
+                "muvaffaqiyatli"
+                if error_check.get("modal_cleanup_succeeded")
+                else "muvaffaqiyatsiz"
+            )
+            _append_diagnostic(lines, "Biruni cleanup", cleanup)
+            _append_diagnostic(
+                lines,
+                "Cleanup xatosi",
+                error_check.get("modal_cleanup_error"),
+            )
+    elif reason_code == "CONTENT_NOT_READY":
+        content_check = hard_checks.get("content_ready") or {}
+        _append_diagnostic(lines, "Haqiqiy URL", result.get("actual_url"))
+        _append_diagnostic(
+            lines,
+            "Kutilgan kontent",
+            content_check.get("expected_ready"),
+        )
+        _append_diagnostic(
+            lines,
+            "Topilgan selector",
+            content_check.get("matched_selector"),
+        )
+        _append_diagnostic(
+            lines,
+            "Kontent source",
+            content_check.get("ready_source"),
+        )
+        _append_diagnostic(
+            lines,
+            "Kuzatuv",
+            content_check.get("content_observation"),
+        )
+        _append_diagnostic(
+            lines,
+            "Kutish vaqti",
+            content_check.get("timeout_ms"),
+            suffix=" ms",
+        )
+    elif reason_code == "TITLE_NOT_REACHED":
+        title_check = hard_checks.get("title") or {}
+        _append_diagnostic(lines, "Haqiqiy URL", result.get("actual_url"))
+        _append_diagnostic(
+            lines,
+            "Kutilgan title",
+            title_check.get("expected_title") or title_check.get("expected"),
+        )
+        _append_diagnostic(
+            lines,
+            "Haqiqiy title",
+            title_check.get("actual_title") or title_check.get("actual"),
+        )
+        _append_diagnostic(lines, "Title source", title_check.get("title_source"))
+        _append_diagnostic(lines, "Candidates", title_check.get("title_candidates"))
+        _append_diagnostic(
+            lines,
+            "Kutish vaqti",
+            title_check.get("timeout_ms"),
+            suffix=" ms",
+        )
+    elif result.get("actual_url"):
+        _append_diagnostic(lines, "Joriy sahifa URL", result.get("actual_url"))
+        _append_diagnostic(lines, "Joriy sahifa nomi", result.get("actual_title"))
+
     return lines
 
 
-def _url_diagnostic_lines(result):
-    hard_checks = result.get("hard_checks") or {}
-    url_check = hard_checks.get("url") or {}
-    if url_check.get("reason_code") != "EXPECTED_URL_NOT_REACHED":
-        return []
+def _failure_stage_label(result):
+    reason_stages = {
+        "EXPECTED_URL_NOT_REACHED": "URL tekshiruvi",
+        "LOADER_NOT_FINISHED": "Loader tekshiruvi",
+        "APPLICATION_ERROR": "Application error tekshiruvi",
+        "CONTENT_NOT_READY": "Kontent tayyorligi tekshiruvi",
+        "TITLE_NOT_REACHED": "Title tekshiruvi",
+        "CONTENT_VALIDATION_FAILED": "Forma validatsiyasi",
+    }
+    reason_code = result.get("reason_code") or ""
+    if reason_code in reason_stages:
+        return reason_stages[reason_code]
 
-    if not url_check.get("direct_probe_enabled"):
-        direct_status = "O‘CHIRILGAN"
-    elif url_check.get("direct_probe_executed"):
-        direct_status = "BAJARILDI"
-    else:
-        direct_status = "BAJARILMADI"
-    lines = [
-        f"  URL kutish vaqti   : {url_check.get('timeout_ms') or '—'} ms",
-        f"  Direct URL probe   : {direct_status}",
-    ]
-    if url_check.get("direct_probe_executed"):
-        lines.extend(
-            [
-                f"  Direct kutilgan URL: {url_check.get('direct_expected_url') or '—'}",
-                f"  Direct haqiqiy URL : {url_check.get('direct_actual_url') or '—'}",
-                "  Direct URLga yetdimi: "
-                f"{'HA' if url_check.get('direct_url_reached') else 'YOQ'}",
-                f"  Direct xulosa      : {url_check.get('direct_summary') or '—'}",
-            ]
+    stage_labels = {
+        "navigation": "Navigatsiya (menu/action/page-link)",
+        "validation": "Forma ochilganini tekshirish",
+        "suite_precondition": "Testga tayyorlov (login/filial/shell)",
+        "not_started": "Tekshiruv boshlanmagan",
+    }
+    stage = result.get("failed_stage") or ""
+    return stage_labels.get(stage, stage or "—")
+
+
+def _failure_reason_text(result):
+    """Hard-check detailini diagnostika bilan takrorlamaydigan sababni tanlaydi."""
+    diagnostic_reason_codes = {
+        "EXPECTED_URL_NOT_REACHED",
+        "LOADER_NOT_FINISHED",
+        "APPLICATION_ERROR",
+        "CONTENT_NOT_READY",
+        "TITLE_NOT_REACHED",
+    }
+    reason_code = result.get("reason_code") or ""
+    if reason_code in diagnostic_reason_codes:
+        return (
+            result.get("reason_summary")
+            or result.get("detail")
+            or reason_code
         )
-        if url_check.get("direct_error"):
-            lines.append(f"  Direct xato        : {url_check['direct_error']}")
-    return lines
+    return (
+        result.get("detail")
+        or result.get("reason_summary")
+        or reason_code
+        or "—"
+    )
 
 
 def _actionable_diagnostic_lines(result):
@@ -367,12 +496,12 @@ def _actionable_diagnostic_lines(result):
         elif count:
             actionable.append(f"{name}={count}")
     return [
-        "  Diagnostika signali: " + ", ".join(actionable)
+        f"    Qo‘shimcha signal : {', '.join(actionable)}"
     ] if actionable else []
 
 
 def format_form_result(result):
-    """Bitta forma natijasini user o'qiydigan ko'p qatorli matnga aylantiradi."""
+    """Bitta forma natijasini umumiy, shartli diagnostikali matnga aylantiradi."""
     status_code = result["status"]
     status_labels = {
         "PASSED": "✅ OCHILDI",
@@ -383,32 +512,16 @@ def format_form_result(result):
         "NOT_CHECKED": "⬜ TEKSHIRILMADI",
     }
     status = status_labels.get(status_code, f"❓ {status_code}")
-    stage_labels = {
-        "navigation": "Navigatsiya (menu/action/page-link)",
-        "validation": "Forma ochilganini tekshirish",
-        "suite_precondition": "Testga tayyorlov (login/filial/shell)",
-        "not_started": "Tekshiruv boshlanmagan",
-    }
-    menu = result["menu_column"] or "— (ustunsiz menu)"
-    links = " → ".join(result["page_links"]) or "—"
-    action = result["action"] or "—"
-    add_icon = "HA" if result.get("add_icon") else "YOQ"
     lines = [
         f"[FORMA {result['number']:03d}] {status}",
+        "",
+        f"  Forma              : {result['title']}",
         f"  Filial             : {result['filial']}",
-        f"  Tab                : {result['navbar_tab']}",
-        f"  Menu               : {menu}",
-        f"  Menyu formasi      : {result['menu_item']}",
-        f"  Tekshirilgan forma : {result['title']}",
-        f"  Label              : {result.get('label') or '—'}",
-        f"  Test identifikatori: {result.get('test_identity') or '—'}",
-        f"  Action             : {action}",
-        f"  +add ikonka-link   : {add_icon}",
-        f"  Page linklar       : {links}",
-        f"  To'liq yo'l        : {result['track']}",
-        f"  Kutilgan URL       : {result['expected_path']}",
-        f"  Haqiqiy URL        : {result['actual_url'] or '—'}",
+        f"  Yo‘l               : {result['track']}",
     ]
+    if result.get("expected_path") not in (None, "", "—"):
+        lines.append(f"  Kutilgan URL       : {result['expected_path']}")
+
     if status_code == "OBSERVED_ONLY":
         checks = result.get("checks") or {}
         enabled_diagnostics = (
@@ -418,50 +531,51 @@ def format_form_result(result):
         )
         lines.extend(
             [
-                "  Holat              : OBSERVED_ONLY",
+                "",
                 "  Izoh               : Navigatsiya bajarildi, hard checklar ishlamadi",
-                "  Diagnostikalar     : "
-                f"{', '.join(enabled_diagnostics) or 'o‘chirilgan'}",
             ]
         )
+        if enabled_diagnostics:
+            lines.append(f"  Diagnostikalar     : {', '.join(enabled_diagnostics)}")
     elif status_code != "PASSED":
         lines.extend(
             [
-                f"  Holat              : {status_code}",
+                "",
+                f"  Xato bosqichi      : {_failure_stage_label(result)}",
                 f"  Xato turi          : {result.get('reason_code') or '—'}",
-                f"  Xato sababi        : {result.get('reason_summary') or '—'}",
-                "  Xato bosqichi      : "
-                f"{stage_labels.get(result.get('failed_stage'), result.get('failed_stage') or '—')}",
-                f"  Test boshlandimi   : {'HA' if result.get('test_started') else 'YOQ'}",
-                f"  Target URLga yetdimi: {'HA' if result.get('page_reached') else 'YOQ'}",
-                f"  Tekshiruv tugadimi : {'HA' if result.get('test_completed') else 'YOQ'}",
-                f"  Validatsiya bajarildimi: {'HA' if result.get('validation_completed') else 'YOQ'}",
-                f"  Validatsiyadan o'tdimi: {'HA' if result.get('validation_passed') else 'YOQ'}",
-                f"  Foydalanishga tayyormi: {'HA' if result.get('usable') else 'YOQ'}",
-                f"  Kutilgan sahifa nomi: {result.get('expected_title') or result['title']}",
-                f"  Haqiqiy sahifa nomi: {result.get('actual_title') or '—'}",
+                f"  Sabab              : {_failure_reason_text(result)}",
             ]
         )
-        lines.extend(_failed_check_lines(result))
-        lines.extend(_url_diagnostic_lines(result))
-        lines.extend(_actionable_diagnostic_lines(result))
+
+    lines.append("")
+    lines.extend(_check_summary_lines(result))
+
+    diagnostic_lines = _failure_diagnostic_lines(result)
+    diagnostic_lines.extend(_actionable_diagnostic_lines(result))
+    if diagnostic_lines:
+        lines.extend(["", "  Diagnostika:"])
+        lines.extend(diagnostic_lines)
+
+    if status_code not in {"PASSED", "OBSERVED_ONLY"}:
+        evidence_lines = []
         if result.get("screenshot"):
-            lines.append(f"  Screenshot         : {result['screenshot']}")
+            evidence_lines.append(f"  Screenshot         : {result['screenshot']}")
         elif result.get("screenshot_error"):
-            lines.append(
+            evidence_lines.append(
                 f"  Screenshot         : olinmadi ({result['screenshot_error']})"
             )
         if result.get("direct_screenshot"):
-            lines.append(f"  Direct screenshot  : {result['direct_screenshot']}")
+            evidence_lines.append(f"  Direct screenshot  : {result['direct_screenshot']}")
         elif result.get("direct_screenshot_error"):
-            lines.append(
+            evidence_lines.append(
                 "  Direct screenshot  : "
                 f"olinmadi ({result['direct_screenshot_error']})"
             )
-        if result.get("duration_ms") is not None:
-            lines.append(f"  Bosqich davomiyligi: {result['duration_ms']} ms")
-    if result["detail"]:
-        lines.append(f"  Xato               : {result['detail']}")
+        if evidence_lines:
+            lines.append("")
+            lines.extend(evidence_lines)
+    if result.get("duration_ms") is not None:
+        lines.append(f"  Davomiyligi        : {result['duration_ms']} ms")
     return "\n".join(lines)
 
 

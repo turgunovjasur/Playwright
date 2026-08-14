@@ -230,7 +230,7 @@ ishlatiladi.
 | `setup-group-0` | Setup, keyin Group-0 runnerni bitta sessiyada ishlatadi. |
 | `setup-report` | Lokal target: Setup, keyin Report runner ishlaydi. |
 | `setup-a2-admin` | Lokal compatibility target: Setup, keyin standalone `test_a2_angular_forms.py` ishlaydi. |
-| `setup-forms` | CI/bot targeti: Setup, keyin barcha form-opening testlar ishlaydi. |
+| `setup-forms` | Lokal compatibility target: Setup, keyin barcha form-opening testlar ishlaydi. |
 | `company` | Faqat yangi company yaratish testi ishlaydi. |
 | `groups` | Setupni ishlatmasdan Group-0 va Report runnerlarni ishlatadi. |
 | `group-0` | Faqat Group-0 ishlaydi. |
@@ -376,7 +376,7 @@ Default target `all`, ya'ni full suite.
 | `setup-group-0` | `python scripts/run_tests.py setup-group-0 --url <url> --company-code <code> --company-password <pass>` | User setup + Group-0 |
 | `setup-report` | `python scripts/run_tests.py setup-report --url <url> --company-code <code> --company-password <pass>` | User setup + Report group; lokal target |
 | `setup-a2-admin` | `python scripts/run_tests.py setup-a2-admin --url <url> --company-code <code> --company-password <pass>` | User setup + standalone A2Angular; lokal compatibility target |
-| `setup-forms` | `python scripts/run_tests.py setup-forms --url <url> --company-code <code> --company-password <pass>` | User setup + barcha form-opening testlar; CI/bot shu targetni ishlatadi |
+| `setup-forms` | `python scripts/run_tests.py setup-forms --url <url> --company-code <code> --company-password <pass>` | User setup + barcha form-opening testlar; lokal compatibility target |
 | `company` | `python scripts/run_tests.py company --url <url> --create-company --head-email <email> --head-password <pass>` | Faqat company yaratish testi |
 | `groups` | `python scripts/run_tests.py groups --url <url> --company-code <code> --company-password <pass>` | Setupdan tashqari Group-0 + Report |
 | `group-0` | `python scripts/run_tests.py group-0 --url <url> --company-code <code> --company-password <pass>` | Faqat Group-0 |
@@ -387,8 +387,10 @@ Default target `all`, ya'ni full suite.
 targetlari bilan ishlatiladi. `groups`, `forms` va alohida group targetlari
 uchun avval mavjud company va setup data kerak.
 
-CI/Telegram botdagi `setup-forms` targeti `CREATE_COMPANY=0` bilan ishlaydi:
-serverga mos company code/password GitHub Secrets'dan olinadi.
+CI va Telegram bot Smoke uchun `setup-group-0`, Forms uchun `forms` targetini
+alohida `CREATE_COMPANY=0` run sifatida ishlatadi; serverga mos company
+code/password GitHub Secrets'dan olinadi. GitHub cron har soatda avval Online
+Smoke'ni, keyin natijasidan qat'i nazar Online Forms'ni ishga tushiradi.
 
 Code tanlovi `.env` dagi yagona `NEW_CODE` flagi bilan boshqariladi: `NEW_CODE=1` yangi 6 xonali code yaratadi, `NEW_CODE=0` esa `test-results/data/data_store.json` dagi mavjud code ni ishlatadi.
 

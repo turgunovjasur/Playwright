@@ -209,6 +209,8 @@ __marimo__/
 # Test run outputs
 test-results/
 daily-smoke-test-results*
+smoke-test-results*
+forms-test-results*
 playwright-report/
 allure-results/
 allure-report/
