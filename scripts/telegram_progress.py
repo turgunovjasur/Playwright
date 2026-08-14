@@ -20,6 +20,8 @@ SYSTEM_SUMMARY_JSON = ROOT / "test-results" / "system-summary.json"
 AI_SUMMARY_JSON = ROOT / "test-results" / "ai-summary.json"
 EVENT_PREFIX = "SMARTUP_PROGRESS "
 MAX_MESSAGE_LENGTH = 3900
+FORM_RECENT_LIMIT = 5
+OPERATIONAL_FILIAL_PLACEHOLDER = "<operatsion filial>"
 
 TASHKENT_TZ = timezone(timedelta(hours=5))
 TARGET_LABELS = {
@@ -194,6 +196,85 @@ def grouped_result_lines(state):
     return lines
 
 
+def _form_context(item):
+    context = item.get("form") if isinstance(item, dict) else None
+    return context if isinstance(context, dict) else {}
+
+
+def _form_context_display(context):
+    try:
+        number = f"{int(context.get('number') or 0):03d}"
+    except (TypeError, ValueError):
+        number = "—"
+    path = " → ".join(
+        str(value).strip()
+        for value in (
+            context.get("navbar"),
+            context.get("menu"),
+            context.get("title"),
+        )
+        if str(value or "").strip()
+    )
+    return f"{number} | {path or 'Noma’lum forma'}"
+
+
+def _form_filial_label(context):
+    filial = str(context.get("filial") or "").strip()
+    if filial == OPERATIONAL_FILIAL_PLACEHOLDER:
+        return "Operatsion filial"
+    return filial
+
+
+def _forms_results(state):
+    return [
+        item
+        for item in state.get("results", [])
+        if isinstance(item, dict) and _form_context(item)
+    ]
+
+
+def _forms_total(state, results):
+    totals = [_metric_count(state, "current_form_total")]
+    totals.extend(_metric_count(item, "form_total") for item in results)
+    return max(totals, default=0)
+
+
+def forms_progress_lines(state, *, include_current=True):
+    """Forms run uchun limit-safe hisoblar, current va recent natijalarni yasaydi."""
+    results = _forms_results(state)
+    current = state.get("current_form")
+    current = current if isinstance(current, dict) else {}
+    if not results and not current:
+        return []
+
+    total = _forms_total(state, results)
+    statuses = [str(item.get("status") or "").upper() for item in results]
+    completed = len(results)
+    lines = [
+        "",
+        f"📊 Progress: {completed}/{total or completed}",
+        (
+            f"✅ Passed: {statuses.count('PASSED')} · "
+            f"❌ Failed: {statuses.count('FAILED')} · "
+            f"⏭ Skipped: {statuses.count('SKIPPED')}"
+        ),
+    ]
+
+    if include_current and current:
+        lines.extend(["", "⏳ Hozir tekshirilmoqda:", _form_context_display(current)])
+        filial = _form_filial_label(current)
+        if filial:
+            lines.append(f"Filial: {filial}")
+
+    recent = results[-FORM_RECENT_LIMIT:]
+    if recent:
+        lines.extend(["", "Oxirgi natijalar:"])
+        for item in recent:
+            mark = STATUS_MARK.get(str(item.get("status") or "").upper(), "•")
+            lines.append(f"{mark} {_form_context_display(_form_context(item))}")
+    return lines
+
+
 def failed_block(state):
     failed = first_failed_result(state)
     if not failed:
@@ -208,6 +289,7 @@ def failed_block(state):
 
     error_message = first_message_line(failed.get("message"))
 
+    failed_form = _form_context(failed)
     form_issues = failed.get("form_issues")
     if isinstance(form_issues, list) and form_issues:
         status_labels = {
@@ -220,14 +302,37 @@ def failed_block(state):
         for index, issue in enumerate(form_issues, start=1):
             if not isinstance(issue, dict):
                 continue
+            issue_number = (
+                failed_form.get("number")
+                if len(form_issues) == 1 and failed_form
+                else issue.get("number")
+            )
             try:
-                number = f"{int(issue.get('number')):03d}"
+                number = f"{int(issue_number):03d}"
             except (TypeError, ValueError):
-                number = str(issue.get("number") or "—")
-            title = str(issue.get("title") or "unknown").strip()
+                number = str(issue_number or "—")
+            title = str(
+                failed_form.get("title")
+                or issue.get("title")
+                or "unknown"
+            ).strip()
             status = str(issue.get("status") or "").upper()
             status_text = status_labels.get(status, status or "xato")
             lines.append(f"{index}. {number} - {title} — {status_text}")
+            context_pairs = [
+                ("Navbar", failed_form.get("navbar")),
+                ("Menu", failed_form.get("menu")),
+                ("Filial", _form_filial_label(failed_form)),
+                (
+                    "Kutilgan URL",
+                    issue.get("expected_url") or failed_form.get("expected_url"),
+                ),
+                ("Haqiqiy URL", issue.get("actual_url")),
+            ]
+            for label, value in context_pairs:
+                text = str(value or "").strip()
+                if text:
+                    lines.append(f"   {label}: {text}")
             reason = str(issue.get("reason") or issue.get("reason_code") or "").strip()
             detail = first_message_line(issue.get("detail"))
             if reason:
@@ -256,6 +361,11 @@ def failed_block(state):
         technical.append(target)
 
     pairs = [
+        ("Forma", _form_context_display(failed_form) if failed_form else ""),
+        ("Navbar", failed_form.get("navbar")),
+        ("Menu", failed_form.get("menu")),
+        ("Filial", _form_filial_label(failed_form)),
+        ("Kutilgan URL", failed_form.get("expected_url")),
         ("Test", test_context),
         ("Allure step", step),
         ("Sahifa", failed.get("before_page")),
@@ -406,9 +516,11 @@ def render_message(state):
 
     expandable = []
     if not finished:
-        lines.extend(grouped_result_lines(state))
+        forms_lines = forms_progress_lines(state)
+        lines.extend(forms_lines or grouped_result_lines(state))
     elif str(state.get("result") or "").upper() == "FAILED":
-        expandable.extend(grouped_result_lines(state))
+        forms_lines = forms_progress_lines(state, include_current=False)
+        expandable.extend(forms_lines or grouped_result_lines(state))
         expandable.extend(failed_block(state))
 
     footer = []
@@ -498,8 +610,6 @@ def update_from_event(state, event):
     display = str(event.get("display") or event.get("title") or event.get("test_id") or "unknown")
     if event_name == "form_result":
         state["status"] = "Forms running"
-        state["current"] = display
-        state["current_group"] = str(event.get("group") or "Forms group")
         state["form_progress"] = {
             "suite": str(event.get("title") or ""),
             "number": _metric_count(event, "form_number"),
@@ -509,7 +619,13 @@ def update_from_event(state, event):
         }
         return
     if event_name == "started":
-        state["status"] = "Tests running"
+        form = event.get("form")
+        if isinstance(form, dict) and form:
+            state["status"] = "Forms running"
+            state["current_form"] = dict(form)
+            state["current_form_total"] = _metric_count(event, "form_total")
+        else:
+            state["status"] = "Tests running"
         state["current"] = display
         state["current_group"] = str(event.get("group") or "")
         return
@@ -533,8 +649,16 @@ def update_from_event(state, event):
         "error_type": event.get("error_type") or "",
         "message": event.get("message") or "",
     }
+    form = event.get("form")
+    if isinstance(form, dict) and form:
+        result["form"] = dict(form)
+        result["form_total"] = _metric_count(event, "form_total")
     state.setdefault("results", []).append(result)
-    if event_name in {"passed", "skipped"}:
+    if isinstance(form, dict) and form:
+        state["current"] = ""
+        state["current_group"] = ""
+        state["current_form"] = {}
+    elif event_name in {"passed", "skipped"}:
         state["current"] = ""
         state["current_group"] = ""
     else:

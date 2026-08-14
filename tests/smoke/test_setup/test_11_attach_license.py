@@ -18,9 +18,9 @@ def run_attach_license(page, code, logger):
     5. natural_person-pw{code} foydalanuvchisini topib ulash.
     6. Oynani yopib, biriktirilgan foydalanuvchilar sahifasiga qaytish.
 
-    DISABLE_LICENSE_POLICY yoqilgan bo'lsa flow o'tkazib yuboriladi. `run_` Лицензии
-    sahifasidagi login qilingan page qabul qiladi: setup zanjirida run_buy_license shu
-    holatni qoldiradi, standalone wrapper esa preconditionni o'zi tayyorlaydi.
+    DISABLE_LICENSE_POLICY yoqilgan bo'lsa flow o'tkazib yuboriladi. `run_` login
+    qilingan page qabul qiladi va Лицензии sahifasiga o'zi navigatsiya qiladi;
+    standalone wrapper admin login preconditionini tayyorlaydi.
     """
     if skip_license_flow_if_needed(logger, "Litsenziyani foydalanuvchiga ulash"):
         return

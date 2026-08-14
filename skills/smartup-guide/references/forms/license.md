@@ -14,8 +14,9 @@ Source: user; `test-results/allure-results/d9911418-1c48-4e7f-ab31-e5b6ec17f96a-
   legacy Biruni/AngularJS komponentlarini ishlatadi.
 - Yuqori linklar: `Баланс`, `Лицензии и документы`, `Покупка`,
   `Как продлить лицензии`.
-- `smartup.online` hostida Buy va Attach pytest skip qilinadi. `app3.../xtrade`
-  hostida unconditional skip yo'q va ikkala flow ishlaydi.
+- `smartup.online` hostida faqat Buy pytest skip qilinadi; Attach server sabab
+  skip qilinmaydi va ishlashda davom etadi. `app3.../xtrade` hostida Buy uchun
+  unconditional skip yo'q.
 - `CREATE_COMPANY=1` + `DISABLE_LICENSE_POLICY=1` bo'lsa ikkala flow policy
   sabab real UI'ga kirmasdan no-op bo'ladi.
 
@@ -64,9 +65,10 @@ Source: `tests/smoke/test_setup/test_10_buy_license.py`; `tests/smoke/test_setup
   mavjud va balance shu payerga mos yangilanadi.
 - `Smartup ERP: Базовый пользователь (Обязательный)` ko'rinsa default `5`
   olinadi; bo'lmasa oddiy `Smartup ERP: Базовый пользователь` quantity `1`.
-- Attach Buy'dan keyin yuradi: `ERP users → Прикрепить пользователей`; eski
-  attached userlar tozalanadi, `Доступные`dan `natural_person-pw{code}` topilib
-  biriktiriladi.
+- Attach `ERP users → Прикрепить пользователей` orqali ishlaydi; eski attached
+  userlar tozalanadi, `Доступные`dan `natural_person-pw{code}` topilib
+  biriktiriladi. Smartup.online'da Buy skip bo'lgani uchun mavjud `ERP users`
+  license hujjati precondition hisoblanadi.
 
 ## Known Issues
 
@@ -78,5 +80,6 @@ Source: `test-results/allure-results/d9911418-1c48-4e7f-ab31-e5b6ec17f96a-result
 - `10 - Buy License`ni `AngularBasePage`ga migratsiya qilish noto'g'ri bo'lgan:
   real route `/#/!<session>/biruni/kl/license_list` bo'lib, `/a2/...` assertioni
   30 sekunddan keyin yiqilgan. Buy va Attach legacy `BasePage`da qoladi.
-- `smartup.online` skip server guard orqali qilinadi; xtrade'da Buy va Attach
-  bajariladi. Attach uchun Buy precondition majburiy.
+- `smartup.online` server guard faqat Buy'ni skip qiladi; Attach server sabab
+  skip qilinmaydi. Xtrade'da Buy va Attach bajariladi. Attach uchun mavjud
+  `ERP users` license hujjati precondition hisoblanadi.

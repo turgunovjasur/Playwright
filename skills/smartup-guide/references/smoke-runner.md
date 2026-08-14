@@ -316,11 +316,12 @@ Tags: license, admin, balance
 ### 11 Attach License
 Tags: license, user
 - Fayl: `tests/smoke/test_setup/test_11_attach_license.py`.
-- Server sharti Buy bilan bir xil: `smartup.online`da skip,
-  `app3.../xtrade`da ishlaydi.
+- `smartup.online`da server sabab skip qilinmaydi va flow ishlashda davom
+  etadi; `app3.../xtrade`da ham ishlaydi.
 - `--disable-license-policy` bo'lsa bu qadam real attach flowga kirmaydi va Allure/logga skip sababini yozib davom etadi.
-- Precondition: oldingi Buy item `ERP users` license hujjatini yaratgan bo'lishi
-  kerak; Attach alohida upstream purchase'siz ishlamaydi.
+- Precondition: `ERP users` license hujjati mavjud bo'lishi kerak. Xtrade'da
+  uni oldingi Buy item yaratishi mumkin; Smartup.online'da Buy skip bo'lgani
+  uchun Attach serverdagi mavjud hujjatdan foydalanadi.
 - Nima qiladi: A2 `Лицензии и документы` ichida `ERP users` license ochiladi,
   mavjud attached users bo'lsa ajratiladi, `natural_person-pw{code}` userga
   ulanadi.

@@ -26,22 +26,30 @@ def attach_license_policy_skip_note(logger, step_name):
     logger.info(message)
 
 
-def license_server_unsupported():
+def license_purchase_server_unsupported():
     """License purchase ishlamaydigan smartup.online serverini aniqlaydi."""
     hostname = (urlparse(company_url()).hostname or "").lower()
     return hostname == "smartup.online" or hostname.endswith(".smartup.online")
 
 
 def skip_license_flow_if_needed(logger, step_name):
-    """Policy o'chirilgan yoki server unsupported bo'lsa license flowdan chiqadi."""
+    """Policy o'chirilgan bo'lsa license flowdan chiqadi."""
     if license_policy_disabled():
         attach_license_policy_skip_note(logger, step_name)
         return True
 
-    if license_server_unsupported():
+    return False
+
+
+def skip_license_purchase_if_needed(logger, step_name):
+    """Policy o'chirilgan yoki server purchase'ni qo'llamasa Buy flowdan chiqadi."""
+    if skip_license_flow_if_needed(logger, step_name):
+        return True
+
+    if license_purchase_server_unsupported():
         message = (
             f"{step_name} o'tkazib yuborildi: smartup.online serverida "
-            "license purchase/attach flow ishlamaydi."
+            "license purchase flow ishlamaydi."
         )
         allure.attach(
             message,

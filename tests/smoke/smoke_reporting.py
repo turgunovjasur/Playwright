@@ -6,6 +6,7 @@ import shutil
 import socket
 import subprocess
 import sys
+from collections.abc import Mapping
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -209,6 +210,64 @@ def is_user_setup(item):
     return item.get_closest_marker("user_setup") is not None
 
 
+def _form_case_from_item(item):
+    """Parametrized Forms itemidagi structured case metadata'ni qaytaradi."""
+    callspec = getattr(item, "callspec", None)
+    params = getattr(callspec, "params", None)
+    if not isinstance(params, Mapping):
+        return None
+    form_case = params.get("form_case")
+    return form_case if isinstance(form_case, Mapping) else None
+
+
+def _form_progress_context(item):
+    """Telegram progress uchun user-readable forma kontekstini normalize qiladi."""
+    form_case = _form_case_from_item(item)
+    if form_case is None:
+        return None
+
+    try:
+        number = int(form_case.get("global_number"))
+    except (TypeError, ValueError):
+        number = 0
+
+    return {
+        "number": number,
+        "navbar": str(form_case.get("navbar_tab") or "").strip(),
+        "menu": str(form_case.get("menu_column") or "").strip(),
+        "title": str(
+            form_case.get("label")
+            or form_case.get("title")
+            or form_case.get("menu_item")
+            or item.name
+        ).strip(),
+        "filial": str(form_case.get("filial") or "").strip(),
+        "expected_url": str(form_case.get("expected_path") or "").strip(),
+    }
+
+
+def _form_progress_display(context):
+    """Forma raqami va UI yo'lidan Telegramda ko'rinadigan nom yasaydi."""
+    path = " → ".join(
+        value
+        for value in (
+            context.get("navbar"),
+            context.get("menu"),
+            context.get("title"),
+        )
+        if value
+    )
+    number = int(context.get("number") or 0)
+    return f"{number:03d} | {path or 'Noma’lum forma'}"
+
+
+def _form_progress_total(item):
+    """Joriy pytest collectiondagi parametrized Forms itemlar sonini qaytaradi."""
+    session = getattr(item, "session", None)
+    items = getattr(session, "items", ())
+    return sum(_form_case_from_item(candidate) is not None for candidate in items)
+
+
 def _progress_metadata(item):
     """Progress event uchun test groupi, runneri va ko'rinadigan nomini yig'adi."""
     if is_user_setup(item):
@@ -219,16 +278,26 @@ def _progress_metadata(item):
             return None
         group = f"{group_name} group"
 
-    title = (
+    allure_title = (
         getattr(getattr(item, "obj", None), "__allure_display_name__", None)
         or item.name
     )
-    return {
+    metadata = {
         "group": group,
         "runner": Path(str(item.path)).name,
         "test_id": item.name,
-        "title": title,
+        "title": allure_title,
     }
+    form_context = _form_progress_context(item)
+    if form_context is not None:
+        display = _form_progress_display(form_context)
+        metadata.update(
+            title=display,
+            display=display,
+            form=form_context,
+            form_total=_form_progress_total(item),
+        )
+    return metadata
 
 
 def start_progress(item):

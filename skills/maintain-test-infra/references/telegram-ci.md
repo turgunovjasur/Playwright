@@ -49,6 +49,18 @@ Source: `scripts/telegram_ci_bot.py`; `.github/workflows/daily-smoke.yml`;
 - Canonical Forms runnerda har bir forma alohida pytest/Allure item bo'ladi;
   analyzer parametr IDidagi navbarni tanib, barcha beshta navbar coverage'ini
   umumiy `Forms: muvaffaqiyatli/jami` metrikasiga qo'shadi.
+- Forms live progress barcha itemlarni Telegramning bitta xabariga yig'maydi.
+  Limit-safe dashboard `completed/total`, passed/failed/skipped hisoblari,
+  `global number | navbar → menu → forma` ko'rinishidagi joriy forma va oxirgi
+  beshta natijani ko'rsatadi. Operatsion filial placeholderi userga
+  `Operatsion filial` deb chiqariladi.
+- Forms pytest itemining Telegram display nomi Allure decoratoridagi unresolved
+  `{form_case[...]}` shablonidan olinmaydi; pytest `callspec`dagi structured
+  `form_case` metadata'sidan resolve qilinadi. Bu Allure title, pytest ID va
+  historyni o'zgartirmaydi.
+- Failed final xabarda mavjud structured monitor/system-summary dalillari bilan
+  forma raqami va nomi, navbar, menu, filial, expected/actual URL hamda sabab
+  ko'rsatiladi. Passed formaning to'liq texnik metadata'si Allure'da qoladi.
 - Final xabarda credential emas, faqat data-store'dagi parametrik run `code`
   ko'rsatilishi mumkin.
 - Failure tafsiloti log va Allure'dagi faktlardan tuziladi: group, runner test,
