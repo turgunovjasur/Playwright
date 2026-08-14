@@ -8,7 +8,10 @@ fayldagi ma'lumotni current truth sifatida ishlatmasin.
 
 - [Entry formati](#entry-formati)
 - [Superseded runner scope](#superseded-runner-scope)
+- [Removed Forms Monitor checklari](#removed-forms-monitor-checklari)
+- [Superseded Forms Monitor title modeli](#superseded-forms-monitor-title-modeli)
 - [Removed runner va test entrypointlari](#removed-runner-va-test-entrypointlari)
+- [Removed legacy Scenario 1 catalog](#removed-legacy-scenario-1-catalog)
 - [Removed session recovery helper](#removed-session-recovery-helper)
 - [Removed BasePage helperlari](#removed-basepage-helperlari)
 - [Superseded locator qoidalari](#superseded-locator-qoidalari)
@@ -44,7 +47,7 @@ Replaced by: `scripts/run_tests.py` target modeli va
 Status: superseded
 Observed: 2026-08-04
 Superseded: 2026-08-04
-Source: user; `tests/smoke/test_forms/test_03_prodaja_menu_forms.py`
+Source: user; `tests/smoke/test_forms/test_02_prodaja_menu_forms.py`
 Replaced by:
 `skills/smartup-guide/references/legacy-form-navigation.md#продажа-page-link-va-add-inventari-2026-08-04-live`
 - Old behavior: Forms-03 rejasiga uchta `+add` ikonka-link case
@@ -53,6 +56,104 @@ Replaced by:
   berilgan edi.
 - Current behavior: foydalanuvchi qaroriga ko'ra `+add` tekshiruvi olib
   tashlandi; Forms-03 faqat 26 direct + 12 page-link = 38 navigation tekshiradi.
+
+### Leaf-owned legacy forma inventorylari
+Status: superseded
+Observed: 2026-08-07
+Superseded: 2026-08-10
+Source: user; eski `tests/smoke/test_forms/test_01_spravochniki_menu_forms.py` va
+`tests/smoke/test_forms/test_02_prodaja_menu_forms.py` strukturasi
+Replaced by: `tests/smoke/test_forms/inventory/` va
+`skills/write-test/references/project-rules.md` → `Form-opening smoke suite arxitekturasi`
+- Old behavior: har oddiy legacy leaf test barcha literal forma definitionlarini
+  o'z faylida saqlar, shu sabab execution va katta ro'yxatlar aralashib ketardi.
+- Current behavior: legacy forma definitionlari navbar modullariga bo'lingan
+  markaziy inventory package'ida turadi; leaf faqat o'z `NAVBAR_TAB`i bilan
+  query qiladi. A2Angular migratsiya testi alohida cross-navbar inventory bo'lib
+  qoladi.
+
+### Leaf-owned legacy Forms orchestrationi
+Status: superseded
+Observed: 2026-08-07
+Superseded: 2026-08-10
+Source: user; eski `run_spravochniki_forms` va `run_prodaja_forms` strukturasi
+Replaced by: `tests/smoke/test_forms/monitoring/suite_runner.py::run_legacy_form_monitoring`
+va `skills/write-test/references/project-rules.md` → `Form-opening smoke suite arxitekturasi`
+- Old behavior: har legacy leaf login/filial negative handling, menu/section
+  loopi, skip attach va `monitor.finish()`ni o'zida takrorlardi.
+- Current behavior: leaf `run_legal_person` kabi admin login, inventory va
+  monitoringni raqamlangan uchta ochiq qadamda bajaradi; umumiy filial/menu,
+  skip va monitor lifecycle'i bitta façade'da turadi. A2Angular o'zgarmagan.
+
+## Removed Legacy Scenario 1 Catalog
+
+### Eski `tests/ui` 84-case katalogi
+
+Status: superseded
+Observed: 2026-02
+Superseded: 2026-08-14
+Source: removed `docs/developer_testcases_scenario1.md`; eski `tests/ui/`
+Replaced by: joriy `tests/smoke/test_setup/`, `tests/smoke/test_groups/` va
+`skills/write-test/references/order-test-coverage.md`
+
+- Old behavior: yo'q qilingan `tests/ui/` va `test_ui_runner.py` asosida 84 ta
+  setup, order, purchase, supplier, warehouse va integration scenario katalogi
+  saqlangan edi.
+- Current behavior: u katalog current automation coverage yoki current UI truth
+  emas. Amaldagi setup/group runnerlar actual coverage source of truth'i;
+  Order regression backlogi alohida canonical coverage reference'da turadi.
+
+## Removed Forms Monitor checklari
+
+### JavaScript exception hard-checki
+Status: superseded
+Observed: 2026-08-05
+Superseded: 2026-08-06
+Source: synthetic legacy/A2 browser probes; 147-form baseline; user decision
+Replaced by: `skills/smartup-guide/references/ui-patterns.md` →
+`User-reported: kuzatilgan Smartup xatolari BiruniAlert ichida ko'rsatiladi`
+- Old behavior: legacy shell'da Playwright `pageerror`, A2 shell'da esa
+  capture-fazali init-script window JS exceptionlarni yig'ar va topilgan signal
+  formani `OPENED_WITH_DEFECT / JS_ERROR` qilardi.
+- Old evidence: sun'iy `throw` detector ishlashini ko'rsatgan, ammo 147-forma
+  baseline runida tabiiy JS exception topilmagan.
+- Current behavior: FormMonitor'da `javascript` hard check, `JS_ERROR`,
+  `pageerror` listeneri va window JS exception capture'i yo'q. Ko'rinadigan
+  Smartup application xatolari `APPLICATION_ERROR` orqali tekshiriladi.
+
+## Removed Forms Monitor observation diagnostikalari
+
+### Busy, resource, promise va title-metadata diagnostikalari
+Status: superseded
+Observed: 2026-08-05
+Superseded: 2026-08-10
+Source: user decision; `tests/smoke/test_forms/form_diagnostics/`;
+`tests/smoke/test_forms/form_monitor.py`
+Replaced by: `skills/maintain-test-infra/references/reporting.md` →
+`Forms central monitoring`
+- Old behavior: FormMonitor `[aria-busy=true]`, `img/script/link` resource load
+  errorlari, `unhandledrejection` va title metadata'ni observation-only
+  diagnostika sifatida yig'ar edi.
+- Current behavior: faqat HTTP `4xx/5xx` `failed_requests` diagnostikasi qolgan.
+  U `form_diagnostics/failed_requests.py` modulida, extensible registry va
+  lifecycle esa `form_diagnostics/core.py`da turadi.
+
+## Superseded Forms Monitor title modeli
+
+### Snapshot title check va Legacy silent pass
+Status: superseded
+Observed: 2026-08-03
+Superseded: 2026-08-06
+Source: `tests/smoke/test_forms/form_checks/core.py` va eski
+`tests/smoke/test_forms/flow.py`; user-approved title contract
+Replaced by: `skills/smartup-guide/references/form-monitor/check-title.md`
+- Old behavior: `settle_form_open()` title transitionini kutar, keyin pure
+  snapshot check alohida pass/fail chiqarardi. Legacy heading topilmasa title
+  taqqoslanmasdan pass bo'lishi mumkin edi; boshqa title `TITLE_MISMATCH`
+  sifatida yozilardi.
+- Current behavior: mustaqil `check_title()` kutish va exact taqqoslashning
+  yagona authoritysi. Missing/partial title yagona `TITLE_NOT_REACHED` reasoni
+  bilan failure; `settle_form_open()` va silent unverified-pass yo'li yo'q.
 
 ## Removed runner va test entrypointlari
 
@@ -121,6 +222,33 @@ Replaced by:
   Angular modelga commit qilib `Войти` bosilar va overlay yopilishi kutilar edi.
 - Current behavior: helper va uning `login()` caller'i `f94b377` refaktorida
   olib tashlangan; CI head `0670b8f`da avtomatik session-lock recovery yo'q.
+
+## Superseded Filial Form Kontrakti
+
+### Filial formasini A2 deb noto'g'ri tasniflash
+Status: superseded
+Observed: 2026-08-13
+Superseded: 2026-08-13
+Source: user; eski `skills/smartup-guide/references/forms/filial.md`
+Replaced by: `skills/smartup-guide/references/forms/filial.md`
+- Superseded xulosa: Filial list/add/view `smt-*` komponentli A2 forma deb
+  tasniflanib, test `AngularBasePage`ga migratsiya qilingan.
+- Current behavior: Filial test legacy Biruni `BasePage`ga qaytarildi va
+  relevant setup run bilan tasdiqlandi.
+
+## Superseded License Form Kontrakti
+
+### License formasini A2 deb noto'g'ri tasniflash
+Status: superseded
+Observed: 2026-08-13
+Superseded: 2026-08-13
+Source: user; `test-results/allure-results/d9911418-1c48-4e7f-ab31-e5b6ec17f96a-result.json`
+Replaced by: `skills/smartup-guide/references/forms/license.md`
+- Superseded xulosa: license forma `/a2/...` route va `smt-*` komponentli deb
+  tasniflanib, Buy/Attach `AngularBasePage`ga migratsiya qilingan.
+- Current behavior: real route `/#/!<session>/biruni/kl/license_list`; forma
+  legacy Biruni/AngularJS `b-*` komponentlarida va Buy/Attach `BasePage` bilan
+  ishlaydi. Faqat serverga bog'liq skip policy yangi holatda saqlanadi.
 
 ## Superseded setup/group/Forms test naming qoidalari
 
@@ -208,3 +336,34 @@ Template qoidasi
   o'rniga `.xlsx` attachment qaytargan; popup `url=':'`da qolgan.
 - Current behavior: xtrade va smartup.online ikkalasida report OnlyOffice
   spreadsheet iframe ichida ochiladi.
+
+## Superseded FormMonitor URL va shell qoidalari
+
+### Forms-02 A2 precondition bloklanishi
+Status: superseded
+Observed: 2026-08-03
+Superseded: 2026-08-11
+Source: `test-results/logs/tests_smoke_test_forms_test_0_forms_runner.py__test_forms_02_a2_admin_20260803_142617.log`
+Replaced by: `skills/smartup-guide/references/a2-migrated-forms.md`;
+`skills/smartup-guide/references/forms/company-client.md`
+- Old behavior: texnik `/a2/trade/intro/dashboard`da project `SFA` ko'rinsa
+  ham eski helper `TRADE` triggerini kutib, A2 filial syncini bloklagan;
+  birinchi case `TEST_BLOCKED`, qolgan 21 case `NOT_CHECKED` bo'lgan.
+- Current behavior: A2Angular standalone test, joriy `SFA` filial selector
+  kontrakti va company-client sync oqimi current reference'larda saqlanadi.
+
+### Canonical path exact tengligi va inventory shell authoritysi
+Status: superseded
+Observed: 2026-08-06
+Superseded: 2026-08-11
+Source: user; `tests/smoke/test_forms/monitoring/checks/url.py`;
+`tests/smoke/test_forms/monitoring/monitor.py`;
+`tests/smoke/test_forms/monitoring/suite_runner.py`
+Replaced by: `skills/smartup-guide/references/form-monitor/check-url.md`;
+`skills/smartup-guide/references/form-monitor/check-title.md`
+- Old behavior: URL check canonical pathni inventory pathga exact tenglashtirar,
+  keyingi title check esa suite/inventory bergan shellga tayanar edi.
+- Current behavior: inventory path actual URL ichida mavjud bo'lishi yetarli;
+  destination shell actual URLdan bir marta aniqlanib loader,
+  application-error, content-ready va title checklarga parametr sifatida
+  uzatiladi.

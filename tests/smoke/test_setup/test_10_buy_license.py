@@ -2,7 +2,7 @@ import allure
 from playwright.sync_api import expect, TimeoutError as PlaywrightTimeoutError
 
 from tests.smoke.flows.flow_authorization import authorization
-from tests.smoke.flows.flow_license import attach_license_policy_skip_note, license_policy_disabled
+from tests.smoke.flows.flow_license import skip_license_flow_if_needed
 from utils.base_page import BasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("License")]
@@ -30,8 +30,7 @@ def run_buy_license(page, logger):
     """
     base = BasePage(page)
 
-    if license_policy_disabled():
-        attach_license_policy_skip_note(logger, "Litsenziya sotib olish")
+    if skip_license_flow_if_needed(logger, "Litsenziya sotib olish"):
         return
 
     with allure.step("1 - Litsenziyalar sahifasiga o'tish va balansni tekshirish"):
@@ -75,7 +74,7 @@ def run_buy_license(page, logger):
         terms.click()
         base.click(name="Да", exact=True)
         base.wait_for_loader()
-        base.close_biruni_alert()
+        # base.close_biruni_alert()
         logger.info("Litsenziya olindi")
 
 # ----------------------------------------------------------------------------------------------------------------------

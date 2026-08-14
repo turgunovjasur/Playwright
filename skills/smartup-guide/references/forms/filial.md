@@ -1,64 +1,100 @@
-# Filial (Организация) Add Form
+# Filial (Организация) legacy Biruni formasi
 
-## Loyiha Xususiyatlari
+## Quick Lookup
 
-- Filial add formdagi real ko'rinadigan maydonlar: `Название`, `Юридическое лицо`, `Базовая валюта`, `Часовой пояс`, `Порядковый номер`, `Статус`, `НДС`, `Акциз`.
-- Filial add formda `short_name`, `phone`, `email`, `website`, `address`, `note` maydonlari yo'q; ularni taxmin qilib testga qo'shmaslik kerak.
-- `test_03_filial` legal person bog‘lanishini `legal_person_code`/`legal_person_name` orqali qiladi va list/view checklarini ham amalga oshiradi.
-- `Юридическое лицо` filialga bir marta bog'langandan keyin keyingi filial add searchda chiqmaydi; ikkinchi filial yaratish uchun yangi legal person kerak.
-- `NEW_CODE=0` bilan eski `legal_person_code` ishlatilsa filial add search faqat `Добавить -> <code>` ko'rsatishi mumkin; to'g'ri chain `NEW_CODE=1` bilan yangi legal person yaratib keyin filial yaratadi.
-- Filial screenshotlari doimiy bilim sifatida `references/forms/screenshots/filial/` ichida saqlanadi; `test-results` faqat vaqtinchalik debug output.
+Tags: filial, organization, biruni, angularjs, setup
+Status: trace-confirmed
+Verified: 2026-08-13
+Source: user; `tests/smoke/test_setup/test_02_filial.py`;
+`test-results/allure-results/d2c3f725-feed-461b-825b-ce19d11f5baa-result.json`
 
-## Field Bilimlari
+- Joriy Filial list/add/view oqimi legacy Biruni formasi sifatida
+  `BasePage` bilan boshqariladi; `AngularBasePage` bilan aralashtirilmaydi.
+- Navigation: `Главное → Организации`.
+- List heading: `Организации`; add heading: `Организация (создание)`; view
+  heading: `Организация (просмотр)`.
+- Test yangi `filial-pw{code}` tashkilotini shu run ichida yaratilgan
+  `c_l_p_pw{code}` yuridik shaxsiga bog'laydi.
 
-### Add Form Fields
-Tags: filial, add-form, fields
-- `Название` input: `ng-model="d.name"`; test qiymati `filial-pw{code}`.
-- `Юридическое лицо` b-input: `ng-model="d.person_name"`; shu run ichida yangi yaratilgan `legal_person_code` orqali qidiriladi.
-- `Базовая валюта` b-input: `ng-model="d.base_currency_name"`; `Узбекский сум` tanlanadi va `Продолжить?` confirm bosiladi.
-- `Часовой пояс` b-input: `ng-model="d.timezone_name"`; joriy smoke test
-  default qiymatni o'zgartirmaydi.
-- `Порядковый номер` input: `ng-model="d.order_no"`; joriy smoke test
-  to'ldirmaydi.
-- `Статус` switch: `ng-model="d.state"`; default `Активный`, o'chirilmaydi.
-- `НДС` switch: `ng-model="d.vat_enabled"`; joriy smoke test o'zgartirmaydi.
-- `НДС` yoqilganda `Ставка НДС (%)` required input paydo bo'ladi:
-  `ng-model="d.vat_percent"`.
-- `Акциз` switch: `ng-model="d.excise_enabled"`; joriy smoke test o'zgartirmaydi.
+## Screenshot Paths
 
-## List Va View Tekshiruv
+- `references/forms/screenshots/filial/filial__add-default__desktop-1920x1080.png`
+- `references/forms/screenshots/filial/filial__add-vat-on__desktop-1200x690.png`
+- `references/forms/screenshots/filial/filial__view-main__desktop-1920x1080.png`
+- `references/forms/screenshots/filial/filial__view-products__desktop-1920x1080.png`
+- `references/forms/screenshots/filial/filial__add-fields.json`
+- `references/forms/screenshots/filial/filial__add-fields-after-switches.json`
+- `references/forms/screenshots/filial/filial__add-switches.json`
+- `references/forms/screenshots/filial/filial__add-switches-after-switches.json`
+- `references/forms/screenshots/filial/filial__view-state.json`
 
-### Filial list
-Tags: filial, list, grid
-- Listda `filial_name` bo'yicha row topiladi.
-- Row ichida `filial_name`, `legal_person_code`, `Активный` tekshiriladi.
-- `legal_person_name` list rowda har doim ko'rinmaydi, shuning uchun listda assert qilinmaydi.
+## Known Locators
 
-### Filial view main card
-Tags: filial, view, main-card
-- `Основная информация` cardda add formdan saqlangan qiymatlar tekshiriladi: `filial_name`, `Узбекский сум`, `legal_person_code`, `legal_person_name`, `Ставка НДС (%)`, `12`, `Акциз`, `Да`, `(+05:00) Ташкент`, `Активный`.
-- `Порядковый номер` view main cardda ko'rinmadi; hozir view assertga qo'shilmagan.
+Tags: filial, b-input, ng-model, grid, locator
+Status: code-confirmed
+Verified: 2026-08-13
+Source: `tests/smoke/test_setup/test_02_filial.py`; archived screenshots/JSON
 
-### Filial view products tab
-Tags: filial, view, products, modules
-- `Продукты` tabida `trade` project switchi `checked=true` bo'lishi tekshiriladi.
-- Child module switchlari ham `checked=true` bo'lishi tekshiriladi: `Equipment`, `Finance - Main`, `Finance - Advanced`, `HR and Payroll`, `Image Recognition`, `Main`, `Manufacturing`, `Marking`, `Sales - Main`, `Sales - Advanced`, `Store`, `Telegram`, `Trade Marketing`, `Uzbekistan Module`, `Warehouse - Main`, `Warehouse - Advanced`.
-- Product tab module switchlari DOMda `project.binded` va `module.binded` checkboxlar sifatida chiqadi; text ko'rinishi yetarli emas, `checked` holati assert qilinadi.
+- `Название`: oddiy input; test `BasePage.input(label="Название", ...)`
+  ishlatadi.
+- `Базовая валюта` va `Юридическое лицо`: legacy `b-input`; test
+  `BasePage.b_input(...)` ishlatadi.
+- Valyuta tanlangach `Продолжить?` Biruni confirmi chiqadi.
+- List qidiruvi `BasePage.grid_controller(...)`, row tekshiruvi/tanlovi
+  `BasePage.grid(...)` bilan bajariladi.
+- Button/actionlar ikkala page objectda yagona `click(...)` API nomidan
+  foydalanadi; legacy formada `BasePage.click(...)` ishlatiladi.
 
-## Debug Notes
+### Add forma field xaritasi
 
-### 2026-06-02 verification
-Tags: filial, run-result, screenshot
-- Field discovery screenshot: `references/forms/screenshots/filial/filial__add-default__desktop-1920x1080.png`.
-- Field discovery JSON: `references/forms/screenshots/filial/filial__add-fields.json`.
-- Switch discovery JSON: `references/forms/screenshots/filial/filial__add-switches.json`.
-- VAT/Excise enabled discovery JSON: `references/forms/screenshots/filial/filial__add-fields-after-switches.json`.
-- View main screenshot: `references/forms/screenshots/filial/filial__view-main__desktop-1920x1080.png`.
-- Product tab screenshot: `references/forms/screenshots/filial/filial__view-products__desktop-1920x1080.png`.
-- View discovery JSON: `references/forms/screenshots/filial/filial__view-state.json`.
+Tags: filial, field-discovery, ng-model, b-input, switch
+Status: live-ui-confirmed
+Verified: 2026-08-11
+Source: archived Filial add screenshot/JSON evidence
 
-### 2026-06-29 checkbox API konsolidatsiyasi
-Tags: filial, switch, checkbox, refactor, locator
-- `d.vat_enabled` / `d.excise_enabled` switch DOM jonli tekshirildi: `<label class="switch"> <input type=checkbox opacity:0 ng-model=...> <span>holat matni</span></label>`. Click target = `label.switch` (raw input ko'rinmas). Batafsil: [../../ui-patterns.md](../ui-patterns.md) "checkbox/switch yagona API" qoidasi.
-- НДС switch yoqilganda `Ставка НДС (%)` (`d.vat_percent`) maydoni paydo bo'lishi jonli tasdiqlandi: `filial__add-vat-on__desktop-1200x690.png`.
-- `test_03_filial` endi `BasePage(page).checkbox(ng_model="d.vat_enabled", checked=True)` ishlatadi (eski `flow_form.set_checkbox` o'rniga).
+- Oddiy inputlar: `Название → d.name`, `Порядковый номер → d.order_no`.
+- Searchable legacy `b-input`lar: `Юридическое лицо → d.person_name`,
+  `Базовая валюта → d.base_currency_name`, `Часовой пояс → d.timezone_name`.
+- `Статус` boshlang'ich holatda `Активный`.
+- `НДС → d.vat_enabled` yoqilganda `Ставка НДС (%) → d.vat_percent` inputi
+  paydo bo'ladi; `Акциз → d.excise_enabled` alohida switch.
+- Viewda tasdiqlangan asosiy tablar: `Основная информация` va `Продукты`.
+  Eski probe'dagi `Модули`/`Настройки` candidate nomlari current truth emas.
+
+## Flow And Tests
+
+- Setup leaf: `tests/smoke/test_setup/test_02_filial.py::run_filial`.
+- Setup runner item:
+  `tests/smoke/test_setup/test_0_setup_runner.py::test_02_filial`.
+- Page object: `utils/base_page.py::BasePage`.
+- `AngularBasePage.button()` API nomi `AngularBasePage.click()`ga almashtirilgan;
+  `BasePage` va `AngularBasePage` button click metodi bir xil nomlangan.
+
+## Business Rules
+
+Tags: filial, legal-person, currency, state
+Status: code-confirmed
+Verified: 2026-08-13
+Source: `tests/smoke/test_setup/test_02_filial.py`
+
+- Add formda `Название`, `Базовая валюта` va `Юридическое лицо` to'ldiriladi;
+  `Статус` default `Активный` holatda qoladi.
+- Yuridik shaxs kod bo'yicha qidiriladi va tanlangan qiymat yuridik shaxs nomi
+  bilan tekshiriladi.
+- Bitta yuridik shaxs filialga bog'langach keyingi add searchida chiqmasligi
+  mumkin; to'g'ri setup chain avval yangi legal person, keyin filial yaratadi.
+- List rowda filial nomi, yuridik shaxs kodi va `Активный` tekshiriladi. Viewda
+  filial nomi, valyuta, yuridik shaxs kodi/nomi va status ko'rinishi tekshiriladi.
+
+## Known Issues
+
+### Filialni A2 deb noto'g'ri migratsiya qilish
+
+Tags: filial, migration, base-page, angular-base-page
+Status: trace-confirmed
+Verified: 2026-08-13
+Source: user;
+`test-results/allure-results/d2c3f725-feed-461b-825b-ce19d11f5baa-result.json`
+
+- Filial testini A2 deb `AngularBasePage`ga o'tkazish noto'g'ri. Joriy test
+  legacy `BasePage`ga qaytarildi va relevant setup run green bo'ldi.

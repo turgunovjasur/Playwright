@@ -1,9 +1,15 @@
 ---
 name: write-test
-description: Yangi Playwright + pytest Smartup smoke testi, setup/group/forms leaf testi yoki runner wrapper yozadi va mavjud testni loyiha patterniga moslaydi. Yangi test/test fayl yaratish, Selenium/codegen migratsiyasi yoki testni runnerga qo'shish so'ralganda ishlat.
+description: Use when yangi Smartup Playwright/pytest smoke, setup, group, Forms leaf yoki runner wrapper testi yozish, mavjud testni moslash yoxud Selenium/codegen testini migratsiya qilish so'ralsa.
 ---
 
 # Yangi Smoke Test Yozish
+
+## Skill Chegarasi
+
+Bu skill testcase behaviori, test artifacti va unit-test scope'ini egallaydi.
+Bir nechta testda takrorlanadigan UI choreography `new-flow`ga topshiriladi;
+test execution va run summary `run-smoke` ownerligida qoladi.
 
 ## Avval o'qish
 
@@ -15,7 +21,11 @@ description: Yangi Playwright + pytest Smartup smoke testi, setup/group/forms le
    - oddiy setup/leaf test → `Test fayl shabloni`, `Asosiy qoidalar`;
    - runner/fixture/dependency → `Runnerga qo'shish`, `Loyiha xususiyatlari`;
    - Selenium/codegen → `Selenium migratsiya source fayli`;
-   - Forms batch suite → `Form-opening smoke suite arxitekturasi`;
+   - yangi navbar Forms suite → avval
+     [references/navbar-form-suite.md](references/navbar-form-suite.md), so'ng
+     `Form-opening smoke suite arxitekturasi`;
+   - Order regression scope yoki yangi Order testcase →
+     [references/order-test-coverage.md](references/order-test-coverage.md);
    - har qanday kod/test o'zgarishi → `Unit test qo'shmaslik va run qilmaslik`;
    - group test → `Group testcase mustaqilligi, flow chegarasi va
      BasePage-first`, so'ng `Setup va Group test execution modeli`.

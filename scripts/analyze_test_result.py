@@ -22,13 +22,14 @@ AI_SUMMARY_JSON = ROOT / "test-results" / "ai-summary.json"
 DEFAULT_MODEL = "gemini-2.5-flash"
 FAILED_STATUSES = {"failed", "broken"}
 A2_ADMIN_FORMS_TEST = "test_a2_admin_menu_forms"
+A2_ANGULAR_FORMS_TEST = "test_a2_angular_forms"
 A2_FORM_STEP_PATTERN = re.compile(
     r"^(?:\d{2}\s+[—-]\s+|\d{3}\s+\|\s+Filial:)"
 )
 SPRAVOCHNIKI_FORM_STEP_PATTERN = re.compile(r"^\d{3}\s+\|\s+Filial:")
 FORM_SUITE_LABELS = {
     "spravochniki": "Справочники",
-    "a2_admin": "A2 Admin",
+    "a2_admin": "A2Angular",
     "prodaja": "Продажа",
 }
 FORM_MONITOR_FAILURE_STATUSES = {
@@ -97,7 +98,7 @@ def _auth_diagnostic_attachment(item, results_dir):
 
 
 def _form_monitor_attachment(item, results_dir):
-    """Top-level yoki nested Allure stepdagi form-monitor payloadini topadi."""
+    """Top-level yoki nested Allure stepdagi yagona form-monitor payloadini topadi."""
 
     def iter_attachments(node):
         if not isinstance(node, dict):
@@ -241,10 +242,15 @@ def _group_name(item, runner_test):
         "test_a2_admin_menu_forms" in combined
         or "test_a2_menu_identity_forms" in combined
         or "test_a2_admin_forms" in combined
+        or "test_a2_angular_forms" in combined
+        or A2_ANGULAR_FORMS_TEST in combined
+        or "a2angular" in combined
         or "a2 admin menu forms" in combined
         or "a2 admin forms" in combined
     ):
-        return "A2 Admin Forms"
+        return "A2Angular Forms"
+    if re.search(r"test_forms_\d+_[a-z0-9_]+", combined) or re.search(r"test_[a-z0-9_]+_forms", combined):
+        return "Forms"
     if "report_group" in combined or "report group" in combined:
         return "Report group"
     if "c_group" in combined or "c group" in combined:
@@ -591,7 +597,9 @@ def _form_suite_key(item):
         )
     ).lower()
     if (
-        "test_forms_01_spravochniki" in identity
+        "test_forms_05_spravochniki" in identity
+        or "test_forms_04_spravochniki" in identity
+        or "test_forms_01_spravochniki" in identity
         or "test_spravochniki_menu_forms" in identity
         or "spravochniki" in identity
         or "справочники" in identity
@@ -599,19 +607,29 @@ def _form_suite_key(item):
         return "spravochniki"
     if (
         A2_ADMIN_FORMS_TEST in identity
+        or A2_ANGULAR_FORMS_TEST in identity
         or "test_a2_menu_identity_forms" in identity
+        or "test_a2_angular_forms" in identity
         or "test_forms_02_a2_admin" in identity
+        or "a2angular" in identity
+        or "a2 angular" in identity
         or "a2 admin" in identity
     ):
         return "a2_admin"
     if (
         "test_forms_03_prodaja" in identity
+        or "test_forms_02_prodaja" in identity
         or "test_prodaja_menu_forms" in identity
-        or "forms-03" in identity
         or "продажа" in identity
         or "prodaja" in identity
     ):
         return "prodaja"
+    main_runner_match = re.search(r"test_forms_\d+_([a-z0-9_]+)", identity)
+    if main_runner_match:
+        return main_runner_match.group(1)
+    leaf_match = re.search(r"test_([a-z0-9_]+)_forms", identity)
+    if leaf_match:
+        return leaf_match.group(1)
     return ""
 
 
@@ -619,7 +637,7 @@ def _form_steps(item, *, form_suite=None):
     suite = form_suite or _form_suite_key(item)
     if suite == "a2_admin":
         pattern = A2_FORM_STEP_PATTERN
-    elif suite in {"spravochniki", "prodaja"}:
+    elif suite:
         pattern = SPRAVOCHNIKI_FORM_STEP_PATTERN
     else:
         return []
@@ -661,6 +679,10 @@ def _form_monitor_counts(form_monitor):
         planned = int(form_monitor.get("planned") or 0)
     except (TypeError, ValueError):
         planned = 0
+    try:
+        intentional_skips = int((form_monitor.get("inventory") or {}).get("intentional_skips") or 0)
+    except (AttributeError, TypeError, ValueError):
+        intentional_skips = 0
     return {
         "checked": max(planned, len(statuses)),
         "passed": statuses.count("PASSED"),
@@ -668,7 +690,7 @@ def _form_monitor_counts(form_monitor):
         "failed": sum(
             status in FORM_MONITOR_FAILURE_STATUSES for status in statuses
         ),
-        "skipped": statuses.count("NOT_CHECKED"),
+        "skipped": intentional_skips + statuses.count("NOT_CHECKED"),
     }
 
 
@@ -692,11 +714,7 @@ def _normalized_form_signals(result):
                 "title_verified",
                 "content_ready",
                 "loader_visible",
-                "busy_visible",
-                "busy_visible_count",
                 "visible_error",
-                "js_error_count",
-                "js_error_source",
             }
         },
     }
@@ -709,14 +727,32 @@ def _normalized_form_signals(result):
     ]
     if failed_checks:
         normalized["failed_checks"] = ", ".join(failed_checks)
+    not_run_checks = [
+        name
+        for name, item in hard_checks.items()
+        if isinstance(item, dict)
+        and item.get("enabled")
+        and item.get("execution_status") == "NOT_RUN"
+    ]
+    if not_run_checks:
+        normalized["not_run_checks"] = ", ".join(not_run_checks)
+    url_check = hard_checks.get("url")
+    if isinstance(url_check, dict) and url_check.get("reason_code") == "EXPECTED_URL_NOT_REACHED":
+        normalized["url_timeout_ms"] = url_check.get("timeout_ms")
+        normalized["direct_probe_executed"] = bool(url_check.get("direct_probe_executed"))
+        if url_check.get("direct_probe_executed"):
+            normalized["direct_url_reached"] = bool(url_check.get("direct_url_reached"))
+            normalized["direct_expected_url"] = str(url_check.get("direct_expected_url") or "")
+            normalized["direct_actual_url"] = str(url_check.get("direct_actual_url") or "")
+            normalized["direct_summary"] = str(url_check.get("direct_summary") or "")
+            if url_check.get("direct_error"):
+                normalized["direct_error"] = str(url_check["direct_error"])
     diagnostic_signals = []
     for name, item in diagnostics.items():
         if not isinstance(item, dict) or not item.get("enabled"):
             continue
         count = int(item.get("count") or 0)
-        if name == "busy" and item.get("visible"):
-            diagnostic_signals.append(f"busy={count}")
-        elif count:
+        if count:
             diagnostic_signals.append(f"{name}={count}")
     if diagnostic_signals:
         normalized["diagnostic_signals"] = ", ".join(diagnostic_signals)
@@ -784,7 +820,7 @@ def _form_coverage_summary(results):
     suites = {}
     for item in results:
         suite = str(item.get("form_suite") or "") or _form_suite_key(item)
-        if suite not in FORM_SUITE_LABELS:
+        if not suite:
             continue
         form_monitor = item.get("form_monitor")
         monitor_counts = (
@@ -793,10 +829,12 @@ def _form_coverage_summary(results):
             else {}
         )
         if monitor_counts:
+            monitor_suite = str(form_monitor.get("suite") or "")
+            monitor_label = monitor_suite.split("—", 1)[-1].strip() if "—" in monitor_suite else ""
             counts = suites.setdefault(
                 suite,
                 {
-                    "label": FORM_SUITE_LABELS[suite],
+                    "label": FORM_SUITE_LABELS.get(suite) or monitor_label or suite.replace("_", " ").title(),
                     **_empty_form_counts(),
                 },
             )
@@ -815,7 +853,7 @@ def _form_coverage_summary(results):
         counts = suites.setdefault(
             suite,
             {
-                "label": FORM_SUITE_LABELS[suite],
+                "label": FORM_SUITE_LABELS.get(suite) or suite.replace("_", " ").title(),
                 **_empty_form_counts(),
             },
         )

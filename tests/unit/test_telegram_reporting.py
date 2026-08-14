@@ -116,7 +116,7 @@ def test_forms_runner_wrappers_produce_combined_coverage():
                 "skipped": 0,
             },
             "a2_admin": {
-                "label": "A2 Admin",
+                "label": "A2Angular",
                 "checked": 2,
                 "passed": 2,
                 "failed": 0,

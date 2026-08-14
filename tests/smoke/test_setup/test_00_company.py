@@ -46,7 +46,7 @@ def run_company(page, code, save_data):
 
     if not company_exists:
         with allure.step("4 - Yangi company formasini ochish"):
-            angular.button(name="Создать", click=True)
+            angular.click(name="Создать")
             angular.expect_page(heading="Компания (создание)", url="company_add")
 
         with allure.step("5 - Majburiy maydonlarni to'ldirish"):
@@ -95,7 +95,7 @@ def run_company(page, code, save_data):
 
     with allure.step("10 - Company viewni ochish"):
         angular.grid(company_code, click=True)
-        angular.button(name="Просмотреть", click=True)
+        angular.click(name="Просмотреть")
         angular.expect_page(heading="Компания (просмотр)", url="company_view")
 
     with allure.step("11 - Company viewda security sozlamalarini qo'llash"):

@@ -1,8 +1,12 @@
 """Litsenziya setup testlari uchun umumiy policy yordamchilari."""
 
 import os
+from urllib.parse import urlparse
 
 import allure
+import pytest
+
+from tests.smoke.flows.flow_authorization import company_url
 
 
 def license_policy_disabled():
@@ -20,3 +24,31 @@ def attach_license_policy_skip_note(logger, step_name):
     )
     allure.attach(message, name="license-policy-disabled", attachment_type=allure.attachment_type.TEXT)
     logger.info(message)
+
+
+def license_server_unsupported():
+    """License purchase ishlamaydigan smartup.online serverini aniqlaydi."""
+    hostname = (urlparse(company_url()).hostname or "").lower()
+    return hostname == "smartup.online" or hostname.endswith(".smartup.online")
+
+
+def skip_license_flow_if_needed(logger, step_name):
+    """Policy o'chirilgan yoki server unsupported bo'lsa license flowdan chiqadi."""
+    if license_policy_disabled():
+        attach_license_policy_skip_note(logger, step_name)
+        return True
+
+    if license_server_unsupported():
+        message = (
+            f"{step_name} o'tkazib yuborildi: smartup.online serverida "
+            "license purchase/attach flow ishlamaydi."
+        )
+        allure.attach(
+            message,
+            name="license-server-unsupported",
+            attachment_type=allure.attachment_type.TEXT,
+        )
+        logger.info(message)
+        pytest.skip(message)
+
+    return False

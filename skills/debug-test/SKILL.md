@@ -1,11 +1,18 @@
 ---
 name: debug-test
-description: Muvaffaqiyatsiz Playwright/pytest testini log, trace va Allure dalillari orqali tahlil qiladi. Test xatosi, timeout, locator, fixture yoki session-state muammosi so'ralganda ishlat; foydalanuvchi faqat sababni so'rasa kodni o'zgartirma, tuzatishni so'rasa fix qil, testni esa faqat aynan run qilishni so'rasa qayta ishga tushir.
+description: Use when Smartup Playwright yoki pytest testi xato, timeout, locator, fixture, session-state, log, trace yoki Allure diagnostikasini talab qilsa.
 ---
 
 # Muvaffaqiyatsiz Testni Debug Qilish
 
 Test: `$ARGUMENTS`
+
+## Skill Chegarasi
+
+Bu skill mavjud failure artifactidan root cause topishni egallaydi. Testni
+ishga tushirish yoki run summary — `run-smoke`; runner/CI/reporting subsystemi
+muammosi — `maintain-test-infra`; failure bo'lmagan static review —
+`review-test`. Faqat diagnostika so'ralgan bo'lsa kodni o'zgartirma.
 
 ## Tahlil tartibi
 

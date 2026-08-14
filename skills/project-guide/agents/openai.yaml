@@ -1,0 +1,4 @@
+interface:
+  display_name: "Playwright Project Guide"
+  short_description: "Route project work to the canonical local skill"
+  default_prompt: "Use $project-guide first, then route this task to the canonical project skill and references."

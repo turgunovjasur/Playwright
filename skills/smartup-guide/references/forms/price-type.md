@@ -43,6 +43,19 @@ Tags: price-type, locator, helper, mcp
 
 Bu test `fill_nps_survey(page, logger)` bilan boshlanadi — step 0. Agar NPS modal chiqsa o'tkazib yuboriladi.
 
+### NPS helper failure'ni yashirishi mumkin
+
+Tags: nps, modal, timeout, exception, flaky
+Status: code-confirmed
+Verified: 2026-08-14
+Source: `tests/smoke/flows/flow_modal.py::fill_nps_survey`
+
+- Helper modalni `20_000 ms` kutadi va butun flow'ni `except Exception` bilan
+  yutadi. Modal chiqib, rating yoki submit bosqichi xato qilsa ham log uni
+  “modal yo'q” deb ko'rsatishi mumkin.
+- Root cause tahlilida bu helperni optional-modal absence bilan real interaction
+  failure'ni ajratmaydigan known risk deb hisobla.
+
 ## Saqlash
 
 `base.click(name="Сохранить", exact=True)` →

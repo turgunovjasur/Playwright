@@ -23,7 +23,7 @@ SUMMARY_FILES = (
 )
 CREATED_COMPANY_PASSWORD = "greenwhite"
 
-GROUP_0_RUNNER_PATH = "tests/smoke/test_groups/test_0_grup/test_0_group_runner.py"
+GROUP_0_RUNNER_PATH = "tests/smoke/test_groups/test_a_grup/test_0_group_runner.py"
 GROUP_REPORT_RUNNER_PATH = (
     "tests/smoke/test_groups/test_report_grup/test_0_group_runner.py"
 )
@@ -32,7 +32,7 @@ GROUP_RUNNER_PATHS = (
     GROUP_REPORT_RUNNER_PATH,
 )
 FORMS_RUNNER_PATH = "tests/smoke/test_forms/test_0_forms_runner.py"
-A2_ADMIN_FORMS_PATH = "tests/smoke/test_forms/test_02_a2_admin_menu_forms.py"
+A2_ANGULAR_FORMS_PATH = "tests/smoke/test_forms/test_a2_angular_forms.py"
 
 TARGETS = {
     "all": (
@@ -61,7 +61,7 @@ TARGETS = {
     "setup-a2-admin": (
         (
             "tests/smoke/test_setup/test_0_setup_runner.py",
-            A2_ADMIN_FORMS_PATH,
+            A2_ANGULAR_FORMS_PATH,
         ),
         "--new-code",
     ),

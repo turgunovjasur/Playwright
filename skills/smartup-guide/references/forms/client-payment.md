@@ -55,7 +55,7 @@ Source: live UI
 
 - Mavjud reusable flow: N/A
 - Mavjud group-0 test:
-  `tests/smoke/test_groups/test_0_grup/test_03_post_client_payment.py`.
+  `tests/smoke/test_groups/test_a_grup/test_03_post_client_payment.py`.
 
 ## Business Rules
 

@@ -1,6 +1,6 @@
 ---
 name: smartup-guide
-description: Smartup ilovasiga xos biznes bilimlar, UI joylashuvlari, contract/order flowlari, locator kuzatuvlari va test yozishda ishlatiladigan domain qoidalari. Smartup sahifalari, formalar, contract, order, payment type, modal, navigation yoki loyiha UI xatti-harakati haqida ishlaganda foydalan.
+description: Use when Smartup sahifasi, formasi, biznes qoidasi, UI joylashuvi, contract/order flowi, locator, modal, grid, navigation yoki domain xatti-harakati bilan ishlash kerak bo'lsa.
 ---
 
 # Smartup Guide
@@ -59,6 +59,8 @@ takrorlamaydi. Avval kerakli dossier/reference'ni o'qi, keyin vazifaga mos skill
 ishlat. Skill nomi harness prefiksisiz yoziladi, chunki `skills/` ikkala
 entry-point uchun umumiy manba: chaqirish sintaksisini har bir agent o'zi
 qo'llaydi (`skills/<name>/SKILL.md` esa har ikkisida bir xil o'qiladi).
+Project bo'ylab authority va routing uchun avval
+[project-guide](../project-guide/SKILL.md)ga amal qil.
 
 - yangi test yozish: `write-test`
 - reusable UI flow yaratish yoki o'zgartirish: `new-flow`
@@ -87,6 +89,13 @@ domain bilimni bir faylda takrorlama.
 - A2 (migratsiya qilingan yangi) formalar, A2 menu-tracklari va URL/error
   signallari: [references/a2-migrated-forms.md](references/a2-migrated-forms.md)
 - Test setup, debug va screenshot arxivi: [references/testing-debug.md](references/testing-debug.md)
+- FormMonitor hard-check kontraktlari:
+  [references/form-monitor/](references/form-monitor/)
+  - [check_url](references/form-monitor/check-url.md)
+  - [check_loader](references/form-monitor/check-loader.md)
+  - [check_application_error](references/form-monitor/check-application-error.md)
+  - [check_content_ready](references/form-monitor/check-content-ready.md)
+  - [check_title](references/form-monitor/check-title.md)
 - Superseded qoidalar va tarixiy dalillar: [references/history.md](references/history.md)
 
 ## Form Dossier Ro'yxati (to'liq)
@@ -177,6 +186,14 @@ Knowledge-base o'zgargandan keyin quyidagini ishga tushir:
 
 ```bash
 ./.venv/bin/python skills/smartup-guide/scripts/validate_knowledge_base.py
+```
+
+Skill package, cross-skill Markdown link va `.agents/.claude` entrypoint
+paritysi ham o'zgargan bo'lsa repo-level validatorni ishlat; u yuqoridagi
+Smartup validatorini ham ichidan chaqiradi:
+
+```bash
+./.venv/bin/python skills/scripts/validate_skills.py
 ```
 
 Validator broken Markdown linklar, indexdan tushib qolgan dossierlar, mavjud

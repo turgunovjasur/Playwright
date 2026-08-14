@@ -9,6 +9,7 @@
 - [UI select](#ui-select)
 - [Masked inputs](#masked-dateamount-inputs)
 - [Biruni confirm va error](#biruni-confirm)
+- [Status dialog return semantikasi](#status-dialog-return-semantikasi)
 - [Alert kutish va o'lik timeout](#alert-kutish--is_visibletimeout-olik-parametr)
 - [Blocking loader va aria-busy](#blocking-loader-va-aria-busy-2026-08-05)
 - [A2 sahifada `pageerror` chiqmaydi](#a2-sahifada-pageerror-chiqmaydi-2026-08-05)
@@ -137,12 +138,25 @@ Tags: biruni, confirm, modal
 - Qoida: `да` button har doim confirm modal ichida scope qilinadi.
 - Order status o'zgartirish confirm matni: `Изменить статус на {status}?` (masalan `Изменить статус на Отменен?`). Ilgari `Изменить на {status}?` edi — 2026-06-21 da ilova matni o'zgargan, `confirm_biruni` `to_contain_text` mosligi buzilgan (modal ochiq qolib ketgan ko'rinadi). `flow_order_list` shu yangi matnga moslangan.
 
+### Status Dialog Return Semantikasi
+
+Tags: modal, status, helper, return-value, known-issue
+Status: code-confirmed
+Verified: 2026-08-14
+Source: `tests/smoke/flows/flow_modal.py::dialog_status`
+
+- Docstring “modal topilsa `True`, topilmasa `False`” deydi, ammo joriy kod
+  modalni topib yopganda `False`, topilmaganda `True` qaytaradi.
+- Joriy caller return qiymatini ishlatmaydi. Yangi consumer docstringka tayanib
+  branch qilmasin; semantika tuzatilmaguncha helperni side-effect-only deb ol.
+
 ### Biruni Error
 Tags: biruni, error, modal
 Status: live-ui-confirmed
-Verified: 2026-08-04
+Verified: 2026-08-06
 Source: user; live UI `*/anor/mr/product/inventory+add`;
-`tests/smoke/test_forms/form_monitor.py`
+`tests/smoke/test_forms/monitoring/checks/application_error.py`;
+`tests/smoke/test_forms/monitoring/monitor.py`
 - Legacy formadagi odatiy blocking backend/business xato modali
   `#biruniAlert.modal.fade.show[role="dialog"]`. Ko'rinadigan strukturasi:
   `Ошибка` headingi, `.text-danger` xato matni, `button.close` va textli
@@ -157,22 +171,48 @@ Source: user; live UI `*/anor/mr/product/inventory+add`;
   saqlash/tranzaksiya backend xatolari ko'pincha Biruni modalida; forma
   ochilishidagi vaqtinchalik xabar `[role="alert"]`, inline validatsiya
   `.alert-danger`, A2 xatolari esa boshqa error komponentida ko'rinishi mumkin.
-- Forms monitor `#biruniAlertExtended:visible`, `#biruniAlert:visible`,
-  `[role="alert"]:visible` va `.alert-danger:visible` signallarini tekshiradi;
-  ulardan biri target sahifada ko'rinsa natija `OPENED_WITH_DEFECT /`
-  `APPLICATION_ERROR` bo'ladi. Faqat formani ochadigan smoke test save-time
-  modalni o'zi hosil qilmaydi; modal formani ochishda paydo bo'lsa yoki case
-  tegishli actionni bajarsa aniqlanadi.
+- Forms monitor `check_application_error` orqali faqat
+  `#biruniAlertExtended:visible`, `#biruniAlert:visible`,
+  `.alert-danger:visible` va
+  `[role="dialog"]:visible [data-testid*="error" i]` hard signallarini
+  tekshiradi. Generic `[role="alert"]:visible` warning yoki axborot ham bo'lishi
+  mumkinligi uchun hard signal emas. Aniq signal target sahifada ko'rinsa
+  natija `OPENED_WITH_DEFECT / APPLICATION_ERROR` bo'ladi. Faqat formani
+  ochadigan smoke test save-time modalni o'zi hosil qilmaydi; modal formani
+  ochishda paydo bo'lsa yoki case tegishli actionni bajarsa aniqlanadi.
 - Modal yopilmasa menu/list clicklari intercept bo'lishi mumkin. Save/transition
   debugda kutilgan list/view ochilmasa joriy heading va URL bilan birga ikkala
   Biruni alertning visible matnini tekshir.
 
+#### User-reported: kuzatilgan Smartup xatolari BiruniAlert ichida ko'rsatiladi
+Tags: biruni, error, javascript, forms-monitor, test-policy
+Status: user-reported
+Verified: 2026-08-06
+Source: user; `tests/smoke/test_forms/monitoring/checks/core.py`;
+`tests/smoke/test_forms/monitoring/monitor.py`
+- Qayerda: Smartup formalarida foydalanuvchi ko'rgan funksional/application
+  xatolari.
+- Kuzatuv: foydalanuvchi hozirgacha barcha turdagi real Smartup xatolarini
+  BiruniAlert modali ichida ko'rgan; modal tashqarisidagi tabiiy JS exception
+  holatini kuzatmagan. 2026-08-05 dagi 147-forma baseline runida ham tabiiy JS
+  exception `0` bo'lgan.
+- Chegara: sun'iy `throw` probe'i JS detector ishlashini isbotlaydi, ammo
+  Smartup mahsulotida bunday tabiiy xato mavjudligini yoki Forms smoke uchun
+  `javascript` hard check zarurligini isbotlamaydi. Bu kuzatuv tasdiqlanmasdan
+  universal UI haqiqati deb olinmaydi.
+- 2026-08-06 user qarori va joriy kod contracti: FormMonitor'da `javascript`
+  hard check, `JS_ERROR`, Playwright `pageerror` listeneri va window JS
+  exception capture'i yo'q. Application xatosi ko'rinadigan UI/Biruni
+  signallari orqali `APPLICATION_ERROR` sifatida tekshiriladi. FormMonitor
+  resource error va unhandled promise rejectionni ham yig'maydi.
+
 ### Alert Kutish — `is_visible(timeout=...)` O'lik Parametr
 Tags: locator, alert, timeout, is_visible, wait_for, forms-monitor
 Status: code-confirmed
-Verified: 2026-08-05
+Verified: 2026-08-06
 Source: Playwright API docstring; real Chromium tekshiruvi;
-`tests/smoke/test_forms/form_monitor.py`
+`tests/smoke/test_forms/monitoring/checks/application_error.py`;
+`tests/smoke/test_forms/monitoring/monitor.py`
 - Qoida: `locator.is_visible(timeout=...)` — **o'lik parametr**. O'rnatilgan
   Playwright dokumentatsiyasi: *"Deprecated: This option is ignored.
   `locator.is_visible()` does not wait."* Ya'ni `is_visible` doim lahzalik
@@ -184,50 +224,53 @@ Source: Playwright API docstring; real Chromium tekshiruvi;
   topib bo'lmaydi.
 - **O'lchangan kechikish (2026-08-05, `Заказы`/`Возвраты` `+add`, 6 o'lchov):**
   min **24 ms**, o'rtacha **227 ms**, maksimum **849 ms**. Taymer navigatsiya
-  tugagan zahoti boshlandi, `capture_form_state` esa alert kutishiga qadar yana
-  URL/title/content o'qiydi — ya'ni monitorning haqiqiy zaxirasi shundan
-  kattaroq. Maksimum **birinchi (cold) navigatsiyada** chiqdi; keyingi
-  takrorlarda 20–30 ms.
-- Shu sabab `ALERT_WAIT_MS = 1200` **o'zgartirilmadi**. 700 ms ga tushirish
+  tugagan zahoti boshlandi. Bu o'lchov eski `capture_form_state` alert
+  kutishidan olingan; joriy kodda kutish mustaqil `check_application_error`
+  gate'ida bajariladi. Maksimum **birinchi (cold) navigatsiyada** chiqdi;
+  keyingi takrorlarda 20–30 ms.
+- Shu sabab `DEFAULT_APPLICATION_ERROR_TIMEOUT = 1_200` saqlandi. 700 ms ga tushirish
   taklifi bor edi (avvalgi "300–500 ms" raqami kuzatuvdan, o'lchovdan emas
   edi) — o'lchov uni **rad etdi**: cold-start 849 ms o'tkazib yuborilardi va
   natija yolg'on PASSED bo'lardi. Local 849 ms, CI sekinroq, 1200 ms zaxirasi
   ~1.4×.
 - Bir nechta alert selektorini kutish kerak bo'lsa, ularni **vergul bilan bitta
   locatorga birlashtir**:
-  `page.locator(", ".join(ALERT_SELECTORS)).first.wait_for(state="visible", timeout=...)`.
+  `page.locator(", ".join(HARD_ERROR_SELECTORS)).first.wait_for(state="visible", timeout=...)`.
   Alert chiqsa darhol qaytadi, chiqmasa bir marta timeout to'laydi. Har
   selektorni alohida kutish 6 × timeout ga tushadi.
 - Real Chromium'da tekshirildi: `:visible` pseudo-klassi vergulli listda
   ishlaydi — `display:none` element sanalmaydi, ko'rinadigani topiladi.
-- Narxi: sog'lom sahifaga bir marta to'liq timeout. `ALERT_WAIT_MS = 1200` bilan
+- Narxi: sog'lom sahifaga bir marta to'liq timeout. `1_200 ms` bilan
   Forms-03 (38 forma) 146.78 s → 184.10 s, ya'ni **+0.98 s har formaga**.
-- Diqqat: yaroqsiz selektor `PlaywrightError` beradi va u jim yutiladi —
-  natija "alert yo'q" bilan **bir xil** ko'rinadi. Selektor ro'yxati o'zgarsa
-  real brauzerda tekshir.
-- Loader/busy uchun post-validation lahzalik surat **to'g'ri** — u yerda yana
-  kutish forma vaqtini o'zgartiradi. Blocking va observation signallarini
-  quyidagi qoida bo'yicha ajrat.
+- Joriy check faqat `PlaywrightTimeoutError`ni "error topilmadi" deb qabul
+  qiladi. Yaroqsiz selector yoki boshqa Playwright contract xatosi jim
+  yutilmaydi. Selector ro'yxati o'zgarsa real brauzerda tekshir.
+- Forms monitoringda blocking loader alohida browser-aware gate sifatida
+  kutiladi; undan keyin application-error gate ishlaydi. `capture_form_state`
+  alertni qayta kutmaydi. `aria-busy` blocking signal emas va FormMonitor uni
+  diagnostika sifatida yig'maydi. Blocking signalni quyidagi qoida bo'yicha
+  ajrat.
 
 ### Blocking loader va `aria-busy` (2026-08-05)
 Tags: loader, aria-busy, a2, dashboard, forms-monitor, false-fail
 Status: live-ui-confirmed
-Verified: 2026-08-05
-Source: Forms-03 Allure artifact; real Chrome audit — A2 dashboard va Plugin Marketplace;
-`tests/smoke/test_forms/form_monitor.py`; `utils/angular_base_page.py`
-- Post-validation `loader_visible` faqat ko'rinadigan `.block-ui-overlay` yoki
-  `.smt-skeleton`. Ular blocking loading surface va qolib ketsa forma
-  `OPENED_WITH_DEFECT / LOADER_NOT_FINISHED`.
+Verified: 2026-08-06
+Source: 2026-08-05dagi tarixiy Forms-03 Allure artifact; real Chrome audit — A2 dashboard va Plugin Marketplace;
+`tests/smoke/test_forms/monitoring/checks/loader.py`; `tests/smoke/test_forms/monitoring/monitor.py`;
+`tests/smoke/test_forms/monitoring/navigation.py`; `utils/angular_base_page.py`
+- `check_loader` URL gate'dan darhol keyin ko'rinadigan
+  `.block-ui-overlay` yoki `.smt-skeleton` yo'qolishini default `60_000 ms`
+  kutadi. Ular timeout oxirida qolib ketsa forma
+  `OPENED_WITH_DEFECT / LOADER_NOT_FINISHED`; keyingi hard checklar `NOT_RUN`.
 - `[aria-busy=true]` o'zicha blocking loader emas. Dashboard ichidagi nested
   widget to'liq sahifa render bo'lgandan keyin ham busy qolishi mumkin.
-  Forms-03 `Коммерческий дашборд` artifactida expected URL/title/content va
+  o'sha tarixiy Forms-03 `Коммерческий дашборд` artifactida expected URL/title/content va
   screenshot sog'lom bo'lsa ham aynan shu signal eski monitorni yolg'on
   `NOT_OPENED` qilgan.
-- Monitor busy'ni `busy_visible`/`busy_visible_count` sifatida qayd qiladi,
-  lekin status yoki `usable`ni o'zgartirmaydi. Navigatsiya paytidagi
-  `AngularBasePage.wait_for_loader()` esa transition tugashi uchun skeleton va
-  busy yo'qolishini kutishda davom etadi; monitor snapshoti yakuniy
-  klassifikatsiya manbasi.
+- FormMonitor `[aria-busy=true]`ni yig'maydi. Forms oqimidagi navigation
+  helperlari loaderni oldindan kutmaydi; yagona pass/fail authority
+  `check_loader`. Boshqa setup/group testlarida umumiy
+  `AngularBasePage.wait_for_loader()` o'zgarishsiz ishlaydi.
 - Expected pathga yetgan blocking loader `NOT_OPENED` emas: sahifa ochilgan,
   lekin nuqsonli. `NOT_OPENED` noto'g'ri/missing route yoki yetib bo'lmagan
   content uchun saqlanadi.
@@ -237,7 +280,7 @@ Tags: a2, angular, pageerror, js-error, forms-monitor, listener
 Status: trace-confirmed
 Verified: 2026-08-05
 Source: real Chromium probe — legacy va A2 formalarida 4 kanal;
-`tests/smoke/test_forms/form_monitor.py`
+`tests/smoke/test_forms/monitoring/monitor.py`
 - Qoida: **A2 (`/a2/...`) sahifalarida `page.on("pageerror")` ishlamaydi.**
   Ilova global `error` eventida `preventDefault()` chaqiradi, shuning uchun
   Chrome xatoni "handled" deb hisoblaydi va Playwright'ga uncaught exception
@@ -257,7 +300,7 @@ Source: real Chromium probe — legacy va A2 formalarida 4 kanal;
 - Tarixiy amaliy natija: Playwright `pageerror` signali **119 legacy formada**
   ishlagan (sun'iy injektsiya bilan tasdiqlangan), **28 A2 formada** esa
   ko'r bo'lgan. Capture yechimidan oldin A2 da "0 JS xato" sog'lom degani emas edi.
-- **Yechim (2026-08-05 da qilindi va isbotlandi):** `page.add_init_script` bilan
+- **Tarixiy detector (2026-08-05 da qilindi va isbotlandi):** `page.add_init_script` bilan
   app bundle'dan **oldin** capture-fazada
   `window.addEventListener("error", ..., true)` o'rnatiladi va xatolar `window`
   massividan `page.evaluate` orqali o'qiladi. Init script har document'da
@@ -270,41 +313,11 @@ Source: real Chromium probe — legacy va A2 formalarida 4 kanal;
   | `queueMicrotask` | ❌ jim | ✅ ushlaydi |
   | `requestAnimationFrame` | ❌ jim | ✅ ushlaydi |
 
-  Kod: `tests/smoke/test_forms/form_monitor.py` — `CAPTURE_JS_ERROR_SCRIPT`.
-- Joriy monitor shellga mos **bitta canonical kanal** ishlatadi: legacyda
-  `pageerror`, A2 da capture listener. Human reportda xato takrorlanmaydi;
-  ikkalasi bir xil `OPENED_WITH_DEFECT / JS_ERROR` semantikasiga ega.
-- Shu init-script `unhandledrejection`ni ham bounded sample + true count bilan
-  yig'adi. Promise rejection hozircha observation-only; baseline dalilisiz
-  formani qizil qilmaydi.
-
-### Capture-faza `error` listeneri resurs xatosini ham beradi (2026-08-05)
-Tags: a2, pageerror, js-error, init-script, resource-error, forms-monitor
-Status: trace-confirmed
-Verified: 2026-08-05
-Source: real Chromium run — Forms-02, 21 A2 forma;
-`tests/smoke/test_forms/form_monitor.py`
-- Qoida: `window.addEventListener("error", ..., true)` **faqat JS exception
-  emas**, `img`/`script`/`link` yuklanmaganda chiqadigan resurs xatosini ham
-  beradi. `page.on("pageerror")` bunday eventni **hech qachon** bermaydi,
-  shuning uchun capture kanaliga o'tishda bu yangi, kutilmagan signal turi.
-- Ajratish: resurs xatosida `event.target !== window` va `event.target.tagName`
-  mavjud; JS exceptionda `event.target === window` va `event.message` bor.
-- Nega muhim: ajratmasdan qattiqlashtirilsa **buzuq rasm formani qizil qiladi**.
-  Real misol — `Plugin Marketplace` (`biruni/plg/plugin_catalog`) sahifasida
-  `IMG .../api/b/biruni/m:load_image_v2` yuklanmaydi. Ustiga bu signal network
-  kanalidagi `404 m:load_image_v2` bilan **aynan bir xil hodisa**, ya'ni
-  ikki marta hisoblanardi.
-- Diqqat: `String(event.message || event)` yozish resurs xatosida
-  **`[object Event]`** beradi — diagnostik qiymati nol. Foydali yorliq:
-  `event.message` + `event.filename:event.lineno`, resurs uchun esa
-  `target.tagName` + `target.src/href`.
-- Diqqat: `typeof window.onerror` bu yerda **yo'l ko'rsatmaydi** — ikkala shell'da
-  ham `null` (`typeof null === "object"`, ya'ni "object" javobi handler bor
-  degani emas). `window.Zone` ham `undefined` — zone.js sabab emas.
-- Diqqat: sun'iy JS xato injektsiyasi bilan test qilganda `setTimeout` ichida
-  `throw` legacy'da ishonchli, A2 da esa **hech narsa isbotlamaydi** — jim
-  natija "xato yo'q" va "kanal ko'r" uchun bir xil ko'rinadi.
+  Ushbu detector joriy FormMonitor'dan 2026-08-06 user qarori bilan olib
+  tashlangan; tarixiy contract `history.md`da saqlanadi.
+- Joriy monitor `pageerror`, window JS exception, resource load error va
+  `unhandledrejection`ni yig'maydi. Eski capture diagnostikasi
+  `history.md`da tarixiy kontrakt sifatida saqlanadi.
 
 ### List va Grid Setting
 Tags: list, grid, search, column

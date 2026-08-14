@@ -9,6 +9,9 @@
 - [Form-opening smoke verifikatsiyasi](#справочники-form-opening-smoke-verifikatsiyasi-2026-07-29)
 - [Продажа mega-menu inventari](#продажа-mega-menu-inventari-2026-08-04-live)
 - [Продажа page-link va +add inventari](#продажа-page-link-va-add-inventari-2026-08-04-live)
+- [Склад mega-menu inventari](#склад-mega-menu-inventari-2026-08-11-live)
+- [Финансы mega-menu inventari](#финансы-mega-menu-inventari-2026-08-11-live)
+- [Главное mega-menu inventari](#главное-mega-menu-inventari-2026-08-11-live)
 - [Alert bleed-through gipotezasi yopildi](#alert-bleed-through--trigger-add-bilan-ketdi-2026-08-05)
 - [Legacy formalarda heading har doim topiladi](#legacy-formalarda-heading-har-doim-topiladi-2026-08-05)
 - [Group-0 moliyaviy sahifalari](#group-0-moliyaviy-sahifalari-2026-07-31-live)
@@ -30,9 +33,10 @@ birgalikda yoziladi.
   `a2-migrated-forms.md`ga yozilmaydi. Legacy parentdan ochiladigan ayrim
   destination A2 bo'lishi mumkin; bunda user-visible legacy yo'l shu katalogda,
   A2 destinationning texnik xususiyatlari esa A2 reference/dossierda turadi.
-- Joriy katalogning tekshirilgan scope'i `navbar_tab="Справочники"` va
-  `navbar_tab="Продажа"`. Keyingi navbar inventarlari ham shu faylga alohida
-  bo'lim sifatida qo'shiladi.
+- Joriy katalogning tekshirilgan scope'i `navbar_tab="Справочники"`,
+  `navbar_tab="Продажа"`, `navbar_tab="Склад"` va
+  `navbar_tab="Главное"` hamda `navbar_tab="Финансы"`. Keyingi navbar
+  inventarlari ham shu faylga alohida bo'lim sifatida qo'shiladi.
 
 ## `Справочники` legacy mega-menu inventari (2026-07-29 live)
 
@@ -347,7 +351,9 @@ Tags: legacy, menu, create, dropdown, import, attach, local-code, page-link, fil
 
 Tags: spravochniki, test, run-result, canonical-url, screenshot
 
-- Test: `tests/smoke/test_forms/test_01_spravochniki_menu_forms.py`.
+- Dated run evidence is pre-renumbering: its historical compatibility identity
+  is `test_forms_01_spravochniki`; it must not be read as a Forms-05 run.
+- Current Forms-05 leaf: `tests/smoke/test_forms/test_05_spravochniki_forms.py`.
 - Muhit/filiallar: `app3.greenwhite.uz/xtrade`, operatsion
   `api_filial-232905` + `Администрирование`.
 - Natija: 100/100 navigation OK, pytest `1 passed`, 256.97s.
@@ -364,7 +370,7 @@ Tags: spravochniki, test, temporary-exclusion, sellers, telegram
   tegishli barcha direct/page-link yo'llar hozircha form-opening smoke testiga
   qo'shilmaydi.
 - Implementatsiya:
-  `tests/smoke/test_forms/skipped_forms.py` ichidagi `SKIPPED_FORMS` canonical
+  `tests/smoke/test_forms/inventory/skipped_forms.py` ichidagi `SKIPPED_FORMS` canonical
   pathlar bo'yicha markaziy reja tuzilishidan oldin filterlaydi.
 - Qamrov ta'siri: 100 ta inventar yo'lidan 11 tasi chiqarilib, aktiv test
   qamrovi 89 ta navigatsiya bo'ldi.
@@ -434,7 +440,7 @@ Source: user; live UI
 - Live UI xatosi: `A01-02001 — Нет лицензии Qlik`; joriy foydalanuvchida
   amaldagi Qlik litsenziyasi yo'q.
 - Foydalanuvchi qarori: forma vaqtincha umumiy `SKIPPED_FORMS` registry'sida
-  saqlanadi va Forms-03 aktiv rejasiga kiritilmaydi.
+  saqlanadi va Forms-02 aktiv rejasiga kiritilmaydi.
 
 ## `Продажа` page-link va `+add` inventari (2026-08-04 live)
 
@@ -472,21 +478,21 @@ Source: user; live UI
   - `Возвраты` → `anor/mdeal/return/return+add`, heading
     `Возврат (создание)`;
   - `Лиды` → `anor/mdeal/order/lead+add`, heading `Лид (создание)`.
-- Foydalanuvchi qarori (2026-08-04): `+add` ikonka-link tekshiruvi Forms-03
+- Foydalanuvchi qarori (2026-08-04): `+add` ikonka-link tekshiruvi Forms-02
   rejasidan butunlay olib tashlandi — creation formalari bu suite'da
   tekshirilmaydi. `add_icon=True` support flow/monitor/`base_page` da qoladi,
-  lekin Forms-03 da hech qanday case uni ishlatmaydi. Sabab: admin roli
+  lekin Forms-02 da hech qanday case uni ishlatmaydi. Sabab: admin roli
   creation formalarida hujjatni faqat `Черновик` statusida saqlay oladi, shuning
   uchun bu formalar doimo ogohlantirish beradi va smoke navigatsiya tekshiruvi
   uchun ma'noli signal bermaydi.
-- Aktiv Forms-03 qamrovi: 26 direct (`BETA` skipdan keyin) + 12 rekursiv
+- Aktiv Forms-02 qamrovi: 26 direct (`BETA` skipdan keyin) + 12 rekursiv
   page-link/cycle = 38 navigation check.
 
 ### `Возврат (создание)` administrator draft ogohlantirishi
 Tags: sales, return, add-icon, admin, draft, warning, test
 Status: code-confirmed
 Verified: 2026-08-04
-Source: user; `tests/smoke/test_forms/form_monitor.py`
+Source: user; `tests/smoke/test_forms/monitoring/monitor.py`
 
 - Qayerda: `Продажа → Продажа → Возвраты → +add`, canonical path
   `anor/mdeal/return/return+add`.
@@ -503,21 +509,20 @@ Source: user; `tests/smoke/test_forms/form_monitor.py`
   | `Лиды` → `lead+add` | ❌ **chiqmaydi** | 15 s kutishda 3 marta — hech narsa |
 
   Ya'ni `Заказы` va `Возвраты` matnlari **bir harf bilan farq qiladi**
-  (`невозможно` / `невозможна`), `Лиды` esa toza ochiladi. `allowed_warnings`
-  exact-match ishlatilsa har forma uchun **o'z** matni yozilishi kerak.
-- Monitor `allowed_warnings` mexanizmi: case uchun ogohlantirishning to'liq
-  matni berilsa, monitor whitespace'ni normalizatsiya qilib exact taqqoslaydi va
-  alert boshidagi `×` close belgisini hisobga olmaydi. Mos kelgan warning
-  `checks.allowed_warning`da saqlanadi va formani `APPLICATION_ERROR` qilmaydi.
-- Forms-03 da bu mexanizm endi ishlatilmaydi — `+add` case'lar olib tashlandi.
-  Boshqa suite creation formasini tekshirsa, shu pattern ishlatilishi mumkin.
+  (`невозможно` / `невозможна`), `Лиды` esa toza ochiladi.
+- Joriy qaror (2026-08-06): FormMonitor'dagi eski `allowed_warnings`
+  exceptioni olib tashlangan. Aniq hard-error komponenti ko'rinsa matnidan
+  qat'i nazar `APPLICATION_ERROR`; generic `[role="alert"]` esa o'zicha hard
+  error emas. Forms-02 dagi `+add` creation case'lar qamrovdan chiqarilgani
+  uchun bu administrator warninglari joriy suite'da tekshirilmaydi.
 
 ### Alert bleed-through — mexanizm tasdiqlandi, trigger hozir yo'q (2026-08-05)
 Tags: forms-monitor, alert, bleed-through, add-icon, reproduced
 Status: trace-confirmed
 Verified: 2026-08-05
-Source: `+add` creation formalarida qo'lda o'lchov; Forms-01 va Forms-03
-`--headless` runlari (88 + 38 forma)
+Source: `+add` creation formalarida qo'lda o'lchov; o'sha paytdagi tarixiy
+Forms-01 (`Справочники`, joriy Forms-05) va Forms-03 (`Продажа`, joriy
+Forms-02) `--headless` runlari (88 + 38 forma)
 - Gipoteza edi: forma N da chiqqan alert ekranda qolib, forma N+1 ni yolg'ondan
   `APPLICATION_ERROR` qiladi (2026-08-04 runda 039/040/041 alert matnlari bir
   qadam surilgan ko'rinardi).
@@ -534,32 +539,278 @@ Source: `+add` creation formalarida qo'lda o'lchov; Forms-01 va Forms-03
   `невозможна` matnini berdi, `Лиды` esa 15 s kutishda hech narsa bermadi.
   Ya'ni 20–25 ms lik "darhol" o'qishlar — eski alert. Mexanizm **haqiqiy**,
   avval "tekshirib bo'lmaydi" deb yopilgan edi.
-- Lekin **hozirgi qamrovda trigger yo'q**: Forms-01 (88 forma, shundan 8 ta
-  `Импорт`/`Импорт фото` action formasi) va Forms-03 (38 forma) — jami
+- Lekin **hozirgi qamrovda trigger yo'q**: Forms-05 `Справочники` (88 forma,
+  shundan 8 ta `Импорт`/`Импорт фото` action formasi) va Forms-02 `Продажа`
+  (38 forma) — jami
   **126 forma, 0 ta `APPLICATION_ERROR`**. Hech bir suite `add_icon` yoki
-  `allowed_warnings` ishlatmaydi.
+  creation warning ishlatmaydi.
 - Qayta ko'rish sharti: suite'ga creation/`+add` forma qo'shilsa **yoki**
   hisobotda birinchi real `APPLICATION_ERROR` ko'rinsa. Endi bu "ehtimol" emas —
   o'sha kuni **albatta** yolg'on fail beradi.
-- Tozalash shakli: faqat case'ning captured `state["visible_error"]` bo'sh
-  bo'lmaganda qilinadi va **screenshot/state olingandan keyin** — har formada
-  shartsiz Escape bosish o'zi flakiness manbasi (masalan "o'zgarishni bekor
-  qilasizmi?" dialogini chaqirib yuborishi mumkin).
+- Joriy tozalash shakli: `check_application_error` Biruni selectorini
+  qaytargandagina, **failure screenshoti olingandan keyin**, faqat shu modalning
+  `button.close` tugmasi bosiladi. A2/inline error avtomatik o'zgartirilmaydi;
+  har formada shartsiz Escape bosilmaydi.
 
-### Legacy formalarda heading har doim topiladi (2026-08-05)
+### Legacy title check visible headingni exact talab qiladi (2026-08-06)
 Tags: legacy, heading, title, forms-monitor
 Status: trace-confirmed
-Verified: 2026-08-05
-Source: Forms-01 va Forms-03 `--headless` runlari
-- `form_monitor._title_matches` da sirg'alib o'tish yo'li bor: legacy sahifada
-  bironta `role=heading` topilmasa taqqoslamasdan `True` qaytaradi.
-- Dalil: Forms-01 (87 legacy) + Forms-03 (32 legacy) = **119 legacy formaning
-  hech biri** bu yo'lga tushmadi — hisobotdagi `TITLE TAQQOSLANMAGAN FORMALAR`
-  bo'limi ikkala runda ham bo'sh chiqdi.
-- Shu sabab qattiq variant (heading yo'q → `TITLE_MISMATCH`) hozir hech narsani
-  yiqitmasdi, lekin foydasi ham yo'q. `checks.title_verified` bayrog'i va
-  hisobot bo'limi yetarli: teshik ochilsa darhol ko'rinadi.
-- A2 formalar (`title_source=document`) bu yo'lga umuman tushmaydi.
+Verified: 2026-08-06
+Source: qayta raqamlashdan oldingi Forms-01 `Справочники` va Forms-03
+`Продажа` `--headless` runlari;
+`tests/smoke/test_forms/monitoring/checks/title.py`; user-approved title contract
+- Trace dalili: hozirgi nomlarda Forms-05 (87 legacy) + Forms-02 (32 legacy) =
+  **119 legacy formaning** barchasida visible `role=heading` topilgan.
+- Joriy qoida: `check_title` expected forma nomini visible semantic headinglar
+  orasidan whitespace-normalized exact kutadi. Heading yo'q yoki faqat partial
+  match bo'lsa silent pass qilmaydi; `OPENED_WITH_DEFECT / TITLE_NOT_REACHED`.
+- Eski `TITLE TAQQOSLANMAGAN FORMALAR` warning bo'limi va unverified-pass yo'li
+  olib tashlangan. Oldingi gate failure bo'lsa title alohida `NOT_RUN` bo'ladi.
+- A2 formalar boshqa source ishlatadi: `title_source=document_title`.
+
+## `Склад` mega-menu inventari (2026-08-11 live)
+
+Tags: legacy, a2, menu, navbar, warehouse, filial, administration, page-link, test
+Status: live-ui-confirmed
+Verified: 2026-08-11
+Source: live UI
+
+- Muhit: `smartup.online`; taqqoslash `Администрирование` va birinchi
+  operatsion filialda bajarildi.
+- `Администрирование`da ustun headingi DOMda ko'rinmaydi, jami 7 ta
+  `menu_item` bor. Ularning barchasi operatsion filialdagi `Отчеты` ustunining
+  A2 report-constructor formalaridir: ichki, purchase-request, purchase,
+  input, writeoff, intercompany-request va intercompany movement hisobot
+  konstruktorlari.
+- Operatsion filialda 4 ta `menu_column`, jami 38 ta direct `menu_item` bor:
+  `Документы` 13, `Перемещения` 8, `Справочники` 7, `Отчеты` 10.
+- Kesishma 7 ta; admin-only item yo'q, filial-only item 31 ta. Operatsion
+  filialdagi 38 direct formaning 30 tasi legacy, 8 tasi A2. Barcha direct
+  formalarda title `menu_item` bilan exact teng chiqdi.
+
+### Operatsion filial direct formalar
+
+| `menu_column` | `menu_item` / title | canonical `path` | birinchi darajali `page_links` |
+|---|---|---|---|
+| Документы | Ввод начальных остатков ТМЦ | `anor/mkw/init_balance/init_inventory_balance_list` | Ввод начального баланса счетов; Ввод начального баланса клиентов; Ввод начального баланса поставщиков; Ввод начальных остатков оборудования клиентов |
+| Документы | Запросы на закупку | `anor/mkw/purchase/purchase_request_list` | Причины запросов на закупку; Заказы на закупку |
+| Документы | Заказы на закупку | `anor/mkw/purchase/order_list` | Закупки |
+| Документы | Закупки | `anor/mkw/purchase/purchase_list` | Поступления ТМЦ на склад; Списания при закупке; Статус закупок; Прогноз для закупки |
+| Документы | Дополнительные расходы | `anor/mkw/extra_cost_list` | Виды движения |
+| Документы | Поступления ТМЦ на склад | `anor/mkw/input/input_list` | Закупки; Поставщики; Дополнительные расходы; Внутренние перемещения; Списания; Инвентаризации |
+| Документы | Возвраты поставщику | `anor/mkw/return/return_list` | Причины возвратов поставщику |
+| Документы | Списания | `anor/mkw/writeoff/writeoff_list` | Причины списаний; Виды движения; Внутренние перемещения; Инвентаризации |
+| Документы | Инвентаризации | `anor/mkw/stocktaking/stocktaking_list` | Причины инвентаризации; Виды движения; Внутренние перемещения; Списания; Остатки ТМЦ; Инвентаризация склада |
+| Документы | Переоценки себестоимости ТМЦ | `anor/mkw/revaluation/revaluation_list` | — |
+| Документы | Взаиморасчеты с поставщиками | `anor/mkw/purchase/offset/offset_list` | — |
+| Документы | Пересчет приходных цен | `anor/mkw/recalculate_input` | — |
+| Документы | Прогноз для закупки | `anor/mfc/forecast_list` | — |
+| Перемещения | Запросы на внутр. перемещения | `anor/mkw/movement/movement_request_list` | — |
+| Перемещения | Внутренние перемещения | `anor/mkw/movement/movement_list` | Списания; Инвентаризации; Причины перемещений |
+| Перемещения | Запросы на межорг. перемещ.: отправка | `anor/mfm/from_movement_request_list` | — |
+| Перемещения | Запросы на межорг. перемещ.: прием | `anor/mfm/to_movement_request_list` | — |
+| Перемещения | Межорг. перемещения: отправка | `anor/mfm/from_movement_list` | Причины перемещений |
+| Перемещения | Межорг. перемещения: прием | `anor/mfm/to_movement_list` | — |
+| Перемещения | Архив межорг. перемещений | `anor/mfm/from_movement_history_list` | — |
+| Перемещения | Отмененные межорг. перемещения | `anor/mfm/cancelled_from_movement_list` | — |
+| Справочники | Поставщики | `anor/mkw/supplier_list` | — |
+| Справочники | Автотранспорт | `anor/mrf/van_list` | — |
+| Справочники | Склады | `anor/mkw/warehouse_list` | Типы складов |
+| Справочники | Остатки ТМЦ | `anor/mkw/balance/balance_list` | Настройки сроков годности; Рекламное оборудование; Рекомендованные остатки |
+| Справочники | Логистика | `trade/tdeal/logistics_list` | — |
+| Справочники | Рекламное оборудование | `anor/mkw/product_serials` | Остатки ТМЦ |
+| Справочники | Документы WMS | `anor/mxsx/wms/document_list` | — |
+| Отчеты | Материальный отчет | `anor/rep/mkw/warehouse_inventories` | — |
+| Отчеты | Общий отчет по складам | `anor/rep/mkw/warehouse_balance/warehouse_balance` | — |
+| Отчеты | Конструктор отчетов по внутр. перемещениям | `anor/rep/mbi/mkw/movement` | — |
+| Отчеты | Конструктор отчетов по запросам на закуп | `anor/rep/mbi/mkw/purchase_request` | — |
+| Отчеты | Конструктор отчетов по закупкам | `anor/rep/mbi/mkw/purchase` | — |
+| Отчеты | Конструктор отчетов по поступлениям | `anor/rep/mbi/mkw/input` | — |
+| Отчеты | Конструктор отчетов по списанию | `anor/rep/mbi/mkw/writeoff` | — |
+| Отчеты | Конструктор отчетов по запросам на межорг. перемещения | `anor/rep/mbi/mfm/movement_request` | — |
+| Отчеты | Конструктор отчетов по межорг. перемещениям | `anor/rep/mbi/mfm/movement` | — |
+| Отчеты | Отчёт по отгрузкам и оплатам | `trade/rep/warehouse_and_delivery` | — |
+
+### Birinchi darajali page-link targetlari
+
+- 14 ta parentda 38 ta link ko'rindi; ular 28 ta unique canonical targetga
+  olib boradi. Takror targetlar parentlar orasidagi canonical cycle/shortcutdir.
+- Yangi unique targetlar:
+  - `Ввод начального баланса счетов` → `anor/mku/init_balance/init_balance_list`;
+  - `Ввод начального баланса клиентов` → `anor/mku/init_balance/init_client_balance_list`;
+  - `Ввод начального баланса поставщиков` → `anor/mku/init_balance/init_supplier_balance_list`;
+  - `Ввод начальных остатков оборудования клиентов` → `anor/mkw/init_balance/init_client_inventory_balance_list`;
+  - `Причины запросов на закупку` → `anor/mkw/purchase/purchase_request_reason_list`;
+  - `Списания при закупке` → `anor/mkw/purchase/purchase_writeoff_list`;
+  - `Статус закупок` → `anor/mkw/purchase/purchase_status_list`;
+  - `Виды движения` → `anor/mkw/corr_template_list`;
+  - `Причины возвратов поставщику` → `anor/mkw/return/return_reason_list`;
+  - `Причины списаний` → `anor/mkw/writeoff/reason_list`;
+  - `Причины инвентаризации` → `anor/mkw/stocktaking/reason_list`;
+  - `Инвентаризация склада` → `anor/mkw/stocktaking/stocktaking_ban_period_list`;
+  - `Причины перемещений` ichki → `anor/mkw/movement/movement_reason_list`;
+  - `Причины перемещений` intercompany → `anor/mfm/movement_reason_list`;
+  - `Типы складов` → `anor/mkw/warehouse_type_list`;
+  - `Настройки сроков годности` → `anor/pref/expiration_date`;
+  - `Рекомендованные остатки` → `anor/mkw/balance/recommended_balance_list`.
+- Qolgan page-linklar yuqoridagi direct canonical pathlardan biriga qaytadi:
+  purchase/order/input/supplier/extra-cost/movement/writeoff/stocktaking/balance,
+  forecast yoki product-serials. Test inventarida har bir user trace alohida
+  case bo'lishi mumkin, lekin canonical duplicate guard trackni
+  `parent + page_links` bilan birga baholashi kerak.
+- Joriy operatsion filialda `Инвентаризации` breadcrumbida
+  `Инвентаризация КМ` ko'rinmadi; mavjud A2 case oldingi muhitdagi dostup
+  cheklovi sabab skip holatida qoladi.
+
+### `Склад` Forms-03 qamrovi
+
+Tags: forms-03, inventory, mixed-shell, runner
+Status: code-confirmed
+Verified: 2026-08-11
+Source: `tests/smoke/test_forms/inventory/sklad.py`;
+`tests/smoke/test_forms/test_03_sklad_forms.py`;
+`tests/smoke/test_forms/test_0_forms_runner.py`
+
+- Forms-03 shell turiga qarab ajratilmaydi: `Склад` navbaridagi legacy va A2
+  formalar bitta navbar suite'da tekshiriladi.
+- Aktiv reja 76 ta navigatsiya: operatsion filialda 38 direct + 38 page-link.
+  Shell kesimida 68 legacy va 8 A2 navigatsiya bor.
+- `Администрирование`dagi 7 A2 report konstruktori operatsion filialda ham bor,
+  shuning uchun Forms-03 ularni admin filialida ikkinchi marta tekshirmaydi.
+  Admin filialidan faqat operatsion filialda topilmagan formalar qo'shiladi;
+  joriy inventarda admin-only forma yo'q.
+- `Инвентаризация КМ` inventarda saqlanadi, ammo umumiy skip registry sabab
+  bitta intentional skip bo'lib qoladi.
+- Shu A2 formalar standalone `test_a2_angular_forms.py` inventarida ham bo'lishi
+  mumkin. Bu dublikat xato emas: Forms-03 navbar qamrovini, A2Angular esa barcha
+  navbarlardagi A2 texnologiya qamrovini jamlaydi.
+
+## `Финансы` mega-menu inventari (2026-08-11 live)
+
+Tags: legacy, a2, menu, navbar, finance, filial, administration, page-link, test
+Status: live-ui-confirmed
+Verified: 2026-08-11
+Source: smartup.online live Chromium UI; tests/smoke/test_forms/inventory/finansy.py
+
+- Operatsion filialda 42 ta direct forma bor: `Основное` 13,
+  `Денежный поток` 4, `Справочники` 6 va `Отчеты` 19.
+- Rekursiv `page-link` user trace'lari 67 ta; eng chuqur trace depth'i besh.
+  Aktiv reja direct va recursive trace'larni birga hisoblaganda 109 ta
+  navigatsiyani, 58 ta unique canonical pathni qamraydi.
+- Shell kesimida aktiv reja 106 legacy va 3 A2 navigatsiyadan iborat.
+- `Администрирование`da 8 ta direct forma bor; ularning sakkalasi operatsion
+  filial bilan overlap qiladi. Admin-only direct yoki page-link yo'l yo'q.
+- `Обороты по контрагентам(6006)` title'i aynan shu bo'shliq va qavslar bilan
+  yoziladi.
+- Intentional skip yo'q.
+- Approved design-spec A2 yo'llari: `anor/rep/mbi/mkcs/operation`,
+  `anor/rep/mkr/pnl`, `anor/rep/mku/balance_sheet`.
+
+### `Финансы` Forms-04 qamrovi
+
+Tags: forms-04, inventory, mixed-shell, runner
+Status: code-confirmed
+Verified: 2026-08-11
+Source: `tests/smoke/test_forms/inventory/finansy.py`;
+`tests/smoke/test_forms/test_04_finansy_forms.py`;
+`tests/smoke/test_forms/test_0_forms_runner.py`
+
+- Current Forms-04 suite `Финансы` navbarining legacy va A2 navigation
+  qamrovini bitta navbar ownershipida bajaradi.
+
+## `Главное` mega-menu inventari (2026-08-11 live)
+
+Tags: legacy, a2, menu, navbar, main, filial, administration, page-link, test
+Status: live-ui-confirmed
+Verified: 2026-08-11
+Source: live UI
+
+- Muhit: `smartup.online`; birinchi operatsion filial va
+  `Администрирование` filiali taqqoslandi.
+- Operatsion filialda 3 ta `menu_column` va 11 ta direct forma bor:
+  `Основное` 4, `Дополнительное` 6, `Отчеты` 1. Shell kesimida 10 legacy va
+  1 A2 forma.
+- `Администрирование`da shu 3 ta ustunda 14 ta direct forma bor:
+  `Основное` 4, `Дополнительное` 9, `Отчеты` 1. Shell kesimida 12 legacy va
+  2 A2 forma.
+- Direct canonical kesishma 10 ta. Operatsion-only forma `Проекты`;
+  admin-only formalar `Лицензии`, `Подключения к системе`,
+  `Клиенты OAuth2 сервера для компании` va `Регистры вебхуков`.
+- Bir canonical direct forma ikkala filialda ko'rinsa Forms suite uni faqat
+  operatsion filialda ochadi. Admin bucketda faqat yuqoridagi 4 admin-only
+  parent va ulardan topilgan admin-only page-link qoladi.
+
+### Operatsion filial direct formalar
+
+| `menu_column` | `menu_item` / title | canonical `path` | shell | birinchi darajali `page_links` |
+|---|---|---|---|---|
+| Основное | Организации | `anor/mr/filial_list` | legacy | — |
+| Основное | Пользователи | `anor/mr/user_list` | legacy | Все пользователи; Роли |
+| Основное | Проекты | `anor/mrf/subfilial_list` | legacy | — |
+| Основное | Шаблоны накладных | `anor/mr/template_list` | legacy | — |
+| Дополнительное | Настройки системы | `trade/pref/system_setting` | legacy | Аппараты фискализации; Настройки сервисов доставки |
+| Дополнительное | История изменений | `biruni/md/audit_list` | legacy | — |
+| Дополнительное | Шаги визита | `trade/tph/role_list` | legacy | Пользователи; Роли |
+| Дополнительное | Настройки интеграции со сторонним ПО | `trade/txs/external_settings` | A2 | Экспорт заказа |
+| Дополнительное | Объекты | `biruni/kdyn/entity_list` | legacy | — |
+| Дополнительное | Динамичные поля | `biruni/kdyn/field_list` | legacy | — |
+| Отчеты | Отчeты | `anor/rep/report_list` | legacy | — |
+
+### Admin-only direct va page-link formalar
+
+| `menu_column` | `menu_item` / title | canonical `path` | shell | `page_links` |
+|---|---|---|---|---|
+| Основное | Лицензии | `biruni/kl/license_list` | legacy | — |
+| Дополнительное | Подключения к системе | `biruni/kauth/session_list` | legacy | — |
+| Дополнительное | Клиенты OAuth2 сервера для компании | `biruni/kauth/company_client_list` | A2 | — |
+| Дополнительное | Регистры вебхуков | `core/kwh/register_list` | legacy | Логи вебхуков |
+
+### Rekursiv page-link trace'lar
+
+- Operatsion filialda 17 ta trace:
+  - `Пользователи → Все пользователи` → `anor/mr/all_users_list`;
+  - `Пользователи → Роли` → `trade/tr/role_list`;
+  - `Пользователи → Роли → Пользователи` → `anor/mr/user_list` (cycle);
+  - `Пользователи → Роли → Запросы на доступ к действиям` →
+    `biruni/md/access_request_list`;
+  - `Настройки системы → Аппараты фискализации` →
+    `anor/mrf/fiscal_cash_register_list`;
+  - `Настройки системы → Настройки сервисов доставки` →
+    `trade/txs/delivery_service_setting`;
+  - `Шаги визита → Пользователи` branchida `Пользователи`,
+    `Все пользователи`, `Роли`, `Роли → Пользователи` cycle va
+    `Роли → Запросы на доступ к действиям` — 5 ta trace;
+  - `Шаги визита → Роли` branchida `Роли`, `Пользователи`,
+    `Пользователи → Все пользователи`, `Пользователи → Роли` cycle va
+    `Запросы на доступ к действиям` — 5 ta trace;
+  - `Настройки интеграции со сторонним ПО → Экспорт заказа` →
+    `trade/txso/order_export`.
+- Admin-only parentlardan 1 ta trace:
+  `Регистры вебхуков → Логи вебхуков` → `core/kwh/log_list`.
+- `Лицензии` ichidagi tablar va `Отчeты` kategoriyalari canonical route'ni
+  o'zgartirmaydi; ular alohida forma destination sifatida inventoryga
+  qo'shilmaydi.
+
+### `Главное` Forms-01 qamrovi
+
+Tags: forms-01, inventory, mixed-shell, runner
+Status: code-confirmed
+Verified: 2026-08-11
+Source: `tests/smoke/test_forms/inventory/glavnoe.py`;
+`tests/smoke/test_forms/test_01_glavnoe_forms.py`;
+`tests/smoke/test_forms/test_0_forms_runner.py`
+
+- Aktiv reja 33 ta navigatsiya: operatsion filialda 11 direct + 17
+  page-link, `Администрирование`da 4 admin-only direct + 1 page-link.
+- Shell kesimida 31 legacy va 2 A2 case; 33 trace 22 ta unique canonical
+  pathni qamraydi.
+- `Настройки интеграции со сторонним ПО` va
+  `Клиенты OAuth2 сервера для компании` standalone A2Angular inventarida ham
+  qoladi; Forms-01 esa ularni `Главное` navbar ownershipi bo'yicha qamraydi.
+- Skip registry exact `navbar_tab + menu_item + path` trace'iga scope qilinadi.
+  Shu sabab `Справочники → Продавцы` uchun chiqarilgan `Пользователи`,
+  `Роли` va ularning nested targetlari `Главное` trace'larini noto'g'ri
+  bloklamaydi.
 
 ## Group-0 moliyaviy sahifalari (2026-07-31 live)
 

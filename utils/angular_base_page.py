@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 
 from playwright.sync_api import expect
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
@@ -77,24 +78,31 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def button(
+    def click(
         self,
         name,
         *,
-        click=False,
         exact=True,
         index=0,
         root="main",
+        button_type=None,
         timeout=10_000,
-        expect_visible=True,
     ):
-        """A2 buttonni semantic role/name bo'yicha topadi va ixtiyoriy bosadi."""
+        """A2 buttonni semantic role/name bo'yicha topib bosadi."""
         root = self._resolve_root(root)
-        button = root.get_by_role("button", name=name, exact=exact).nth(index)
-        if expect_visible:
-            expect(button).to_be_visible(timeout=timeout)
-        if click:
-            button.click()
+        if button_type is None:
+            button = root.get_by_role("button", name=name, exact=exact).nth(index)
+        else:
+            name_pattern = (
+                self._label_pattern(name)
+                if exact
+                else re.compile(re.escape(str(name)), re.IGNORECASE)
+            )
+            button = root.locator(f'button[type="{button_type}"]').filter(
+                has_text=name_pattern
+            ).nth(index)
+        expect(button).to_be_visible(timeout=timeout)
+        button.click()
         return button
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -199,7 +207,7 @@ class AngularBasePage:
         """A2 ``smt-data-select``dan option tanlaydi yoki joriy qiymatni tekshiradi."""
         root = self._resolve_root(root)
         control = self.control(label, index=index, root=root, timeout=timeout)
-        select = control.locator("smt-data-select").first
+        select = control.locator("smt-data-select, smt-select").first
         trigger = select.locator("smt-select-trigger").first
         search = trigger.locator(
             "input:not([type='checkbox']):not([type='radio'])"
@@ -232,19 +240,15 @@ class AngularBasePage:
                     ".cdk-overlay-container smt-select-dropdown:visible"
                 ).last
                 expect(dropdown).to_be_visible(timeout=timeout)
+                option_cell = self.page.get_by_text(option_matcher)
                 option = dropdown.locator("li").filter(
-                    has_text=option_matcher
+                    has=option_cell
                 ).first
                 expect(option).to_be_visible(timeout=timeout)
                 option.click()
                 if dropdown.is_visible():
                     self.page.mouse.click(1, 1)
                 expect(dropdown).to_be_hidden(timeout=timeout)
-                expect(
-                    self.page.locator(
-                        ".cdk-overlay-backdrop.cdk-overlay-backdrop-showing:visible"
-                    )
-                ).to_have_count(0, timeout=timeout)
 
         expected = expect_value
         if expected is _UNSET and value is not _UNSET:
@@ -255,6 +259,51 @@ class AngularBasePage:
         if return_value:
             return search.input_value()
         return select
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def date_picker(
+        self,
+        label,
+        *,
+        date="today",
+        index=0,
+        root="main",
+        timeout=10_000,
+    ):
+        """A2 ``smt-date-picker``da bugungi yoki ``DD.MM.YYYY`` sanani tanlaydi."""
+        root = self._resolve_root(root)
+        control = self.control(label, index=index, root=root, timeout=timeout)
+        picker = control.locator("smt-date-picker").first
+        trigger = picker.locator("smt-select-trigger").first
+        input_el = trigger.locator("input").first
+        expect(picker).to_be_visible(timeout=timeout)
+        expect(trigger).to_be_visible(timeout=timeout)
+        expect(input_el).to_be_visible(timeout=timeout)
+
+        if date == "today":
+            trigger.click()
+            overlay = self.page.locator(
+                ".cdk-overlay-container .cdk-overlay-pane:visible"
+            ).last
+            expect(overlay).to_be_visible(timeout=timeout)
+            today = overlay.get_by_role("button", name="Сегодня", exact=True)
+            expect(today).to_be_visible(timeout=timeout)
+            today.click()
+            expected = datetime.now().strftime("%d.%m.%Y")
+        else:
+            expected = str(date)
+            if not re.fullmatch(r"\d{2}\.\d{2}\.\d{4}", expected):
+                raise ValueError(
+                    'date_picker(): date="today" yoki "DD.MM.YYYY" bo\'lishi kerak'
+                )
+            input_el.click()
+            input_el.press("ControlOrMeta+A")
+            input_el.fill(expected)
+            input_el.press("Tab")
+
+        expect(input_el).to_have_value(expected, timeout=timeout)
+        return input_el
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -730,6 +779,48 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    def grid_input(
+        self,
+        text,
+        value,
+        *,
+        role="spinbutton",
+        index=0,
+        root="main",
+        timeout=10_000,
+    ):
+        """A2 grid qatoridagi native inputni semantic role orqali to'ldiradi."""
+        row = self.grid(text, root=root, timeout=timeout)
+        field = row.get_by_role(role).nth(index)
+        expect(field).to_be_visible(timeout=timeout)
+        field.fill(str(value))
+        expect(field).to_have_value(str(value), timeout=timeout)
+        return field
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def grid_cell(
+        self,
+        text,
+        *,
+        column,
+        expect_value=_UNSET,
+        return_value=False,
+        root="main",
+        timeout=10_000,
+    ):
+        """A2 grid qatoridagi ``data-smt-col-key`` cellni tekshiradi."""
+        row = self.grid(text, root=root, timeout=timeout)
+        cell = row.locator(f'[data-smt-col-key="{column}"]').first
+        expect(cell).to_be_visible(timeout=timeout)
+        if expect_value is not _UNSET:
+            expect(cell).to_have_text(str(expect_value), timeout=timeout)
+        if return_value:
+            return re.sub(r"\s+", " ", cell.inner_text()).strip()
+        return cell
+
+    # ------------------------------------------------------------------------------------------------------------------
+
     def navigate_to(
         self,
         *,
@@ -738,6 +829,7 @@ class AngularBasePage:
         path=None,
         root="header",
         timeout=30_000,
+        wait_loader=True,
     ):
         """A2 shell menu tabidan menuitem orqali boshqa A2 formani ochadi."""
         if (name is None) == (path is None):
@@ -760,7 +852,8 @@ class AngularBasePage:
             item = menu.get_by_role("menuitem", name=name, exact=True).first
         expect(item).to_be_visible(timeout=timeout)
         item.click()
-        self.wait_for_loader(timeout=timeout)
+        if wait_loader:
+            self.wait_for_loader(timeout=timeout)
         return item
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -877,6 +970,43 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    def close_dialog_if_visible(
+        self,
+        expected_text=None,
+        *,
+        root="body",
+        timeout=1_000,
+    ):
+        """A2/legacy natija dialogi ko'rinsa yopadi, bo'lmasa ``False`` qaytaradi."""
+        root = self._resolve_root(root)
+        dialog = root.locator(
+            "#biruniAlertExtended:visible, [role='dialog']:visible, "
+            ".cdk-overlay-pane:visible"
+        ).last
+        try:
+            expect(dialog).to_be_visible(timeout=timeout)
+        except (AssertionError, PlaywrightTimeoutError):
+            return False
+
+        if expected_text:
+            expect(dialog).to_contain_text(expected_text, timeout=timeout)
+
+        close = dialog.locator("button.close").first
+        if close.count() == 0:
+            close = dialog.get_by_role(
+                "button",
+                name=re.compile(
+                    r"закрыть|close|ok|готово|понятно|×",
+                    re.IGNORECASE,
+                ),
+            ).first
+        expect(close).to_be_visible(timeout=timeout)
+        close.click()
+        expect(dialog).to_be_hidden(timeout=timeout)
+        return True
+
+    # ------------------------------------------------------------------------------------------------------------------
+
     def save_and_expect_page(
         self,
         *,
@@ -891,9 +1021,8 @@ class AngularBasePage:
         timeout=30_000,
     ):
         """A2 formani saqlaydi, confirmni yopadi va target UI transitionni kutadi."""
-        self.button(
+        self.click(
             button_name,
-            click=True,
             exact=True,
             root=root,
         )

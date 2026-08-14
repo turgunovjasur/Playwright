@@ -39,10 +39,9 @@ Source: `smartup.online` live UI
 ## Flow And Tests
 
 - Menu inventory/test:
-  `tests/smoke/test_forms/test_02_a2_admin_menu_forms.py`.
-- Testdagi `menu_item="PnL"` va `Title: PnL` yozuvlari 2026-08-04 live UI
-  kontraktiga nisbatan eskirgan; alohida implementatsiya tasdig'i bilan
-  yangilanishi kerak.
+  `tests/smoke/test_forms/test_a2_angular_forms.py`.
+- Current code-confirmed test definition uses exact
+  `menu_item="Отчет о прибылях и убытках"`.
 
 ## Business Rules
 
@@ -53,5 +52,4 @@ Source: `smartup.online` live UI
 
 ## Known Issues
 
-- Joriy test inventari hali eski `menu_item="PnL"` qiymatidan foydalanadi;
-  live UI'da bunday exact menuitem yo'q.
+- N/A.

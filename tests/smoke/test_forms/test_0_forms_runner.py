@@ -1,18 +1,11 @@
 import allure
 import pytest
 
-from tests.smoke.test_forms.test_01_spravochniki_menu_forms import (
-    SPRAVOCHNIKI_MENU_TESTS,
-    run_spravochniki_menu_column_forms,
-)
-from tests.smoke.test_forms.test_02_a2_admin_menu_forms import (
-    A2_MENU_TESTS,
-    run_a2_menu_identity_forms,
-)
-from tests.smoke.test_forms.test_03_prodaja_menu_forms import (
-    PRODAJA_MENU_TESTS,
-    run_prodaja_menu_column_forms,
-)
+from tests.smoke.test_forms.test_01_glavnoe_forms import run_glavnoe_forms
+from tests.smoke.test_forms.test_02_prodaja_forms import run_prodaja_forms
+from tests.smoke.test_forms.test_03_sklad_forms import run_sklad_forms
+from tests.smoke.test_forms.test_04_finansy_forms import run_finansy_forms
+from tests.smoke.test_forms.test_05_spravochniki_forms import run_spravochniki_forms
 
 
 pytestmark = [
@@ -27,47 +20,26 @@ pytestmark = [
 ]
 
 
-def _terminal_reporter(pytestconfig):
-    return pytestconfig.pluginmanager.get_plugin("terminalreporter")
+@allure.title("Главное")
+def test_forms_01_glavnoe(group_session_page, pytestconfig, request):
+    run_glavnoe_forms(group_session_page, progress_test_id=request.node.name, terminal_reporter=pytestconfig.pluginmanager.get_plugin("terminalreporter"))
 
 
-@pytest.mark.parametrize(
-    "menu_test",
-    SPRAVOCHNIKI_MENU_TESTS,
-    ids=[item["test_identity"] for item in SPRAVOCHNIKI_MENU_TESTS],
-)
-def test_forms_01_spravochniki(group_session_page, pytestconfig, menu_test):
-    allure.dynamic.title(f"Forms-01 — {menu_test['test_identity']}")
-    run_spravochniki_menu_column_forms(
-        group_session_page,
-        menu_test=menu_test,
-        terminal_reporter=_terminal_reporter(pytestconfig),
-    )
+@allure.title("Продажа")
+def test_forms_02_prodaja(group_session_page, pytestconfig, request):
+    run_prodaja_forms(group_session_page, progress_test_id=request.node.name, terminal_reporter=pytestconfig.pluginmanager.get_plugin("terminalreporter"))
 
 
-@pytest.mark.parametrize(
-    "menu_test",
-    A2_MENU_TESTS,
-    ids=[item["test_identity"] for item in A2_MENU_TESTS],
-)
-def test_forms_02_a2_admin(group_session_page, pytestconfig, menu_test):
-    allure.dynamic.title(f"Forms-02 — {menu_test['test_identity']}")
-    run_a2_menu_identity_forms(
-        group_session_page,
-        menu_test=menu_test,
-        terminal_reporter=_terminal_reporter(pytestconfig),
-    )
+@allure.title("Склад")
+def test_forms_03_sklad(group_session_page, pytestconfig, request):
+    run_sklad_forms(group_session_page, progress_test_id=request.node.name, terminal_reporter=pytestconfig.pluginmanager.get_plugin("terminalreporter"))
 
 
-@pytest.mark.parametrize(
-    "menu_test",
-    PRODAJA_MENU_TESTS,
-    ids=[item["test_identity"] for item in PRODAJA_MENU_TESTS],
-)
-def test_forms_03_prodaja(group_session_page, pytestconfig, menu_test):
-    allure.dynamic.title(f"Forms-03 — {menu_test['test_identity']}")
-    run_prodaja_menu_column_forms(
-        group_session_page,
-        menu_test=menu_test,
-        terminal_reporter=_terminal_reporter(pytestconfig),
-    )
+@allure.title("Финансы")
+def test_forms_04_finansy(group_session_page, pytestconfig, request):
+    run_finansy_forms(group_session_page, progress_test_id=request.node.name, terminal_reporter=pytestconfig.pluginmanager.get_plugin("terminalreporter"))
+
+
+@allure.title("Справочники")
+def test_forms_05_spravochniki(group_session_page, pytestconfig, request):
+    run_spravochniki_forms(group_session_page, progress_test_id=request.node.name, terminal_reporter=pytestconfig.pluginmanager.get_plugin("terminalreporter"))

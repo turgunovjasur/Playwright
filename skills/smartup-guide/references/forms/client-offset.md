@@ -46,7 +46,7 @@ Tags: client-offset, grid, row, sliding, details
 Status: trace-confirmed
 Verified: 2026-07-31
 Source: `test-results/traces/test_0_group_runner.zip`;
-`tests/smoke/test_groups/test_0_grup/test_02_archive_base_order.py`; live UI
+`tests/smoke/test_groups/test_a_grup/test_02_archive_base_order.py`; live UI
 - Qoida: settlement row yoki ko'rinadigan client cell bosilganda checkbox
   checked bo'lmaydi; row `tbl-row open` holatiga o'tadi va
   `sliding.tbl-row-menu` ichida `Детали` actioni paydo bo'ladi.
@@ -85,8 +85,8 @@ Source: live UI
 
 - Mavjud reusable flow: N/A
 - Mavjud group-0 testlar:
-  `tests/smoke/test_groups/test_0_grup/test_02_archive_base_order.py`,
-  `tests/smoke/test_groups/test_0_grup/test_04_offset_client_balance.py`.
+  `tests/smoke/test_groups/test_a_grup/test_02_archive_base_order.py`,
+  `tests/smoke/test_groups/test_a_grup/test_04_offset_client_balance.py`.
 
 ## Business Rules
 

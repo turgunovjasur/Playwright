@@ -1,9 +1,16 @@
 ---
 name: maintain-test-infra
-description: Smartup test execution infrasi — scripts/run_tests.py, smoke config/reporting, Telegram CI bot, GitHub Actions workflow, Allure server va system/AI summary'larni diagnostika qiladi va yangilaydi. Bot, CI progress, report lifecycle, runner target mapping yoki summary pipeline bilan ishlaganda foydalan.
+description: Use when Smartup runner targetlari, smoke config, Telegram CI, GitHub Actions, Allure lifecycle, progress yoki system/AI summary infrasi bilan ishlash kerak bo'lsa.
 ---
 
 # Test Infrani Saqlash
+
+## Skill Chegarasi
+
+Bu skill runner, collection, CI, Allure lifecycle va reporting subsystemini
+egallaydi. Bitta testning kuzatilgan failure root cause'i — `debug-test`;
+testni ishga tushirish va run summary — `run-smoke`; test artifactini yozish —
+`write-test`. Owner skillga havola ruxsat scope'ini kengaytirmaydi.
 
 ## Vazifa turini aniqlash
 
@@ -25,8 +32,7 @@ description: Smartup test execution infrasi — scripts/run_tests.py, smoke conf
 3. Secret, production dispatch yoki doimiy server processiga tegmasdan read-only
    diagnostika bilan sababni isbotlash.
 4. O'zgartirish so'ralgan bo'lsa eng kichik kesimda kod + reference'ni birga
-   yangilash. User unit testni alohida so'ramasa test faylini yaratma va mavjud
-   unit test fixture/expectationlariga tegma.
+   yangilash. Unit-test scope'i uchun `write-test`dagi canonical qoidaga amal qil.
 5. Default verificationni syntax/config parse, linter, read-only inspection va
    `git diff --check` bilan chekla. `pytest`, test collection yoki boshqa test
    commandini faqat user aynan `run qil` deganda ishlat.
@@ -41,7 +47,7 @@ description: Smartup test execution infrasi — scripts/run_tests.py, smoke conf
 - Runner CLI/help, target mapping va skill commandlari bir o'zgarishda sinxron bo'lsin.
 - Telegram progress, terminal summary va Allure bir xil test identity
   (`group`, `runner`, `test`, `Allure title`, nested step)dan foydalansin.
-- `Tuzat`/`amalga oshir` infra kodini tahrirlashga ruxsat beradi, lekin unit
-  test yozish, o'zgartirish yoki run qilish authoritysini bermaydi.
+- Implementatsiya va execution authoritysi uchun
+  [project-guide](../project-guide/SKILL.md#governance)ga amal qil.
 - Infra knowledge'ni current behavior va historical evidence sifatida ajrat;
   eski kontraktni joriy qoida sifatida qoldirma.

@@ -16,10 +16,12 @@ N/A
 
 ## Flow And Tests
 
-- Form-opening suite: `tests/smoke/test_forms/test_02_a2_admin_menu_forms.py`
-- Skip registry: `tests/smoke/test_forms/skipped_forms.py`
-- Holat: to'liq inventarda saqlanadi, test rejasi tuzilishidan oldin skip
-  registry orqali chiqariladi va hisobotga kirmaydi.
+- Navbar suite: `tests/smoke/test_forms/test_03_sklad_forms.py`
+- A2 aggregate: `tests/smoke/test_forms/test_a2_angular_forms.py`
+- Skip registry: `tests/smoke/test_forms/inventory/skipped_forms.py`
+- Holat: ikkala inventarda saqlanadi, test rejasi tuzilganda skip registry
+  orqali aktiv caselardan chiqariladi va intentional skip sifatida hisobotga
+  qo'shiladi.
 
 ## Business Rules
 

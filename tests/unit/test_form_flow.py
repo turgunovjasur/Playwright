@@ -1,7 +1,6 @@
 import ast
 import inspect
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -13,8 +12,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 from tests.smoke.smoke_reporting import safe_page_screenshot
-from tests.smoke.test_forms import form_monitor
-from tests.smoke.test_forms.flow import (
+from tests.smoke.test_forms.monitoring import monitor as form_monitor
+from tests.smoke.test_forms.monitoring.navigation import (
     _select_operational_filial,
     build_form_result,
     canonical_form_path,
@@ -23,7 +22,7 @@ from tests.smoke.test_forms.flow import (
     format_form_result,
     run_form_cases,
 )
-from tests.smoke.test_forms.form_monitor import (
+from tests.smoke.test_forms.monitoring.monitor import (
     NOT_CHECKED,
     NOT_OPENED,
     OPENED_WITH_DEFECT,
@@ -37,7 +36,7 @@ from tests.smoke.test_forms.form_monitor import (
     form_case,
     render_monitor_summary,
 )
-from tests.smoke.test_forms.test_01_spravochniki_menu_forms import (
+from tests.smoke.test_forms.inventory.spravochniki import (
     ADMIN_DIRECT_FORMS,
     ADMIN_HIDDEN_FORMS,
     ADMIN_PAGE_LINK_FORMS,
@@ -331,59 +330,54 @@ def test_group_session_page_does_not_require_code_fixture():
     ]
 
 
-def test_authorization_is_monitored_inside_each_forms_suite():
+def test_authorization_is_owned_by_each_navbar_forms_leaf():
     runner_source = (ROOT / "tests/smoke/test_forms/test_0_forms_runner.py").read_text(
         encoding="utf-8"
     )
-    forms_01_source = (
-        ROOT / "tests/smoke/test_forms/test_01_spravochniki_menu_forms.py"
-    ).read_text(encoding="utf-8")
-    forms_02_source = (
-        ROOT / "tests/smoke/test_forms/test_02_a2_admin_menu_forms.py"
-    ).read_text(encoding="utf-8")
+    assert "authorization(" not in runner_source
 
-    assert "forms_admin_page" not in runner_source
-    monitored_login = re.compile(r'monitor\.precondition\(\s*"Admin avtorizatsiyasi"')
-    assert monitored_login.search(forms_01_source)
-    assert monitored_login.search(forms_02_source)
-
-
-def test_forms_suites_report_even_when_an_unexpected_error_escapes():
-    for relative_path, suite_function in (
-        (
-            "tests/smoke/test_forms/test_01_spravochniki_menu_forms.py",
-            "run_spravochniki_menu_forms",
-        ),
-        (
-            "tests/smoke/test_forms/test_02_a2_admin_menu_forms.py",
-            "run_a2_admin_menu_forms",
-        ),
-        (
-            "tests/smoke/test_forms/test_03_prodaja_menu_forms.py",
-            "run_prodaja_menu_forms",
-        ),
+    for leaf_name in (
+        "test_01_glavnoe_forms.py",
+        "test_02_prodaja_forms.py",
+        "test_03_sklad_forms.py",
+        "test_04_finansy_forms.py",
+        "test_05_spravochniki_forms.py",
     ):
-        module = ast.parse((ROOT / relative_path).read_text(encoding="utf-8"))
-        suite = next(
-            node
-            for node in module.body
-            if isinstance(node, ast.FunctionDef) and node.name == suite_function
-        )
-        finish_calls = [
-            node
-            for node in ast.walk(suite)
-            if isinstance(node, ast.Call)
-            and isinstance(node.func, ast.Attribute)
-            and node.func.attr == "finish"
-        ]
-        assert len(finish_calls) == 1, suite_function
-        guaranteed = any(
-            finish_calls[0] in list(ast.walk(statement))
-            for node in ast.walk(suite)
-            if isinstance(node, ast.Try)
-            for statement in node.finalbody
-        )
-        assert guaranteed, suite_function
+        leaf_source = (
+            ROOT / "tests/smoke/test_forms" / leaf_name
+        ).read_text(encoding="utf-8")
+        assert 'authorization(page, who="admin")' in leaf_source, leaf_name
+        assert "run_legacy_form_monitoring(" in leaf_source, leaf_name
+
+
+def test_forms_monitoring_reports_even_when_an_unexpected_error_escapes():
+    module = ast.parse(
+        (
+            ROOT
+            / "tests/smoke/test_forms/monitoring/suite_runner.py"
+        ).read_text(encoding="utf-8")
+    )
+    suite = next(
+        node
+        for node in module.body
+        if isinstance(node, ast.FunctionDef)
+        and node.name == "run_legacy_form_monitoring"
+    )
+    finish_calls = [
+        node
+        for node in ast.walk(suite)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "finish"
+    ]
+    assert len(finish_calls) == 1
+    guaranteed = any(
+        finish_calls[0] in list(ast.walk(statement))
+        for node in ast.walk(suite)
+        if isinstance(node, ast.Try)
+        for statement in node.finalbody
+    )
+    assert guaranteed
 
 
 def test_failure_is_classified_from_the_state_that_caused_it(monkeypatch):

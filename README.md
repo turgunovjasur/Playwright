@@ -205,7 +205,9 @@ Asosiy runner shu:
 python scripts/run_tests.py [target] --url <server_url> [company mode] [options]
 ```
 
-Bu buyruq macOS, Linux va Windowsda ishlaydi. `.env` ishlatilmaydi.
+Bu buyruq macOS, Linux va Windowsda ishlaydi. Repo rootida `.env` mavjud
+bo'lsa runner mode va credentiallarni undan oladi; `.env` bo'lmasa CLI flaglari
+ishlatiladi.
 
 ### <a id="buyruqlar-nima-qiladi"></a>Buyruqlar nima qiladi
 
@@ -220,20 +222,18 @@ Bu buyruq macOS, Linux va Windowsda ishlaydi. `.env` ishlatilmaydi.
 | `--disable-license-policy` | Yangi companyda license policy ni off qiladi. |
 | `--open-report` / `OPEN_REPORT=1` | Testdan keyin Allure reportni generate qilib ochadi. `OPEN_REPORT=1` shell env yoki repo `.env` ichida berilishi mumkin. |
 | `--headless` | Browserni ko'rsatmasdan ishlatadi. |
-| `--regression` | Testlarni regression scope bilan ishlatadi. |
 | `--show-trace` / `SHOW_TRACE=1` | Testdan keyin oxirgi Playwright trace viewerini ochadi. `SHOW_TRACE=1` shell env yoki repo `.env` ichida berilishi mumkin. |
 | `--ai-summary` | Gemini orqali qo'shimcha AI xulosa yozadi. Default: off. |
 | `--dry-run` | Testni ishga tushirmaydi, faqat pytest commandni ko'rsatadi. |
-| `all` | Default target. Setup + A + B + C + Report + Forms runner ishlaydi. |
+| `all` | Default target. Setup + Group-0 + Report + Forms runner ishlaydi. |
 | `setup` | Faqat setup runner ishlaydi. |
-| `setup-report` | Lokal target: Setup, keyin Report runner; A/B/C ishlamaydi. |
-| `setup-a2-admin` | Lokal target: Setup, keyin faqat `test_a2_admin_menu_forms`; A/B/C/Report ishlamaydi. |
+| `setup-group-0` | Setup, keyin Group-0 runnerni bitta sessiyada ishlatadi. |
+| `setup-report` | Lokal target: Setup, keyin Report runner ishlaydi. |
+| `setup-a2-admin` | Lokal compatibility target: Setup, keyin standalone `test_a2_angular_forms.py` ishlaydi. |
 | `setup-forms` | CI/bot targeti: Setup, keyin barcha form-opening testlar ishlaydi. |
 | `company` | Faqat yangi company yaratish testi ishlaydi. |
-| `groups` | Setupni ishlatmasdan barcha group runnerlar ishlaydi. |
-| `group-a` | Faqat A group ishlaydi. |
-| `group-b` | Faqat B group ishlaydi. |
-| `group-c` | Faqat C group ishlaydi. |
+| `groups` | Setupni ishlatmasdan Group-0 va Report runnerlarni ishlatadi. |
+| `group-0` | Faqat Group-0 ishlaydi. |
 | `group-report` | Faqat Report group ishlaydi. |
 | `forms` | Setupni ishlatmasdan faqat Forms runner ishlaydi. |
 
@@ -245,7 +245,9 @@ Bu buyruq macOS, Linux va Windowsda ishlaydi. `.env` ishlatilmaydi.
 python scripts/run_tests.py --url <server_url> --company-code <company_code> --company-password <company_password>
 ```
 
-Nima qiladi: mavjud companyga `admin@<company_code>` login va `<company_password>` parol bilan kiradi, setup hamda A/B/C/Report group testlarini ishlatadi.
+Nima qiladi: mavjud companyga `admin@<company_code>` login va
+`<company_password>` parol bilan kiradi, setup, Group-0, Report hamda Forms
+runnerlarini ishlatadi.
 
 #### Yangi company yaratib full smoke
 
@@ -277,31 +279,24 @@ Nima qiladi: faqat user setup zanjirini ishlatadi.
 python scripts/run_tests.py groups --url <server_url> --company-code <company_code> --company-password <company_password>
 ```
 
-Nima qiladi: saqlangan setup data bilan A, B, C va Report group runnerlarini ishlatadi.
+Nima qiladi: saqlangan setup data bilan Group-0 va Report runnerlarini ishlatadi.
 
-#### Faqat A group
-
-```bash
-python scripts/run_tests.py group-a --url <server_url> --company-code <company_code> --company-password <company_password>
-```
-
-Nima qiladi: saqlangan setup data bilan A group testlarini ishlatadi.
-
-#### Faqat B group
+#### Setup va Group-0
 
 ```bash
-python scripts/run_tests.py group-b --url <server_url> --company-code <company_code> --company-password <company_password>
+python scripts/run_tests.py setup-group-0 --url <server_url> --company-code <company_code> --company-password <company_password>
 ```
 
-Nima qiladi: saqlangan setup data bilan B group testlarini ishlatadi.
+Nima qiladi: setup va Group-0ni bitta pytest sessiyasida yangi code bilan
+ishlatadi.
 
-#### Faqat C group
+#### Faqat Group-0
 
 ```bash
-python scripts/run_tests.py group-c --url <server_url> --company-code <company_code> --company-password <company_password>
+python scripts/run_tests.py group-0 --url <server_url> --company-code <company_code> --company-password <company_password>
 ```
 
-Nima qiladi: saqlangan setup data bilan C group (aksiya) testlarini ishlatadi.
+Nima qiladi: saqlangan setup baseline bilan Group-0 testlarini ishlatadi.
 
 #### Faqat Report group
 
@@ -337,14 +332,6 @@ python scripts/run_tests.py --url <server_url> --company-code <company_code> --c
 ```
 
 Nima qiladi: Chromium headless rejimda ishlaydi.
-
-#### Regression scope
-
-```bash
-python scripts/run_tests.py --url <server_url> --company-code <company_code> --company-password <company_password> --regression
-```
-
-Nima qiladi: testlarni regression mode bilan ishlatadi.
 
 #### Oxirgi trace ni ochish
 
@@ -384,20 +371,21 @@ Default target `all`, ya'ni full suite.
 
 | Target | Buyruq namunasi | Nima ishlaydi |
 |--------|------------------|---------------|
-| `all` | `python scripts/run_tests.py --url <url> --company-code <code> --company-password <pass>` | Setup + A + B + C + Report + Forms runner |
+| `all` | `python scripts/run_tests.py --url <url> --company-code <code> --company-password <pass>` | Setup + Group-0 + Report + Forms runner |
 | `setup` | `python scripts/run_tests.py setup --url <url> --company-code <code> --company-password <pass>` | Faqat user setup |
+| `setup-group-0` | `python scripts/run_tests.py setup-group-0 --url <url> --company-code <code> --company-password <pass>` | User setup + Group-0 |
 | `setup-report` | `python scripts/run_tests.py setup-report --url <url> --company-code <code> --company-password <pass>` | User setup + Report group; lokal target |
-| `setup-a2-admin` | `python scripts/run_tests.py setup-a2-admin --url <url> --company-code <code> --company-password <pass>` | User setup + faqat A2 admin formalar; lokal target |
+| `setup-a2-admin` | `python scripts/run_tests.py setup-a2-admin --url <url> --company-code <code> --company-password <pass>` | User setup + standalone A2Angular; lokal compatibility target |
 | `setup-forms` | `python scripts/run_tests.py setup-forms --url <url> --company-code <code> --company-password <pass>` | User setup + barcha form-opening testlar; CI/bot shu targetni ishlatadi |
 | `company` | `python scripts/run_tests.py company --url <url> --create-company --head-email <email> --head-password <pass>` | Faqat company yaratish testi |
-| `groups` | `python scripts/run_tests.py groups --url <url> --company-code <code> --company-password <pass>` | Setupdan tashqari barcha grouplar |
-| `group-a` | `python scripts/run_tests.py group-a --url <url> --company-code <code> --company-password <pass>` | Faqat A group |
-| `group-b` | `python scripts/run_tests.py group-b --url <url> --company-code <code> --company-password <pass>` | Faqat B group |
-| `group-c` | `python scripts/run_tests.py group-c --url <url> --company-code <code> --company-password <pass>` | Faqat C group |
+| `groups` | `python scripts/run_tests.py groups --url <url> --company-code <code> --company-password <pass>` | Setupdan tashqari Group-0 + Report |
+| `group-0` | `python scripts/run_tests.py group-0 --url <url> --company-code <code> --company-password <pass>` | Faqat Group-0 |
 | `group-report` | `python scripts/run_tests.py group-report --url <url> --company-code <code> --company-password <pass>` | Faqat Report group |
 | `forms` | `python scripts/run_tests.py forms --url <url> --company-code <code> --company-password <pass>` | Faqat Forms runner |
 
-`--create-company` `all`, `setup`, `setup-forms` va `company` targetlari bilan ishlatiladi. `groups`, `forms` va alohida group targetlari uchun avval mavjud company va setup data kerak.
+`--create-company` `all`, `setup`, `setup-group-0`, `setup-forms` va `company`
+targetlari bilan ishlatiladi. `groups`, `forms` va alohida group targetlari
+uchun avval mavjud company va setup data kerak.
 
 CI/Telegram botdagi `setup-forms` targeti `CREATE_COMPANY=0` bilan ishlaydi:
 serverga mos company code/password GitHub Secrets'dan olinadi.
@@ -417,7 +405,7 @@ Asosiy run uchun `scripts/run_tests.py` ishlatish tavsiya qilinadi. Debug uchun 
 ```bash
 ./.venv/bin/pytest \
   tests/smoke/test_setup/test_0_setup_runner.py \
-  tests/smoke/test_groups/test_0_grup/test_0_group_runner.py \
+  tests/smoke/test_groups/test_a_grup/test_0_group_runner.py \
   tests/smoke/test_groups/test_report_grup/test_0_group_runner.py \
   --new-code --url <server_url> --company-code <company_code> --company-password <company_password> -v
 ```
@@ -427,7 +415,7 @@ Yangi company bilan:
 ```bash
 ./.venv/bin/pytest \
   tests/smoke/test_setup/test_0_setup_runner.py \
-  tests/smoke/test_groups/test_0_grup/test_0_group_runner.py \
+  tests/smoke/test_groups/test_a_grup/test_0_group_runner.py \
   tests/smoke/test_groups/test_report_grup/test_0_group_runner.py \
   --new-code --url <server_url> --create-company --head-email <head_email> --head-password <head_password> -v
 ```
@@ -441,7 +429,9 @@ Yangi company bilan:
 
 ## <a id="test-qamrovi"></a>Test qamrovi
 
-`scripts/run_tests.py` — full run uchun setup va A/B/C/Report runner fayllarini ketma-ket pytest targetlari sifatida beradi. Alohida outer `test_all_runner.py` ishlatilmaydi.
+`scripts/run_tests.py` — full run uchun Setup, Group-0, Report va Forms runner
+fayllarini ketma-ket pytest targetlari sifatida beradi. Alohida outer
+`test_all_runner.py` ishlatilmaydi.
 
 `tests/smoke/test_setup/test_0_setup_runner.py` — user setup testlari **bitta browser sessiyasida** ketma-ket ishlaydi.
 
@@ -452,38 +442,38 @@ Group runnerlar — har bir case alohida pytest/Allure test. User grouplarida gr
 | # | Test nomi              | Nima tekshiriladi                                     |
 |---|------------------------|-------------------------------------------------------|
 | 00 | Company               | `--create-company` bilan company yaratish va code saqlash |
-| 01 | Authorization         | Login, dashboard yuklanishi                           |
-| 02 | Legal Person          | Yuridik shaxs yaratish va qidirish                   |
-| 03 | Filial                | Organizatsiya yaratish, valyuta va yuridik shaxs bog'lash |
-| 04 | Room                  | Ish zonasi yaratish                                   |
-| 05 | Robot                 | Shtat birligini yaratish                              |
-| 06 | Natural Person        | Jismoniy shaxs yaratish                               |
-| 07 | User                  | Foydalanuvchi yaratish va robot/jismoniy shaxs bog'lash |
-| 08 | User Attach Form      | Foydalanuvchiga formalar biriktirish                  |
-| 09 | Role                  | Admin roliga barcha ruxsatlar berish                  |
-| 10 | Role Attach Form      | Rolga barcha formlarga kirish ruxsatini berish        |
-| 11 | Buy License           | Litsenziya sotib olish                                |
-| 12 | Attach License        | Foydalanuvchiga litsenziya biriktirish                |
-| 13 | Change Password       | Yangi foydalanuvchi parolini o'zgartirish             |
-| 14 | Price Type            | Narx turini yaratish                                  |
-| 15 | Payment Type          | To'lov turlarini biriktirish                          |
-| 16 | Sector                | TMT to'plami (Набор ТМЦ) yaratish                    |
-| 17 | Product               | TMT (mahsulot) yaratish                               |
-| 18 | Natural Person For Client_1 | Qo'shimcha client uchun jismoniy shaxs yaratish |
-| 19 | Room Attachment       | Ish zonasiga kerakli bog'lanishlarni biriktirish      |
-| 20 | Init Balance          | Boshlang'ich qoldiq uchun hujjat yaratish             |
-| 21 | Balance               | Qoldiq/harakatlar hayot siklini tekshirish            |
+| 01 | Legal Person          | Admin login, yuridik shaxs yaratish va qidirish       |
+| 02 | Filial                | Organizatsiya yaratish, valyuta va yuridik shaxs bog'lash |
+| 03 | Room                  | Ish zonasi yaratish                                   |
+| 04 | Robot                 | Shtat birligini yaratish                              |
+| 05 | Natural Person        | Jismoniy shaxs yaratish                               |
+| 06 | User                  | Foydalanuvchi yaratish va robot/jismoniy shaxs bog'lash |
+| 07 | User Attach Form      | Foydalanuvchiga formalar biriktirish                  |
+| 08 | Role                  | Admin roliga barcha ruxsatlar berish                  |
+| 09 | Role Attach Form      | Rolga barcha formlarga kirish ruxsatini berish        |
+| 10 | Buy License           | Litsenziya sotib olish                                |
+| 11 | Attach License        | Foydalanuvchiga litsenziya biriktirish                |
+| 12 | Change Password       | Yangi foydalanuvchi parolini o'zgartirish             |
+| 13 | Price Type UZB        | UZB narx turini yaratish                              |
+| 14 | Price Type USA        | USA narx turini yaratish                              |
+| 15 | Currency              | Valyuta yaratish                                      |
+| 16 | Payment Type          | To'lov turini yaratish                                |
+| 17 | Sector                | TMT to'plami (Набор ТМЦ) yaratish                     |
+| 18 | Product               | TMT (mahsulot) yaratish                               |
+| 19 | Natural Person For Client 1 | Qo'shimcha client uchun jismoniy shaxs yaratish |
+| 20 | Room Attachment       | Ish zonasiga kerakli bog'lanishlarni biriktirish      |
+| 21 | Init Balance          | Boshlang'ich qoldiq uchun hujjat yaratish             |
+| 22 | Balance               | Qoldiq/harakatlar hayot siklini tekshirish            |
 
 ### <a id="group-runnerlar"></a>Group runnerlar
 
 | Group | Runner buyrug'i | Nima tekshiriladi |
 |-------|-----------------|-------------------|
-| A | `group-a` | Contract yaratish, payment type sharti, contract limit validatsiyasi, order yaratish va edit qilish |
-| B | `group-b` | Konsignatsiya limiti bilan order yaratish, edit qilish va konsignatsiya summasini bo'lish |
-| C | `group-c` | Aksiya (скидка 10% на 10 товаров) yaratish |
+| Group-0 | `group-0` | Setup baseline asosida base order create → list → view happy pathi |
 | Report | `group-report` | CisLink, Integration Three, SalesWork, Optimum, Spot 2d, Integration Two — har biri mustaqil |
 
-> **Eslatma:** Report group testlari `independent=True` — biri yiqilsa qolganlari davom etadi. Qolgan grouplar zanjirli: biri yiqilsa shu groupning keyingi testlari skip qilinadi.
+> **Eslatma:** Report group testlari `independent=True` — biri yiqilsa
+> qolganlari davom etadi. Group-0 default chain qoidasida ishlaydi.
 
 ---
 

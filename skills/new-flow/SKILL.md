@@ -1,11 +1,17 @@
 ---
 name: new-flow
-description: tests/smoke/flows ichida qayta ishlatiladigan Playwright UI flow yaratadi yoki mavjud flow'ni ajratadi. Bir xil UI ketma-ketligi bir nechta testda takrorlanganda, flow/helper ajratish yoki order flow yozish so'ralganda ishlat.
+description: Use when bir xil Smartup Playwright UI ketma-ketligi bir nechta testda takrorlansa yoki reusable flow/helper yaratish, ajratish yoxud o'zgartirish so'ralsa.
 ---
 
 # Yangi Flow Funksiya Yaratish
 
 Argument: `$ARGUMENTS` (flow nomi va qisqacha tavsif)
+
+## Skill Chegarasi
+
+Bu skill ikki yoki undan ko'p testda takrorlanadigan UI choreography/helperni
+egallaydi. Bitta testcase'ning biznes qadamlari va expected resulti `write-test`
+ownerligida qoladi. Testni ishga tushirish `run-smoke` authoritysiga bog'liq.
 
 ## Flow nima?
 

@@ -36,11 +36,11 @@ Source: user
 Tags: group-0, order, archive, payment, offset, lifecycle
 Status: trace-confirmed
 Verified: 2026-07-31
-Source: `tests/smoke/test_groups/test_0_grup/test_0_group_runner.py`;
-`tests/smoke/test_groups/test_0_grup/test_01_create_base_order.py`;
-`tests/smoke/test_groups/test_0_grup/test_02_archive_base_order.py`;
-`tests/smoke/test_groups/test_0_grup/test_03_post_client_payment.py`;
-`tests/smoke/test_groups/test_0_grup/test_04_offset_client_balance.py`;
+Source: `tests/smoke/test_groups/test_a_grup/test_0_group_runner.py`;
+`tests/smoke/test_groups/test_a_grup/test_01_create_base_order.py`;
+`tests/smoke/test_groups/test_a_grup/test_02_archive_base_order.py`;
+`tests/smoke/test_groups/test_a_grup/test_03_post_client_payment.py`;
+`tests/smoke/test_groups/test_a_grup/test_04_offset_client_balance.py`;
 live Group-0 run (`4 passed`)
 - Qayerda: `Заказы`, `Оплаты от клиентов`,
   `Взаиморасчеты с клиентами`.

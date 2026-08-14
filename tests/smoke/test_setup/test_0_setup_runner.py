@@ -86,7 +86,6 @@ def test_09_role_attach_form(session_page):
     run_role_attach_form(session_page)
 
 
-@pytest.mark.skip(reason="Buy License setup is disabled")
 @allure.title("10 - Buy License")
 def test_10_buy_license(session_page, logger):
     run_buy_license(session_page, logger)

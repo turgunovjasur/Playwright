@@ -1,11 +1,17 @@
 ---
 name: review-test
-description: Playwright + pytest test, runner yoki reusable flow kodini senior QA sifatida evidence-based review qiladi. Test sifati, barqarorlik, Allure, fixture, BasePage/AngularBasePage, dependency va anti-patternlar tekshirilishi so'ralganda ishlat.
+description: Use when Smartup Playwright/pytest testi, runneri yoki reusable flowi sifat, barqarorlik, Allure, fixture, page-object, dependency yoxud anti-pattern bo'yicha review qilinishi kerak bo'lsa.
 ---
 
 # Test Kodni Review Qilish
 
 Fayl: `$ARGUMENTS`
+
+## Skill Chegarasi
+
+Bu skill kod/diffning static sifat review'ini egallaydi va o'z-o'zidan fix
+ruxsati bermaydi. Real log, trace yoki failed run root cause'i kerak bo'lsa
+`debug-test`; testni ishga tushirish kerak bo'lsa `run-smoke`ga handoff qil.
 
 ## Review tekshiruv ro'yxati
 

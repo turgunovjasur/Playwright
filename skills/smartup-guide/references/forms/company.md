@@ -240,7 +240,7 @@ Tags: company, setup, locator, wait
   `company_code`ni login suffix sifatida ishlatadi.
 - Legacy dashboarddan A2 listga kirishda mavjud navigation helperlari ishlatiladi;
   A2 form/list/view ichida `AngularBasePage` ishlatiladi.
-- `AngularBasePage`da live tasdiqlangan primitivlar: `button`, `tab`, `control`,
+- `AngularBasePage`da live tasdiqlangan primitivlar: `click`, `tab`, `control`,
   `input`, `select`, `switch`, `checkbox`, `choice`, `text`, `form_view`,
   `wait_for_loader`, `expect_page`, `grid`, `grid_controller`, A2
   `navigate_to`/`switch_filial`, confirm/alert va `save_and_expect_page`.

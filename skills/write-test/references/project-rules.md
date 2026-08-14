@@ -300,7 +300,7 @@ o'chirilgan; ular qayta yozilganda quyidagi qoidalar joriy contract bo'ladi.
 
 Status: code-confirmed
 Verified: 2026-07-31
-Source: user; `tests/smoke/test_setup/test_0_setup_runner.py`; `tests/smoke/test_groups/test_0_grup/test_0_group_runner.py`; `tests/smoke/test_groups/test_report_grup/test_0_group_runner.py`; `tests/smoke/test_forms/test_0_forms_runner.py`
+Source: user; `tests/smoke/test_setup/test_0_setup_runner.py`; `tests/smoke/test_groups/test_a_grup/test_0_group_runner.py`; `tests/smoke/test_groups/test_report_grup/test_0_group_runner.py`; `tests/smoke/test_forms/test_0_forms_runner.py`
 
 - Setup runner doim `test_0_setup_runner.py` deb nomlanadi; setup leaf fayli wrapper raqamiga mos `test_00_<case>.py`, `test_01_<case>.py`, ... prefixini oladi.
 - Mustaqil setup biznes amallari alohida pytest wrapper va alohida leaf fayl oladi; masalan UZB price type `test_13_price_type_uzb.py`, USA price type `test_14_price_type_usa.py`, Currency esa `test_15_currency.py`.
@@ -383,8 +383,8 @@ ko'rinadi. Final variantda u:
 Status: live-ui-confirmed
 Verified: 2026-07-31
 Source: user;
-`tests/smoke/test_groups/test_0_grup/test_01_create_base_order.py`;
-`tests/smoke/test_groups/test_0_grup/test_0_group_runner.py`; live UI
+`tests/smoke/test_groups/test_a_grup/test_01_create_base_order.py`;
+`tests/smoke/test_groups/test_a_grup/test_0_group_runner.py`; live UI
 
 - Mavjud `run_base_order` refactor qilinib, order grouplarining birinchi
   mustaqil `Group-0` testcase'i sifatida olinadi.
@@ -473,44 +473,117 @@ Source: user;
 
 ### Form-opening smoke suite arxitekturasi
 Status: code-confirmed
-Verified: 2026-08-05
-Source: `tests/smoke/test_forms/form_cases.py`;
-`tests/smoke/test_forms/menu_column_runner.py`;
-`tests/smoke/test_forms/test_0_forms_runner.py`
+Verified: 2026-08-11
+Source: user; `tests/smoke/test_forms/test_0_forms_runner.py`; `tests/smoke/test_forms/monitoring/suite_runner.py`; `tests/smoke/test_forms/inventory/`; `tests/smoke/test_forms/test_01_glavnoe_forms.py`; `tests/smoke/test_forms/test_02_prodaja_forms.py`; `tests/smoke/test_forms/test_03_sklad_forms.py`; `tests/smoke/test_forms/test_04_finansy_forms.py`; `tests/smoke/test_forms/test_05_spravochniki_forms.py`; `tests/smoke/test_forms/test_a2_angular_forms.py`; `tests/smoke/test_forms/monitoring/checks/`
 
 - Barcha forma-opening testlar `tests/smoke/test_forms/` ichida saqlanadi.
-  `Справочники`, `Склад`, `Продажа` va keyingi har bir navbar tab uchun alohida
-  `test_XX_<tab>_menu_forms.py` leaf modul bo'ladi. Mavjud
-  `test_02_a2_admin_menu_forms.py` ham `test_life_cycle/`dan shu papkaga ko'chiriladi.
+  `Главное`, `Продажа`, `Склад`, `Финансы`, `Справочники` va keyingi har bir
+  oddiy navbar tab uchun
+  alohida `test_XX_<tab>_forms.py` leaf modul bo'ladi. Cross-navbar
+  A2 inventari raqamsiz `test_a2_angular_forms.py`da alohida saqlanadi.
+- `tests/smoke/test_forms/` rootida faqat runner, user o'qiydigan leaf testlar
+  va package `__init__.py` turadi. Deklarativ ro'yxatlar hamda umumiy
+  `skipped_forms.py` registry'si `inventory/`da, FormMonitor texnik infrasi esa
+  `monitoring/`da saqlanadi.
 - Har forma oddiy `list[dict]` inventarda turadi. Majburiy minimum:
   `menu_column`, `menu_item`, `path`; kerak bo'lsa `navbar_tab`, `title`,
-  `action`, `page_links`, `ready`, `screenshot_mask`, `allowed_warnings`.
+  `action`, `page_links`, `ready`, `screenshot_mask`.
   `label` optional va berilmasa `menu_item/action/page_links/add_icon`dan
   avtomatik yaratiladi.
-- Pytest itemning stable identifikatori `shell + navbar_tab + menu_column`.
-  Mavjud identityga forma qo'shilsa faqat tegishli inventarga bitta dict
-  qo'shiladi. Yangi identity bo'lsa leafdagi `*_MENU_TESTS` config listiga
-  bitta yangi dict qo'shiladi; coverage validator formasiz yoki testsiz
-  identityni import vaqtida bloklaydi. Real `menu_column=None` identityda
-  `<ustunsiz>` deb ko'rsatiladi.
-- Legacy va A2 lifecycle'lari `menu_column_runner.py`dagi alohida
-  `run_legacy_menu_column_forms(...)` va `run_a2_menu_column_forms(...)`
-  funksiyalarida turadi; bitta universal mode-dispatcher yozilmaydi.
-  `flow.py` faqat navigatsiya/settle primitive'larini, `form_cases.py` case
-  normalizatsiyasini, `form_reporting.py` result/schema/reportni saqlaydi.
-- Umumiy runner `tests/smoke/test_forms/test_0_forms_runner.py` bo'ladi va har
-  composite identityni alohida parametrized sibling pytest item sifatida
-  chaqiradi.
+- Oddiy navbarlarning legacy va A2 forma definitionlari markaziy
+  `tests/smoke/test_forms/inventory/` package'ida navbar modullari bo'yicha
+  saqlanadi. Legacy leaf `run_legal_person` patternida uchta ochiq qadamni
+  saqlaydi: admin authorization, `get_legacy_form_buckets(NAVBAR_TAB)` va
+  `run_legacy_form_monitoring(...)`. `A2Angular` migratsiya suite'i bu
+  façade'ga qo'shilmaydi va o'z cross-navbar inventarini alohida saqlaydi.
+  Har definition o'z `shell`ini belgilashi mumkin; `menu_column` pytest
+  parametr emas, test ichidagi hisobot guruhi xolos.
+- Legacy leafda `try/except`, filial/menu loopi, skip reporting va
+  `FormMonitor.finish()` yozilmaydi. Operatsion filialni aniqlash, kerakli
+  filialga o'tish va menu guruhlarini bajarish `monitoring/suite_runner.py`dagi
+  `run_legacy_form_monitoring(...)`da bir marta turadi. A2'ning `legacy → A2`
+  tayyorlovi faqat A2 leaf testida qoladi.
+- `monitoring/suite_runner.py` umumiy inventory normalizatsiyasi va legacy navbar
+  monitoring orchestrationini saqlaydi; `OPERATIONAL_PLACEHOLDER` markaziy
+  inventory package'idan compatibility uchun re-export qilinadi.
+  `monitoring/navigation.py` faqat navigatsiya primitive'larini,
+  `monitoring/cases.py` case normalizatsiyasini, `monitoring/reporting.py`
+  result/schema/reportni saqlaydi.
+- Umumiy runner `tests/smoke/test_forms/test_0_forms_runner.py` setup runner
+  formatidagi yupqa collector bo'ladi: leaf modullardan navbar suite
+  `run_*` funksiyalarini import qiladi. Joriy beshta non-parametrized sibling
+  pytest item — `Главное`, `Продажа`, `Склад`, `Финансы`, `Справочники`; standalone cross-navbar
+  `A2Angular` bu runnerga kiritilmaydi. Runner ichida `_run_menu_columns` yoki boshqa forms orchestration
+  helperi bo'lmaydi.
   Fayl oddiy `runner.py` emas, `test_0_*_runner.py` patternida nomlanadi, chunki
   smoke collector shu patterndagi runnerlarni avtomatik topadi.
-- Har menu identity o'z `FormMonitor` instance'i va filial/auth/shell
-  preconditioniga ega; `independent=True` sabab bitta identity failure'i boshqa
-  identitylarni skip qilmaydi.
+- `run_legacy_form_monitoring(...)` har legacy leafga tegishli barcha formalar
+  uchun bitta `FormMonitor` lifecycle'ini boshqaradi. Monitor `menu_column` bo'yicha
+  hisobot guruhini, uning ichida `menu_item`/form natijalarini ko'rsatadi;
+  `menu_column` kesimida yangi `FormMonitor` yaratilmaydi.
+- `FormMonitor` precondition actionini bajarmaydi va callback qabul qilmaydi.
+  Legacy leaf admin authorizationni `run_legal_person` kabi oddiy Allure stepda
+  bajaradi. Filialni aniqlash/almashtirish xatosini façade
+  `record_precondition_failure(...)` orqali monitorga yozadi; tegishli case
+  `TEST_BLOCKED`, qolgan planned caselar `NOT_CHECKED` bo'ladi.
+- Hard-check implementatsiyalari `monitoring/checks/` package'ida qat'iy
+  `url → loader → application_error → content_ready → title` tartibida turadi.
+  `core.py` status, konfiguratsiya, snapshot evaluator va failure priorityni,
+  `__init__.py` esa FormMonitor hamda boshqa consumerlar uchun public import
+  yuzasini saqlaydi; rootda parallel `form_*_check.py` fayllari yaratilmaydi.
+- Oddiy forma-opening test chegarasi bitta `navbar_tab`: kelajakdagi `Склад`,
+  `Финансы` va boshqa tablar markaziy package'da o'z inventory moduliga,
+  alohida `run_*` leaf funksiyasi va runner wrapperiga ega bo'ladi.
+
+### Forms leaf raqami Smartup navbar tartibiga mos
+Status: code-confirmed
+Verified: 2026-08-11
+Source: user; `tests/smoke/test_forms/test_0_forms_runner.py`;
+`tests/smoke/test_forms/test_01_glavnoe_forms.py`;
+`tests/smoke/test_forms/test_04_finansy_forms.py`;
+`tests/smoke/test_forms/test_05_spravochniki_forms.py`
+
+- Raqam test yaratilgan vaqtni emas, Smartup navbaridagi ko'rinish tartibini
+  bildiradi. Joriy tartib: `01 Главное`, `02 Продажа`, `03 Склад`,
+  `04 Финансы`, `05 Справочники`.
+- Leaf fayli, runner wrapperi, `suite_name` va `progress_test_id` bir xil
+  raqamdan foydalanadi.
+- Keyingi navbar suite UI tartibining o'rtasiga tushsa, undan keyingi navbar
+  leaflari ham tartibni saqlash uchun qayta raqamlanadi.
+- Cross-navbar `A2Angular` raqamsiz va Forms runnerdan tashqarida qoladi.
+
+### User-reported: navbar suite shell-independent ownership
+Status: user-reported
+Verified: pending
+Source: user
+
+- Qoida: forma qaysi shell (`legacy` yoki A2 Angular)da ochilishidan qat'i
+  nazar, UI'da qaysi `navbar_tab` ichida ko'rinsa o'sha navbar testiga kiradi.
+  Masalan, `Склад` ichidagi legacy va A2 formalar barchasi `Склад` leaf
+  testida tekshiriladi; shell turi suite ownership chegarasi emas.
+  Navbar runner faqat shu navbar-scoped leaf testlarni jamlaydi.
+- `A2Angular` alohida, runnerga kirmaydigan aggregate test: u
+  `navbar_tab`dan qat'i nazar barcha A2 Angular formalarni bitta cross-navbar
+  inventarda saqlaydi. Navbar testida allaqachon tekshirilgan A2 forma
+  `A2Angular`da ham qoladi; bu xato duplicate emas, ikki mustaqil coverage
+  o'qining ataylab kesishmasidir.
+
+### User-reported: navbar suite filial precedence
+Status: user-reported
+Verified: pending
+Source: user
+
+- Qoida: navbar inventory avval operatsion filialdagi formalarni qamraydi.
+  `Администрирование` filialidan faqat operatsion filialda topilmagan formalar
+  qo'shiladi. Bir forma ikkala filialda ham bo'lsa, navbar suite uni faqat
+  operatsion filialda tekshiradi; admin/filial kesishmasi ikki marta case
+  qilinmaydi.
 - Yangi runner default/full smoke tarkibiga kirishi uchun
   `tests/smoke/smoke_config.py::full_runner_paths()` va kerak bo'lsa
   `scripts/run_tests.py` target/path mappinglari ham yangilanadi.
-- Har tab inventari oddiy `list` + `dict/tuple` bilan deklarativ yoziladi;
-  dataclass, classifier yoki katta universal framework qurilmaydi.
+- Markaziy package'dagi har legacy tab inventari oddiy `list` + `dict/tuple`
+  bilan deklarativ yoziladi; dataclass, classifier yoki katta universal
+  framework qurilmaydi.
 - Normal test check/diagnostika argumentlarini yozmaydi — `None` barchasini
   yoqadi. Test darajasida `checks=[]` hard checklarni o'chirib natijani
   `OBSERVED_ONLY` qiladi; `diagnostics=[]` observation signal collectionini

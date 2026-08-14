@@ -1,62 +1,74 @@
 ---
 name: learn
-description: Suhbatda aniqlangan loyihaga xos UI xatti-harakati, xato sababi, test qoidasi yoki avvalgi noto'g'ri yechimni provenance va status bilan knowledge-base'ga qo'shadi. Foydalanuvchi loyiha haqida yangi bilim berganda AGENTS.md bo'yicha proaktiv ishlat.
+description: Use when foydalanuvchi Smartup UI xatti-harakati, xato sababi, loyiha test qoidasi yoki avvalgi yechim noto'g'riligini tushuntirsa.
 ---
 
-# Yangi Bilimni Skill ga Qo'shish
+# Yangi Bilimni Canonical Skillga Qo'shish
 
 Argument: `$ARGUMENTS` (o'rganilgan narsa tavsifi)
 
-## Trigger
+Bu skill yangi project factni `skills/` ichidagi yagona ownerga xavfsiz yozadi.
+Savol, gipoteza, rad etilgan variant, tasdiqlanmagan dizayn, secret/PII yoki
+vaqtinchalik session qiymatini yozma.
 
-Quyidagi holatlarda AGENTS.md bo'yicha proaktiv ishlat:
-- Foydalanuvchi UI xatti-harakatini tushuntirsa ("modal shunday ishlaydi", "server shuncha vaqt ketadi")
-- Xato sababini o'zi aytsa ("sabab hali modal ochilmasidan button bosilyapti")
-- Loyiha qoidasini ko'rsatsa ("bu test faqat runner orqali ishlaydi")
-- Avval qilgan yechim noto'g'ri chiqsa va to'g'ri yechim topilsa
+## Algoritm
 
-## Ish tartibi
+1. **Atomize:** xabarni bittadan tekshiriladigan, loyihaga xos faktlarga ajrat.
+2. **Sanitize:** password, token, email, credential, session code va real company
+   qiymatini olib tashla; `<company_code>` kabi placeholder ishlat.
+3. **Evidence:** har faktga eng kuchli mavjud statusni qo'y:
+   - `user-reported` — faqat foydalanuvchi aytgan;
+   - `code-confirmed` — amaldagi kod tasdiqlagan;
+   - `live-ui-confirmed` — real UI tasdiqlagan;
+   - `trace-confirmed` — trace/log tasdiqlagan.
+4. **Owner:** [project-guide](../project-guide/SKILL.md#ownership-va-routing)
+   xaritasidan bitta canonical owner tanla.
+5. **Search:** tanlangan current owner va `smartup-guide/references/history.md`
+   ichidan semantik duplicate yoki conflictni qidir.
+6. **Outcome:** quyidagi qaror jadvaliga amal qil.
+7. **Validate:** har qanday yozuvdan keyin
+   `./.venv/bin/python skills/scripts/validate_skills.py`ni ishlat.
+8. **Report:** owner fayl, evidence status, outcome va validator natijasini ayt.
 
-1. Bilimni umumiy qoida emas, loyihaga xos bitta aniq fakt sifatida yoz.
-2. Dalil statusini tanla:
-   - `user-reported` — foydalanuvchi aytgan, hali kod/UI/trace bilan tekshirilmagan;
-   - `code-confirmed` — amaldagi kod bilan tasdiqlangan;
-   - `live-ui-confirmed` — real UI orqali tasdiqlangan;
-   - `trace-confirmed` — Playwright trace/log bilan tasdiqlangan.
-3. Qaysi faylga tegishli ekanini aniqlash:
-   - test/debug/flow protsedurasi → mos skillning `SKILL.md` yoki `references/`;
-   - Smartup biznes flowlari, UI joylashuvlari, entitylar, locatorlar → `smartup-guide` ichidagi mos reference fayl:
-     - aniq forma bo'yicha bilimlar → `smartup-guide/references/forms/<form-slug>.md`
-     - contract/order shartlari → `smartup-guide/references/contracts.md`
-     - order flow/product/setup → `smartup-guide/references/orders.md`
-     - locator/modal/grid/screenshot → `smartup-guide/references/ui-patterns.md`
-     - debug/data_store/setup dependency → `smartup-guide/references/testing-debug.md`
-   - joriy arxitektura → `write-test` reference'i yoki `smartup-guide/references/testing-debug.md`;
-   - superseded/eski kuzatuv → `smartup-guide/references/history.md`.
-4. `user-reported` bilimni tasdiqlangan current truth bilan aralashtirma. Joriy
-   qoida sifatida faqat code/live-ui/trace tasdiqli bilimni yoz; aks holda uni
-   `User-reported` bo'limida saqla.
-5. Mos joy topilmasa avtomatik yangi skill yaratma; foydalanuvchiga taklif qil.
-6. Qo'shilgan joy va statusni foydalanuvchiga ko'rsat.
+## Qaror Jadvali
 
-## Format
+- Bir xil fakt allaqachon bor → **no write**; kuchliroq mavjud dalilni
+  pasaytirma.
+- Bir xil fakt uchun kuchliroq yangi dalil bor → mavjud entryning status,
+  verified va source qiymatini yangila.
+- Yangi, conflictsiz fakt → canonical ownerga bitta entry qo'sh.
+- Kuchliroq dalil current factni inkor qiladi → eski entryni `history.md`ga
+  `Superseded by <new fact/source>` bilan ko'chir, keyin yangi current entry yoz.
+- Dalil kuchi teng yoki conflict noaniq → yozma; foydalanuvchidan aniqlik so'ra.
+- Owner topilmasa → avtomatik yangi skill yaratma; yangi owner/skillni taklif qil.
+
+`user-reported` faktni confirmed current truth sifatida ko'rsatma. U owner
+faylning `User-reported` bo'limida yoki aniq pending status bilan turadi.
+
+## Owner Misollari
+
+- Aniq forma UI/business/locator →
+  `smartup-guide/references/forms/<form-slug>.md`.
+- Contract → `contracts.md`; order → `orders.md`; settlement coverage →
+  `order-settlement-scenarios.md`.
+- Shared modal/grid/locator → `ui-patterns.md`; runtime/fixture/data-store →
+  `testing-debug.md`; setup/group topology → `smoke-runner.md`.
+- Test authoring/unit-test artifact → `write-test`; repeated choreography →
+  `new-flow`; execution → `run-smoke`; observed failure → `debug-test`;
+  infra → `maintain-test-infra`; static review → `review-test`.
+- Governance/precedence/branch/ruxsat/current project context → `project-guide`.
+- Superseded Smartup fact → `smartup-guide/references/history.md`.
+
+## Entry Formati
 
 ```markdown
 ### <mavzu>
 Status: user-reported | code-confirmed | live-ui-confirmed | trace-confirmed
-Verified: YYYY-MM-DD yoki `pending`
+Verified: YYYY-MM-DD | pending
 Source: user | <fayl:qator> | live UI | <trace/log path>
-- Qoida: <o'rganilgan narsa — qisqa va aniq>
+- Qoida: <bitta qisqa va aniq project fact>
 ```
 
-## Muhim
-
-- Umumiy ma'lumot emas, **bu loyihaga xos** narsalarni qo'sh
-- Bir fakt uchun bitta qisqa entry yoz
-- Bir xil narsani ikki marta qo'shma (avval mavjudligini tekshir)
-- Password, token, email, session code, real company credentiali yoki boshqa
-  secret/PII'ni knowledge-base'ga yozma.
-- Konkret session qiymatini emas, `user-pw{code}`, `<company_code>` kabi
-  parametrik ko'rinishni yoz.
-- Yangi dalil oldingi qoidani inkor qilsa, eski entry'ni current faylda
-  qoldirma: `history.md`ga `Superseded by ...` izohi bilan ko'chir.
+Forma screenshoti dalil bo'lsa uni
+`smartup-guide/references/forms/screenshots/<slug>/`da arxivla va dossierdan
+havola qil.

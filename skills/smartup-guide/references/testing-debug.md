@@ -24,7 +24,7 @@ Tags: timeout, playwright, base-page, conftest, debug
 - `BasePage` va `AngularBasePage` helperlari component, loader, transition, probe va typing delay qiymatlarini o'z funksiyalari ichida saqlaydi.
 - Bir xil millisekund qiymati turli funksiyalarda takrorlansa ham markaziy constantga chiqarilmaydi; timeout shu funksiyaning xatti-harakatini o'qiyotganda ko'rinishi muhimroq.
 - `delay=50` maksimal timeout emas; `b_input()` server-search typingida har bir belgi orasidagi real pauza.
-- `BasePage.expect_page(url=...)` URL mosligini kutadi, lekin hozirgi implementatsiyada loader `check_unblocked` tekshiruvi faqat `heading` branchida ishlaydi; URL-only chaqiruv loader kutishi deb qabul qilinmaydi. Menyu flowida loaderni `BasePage.navigate_to()`, standalone URL tekshiruvida esa alohida `BasePage.wait_for_loader()` kutadi.
+- `BasePage.expect_page(url=...)` URL mosligini kutadi, lekin hozirgi implementatsiyada loader `check_unblocked` tekshiruvi faqat `heading` branchida ishlaydi; URL-only chaqiruv loader kutishi deb qabul qilinmaydi. Umumiy menu flowida loaderni `BasePage.navigate_to()`, standalone URL tekshiruvida esa alohida `BasePage.wait_for_loader()` kutadi. Forms monitoring oqimi bundan mustasno: unda URLdan keyingi yagona loader authority `check_loader`.
 - `requests`/`urllib` HTTP timeoutlari sekundlarda va UI kutishlaridan boshqa mas'uliyatga ega; ular ham tegishli request funksiyasi yonida turadi.
 
 ### Bitta pytest sessiyasida yagona Sync Playwright runtime
@@ -158,21 +158,30 @@ Tags: runner, debug, modal, data-store
 ### Forms runner terminal va Allure hisoboti
 Tags: forms, report, terminal, allure, filial, menu, url, monitoring, screenshot
 Status: code-confirmed
-Verified: 2026-08-05
-Source: `tests/smoke/test_forms/form_monitor.py`;
-`tests/smoke/test_forms/form_reporting.py`;
-`tests/smoke/test_forms/form_cases.py`;
-`tests/smoke/test_forms/menu_column_runner.py`
+Verified: 2026-08-10
+Source: `tests/smoke/test_forms/monitoring/monitor.py`;
+`tests/smoke/test_forms/monitoring/checks/url.py`;
+`tests/smoke/test_forms/monitoring/reporting.py`;
+`tests/smoke/test_forms/monitoring/cases.py`;
+`tests/smoke/test_forms/inventory/`;
+`tests/smoke/test_forms/monitoring/suite_runner.py`
 
-- `tests/smoke/test_forms/form_monitor.py` barcha Forms runnerlar uchun yagona
-  façade/orchestrator. `form_checks.py` hard checklarni,
-  `form_diagnostics.py` browser signallarini, `form_cases.py` identity/case
-  normalizatsiyasini, `form_reporting.py` result/schema/human reportni,
-  `flow.py` esa navigatsiya primitive'larini saqlaydi. Runner o'zicha alohida
-  pass/fail yoki report qurmaydi.
-- Runner boshlanishidan oldin rejalashtirilgan formalar monitor ro'yxatiga
-  kiritiladi. Shuning uchun suite filial/login/shell bosqichida to'xtasa ham
-  nechta forma rejalashtirilgani va qaysilari tekshirilmagani yo'qolmaydi.
+- `tests/smoke/test_forms/monitoring/suite_runner.py::run_legacy_form_monitoring`
+  legacy navbar suite'lari uchun login qilingan page, filial/menu execution,
+  skip va yakuniy reportni birlashtiradigan façade. `monitoring/monitor.py`
+  esa per-form monitoring engine'i. `monitoring/checks/` package'i hard
+  checklarni, `monitoring/diagnostics/` package'i alohida observation
+  diagnostikalarni, `monitoring/cases.py` identity/case normalizatsiyasini,
+  `monitoring/reporting.py` result/schema/human reportni,
+  `monitoring/navigation.py` esa navigatsiya primitive'larini saqlaydi. Hozir
+  diagnostika registry'sida faqat HTTP `4xx/5xx`
+  `failed_requests` bor; FormMonitor package lifecycle'ini chaqiradi, listener
+  logikasini o'zida saqlamaydi. Runner o'zicha alohida pass/fail yoki report
+  qurmaydi.
+- Façade filial executionidan oldin rejalashtirilgan formalarni monitor
+  ro'yxatiga kiritadi. Shuning uchun suite filial bosqichida to'xtasa ham nechta
+  forma rejalashtirilgani va qaysilari tekshirilmagani yo'qolmaydi. Admin login
+  leafdagi oddiy birinchi qadam: u yiqilsa monitor hali boshlanmagan bo'ladi.
 - Forma holatlari: `PASSED` (ochildi), `OBSERVED_ONLY` (navigatsiya bajarildi,
   lekin hard checklar test darajasida o'chirilgan), `OPENED_WITH_DEFECT` (URL va kontent
   ochildi, lekin title/kontent nuqsoni bor), `NOT_OPENED` (target forma
@@ -190,25 +199,76 @@ Source: `tests/smoke/test_forms/form_monitor.py`;
 - Terminal summary, Allure text va `form-monitor.json` bitta result modelidan
   quriladi. Yakuniy hisob rejalashtirilgan, boshlangan, yakunlangan, ochilgan,
   nuqsonli, ochilmagan, bloklangan va tekshirilmagan sonlarni alohida ko'rsatadi.
-- Uzoq run paytida har tugagan forma terminal reporterga bitta `[FORM MONITOR]`
-  progress qatori va Telegram consumer uchun `SMARTUP_PROGRESS form_result`
-  eventi chiqaradi. Pass formalar uchun katta ko'p qatorli blok chiqarilmaydi;
-  batafsil blok muammoli natija va yakuniy hisobotga qoladi.
+- Uzoq run paytida har tugagan forma terminal reporterga filial, navbar tab,
+  menu ustuni, tekshirilgan forma, expected/actual URL, status va sababni bergan
+  bitta `[FORM MONITOR]` progress qatori chiqaradi. Yakuniy terminal/Allure
+  summary ham ayni formatterdan foydalanadi. Telegram uchun
+  `SMARTUP_PROGRESS form_result` eventi parent pytest itemning
+  `request.node.name` identitysi bilan yuboriladi. Pass formalar uchun katta
+  ko'p qatorli blok chiqarilmaydi; batafsil blok muammoli natijaga qoladi.
 - Forma `PASSED` bo'lishi uchun custom title/URL assertdan tashqari markaziy
-  readiness tekshiruvi ham o'tishi shart: target URL, kontent, tugagan loader,
-  UI error yo'qligi va title mosligi. `TypeError`, `KeyError` va boshqa kod
-  kontrakti xatolari forma nuqsoni sifatida yashirilmaydi.
+  readiness tekshiruvi ham o'tishi shart. Hard-check tartibi:
+  `check_url → check_loader → check_application_error → check_content_ready → check_title`.
+  JavaScript exception alohida hard check emas. `TypeError`, `KeyError` va
+  boshqa kod kontrakti xatolari forma nuqsoni sifatida yashirilmaydi.
+- Menu navigatsiyasidan keyin `check_url` birinchi hard gate bo'lib, o'zining
+  `url_timeout` vaqti ichida exact canonical `expected_path`ni kutadi. URL
+  ochilmasa yagona reason `EXPECTED_URL_NOT_REACHED`; `previous_url`,
+  `URL_MISMATCH` va `URL_TIMEOUT` klassifikatsiyasi ishlatilmaydi. Qolgan hard
+  checklar va diagnostikalar `NOT_RUN` bo'ladi.
+- URL gate o'tgach `check_loader` ko'rinadigan `.block-ui-overlay` va
+  `.smt-skeleton` yo'qolishini o'zining default `60_000 ms` timeouti ichida
+  kutadi. Timeoutda `OPENED_WITH_DEFECT / LOADER_NOT_FINISHED`; undan keyingi
+  `application_error`, `content_ready` va `title` `NOT_RUN`,
+  `blocked_by=loader` bo'ladi. Forms navigation helperlari bu loader kutishini
+  takrorlamaydi. To'liq kontrakt:
+  [form-monitor/check-loader.md](form-monitor/check-loader.md).
+- URL va loader o'tgach `check_application_error` aniq
+  `#biruniAlertExtended:visible`, `#biruniAlert:visible`,
+  `.alert-danger:visible` yoki
+  `[role="dialog"]:visible [data-testid*="error" i]` signalini default
+  `1_200 ms` kuzatadi. Error ko'rinmasa timeout muvaffaqiyat; ko'rinsa
+  `OPENED_WITH_DEFECT / APPLICATION_ERROR`, undan keyingi `content_ready` va
+  `title` esa `NOT_RUN`, `blocked_by=application_error`. Generic
+  `[role="alert"]` hard signal emas. Screenshot Biruni cleanupidan oldin
+  olinadi; `capture_form_state()` application errorni kutmaydi. To'liq
+  kontrakt: [form-monitor/check-application-error.md](form-monitor/check-application-error.md).
+- Application-error gate o'tgach `check_content_ready` explicit `ready`
+  selectorni, u bo'lmasa legacy `b-page/.subheader` yoki A2 `main` kontentini
+  o'zining default `15_000 ms` timeouti ichida kutadi. Timeoutda
+  `NOT_OPENED / CONTENT_NOT_READY`; `title` `NOT_RUN`,
+  `blocked_by=content_ready`. `capture_form_state()` kontentni kutmaydi.
+  To'liq kontrakt:
+  [form-monitor/check-content-ready.md](form-monitor/check-content-ready.md).
+- Content-ready gate o'tgach `check_title` legacy formada visible semantic
+  headingni, A2 formada `document.title`ni o'zining default `15_000 ms`
+  timeouti ichida whitespace-normalized exact kutadi. Partial match yoki
+  missing Legacy heading `OPENED_WITH_DEFECT / TITLE_NOT_REACHED`; timeout va
+  mismatch alohida reasonlarga ajratilmaydi. `check_title` kutishning yagona
+  authoritysi, `capture_form_state()` esa faqat diagnostik snapshot oladi.
+  To'liq kontrakt: [form-monitor/check-title.md](form-monitor/check-title.md).
+- URL gate yiqilganda avval menu failure screenshoti olinadi. Yoqilgan
+  `try_direct_url` diagnostikasi keyin shellga mos expected URLni ochib ko'radi
+  va ikkinchi screenshot, direct expected/actual URL hamda
+  `direct_url_reached`ni saqlaydi. Direct probe muvaffaqiyati original forma
+  natijasini passga aylantirmaydi. To'liq kontrakt:
+  [form-monitor/check-url.md](form-monitor/check-url.md).
 - `run_form_cases()` monitorsiz ishlamaydi; legacy parallel summary yo'li olib
-  tashlangan. Avtorizatsiya har Forms suite ichida monitor preconditioni bo'lib,
-  login xatosida ham planned coverage yo'qolmaydi.
-- Forma pytest identitysi `shell + navbar_tab + menu_column`. Mavjud identityga
-  yangi forma qo'shish tegishli inventarga bitta dict qo'shish bilan tugaydi;
-  yangi identity uchun `*_MENU_TESTS` configga bitta dict qo'shiladi.
-  `validate_menu_test_coverage()` testsiz identity yoki testsiz qolgan forma
-  guruhini import vaqtida aniq `ValueError` bilan to'xtatadi.
+  tashlangan. Legacy leaf admin authorization, inventory va façade monitoringni
+  `run_legal_person` kabi raqamlangan ochiq qadamlarda bajaradi; login xatosi
+  oddiy pytest/Allure step xatosi bo'lib, maxsus monitor blockeri yaratilmaydi.
+- Navbar suite ownershipi faqat `navbar_tab`ga bog'liq; shu tab ichidagi legacy
+  va A2 formalar bitta testga kiradi. Case identitysi `shell + navbar_tab`;
+  `menu_column` pytest parametr emas, monitor ichidagi Allure guruhidir. Yangi forma
+  `inventory/<navbar>.py` moduliga bitta dict qo'shish bilan qo'shiladi;
+  leaf test o'z ro'yxatini `get_legacy_form_buckets(NAVBAR_TAB)` orqali oladi.
+  A2Angular navbar runnerga kirmaydigan standalone migratsiya aggregati bo'lib,
+  `navbar_tab + menu_column`ni ichki hisobot guruhida saqlaydi; A2 case'ning
+  navbar suite va A2Angular'da takrorlanishi intentional.
 - `label` optional va yo'q bo'lsa menu item/action/page-link/add-icon yo'lidan
-  avtomatik quriladi. Bitta identity ichida filial + menu item + action +
-  page-links + canonical path takrorlansa duplicate guard bloklaydi.
+  avtomatik quriladi. Bitta shell + navbar + menu column ichida filial + menu
+  item + action + page-links + canonical path takrorlansa duplicate guard
+  bloklaydi.
 - FormMonitor konfiguratsiyasi test-level: `None` barcha signalni, `[]` hech
   birini, `list[str]` faqat tanlangan check/diagnostikani yoqadi. Per-form
   override yo'q. `checks=[]` muvaffaqiyatli navigatsiyani `OBSERVED_ONLY`
@@ -218,22 +278,25 @@ Source: `tests/smoke/test_forms/form_monitor.py`;
   consumerlar uchun compatibility sifatida saqlanadi. Human report disabled
   yoki passed signallarni yoymaydi; failed check va counti bor diagnostikani
   user o'qiydigan qisqa qatorlarda beradi.
+  URL gate konfiguratsiyasi `config.url_timeout_ms` va
+  `config.try_direct_url`da, direct probe natijasi esa result va `hard_checks.url`
+  ichida saqlanadi. Title timeouti `config.title_timeout_ms`da, source va
+  expected/actual/candidate qiymatlar `hard_checks.title`da saqlanadi.
 
 ### Legacy forma nomi document.title emas, visible headingdan olinadi
 Tags: forms, legacy, title, heading, monitoring, false-positive
 Status: live-ui-confirmed
 Verified: 2026-08-03
 Source: `SMARTUP_RUNNER=1 ./.venv/bin/pytest -q -s tests/smoke/test_forms/test_0_forms_runner.py`;
-`tests/smoke/test_forms/form_monitor.py`
+`tests/smoke/test_forms/monitoring/monitor.py`
 - Qayerda: legacy `#/` formalarining markaziy post-validation tekshiruvida.
 - Qoida: A2 forma nomi `document.title`dan, legacy forma nomi esa ko'rinadigan
   headingdan olinadi. Masalan, menu item `Регионы` ochgan
   `anor/mr/region_list` formasining visible headingi `Страны`, browser
   `document.title`i esa boshqa qiymat bo'lishi mumkin.
-- Testda ishlatish: legacy forma `BasePage.expect_page(heading=...)`dan
-  o'tgach `document.title == expected heading` shartini qo'yma; monitor visible
-  heading candidate'larini saqlasin. Aks holda sog'lom forma
-  `TITLE_MISMATCH` false-positive bo'ladi.
+- Testda ishlatish: legacy title hard check `document.title`ni emas, visible
+  semantic heading candidate'larini whitespace-normalized exact taqqoslaydi.
+  A2 title hard check esa `document.title`dan foydalanadi.
 - Oddiy `print()` pass testda pytest capture ichida qoladi. Forms summary
   `terminalreporter` queue'iga yozilib, `tests/smoke/conftest.py`dagi
   `pytest_terminal_summary` hookida capture tugagach chiqariladi.
@@ -247,7 +310,8 @@ Source: `test-results/logs/tests_smoke_test_forms_test_0_forms_runner.py__test_f
 - Forms-01: rejalashtirilgan 89 formaning 89 tasi boshlandi va target URLga
   yetdi; 88 tasi `PASSED`, 1 tasi `OPENED_WITH_DEFECT`. Forma 057
   `Конструктор отчетов по акциям` URL va kontent bo'yicha ochilgan, ammo visible
-  title `Заголовок` bo'lgani uchun `TITLE_MISMATCH` qayd etildi. Validatsiya
+  title `Заголовок` bo'lgani uchun o'sha paytdagi
+  `TITLE_MISMATCH` (joriy kontraktda `TITLE_NOT_REACHED`) qayd etildi. Validatsiya
   bajarilgan, lekin undan o'tmagan deb ko'rsatildi; xato-payt screenshoti aynan
   shu natijaga bog'landi.
 - Forms-02: rejalashtirilgan 22 formadan birortasining test qadami boshlanmadi.

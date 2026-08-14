@@ -5,12 +5,12 @@ ga to'liq sahifa ochiladi.
 
 > **ASOSIY QOIDA:** Eski **angular menyu orqali ochiladigan a2 formalar — barchasi ADMIN formalar.**
 > Ular uchun alohida "head" profil / alohida head test KERAK EMAS. Hammasi bitta admin test'da
-> (`tests/smoke/test_forms/test_02_a2_admin_menu_forms.py`) yig'iladi.
+> (`tests/smoke/test_forms/test_a2_angular_forms.py`) yig'iladi.
 
 Bu fayl har formani **qaysi filial** (operatsion `filial-pw{code}` vs "Администрирование") va **real user qanday
 yo'l bilan** ochishini guruhlab ko'rsatadi.
 
-- **LIVE tasdiqlangan** — `test_02_a2_admin_menu_forms.py`, 2026-07-27, red_test @ app3.greenwhite.uz/xtrade, 22/22 passed.
+- **LIVE tasdiqlangan** — `test_a2_angular_forms.py`, 2026-07-27, red_test @ app3.greenwhite.uz/xtrade, 22/22 passed.
 - **Hali live tasdiqlanmagan** formalar pastda alohida guruhда — treklar hujjat asosida, testга qo'shilganда tasdiqlanadi.
 
 ## Ochish patternlari (real user track)
@@ -129,7 +129,7 @@ kompaniyada) mavjud bo'lishi mumkin — bu profil emas, kompaniya masalasi; form
 # ESLATMALAR
 # =====================================================================================================================
 
-- Barcha a2 formalar ADMIN — angular menyu orqali ochiladi. Alohida head test yo'q; hammasi `test_02_a2_admin_menu_forms.py` da.
+- Barcha a2 formalar ADMIN — angular menyu orqali ochiladi. Alohida head test yo'q; hammasi `test_a2_angular_forms.py` da.
 - Forma "menyuda yo'q" degan xulosani FAQAT angular menyu modelini skanlab chiqarma — SIBLING formalar (mcg/action,
   marking) menyu modelida ko'rinmaydi, lekin eski formaning subheader sub-link'i orqali ochiladi. Shubha bo'lsa eski/qardosh
   formani OCHIB, subheader `openSibling` sub-linklarини ham tekshir.

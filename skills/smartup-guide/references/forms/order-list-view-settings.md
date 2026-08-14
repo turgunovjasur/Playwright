@@ -69,3 +69,16 @@ Source: live UI
   bitta formadagi save ikkinchisiga ta'sir qilmasligi kerak.
 - Setting testlari shared user preference'ni o'zgartiradi; parallel run uchun
   alohida user yoki teardown/default restore talab qilinadi.
+
+### Table helper generic emas
+
+Tags: order, grid-setting, helper, locator, typo
+Status: code-confirmed
+Verified: 2026-08-14
+Source: `tests/smoke/flows/flow_order/flow_order_list.py`
+
+- `flow_order_list_grid_setting(page, colum_name, search_name)` generic nomga
+  ega bo'lsa ham `#deal_id`ga hardcode qilingan va faqat Order table settingiga
+  mos; `colum_name` parametri ham tarixiy typo bilan qolgan.
+- Uni boshqa gridlar uchun reusable helper deb ishlatma. Umumlashtirish kerak
+  bo'lsa avval consumerlar va form-specific selected-list rootlarini ajrat.

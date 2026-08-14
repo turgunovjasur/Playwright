@@ -11,7 +11,7 @@ from tests.smoke import smoke_config
 
 def test_group_runner_paths_are_named_and_ordered_after_setup():
     expected_group_paths = [
-        "tests/smoke/test_groups/test_0_grup/test_0_group_runner.py",
+        "tests/smoke/test_groups/test_a_grup/test_0_group_runner.py",
         "tests/smoke/test_groups/test_report_grup/test_0_group_runner.py",
     ]
 

@@ -4,6 +4,7 @@
 
 - [Qidiruv kalitlari](#qidiruv-kalitlari)
 - [Runner qoidasi](#runner-qoidasi)
+- [Known infrastructure risks](#known-infrastructure-risks)
 - [Telegram failure diagnostikasi](#telegram-failure-diagnostikasi)
 - [Smoke credentiallari](#smoke-credentiallari-majburiy)
 - [Entity naming](#entity-naming)
@@ -26,16 +27,20 @@ Source: `tests/smoke/test_setup/test_0_setup_runner.py`; `tests/smoke/test_setup
 ### Runner Qoidasi
 Tags: smoke, setup, dependency, data-store
 Status: code-confirmed
-Verified: 2026-08-03
-Source: `scripts/run_tests.py`; `tests/smoke/test_setup/test_0_setup_runner.py`; `tests/smoke/conftest.py`
+Verified: 2026-08-11
+Source: `scripts/run_tests.py`; `tests/smoke/test_setup/test_0_setup_runner.py`;
+`tests/smoke/test_forms/test_0_forms_runner.py`;
+`tests/smoke/test_forms/test_04_finansy_forms.py`;
+`tests/smoke/test_forms/test_05_spravochniki_forms.py`; `tests/smoke/conftest.py`
 - GitHub Actions `.github/workflows/daily-smoke.yml` va Telegram CI bot targetni
   qat'iy `setup-forms`ga mahkamlaydi: avval `test_0_setup_runner.py`, keyin
   `test_0_forms_runner.py` ishlaydi; Report group testlari CI dispatchga
   kiritilmaydi. `setup-report` va `setup-a2-admin` lokal runner targetlari
   sifatida saqlangan.
 - `setup-forms` existing-company rejimida 22 ta Setup case va Forms runnerdagi
-  `Справочники` hamda A2 admin formalar testlarini tanlaydi; `test_00_company`
-  skip emas, collectiondan deselect qilinadi.
+  beshta composite navbar testni (`Главное`, `Продажа`, `Склад`, `Финансы`,
+  `Справочники`) tanlaydi;
+  `test_00_company` skip emas, collectiondan deselect qilinadi.
 - Telegram botda smoke/regression scope tanlovi yo'q. `/run`dan keyin faqat
   `Online` (`smartup.online`) yoki `Xtrade` (`app3.greenwhite.uz/xtrade`)
   tugmasi tanlanadi.
@@ -49,9 +54,18 @@ Source: `scripts/run_tests.py`; `tests/smoke/test_setup/test_0_setup_runner.py`;
   Report runnerlari va `test_forms/test_0_forms_runner.py`ni shu tartibda bitta
   pytest sessiyasida collect qiladi.
 - `setup-forms` setupdan keyin Forms runnerni, `forms` esa setupni
-  ishlatmasdan faqat Forms runnerni collect qiladi. Forms runner hozir
-  `Справочники` va ko'chirilgan A2 admin formalarini alohida pytest item
-  sifatida chaqiradi.
+  ishlatmasdan faqat Forms runnerni collect qiladi. Forms runner aynan beshta
+  pytest itemni Smartup navbar tartibida collect qiladi: `Главное`, `Продажа`,
+  `Склад`, `Финансы`, `Справочники`.
+  `menu_column` pytest parametr emas. Navbar testlari shell turidan qat'i nazar
+  shu navbar ostidagi legacy va A2 formalarni qamraydi va
+  `menu_column → menu_item` ierarxiyasidan foydalanadi. Runnerga kirmaydigan,
+  alohida ishga tushiriladigan cross-navbar `A2Angular` esa
+  `navbar_tab → menu_column → menu_item` ichki Allure ierarxiyasidan
+  foydalanadi.
+- Hozir runnerda beshta test bor. Har bir keyingi oddiy navbar o'z leaf
+  inventari/`run_*` funksiyasi hamda runnerdagi bitta yupqa wrapper bilan yangi
+  sibling pytest item sifatida qo'shiladi.
 - `setup-group-0` target setup va Group-0 runnerni bitta pytest sessiyasida
   yangi code bilan collect qiladi. `groups` target setupni ishlatmasdan faqat
   Group-0 va Report runner fayllarini collect qiladi; alohida `group-0` va
@@ -82,6 +96,7 @@ Source: `scripts/run_tests.py`; `tests/smoke/test_setup/test_0_setup_runner.py`;
 - Test user paroli kod ichida hardcode; head/company admin paroli bilan aralashtirilmaydi.
 - `00 - Company` suitega URLga qarab emas, `CREATE_COMPANY` orqali qo'shiladi.
   Flag o'chiq bo'lsa item skip qilinmaydi, deselect qilinadi va Allure'da ko'rinmaydi.
+
 - Company testi run bo'lsa, `data_store.json`ga saqlangan `company_code`
   `test_01_legal_person` va keyingi loginlarda ishlatiladi. Existing rejimida
   oddiy `COMPANY_CODE=<code>` bevosita ishlatiladi; `COMPANY_CODE=0` bo'lsa
@@ -106,6 +121,21 @@ Source: `scripts/run_tests.py`; `tests/smoke/test_setup/test_0_setup_runner.py`;
 - Alohida `test_01_authorization` yo'q. `test_01_legal_person` admin login qiladi
   va `save_data("code", code)` orqali yangi code ni keyingi yakka/debug testlar uchun saqlaydi.
 - Smoke runner `data_store.json` ni tozalab qayta yaratmaydi; faqat `code` yozadi. Shu sabab group testlardan qolgan eski `contract_*` yoki `order_id` qiymatlarini smoke setupning hozirgi code qiymati bilan bir xil deb qabul qilmaslik kerak.
+
+## Known Infrastructure Risks
+
+### Global maxfail independent grouplarni erta to'xtatishi mumkin
+
+Tags: pytest, maxfail, group, collection, independence
+Status: code-confirmed
+Verified: 2026-08-14
+Source: `pytest.ini`; `tests/smoke/conftest.py`
+
+- `pytest.ini` global `--maxfail=3` ishlatadi. Uchta failure yig'ilsa pytest
+  keyingi, o'zaro mustaqil group/runnerlarni ham collect qilingan bo'lsa-da
+  bajarmasdan to'xtashi mumkin.
+- Shu sabab run summaryda “keyingi group mustaqil” degan qoida u albatta
+  ishladi degani emas; maxfail urilganini alohida ko'rsat.
 
 ### Telegram failure diagnostikasi
 Tags: smoke, telegram, failure, playwright, locator, summary
@@ -149,8 +179,8 @@ Tags: setup, runner, credential
 Tags: smoke, group-0, order, setup, runner
 Status: live-ui-confirmed
 Verified: 2026-07-31
-Source: `tests/smoke/test_groups/test_0_grup/test_01_create_base_order.py`;
-`tests/smoke/test_groups/test_0_grup/test_0_group_runner.py`; live UI
+Source: `tests/smoke/test_groups/test_a_grup/test_01_create_base_order.py`;
+`tests/smoke/test_groups/test_a_grup/test_0_group_runner.py`; live UI
 - `0-01` setup baseline room, robot, representative, client, product, price,
   payment type va balance bilan order add → list → view happy pathini
   tekshiradi.
@@ -270,8 +300,12 @@ Tags: role, forms, permissions
 ### 10 Buy License
 Tags: license, admin, balance
 - Fayl: `tests/smoke/test_setup/test_10_buy_license.py`.
+- Server sharti: `smartup.online`da license purchase ishlamagani uchun pytest
+  skip; `app3.../xtrade`da unconditional skip yo'q.
 - `--disable-license-policy` bo'lsa bu qadam real license flowga kirmaydi va Allure/logga skip sababini yozib davom etadi.
-- Nima qiladi: logout qilib admin sifatida qayta kiradi, `Администрирование` filialiga o'tadi, `Главное` -> `Лицензии` sahifasida balans musbatligini tekshiradi va `Smartup ERP` uchun kerakli license sotib oladi.
+- Nima qiladi: login qilingan sessionda `Администрирование` filialiga o'tadi,
+  legacy `Главное -> Лицензии` yo'li bilan A2 license formani ochadi, balans
+  musbatligini tekshiradi va `Smartup ERP` uchun kerakli license sotib oladi.
 - Oyning boshida yoki shu oy uchun birinchi xaridda `Smartup ERP: Базовый пользователь (Обязательный)` alohida row chiqadi; bu rowda quantity `5` disabled/auto-filled bo'ladi, avval shu majburiy license olinadi, keyin oddiy `Smartup ERP: Базовый пользователь` rowdan 1 ta license olinadi. Shu oy keyingi runlarda majburiy row chiqmasligi mumkin.
 - Standalone `test_buy_license` blank `page` bilan boshlanishi mumkin; faol sessiya headeri ko'rinsa logout qilinadi, aks holda logout skip qilinib admin login qilinadi.
 - Kerakli ma'lumotlar: payer `AUTOTEST GWS`, contract `Договор № bn от 01.01.2025`, begin date today.
@@ -281,9 +315,14 @@ Tags: license, admin, balance
 ### 11 Attach License
 Tags: license, user
 - Fayl: `tests/smoke/test_setup/test_11_attach_license.py`.
+- Server sharti Buy bilan bir xil: `smartup.online`da skip,
+  `app3.../xtrade`da ishlaydi.
 - `--disable-license-policy` bo'lsa bu qadam real attach flowga kirmaydi va Allure/logga skip sababini yozib davom etadi.
-- Nima qiladi: `Лицензии и документы` ichida `ERP users` license ochiladi, mavjud attached users bo'lsa ajratiladi, `natural_person-pw{code}` userga ulanadi.
-- Muhim pattern: `PlaywrightTimeoutError` orqali `нет данных` bo'lmasa hammasini select qilib `Открепить` qiladi.
+- Precondition: oldingi Buy item `ERP users` license hujjatini yaratgan bo'lishi
+  kerak; Attach alohida upstream purchase'siz ishlamaydi.
+- Nima qiladi: A2 `Лицензии и документы` ichida `ERP users` license ochiladi,
+  mavjud attached users bo'lsa ajratiladi, `natural_person-pw{code}` userga
+  ulanadi.
 
 ### 12 Change Password
 Tags: user, password

@@ -7,10 +7,9 @@ Tags: a2, oauth2, company-client, filial, session, permission, error
 - [URL va navigation](#url-va-navigation)
 - [Screenshot](#screenshot)
 - [Legacy va A2 filial konteksti](#known-issue-legacy-va-a2-filial-konteksti-alohida-qolishi-mumkin)
-- [A2 filial sinxronlash](#forms-runnerdagi-a2-filial-sinxronlash-tuzatishi-2026-07-29)
+- [A2 filial sinxronlash](#a2angular-filial-sinxronlash-tuzatishi-2026-07-29)
 - [Secretlarni yashirish](#monitoring-screenshotida-oauth-secretlarni-yashirish)
-- [Bootstrap navigatsiyasi](#forms-02-bootstrapda-listni-ikki-marta-ochmaslik)
-- [Joriy precondition bloklanishi](#joriy-forms-02-precondition-bloklanishi-2026-08-03)
+- [Bootstrap navigatsiyasi](#a2angular-bootstrapda-listni-ikki-marta-ochmaslik)
 
 ## URL va navigation
 
@@ -22,7 +21,7 @@ Tags: a2, oauth2, company-client, filial, session, permission, error
 ## Screenshot
 
 - [A2 filial konteksti mos kelmagandagi access error](screenshots/company-client/company-client__access-error__desktop-1440x783__filial-context-mismatch.png)
-- [smartup.online Forms runnerda takrorlangan A2 filial context access error](screenshots/company-client/company-client__access-error__desktop-2880x1567__a2-filial-context-mismatch-smartup-online.png)
+- [2026-07-29dagi Forms runnerda takrorlangan A2 filial context access error](screenshots/company-client/company-client__access-error__desktop-2880x1567__a2-filial-context-mismatch-smartup-online.png)
 - [A2 list muvaffaqiyatli yuklangan holat](screenshots/company-client/company-client__list-loaded__desktop-1440x783.png)
 
 ## Known issue: legacy va A2 filial konteksti alohida qolishi mumkin
@@ -50,7 +49,7 @@ Tags: a2-shell, legacy-shell, filial-id, access-denied, cascade
   A2 `company_client_list:model` operatsion filial ID bilan yuborildi va HTTP
   `403` qaytdi. UI: `Нет доступа к форме Клиенты OAuth2 сервера для компании`.
 - `document.title` shu error holatida `Smartup Online` bo'lib qoladi.
-- 2026-07-29 `smartup.online` Forms runner trace'i shu holatni qayta
+- 2026-07-29 o'sha paytdagi `smartup.online` Forms runner trace'i shu holatni qayta
   tasdiqladi: legacy shell `Администрирование`ga o'tganidan keyin A2 route
   operatsion filial kontekstida ochildi, `company_client_list:model` HTTP 403
   qaytardi va A2 header operatsion filialni ko'rsatdi. Title assertiondagi
@@ -61,10 +60,13 @@ Tags: a2-shell, legacy-shell, filial-id, access-denied, cascade
   kirgach shell filialini ham target filialga sinxronlash va model so'rovi shu
   filial bilan ketganini tekshirish kerak.
 
-### Forms runnerdagi A2 filial sinxronlash tuzatishi (2026-07-29)
-Tags: a2-shell, legacy-shell, filial-sync, forms-runner, fix
+### A2Angular filial sinxronlash tuzatishi (2026-07-29)
+Tags: a2-shell, legacy-shell, filial-sync, a2angular, fix
+Status: code-confirmed
+Verified: 2026-08-11
+Source: `tests/smoke/test_forms/test_a2_angular_forms.py`; 2026-07-29 live run
 
-- `tests/smoke/test_forms/test_02_a2_admin_menu_forms.py` OAuth2 list menu
+- `tests/smoke/test_forms/test_a2_angular_forms.py` OAuth2 list menu
   trackini bosgach, title/readiness tekshiruvidan oldin
   `AngularBasePage.switch_filial(name="Администрирование")` chaqiradi.
 - Sabab: legacy `BasePage.switch_filial()` faqat `#/` shell kontekstini
@@ -75,7 +77,7 @@ Tags: a2-shell, legacy-shell, filial-sync, forms-runner, fix
 - Kutilgan oqim: legacy `Администрирование` → A2 list route → A2
   `Администрирование` sync → A2 dashboard → listni A2 menyusidan qayta ochish
   → title/component readiness → operatsion filialga A2 switch.
-- Verifikatsiya: target Forms-02 headless run barcha 22 ta A2 formani ochib
+- Tarixiy verifikatsiya: 2026-07-29dagi Forms-02 headless run barcha 22 ta A2 formani ochib
   `1 passed in 137.19s` natija berdi.
 - Screenshotlar o'zgarmadi: yuqoridagi access-error va list-loaded holatlari
   ushbu regressiya hamda kutilgan natijani qamraydi.
@@ -86,8 +88,8 @@ Status: code-confirmed
 Verified: 2026-08-04
 Source: `tests/smoke/screenshot_masking.py`;
 `tests/smoke/smoke_reporting.py`;
-`tests/smoke/test_forms/form_monitor.py`;
-`tests/smoke/test_forms/test_02_a2_admin_menu_forms.py`
+`tests/smoke/test_forms/monitoring/monitor.py`;
+`tests/smoke/test_forms/test_a2_angular_forms.py`
 - Qayerda: company client list yoki uning add/edit holati xato dalili sifatida
   screenshot qilinayotganda.
 - Qoida: `company-client` mask profili forma inventarida explicit beriladi va
@@ -98,30 +100,15 @@ Source: `tests/smoke/screenshot_masking.py`;
 - Testda ishlatish: mask kerak bo'lgan company client case definitioniga
   `screenshot_mask: company-client` ber; boshqa formaga shu profilni qo'shma.
 
-### Forms-02 bootstrapda listni ikki marta ochmaslik
-Tags: a2-shell, bootstrap, navigation, duplicate, forms-runner
+### A2Angular bootstrapda listni ikki marta ochmaslik
+Tags: a2-shell, bootstrap, navigation, duplicate, a2angular
 Status: code-confirmed
 Verified: 2026-08-03
-Source: `tests/smoke/test_forms/test_02_a2_admin_menu_forms.py`
-- Qayerda: Forms-02 boshida legacy shell'dan A2 shellga o'tishda.
+Source: `tests/smoke/test_forms/test_a2_angular_forms.py`
+- Qayerda: standalone A2Angular boshida legacy shell'dan A2 shellga o'tishda.
 - Qoida: A2 kontekstini tayyorlash uchun OAuth list vaqtincha ochilmaydi;
   texnik `/a2/trade/intro/dashboard` ochilib filial sinxronlanadi. Shundan
   keyin company client list real A2 menu track orqali faqat testcase sifatida
   ochiladi.
 - Testda ishlatish: bootstrap qadamini forma natijasi deb sanama; listning
   yagona counted navigatsiyasi `run_form_cases()` ichida bo'lsin.
-
-### Joriy Forms-02 precondition bloklanishi (2026-08-03)
-Tags: a2-shell, trade, filial-switch, blocker, forms-runner
-Status: live-ui-confirmed
-Verified: 2026-08-03
-Source: `test-results/logs/tests_smoke_test_forms_test_0_forms_runner.py__test_forms_02_a2_admin_20260803_142617.log`
-- Texnik `/a2/trade/intro/dashboard` ochildi. Headerda joriy project `SFA`
-  ko'rindi, lekin helper eski `TRADE` project/filial triggerini kutdi. Natijada
-  A2 filialini `Администрирование` bilan sinxronlash 30 soniyada bloklandi.
-- Company client formasining navigatsiyasi boshlanmagan: target URLga
-  yetilmagan va forma kontenti tekshirilmagan. Shuning uchun bu holat
-  `company_client_list` product xatosi emas, `TEST_BLOCKED/FILIAL_SWITCH_FAILED`.
-- Markaziy hisobot birinchi caseni blocker, keyingi 21 formani `NOT_CHECKED`
-  sifatida ko'rsatdi. A2 project fallbackini `SFA`ga moslashtirish monitoring
-  implementatsiyasidan alohida fix scope.

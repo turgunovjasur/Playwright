@@ -1,7 +1,7 @@
 import allure
 
 from tests.smoke.flows.flow_authorization import authorization
-from tests.smoke.flows.flow_license import attach_license_policy_skip_note, license_policy_disabled
+from tests.smoke.flows.flow_license import skip_license_flow_if_needed
 from utils.base_page import BasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("License")]
@@ -22,8 +22,7 @@ def run_attach_license(page, code, logger):
     sahifasidagi login qilingan page qabul qiladi: setup zanjirida run_buy_license shu
     holatni qoldiradi, standalone wrapper esa preconditionni o'zi tayyorlaydi.
     """
-    if license_policy_disabled():
-        attach_license_policy_skip_note(logger, "Litsenziyani foydalanuvchiga ulash")
+    if skip_license_flow_if_needed(logger, "Litsenziyani foydalanuvchiga ulash"):
         return
 
     base = BasePage(page)
