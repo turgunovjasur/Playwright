@@ -28,6 +28,7 @@ OPERATIONAL_FILIAL_PLACEHOLDER = "<operatsion filial>"
 PROGRESS_EDIT_INTERVAL_SECONDS = 10
 FINAL_DELIVERY_ATTEMPTS = 3
 TRANSIENT_RETRY_DELAYS_SECONDS = (2, 5, 10)
+FINAL_RETRY_WAIT_BUDGET_SECONDS = 10
 
 TASHKENT_TZ = timezone(timedelta(hours=5))
 TARGET_LABELS = {
@@ -677,12 +678,18 @@ def record_telegram_error(state, result, *, attempt=1, waited_seconds=0):
             f"qayta urinish {attempt}/{FINAL_DELIVERY_ATTEMPTS}"
         )
     state["telegram_notification_warning"] = summary
+    retry_at = (
+        now_tashkent() + timedelta(seconds=result.retry_after)
+        if result.retry_after
+        else None
+    )
     state["telegram_last_error"] = {
         "method": result.method,
         "category": result.category,
         "error_code": result.error_code,
         "description": result.description,
         "retry_after": result.retry_after,
+        "retry_at": retry_at.isoformat(timespec="seconds") if retry_at else "",
         "attempt": attempt,
         "at": now_tashkent().isoformat(timespec="seconds"),
     }
@@ -1013,10 +1020,12 @@ def retry_delay_seconds(result, attempt):
     return TRANSIENT_RETRY_DELAYS_SECONDS[index]
 
 
-def attempt_final_method(state, method, *, message_id=None):
+def attempt_final_method(state, method, *, message_id=None, retry_deadline=None):
     plain = False
     errors = []
     last_result = None
+    if retry_deadline is None:
+        retry_deadline = time.monotonic() + FINAL_RETRY_WAIT_BUDGET_SECONDS
     for attempt in range(1, FINAL_DELIVERY_ATTEMPTS + 1):
         result = telegram_request(
             method,
@@ -1040,8 +1049,16 @@ def attempt_final_method(state, method, *, message_id=None):
             break
 
         delay = retry_delay_seconds(result, attempt)
+        remaining_budget = max(0, retry_deadline - time.monotonic())
+        if delay > remaining_budget:
+            state["telegram_notification_warning"] = (
+                f"{telegram_result_summary(result)}. Telegram {delay} soniya kutishni "
+                "so'radi; CI bloklanmasligi uchun qayta urinish to'xtatildi"
+            )
+            save_state(state)
+            break
         state["telegram_notification_warning"] = (
-            f"{telegram_result_summary(result)}. {delay} soniya kutildi; "
+            f"{telegram_result_summary(result)}. {delay} soniyadan keyin "
             f"qayta urinish {attempt + 1}/{FINAL_DELIVERY_ATTEMPTS}"
         )
         save_state(state)
@@ -1060,6 +1077,11 @@ def extract_message_id(result):
 
 def delivery_payload(state, *, status, method, attempts, errors):
     last_error = errors[-1] if errors else None
+    retry_at = (
+        now_tashkent() + timedelta(seconds=last_error.retry_after)
+        if last_error is not None and last_error.retry_after
+        else None
+    )
     return {
         "suite": target_label(str(state.get("target") or "all")),
         "test_result": str(state.get("result") or ""),
@@ -1077,6 +1099,7 @@ def delivery_payload(state, *, status, method, attempts, errors):
                 "error_code": last_error.error_code,
                 "description": last_error.description,
                 "retry_after": last_error.retry_after,
+                "retry_at": retry_at.isoformat(timespec="seconds") if retry_at else "",
             }
             if last_error is not None
             else None
@@ -1132,12 +1155,14 @@ def deliver_final(state):
         )
 
     all_errors = []
+    retry_deadline = time.monotonic() + FINAL_RETRY_WAIT_BUDGET_SECONDS
     message_id = state.get("message_id")
     if message_id:
         result, attempts, errors, _plain = attempt_final_method(
             state,
             "editMessageText",
             message_id=message_id,
+            retry_deadline=retry_deadline,
         )
         all_errors.extend(errors)
         if result and result.ok:
@@ -1159,6 +1184,7 @@ def deliver_final(state):
     result, _attempts, errors, _plain = attempt_final_method(
         state,
         "sendMessage",
+        retry_deadline=retry_deadline,
     )
     all_errors.extend(errors)
     if result and result.ok:

@@ -3,6 +3,7 @@ from __future__ import annotations
 import hmac
 import io
 import json
+import math
 import os
 import re
 import sys
@@ -22,6 +23,8 @@ STATUS_POLL_INTERVAL_SECONDS = 30
 STATUS_POLL_ERROR_LIMIT = 5
 TELEGRAM_REQUEST_ATTEMPTS = 3
 TELEGRAM_RETRY_DELAYS_SECONDS = (2, 5, 10)
+TELEGRAM_MAX_RETRY_WAIT_SECONDS = 10
+TASHKENT_TZ = timezone(timedelta(hours=5))
 
 SUITES = {
     "smoke": "Smoke",
@@ -70,8 +73,8 @@ class TelegramAPIError(RuntimeError):
     def retryable(self):
         return self.category in {"flood_control", "network", "server"}
 
-    def as_dict(self):
-        return {
+    def as_dict(self, *, retry_at_epoch=None):
+        data = {
             "method": self.method,
             "category": self.category,
             "description": self.description,
@@ -79,6 +82,9 @@ class TelegramAPIError(RuntimeError):
             "retry_after": self.retry_after,
             "attempts": self.attempts,
         }
+        if retry_at_epoch is not None:
+            data["retry_at_epoch"] = float(retry_at_epoch)
+        return data
 
 
 @dataclass(frozen=True)
@@ -246,6 +252,7 @@ class TelegramClient:
         self.session = requests.Session()
         self.last_error = None
         self.last_recovered_error = None
+        self._retry_not_before = {}
 
     @staticmethod
     def _category(error_code):
@@ -299,9 +306,49 @@ class TelegramClient:
         index = min(max(0, attempt - 1), len(TELEGRAM_RETRY_DELAYS_SECONDS) - 1)
         return TELEGRAM_RETRY_DELAYS_SECONDS[index]
 
-    def request(self, method, payload):
+    def _remember_error(self, error, *, retry_at_epoch=None):
+        if retry_at_epoch is None and error.retry_after:
+            retry_at_epoch = time.time() + error.retry_after
+        self.last_error = error.as_dict(retry_at_epoch=retry_at_epoch)
+        if error.category == "flood_control" and retry_at_epoch is not None:
+            self._retry_not_before[error.method] = retry_at_epoch
+
+    def _cooldown_error(self, method):
+        retry_at_epoch = float(self._retry_not_before.get(method) or 0)
+        remaining = retry_at_epoch - time.time()
+        if remaining <= 0:
+            self._retry_not_before.pop(method, None)
+            return None
+        error = TelegramAPIError(
+            method,
+            category="flood_control",
+            description="Too Many Requests: retry muddati hali tugamagan",
+            error_code=429,
+            retry_after=max(1, math.ceil(remaining)),
+            attempts=0,
+        )
+        self._remember_error(error, retry_at_epoch=retry_at_epoch)
+        return error
+
+    def _remember_success(self, method, recovered_error=None):
+        current_error = self.last_error
+        if recovered_error is not None:
+            self.last_recovered_error = recovered_error.as_dict()
+        elif isinstance(current_error, dict) and current_error.get("method") == method:
+            self.last_recovered_error = current_error
+        if isinstance(current_error, dict) and current_error.get("method") == method:
+            self.last_error = None
+        self._retry_not_before.pop(method, None)
+
+    def request(self, method, payload, *, max_attempts=TELEGRAM_REQUEST_ATTEMPTS):
+        cooldown_error = self._cooldown_error(method)
+        if cooldown_error is not None:
+            raise cooldown_error
+
         recovered_error = None
-        for attempt in range(1, TELEGRAM_REQUEST_ATTEMPTS + 1):
+        waited_seconds = 0
+        attempts = max(1, int(max_attempts or 1))
+        for attempt in range(1, attempts + 1):
             try:
                 response = self.session.post(
                     f"{self.base_url}/{method}",
@@ -337,9 +384,7 @@ class TelegramClient:
                                 attempts=attempt,
                             )
                         elif data.get("ok"):
-                            if recovered_error is not None:
-                                self.last_recovered_error = recovered_error.as_dict()
-                            self.last_error = None
+                            self._remember_success(method, recovered_error)
                             return data
                         else:
                             error = self._response_error(method, response, attempt)
@@ -350,14 +395,18 @@ class TelegramClient:
                 error.error_code == 400
                 and "message is not modified" in error.description.lower()
             ):
-                self.last_error = None
+                self._remember_success(method, recovered_error)
                 return {"ok": True, "result": True}
 
-            self.last_error = error.as_dict()
+            self._remember_error(error)
             recovered_error = error
-            if not error.retryable or attempt >= TELEGRAM_REQUEST_ATTEMPTS:
+            if not error.retryable or attempt >= attempts:
                 raise error
-            time.sleep(self._retry_delay(error, attempt))
+            delay = self._retry_delay(error, attempt)
+            if waited_seconds + delay > TELEGRAM_MAX_RETRY_WAIT_SECONDS:
+                raise error
+            time.sleep(delay)
+            waited_seconds += delay
 
         raise TelegramAPIError(
             method,
@@ -406,7 +455,11 @@ class TelegramClient:
         )
 
     def delete_message(self, chat_id, message_id):
-        self.request("deleteMessage", {"chat_id": chat_id, "message_id": str(message_id)})
+        self.request(
+            "deleteMessage",
+            {"chat_id": chat_id, "message_id": str(message_id)},
+            max_attempts=1,
+        )
 
     def answer_callback(self, callback_id, text=""):
         payload = {"callback_query_id": callback_id}
@@ -675,17 +728,41 @@ def delivery_status_line(delivery):
     if isinstance(error, dict) and error.get("description"):
         code = f"{error.get('error_code')} " if error.get("error_code") else ""
         line += f"\n  Telegram: {code}{str(error.get('description'))[:180]}"
+        retry_after = error.get("retry_after")
+        retry_at = str(error.get("retry_at") or "").strip()
+        if retry_after:
+            line += f"\n  Telegram kutish talabi: {retry_after}s"
+        if retry_at:
+            line += f" · qayta urinish: {retry_at[11:19]}"
     return line
 
 
 def bot_error_line(telegram):
+    current_error = telegram.last_error
+    if isinstance(current_error, dict):
+        retry_at_epoch = current_error.get("retry_at_epoch")
+        if (
+            current_error.get("category") == "flood_control"
+            and isinstance(retry_at_epoch, (int, float))
+            and retry_at_epoch <= time.time()
+        ):
+            telegram.last_recovered_error = current_error
+            telegram.last_error = None
     error = telegram.last_error or telegram.last_recovered_error
     if not isinstance(error, dict):
         return "Bot Telegram API: ✅ xato qayd etilmagan"
     recovered = telegram.last_error is None
     mark = "⚠️ oldingi xato tiklangan" if recovered else "❌ joriy xato"
     code = f"{error.get('error_code')} " if error.get("error_code") else ""
-    return f"Bot Telegram API: {mark}\n  {code}{str(error.get('description') or '')[:180]}"
+    line = f"Bot Telegram API: {mark}\n  {code}{str(error.get('description') or '')[:180]}"
+    retry_at_epoch = error.get("retry_at_epoch")
+    if isinstance(retry_at_epoch, (int, float)) and retry_at_epoch > time.time():
+        retry_at = datetime.fromtimestamp(retry_at_epoch, TASHKENT_TZ)
+        remaining = max(1, math.ceil(retry_at_epoch - time.time()))
+        line += f"\n  Qayta urinish: {retry_at:%H:%M:%S} ({remaining}s qoldi)"
+    elif error.get("retry_after"):
+        line += f"\n  Telegram kutish talabi: {error.get('retry_after')}s"
+    return line
 
 
 def status_text(telegram, github):

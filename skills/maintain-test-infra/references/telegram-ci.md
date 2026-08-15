@@ -53,9 +53,11 @@ Source: `scripts/telegram_ci_bot.py`; `.github/workflows/daily-smoke.yml`;
   render qilingan matn o'zgarmagan bo'lsa API chaqirilmaydi.
 - Oddiy progress `429` olsa `retry_after` tugaguncha yangi edit yubormaydi;
   test processi Telegram flood-control kutishi bilan bloklanmaydi.
-- Final `PASSED`/`FAILED` xabari throttle'dan mustasno. `429`da `retry_after`,
-  network timeout yoki `5xx`da bounded backoff bilan uch martagacha retry
-  qilinadi. HTML `400` format xatosida plain-text retry ishlaydi; `401/403`
+- Final `PASSED`/`FAILED` xabari throttle'dan mustasno. `429`, network timeout
+  yoki `5xx`da umumiy kutish budjeti 10 soniyadan oshmagan holda uch martagacha
+  retry qilinadi. Telegram uzoq `retry_after` qaytarsa CI soatlab uxlamaydi:
+  delivery failure va keyingi retry vaqti status artifactiga yozilib, workflow
+  davom etadi. HTML `400` format xatosida plain-text retry ishlaydi; `401/403`
   qayta urinilmaydi.
 - Eski progress message'ni final holatga edit qilish bajarilmasa yangi final
   `sendMessage` yuboriladi. Retry bilan tuzalgan Telegram xatosi final xabarning
@@ -65,6 +67,13 @@ Source: `scripts/telegram_ci_bot.py`; `.github/workflows/daily-smoke.yml`;
   tugasa Telegramga xabar yetmasligi mumkin; bunday holat GitHub warning va
   keyingi `/status` javobida ko'rinadi, testning haqiqiy conclusioni esa
   o'zgarmaydi.
+- Windows bot Telegram `429`da faqat 10 soniyagacha bounded kutadi; uzoq
+  `retry_after` main command loopni bloklamaydi. Har metodning cooldown vaqti
+  xotirada saqlanadi, shu vaqt ichida o'sha metod API'ga qayta urilmaydi.
+  Parol xabarini `deleteMessage` qilish best-effort va retrysiz: delete xatosi
+  parolni tekshirish yoki workflow dispatchini to'xtatmaydi. `/status` botning
+  joriy/oldingi redacted xatosi bilan birga qolgan cooldown yoki artifactdagi
+  Telegram talab qilgan kutish hamda retry vaqtini ko'rsatadi.
 - Pytest progress eventlari `tests/smoke/smoke_reporting.py` va
   `scripts/telegram_progress.py` orqali group/runner/test/title asosida chiqadi.
 - Canonical Forms runnerda har bir forma alohida pytest/Allure item bo'ladi;
