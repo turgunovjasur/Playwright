@@ -4,24 +4,30 @@ import argparse
 import html
 import json
 import os
+import re
 import subprocess
 import sys
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
 STATE_FILE = ROOT / "test-results" / "telegram-progress.json"
+DELIVERY_FILE = ROOT / "test-results" / "telegram-delivery.json"
 SYSTEM_SUMMARY_JSON = ROOT / "test-results" / "system-summary.json"
 AI_SUMMARY_JSON = ROOT / "test-results" / "ai-summary.json"
 EVENT_PREFIX = "SMARTUP_PROGRESS "
 MAX_MESSAGE_LENGTH = 3900
 FORM_RECENT_LIMIT = 5
 OPERATIONAL_FILIAL_PLACEHOLDER = "<operatsion filial>"
+PROGRESS_EDIT_INTERVAL_SECONDS = 10
+FINAL_DELIVERY_ATTEMPTS = 3
+TRANSIENT_RETRY_DELAYS_SECONDS = (2, 5, 10)
 
 TASHKENT_TZ = timezone(timedelta(hours=5))
 TARGET_LABELS = {
@@ -54,6 +60,21 @@ ELEMENT_STATE_LABELS = {
 }
 
 
+@dataclass(frozen=True)
+class TelegramRequestResult:
+    ok: bool
+    method: str
+    data: dict | None = None
+    error_code: int | None = None
+    description: str = ""
+    retry_after: int = 0
+    category: str = ""
+
+    @property
+    def retryable(self):
+        return self.category in {"flood_control", "network", "server"}
+
+
 def env_value(name):
     return os.getenv(name, "").strip()
 
@@ -62,9 +83,71 @@ def telegram_enabled():
     return bool(env_value("TELEGRAM_BOT_TOKEN") and env_value("TELEGRAM_CHAT_ID"))
 
 
+def sanitize_telegram_error(value):
+    text = str(value or "").replace("\r", " ").replace("\n", " ").strip()
+    text = re.sub(
+        r"https://api\.telegram\.org/bot[^/\s]+",
+        "https://api.telegram.org/bot<redacted>",
+        text,
+    )
+    return text[:300]
+
+
+def telegram_error_category(error_code):
+    if error_code == 429:
+        return "flood_control"
+    if error_code in {401, 403}:
+        return "authorization"
+    if error_code == 400:
+        return "bad_request"
+    if isinstance(error_code, int) and error_code >= 500:
+        return "server"
+    return "telegram"
+
+
+def telegram_error_result(method, *, error_code=None, description="", retry_after=0, category=""):
+    return TelegramRequestResult(
+        ok=False,
+        method=method,
+        error_code=error_code,
+        description=sanitize_telegram_error(description) or "Telegram API xatosi",
+        retry_after=max(0, int(retry_after or 0)),
+        category=category or telegram_error_category(error_code),
+    )
+
+
+def telegram_response_error(method, data, fallback_code=None):
+    data = data if isinstance(data, dict) else {}
+    error_code = data.get("error_code", fallback_code)
+    try:
+        error_code = int(error_code) if error_code is not None else None
+    except (TypeError, ValueError):
+        error_code = fallback_code
+    parameters = data.get("parameters")
+    parameters = parameters if isinstance(parameters, dict) else {}
+    retry_after = parameters.get("retry_after", 0)
+    try:
+        retry_after = int(retry_after or 0)
+    except (TypeError, ValueError):
+        retry_after = 0
+    description = sanitize_telegram_error(data.get("description"))
+    if error_code == 400 and "message is not modified" in description.lower():
+        return TelegramRequestResult(ok=True, method=method, data=data)
+    return telegram_error_result(
+        method,
+        error_code=error_code,
+        description=description,
+        retry_after=retry_after,
+    )
+
+
 def telegram_request(method, payload):
     if not telegram_enabled():
-        return None
+        return telegram_error_result(
+            method,
+            description="Telegram credentials sozlanmagan",
+            category="disabled",
+        )
     token = env_value("TELEGRAM_BOT_TOKEN")
     encoded = urllib.parse.urlencode(payload).encode("utf-8")
     request = urllib.request.Request(
@@ -75,13 +158,34 @@ def telegram_request(method, payload):
     try:
         with urllib.request.urlopen(request, timeout=30) as response:
             data = json.loads(response.read().decode("utf-8"))
-    except (OSError, urllib.error.URLError, json.JSONDecodeError) as exc:
-        print(f"Telegram progress warning: {exc}", file=sys.stderr)
-        return None
+    except urllib.error.HTTPError as exc:
+        try:
+            data = json.loads(exc.read().decode("utf-8"))
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+            data = {}
+        result = telegram_response_error(method, data, fallback_code=exc.code)
+        if not result.description or result.description == "Telegram API xatosi":
+            result = telegram_error_result(
+                method,
+                error_code=exc.code,
+                description=exc.reason,
+            )
+        return result
+    except (OSError, urllib.error.URLError) as exc:
+        return telegram_error_result(
+            method,
+            description=exc,
+            category="network",
+        )
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        return telegram_error_result(
+            method,
+            description=exc,
+            category="server",
+        )
     if not isinstance(data, dict) or not data.get("ok"):
-        print(f"Telegram progress warning: {data}", file=sys.stderr)
-        return None
-    return data
+        return telegram_response_error(method, data)
+    return TelegramRequestResult(ok=True, method=method, data=data)
 
 
 def load_state():
@@ -524,6 +628,13 @@ def render_message(state):
         expandable.extend(failed_block(state))
 
     footer = []
+    notification_warning = str(
+        state.get("telegram_notification_warning") or ""
+    ).strip()
+    if notification_warning:
+        footer.extend(
+            ["⚠️ Telegram notification:", notification_warning]
+        )
     if finished:
         run_code = str(state.get("run_code") or "").strip()
         run_url = str(state.get("run_url") or "").strip()
@@ -538,20 +649,111 @@ def render_message(state):
     return render_html_message(lines, expandable, footer)
 
 
-def edit_progress(state):
+def render_plain_message(state):
+    rendered = render_message(state)
+    return html.unescape(re.sub(r"<[^>]+>", "", rendered))
+
+
+def telegram_result_summary(result):
+    code = f"{result.error_code} " if result.error_code is not None else ""
+    return f"{code}{result.description}".strip()
+
+
+def log_telegram_warning(result, *, attempt=1):
+    print(
+        "Telegram progress warning: "
+        f"method={result.method} category={result.category or 'unknown'} "
+        f"code={result.error_code or '-'} retry_after={result.retry_after}s "
+        f"attempt={attempt} error={result.description}",
+        file=sys.stderr,
+    )
+
+
+def record_telegram_error(state, result, *, attempt=1, waited_seconds=0):
+    summary = telegram_result_summary(result)
+    if waited_seconds:
+        summary += (
+            f". {waited_seconds} soniya kutildi; "
+            f"qayta urinish {attempt}/{FINAL_DELIVERY_ATTEMPTS}"
+        )
+    state["telegram_notification_warning"] = summary
+    state["telegram_last_error"] = {
+        "method": result.method,
+        "category": result.category,
+        "error_code": result.error_code,
+        "description": result.description,
+        "retry_after": result.retry_after,
+        "attempt": attempt,
+        "at": now_tashkent().isoformat(timespec="seconds"),
+    }
+    log_telegram_warning(result, attempt=attempt)
+
+
+def record_telegram_success(state, text):
+    state["telegram_last_sent_epoch"] = time.time()
+    state["telegram_last_text"] = text
+    state.pop("telegram_backoff_until", None)
+
+
+def telegram_payload(state, *, message_id=None, plain=False):
+    payload = {
+        "chat_id": env_value("TELEGRAM_CHAT_ID"),
+        "text": render_plain_message(state) if plain else render_message(state),
+        "disable_web_page_preview": "true",
+    }
+    if message_id is not None:
+        payload["message_id"] = str(message_id)
+    if not plain:
+        payload["parse_mode"] = "HTML"
+    return payload
+
+
+def is_format_error(result):
+    if result.category != "bad_request":
+        return False
+    description = result.description.lower()
+    return any(
+        marker in description
+        for marker in ("parse", "entities", "message text", "too long")
+    )
+
+
+def edit_progress(state, *, force=False):
     message_id = state.get("message_id")
     if not message_id:
-        return
-    telegram_request(
+        return None
+
+    now = time.time()
+    text = render_message(state)
+    if not force:
+        if text == state.get("telegram_last_text"):
+            return None
+        if now < float(state.get("telegram_backoff_until") or 0):
+            return None
+        last_sent = float(state.get("telegram_last_sent_epoch") or 0)
+        if now - last_sent < PROGRESS_EDIT_INTERVAL_SECONDS:
+            return None
+
+    result = telegram_request(
         "editMessageText",
-        {
-            "chat_id": env_value("TELEGRAM_CHAT_ID"),
-            "message_id": str(message_id),
-            "text": render_message(state),
-            "parse_mode": "HTML",
-            "disable_web_page_preview": "true",
-        },
+        telegram_payload(state, message_id=message_id),
     )
+    if not result.ok and is_format_error(result):
+        record_telegram_error(state, result)
+        result = telegram_request(
+            "editMessageText",
+            telegram_payload(state, message_id=message_id, plain=True),
+        )
+
+    if result.ok:
+        record_telegram_success(state, text)
+    else:
+        record_telegram_error(state, result)
+        delay = result.retry_after or PROGRESS_EDIT_INTERVAL_SECONDS
+        if result.retryable:
+            state["telegram_backoff_until"] = time.time() + delay
+    save_state(state)
+    return result
 
 
 def command_start(args):
@@ -574,20 +776,23 @@ def command_start(args):
 
     if args.message_id:
         state["message_id"] = args.message_id
-        edit_progress(state)
+        edit_progress(state, force=True)
     else:
-        data = telegram_request(
+        result = telegram_request(
             "sendMessage",
-            {
-                "chat_id": env_value("TELEGRAM_CHAT_ID"),
-                "text": render_message(state),
-                "parse_mode": "HTML",
-                "disable_web_page_preview": "true",
-            },
+            telegram_payload(state),
         )
-        result = data.get("result") if isinstance(data, dict) else None
-        if isinstance(result, dict) and result.get("message_id"):
-            state["message_id"] = result["message_id"]
+        response_data = result.data if result.ok else None
+        message = (
+            response_data.get("result")
+            if isinstance(response_data, dict)
+            else None
+        )
+        if isinstance(message, dict) and message.get("message_id"):
+            state["message_id"] = message["message_id"]
+            record_telegram_success(state, render_message(state))
+        elif not result.ok:
+            record_telegram_error(state, result)
     save_state(state)
     return 0
 
@@ -801,6 +1006,183 @@ def derive_summary(state):
     return ", ".join(parts)
 
 
+def retry_delay_seconds(result, attempt):
+    if result.retry_after:
+        return result.retry_after
+    index = min(max(0, attempt - 1), len(TRANSIENT_RETRY_DELAYS_SECONDS) - 1)
+    return TRANSIENT_RETRY_DELAYS_SECONDS[index]
+
+
+def attempt_final_method(state, method, *, message_id=None):
+    plain = False
+    errors = []
+    last_result = None
+    for attempt in range(1, FINAL_DELIVERY_ATTEMPTS + 1):
+        result = telegram_request(
+            method,
+            telegram_payload(state, message_id=message_id, plain=plain),
+        )
+        last_result = result
+        if result.ok:
+            return result, attempt, errors, plain
+
+        errors.append(result)
+        record_telegram_error(state, result, attempt=attempt)
+        if is_format_error(result) and not plain:
+            plain = True
+            state["telegram_notification_warning"] = (
+                f"{telegram_result_summary(result)}. "
+                "Oddiy matn formatida qayta yuborildi"
+            )
+            save_state(state)
+            continue
+        if not result.retryable or attempt >= FINAL_DELIVERY_ATTEMPTS:
+            break
+
+        delay = retry_delay_seconds(result, attempt)
+        state["telegram_notification_warning"] = (
+            f"{telegram_result_summary(result)}. {delay} soniya kutildi; "
+            f"qayta urinish {attempt + 1}/{FINAL_DELIVERY_ATTEMPTS}"
+        )
+        save_state(state)
+        time.sleep(delay)
+
+    return last_result, len(errors), errors, plain
+
+
+def extract_message_id(result):
+    data = result.data if result and result.ok else None
+    message = data.get("result") if isinstance(data, dict) else None
+    if isinstance(message, dict) and isinstance(message.get("message_id"), int):
+        return message["message_id"]
+    return None
+
+
+def delivery_payload(state, *, status, method, attempts, errors):
+    last_error = errors[-1] if errors else None
+    return {
+        "suite": target_label(str(state.get("target") or "all")),
+        "test_result": str(state.get("result") or ""),
+        "run_url": str(state.get("run_url") or ""),
+        "status": status,
+        "method": method,
+        "attempts": attempts,
+        "recovered": bool(
+            errors
+            and status in {"recovered", "fallback_sent", "sent_new"}
+        ),
+        "error": (
+            {
+                "category": last_error.category,
+                "error_code": last_error.error_code,
+                "description": last_error.description,
+                "retry_after": last_error.retry_after,
+            }
+            if last_error is not None
+            else None
+        ),
+        "updated_at": now_tashkent().isoformat(timespec="seconds"),
+    }
+
+
+def write_delivery_status(state, delivery):
+    state["telegram_delivery"] = delivery
+    DELIVERY_FILE.parent.mkdir(parents=True, exist_ok=True)
+    DELIVERY_FILE.write_text(
+        json.dumps(delivery, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+    status = str(delivery.get("status") or "unknown")
+    error = delivery.get("error")
+    error = error if isinstance(error, dict) else {}
+    detail = sanitize_telegram_error(error.get("description"))
+    summary_path = env_value("GITHUB_STEP_SUMMARY")
+    if summary_path:
+        with Path(summary_path).open("a", encoding="utf-8") as summary_file:
+            summary_file.write("\n### Telegram notification\n\n")
+            summary_file.write(f"- Delivery: `{status}`\n")
+            summary_file.write(f"- Method: `{delivery.get('method') or 'none'}`\n")
+            summary_file.write(f"- Attempts: `{delivery.get('attempts') or 0}`\n")
+            if detail:
+                summary_file.write(f"- Error: `{detail}`\n")
+
+    if status in {"failed", "disabled"} or delivery.get("recovered"):
+        warning = detail or status
+        print(
+            f"::warning title=Telegram notification::{warning}",
+            file=sys.stderr,
+        )
+
+
+def deliver_final(state):
+    if not telegram_enabled():
+        result = telegram_error_result(
+            "sendMessage",
+            description="Telegram credentials sozlanmagan",
+            category="disabled",
+        )
+        record_telegram_error(state, result)
+        return delivery_payload(
+            state,
+            status="disabled",
+            method="none",
+            attempts=0,
+            errors=[result],
+        )
+
+    all_errors = []
+    message_id = state.get("message_id")
+    if message_id:
+        result, attempts, errors, _plain = attempt_final_method(
+            state,
+            "editMessageText",
+            message_id=message_id,
+        )
+        all_errors.extend(errors)
+        if result and result.ok:
+            record_telegram_success(state, render_message(state))
+            return delivery_payload(
+                state,
+                status="recovered" if errors else "delivered",
+                method="editMessageText",
+                attempts=attempts,
+                errors=all_errors,
+            )
+
+        state["telegram_notification_warning"] = (
+            f"{telegram_result_summary(result)}. "
+            "Eski RUNNING xabari yangilanmadi; yangi final xabar yuborildi"
+        )
+        save_state(state)
+
+    result, _attempts, errors, _plain = attempt_final_method(
+        state,
+        "sendMessage",
+    )
+    all_errors.extend(errors)
+    if result and result.ok:
+        new_message_id = extract_message_id(result)
+        if new_message_id is not None:
+            state["message_id"] = new_message_id
+        record_telegram_success(state, render_message(state))
+        return delivery_payload(
+            state,
+            status="fallback_sent" if message_id else "sent_new",
+            method="sendMessage",
+            attempts=len(all_errors) + 1,
+            errors=all_errors,
+        )
+
+    return delivery_payload(
+        state,
+        status="failed",
+        method="sendMessage",
+        attempts=len(all_errors),
+        errors=all_errors,
+    )
+
+
 def command_finish(args):
     state = load_state()
     if not state:
@@ -837,7 +1219,9 @@ def command_finish(args):
         state["ai_conclusion"] = ai_conclusion
 
     save_state(state)
-    edit_progress(state)
+    delivery = deliver_final(state)
+    write_delivery_status(state, delivery)
+    save_state(state)
     return 0
 
 

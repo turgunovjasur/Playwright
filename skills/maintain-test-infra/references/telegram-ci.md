@@ -11,7 +11,7 @@
 ## Current architecture
 
 Status: code-confirmed
-Verified: 2026-08-14
+Verified: 2026-08-15
 Source: `scripts/telegram_ci_bot.py`; `.github/workflows/daily-smoke.yml`;
 `.github/workflows/run-smartup-suite.yml`
 
@@ -27,6 +27,10 @@ Source: `scripts/telegram_ci_bot.py`; `.github/workflows/daily-smoke.yml`;
   `AUTO_RUN_*` konfiguratsiyasi olib tashlangan.
 - Manual flow: avval suite (`Smoke` yoki `Forms`), keyin server (`Online` yoki
   `Xtrade`), so'ng run password authorizationi tanlanadi.
+- `/status` oxirgi scheduled yoki manual workflow holati, run linki, Smoke/Forms
+  Telegram delivery holati va bot processining oxirgi redacted Telegram API
+  xatosini ko'rsatadi. Delivery holati katta test artifactidan emas, alohida
+  kichik `*-telegram-status` artifactidan o'qiladi.
 - Workflow erkin URL qabul qilmaydi: `smartup` yoki `app3` keyidan URL hamda
   secret source ichkarida hosil qilinadi, boshqa key fail-closed rad etiladi.
 - Bot in-memory manual run bilan birga GitHub API orqali scheduled/manual active
@@ -44,6 +48,23 @@ Source: `scripts/telegram_ci_bot.py`; `.github/workflows/daily-smoke.yml`;
 
 - Progress bitta edit-in-place Telegram message'da yuradi; workflow final
   xabardan keyin progress message'ni yakunlaydi.
+- Pytest eventlari lokal state'ga darhol yoziladi, ammo Telegram progress xabari
+  10 soniyadan tez edit qilinmaydi. Oraliq eventlar bitta editga jamlanadi va
+  render qilingan matn o'zgarmagan bo'lsa API chaqirilmaydi.
+- Oddiy progress `429` olsa `retry_after` tugaguncha yangi edit yubormaydi;
+  test processi Telegram flood-control kutishi bilan bloklanmaydi.
+- Final `PASSED`/`FAILED` xabari throttle'dan mustasno. `429`da `retry_after`,
+  network timeout yoki `5xx`da bounded backoff bilan uch martagacha retry
+  qilinadi. HTML `400` format xatosida plain-text retry ishlaydi; `401/403`
+  qayta urinilmaydi.
+- Eski progress message'ni final holatga edit qilish bajarilmasa yangi final
+  `sendMessage` yuboriladi. Retry bilan tuzalgan Telegram xatosi final xabarning
+  `Telegram notification` ogohlantirishida userga ko'rsatiladi.
+- Final delivery natijasi `test-results/telegram-delivery.json`, GitHub Step
+  Summary va `*-telegram-status` artifactida saqlanadi. Barcha urinishlar
+  tugasa Telegramga xabar yetmasligi mumkin; bunday holat GitHub warning va
+  keyingi `/status` javobida ko'rinadi, testning haqiqiy conclusioni esa
+  o'zgarmaydi.
 - Pytest progress eventlari `tests/smoke/smoke_reporting.py` va
   `scripts/telegram_progress.py` orqali group/runner/test/title asosida chiqadi.
 - Canonical Forms runnerda har bir forma alohida pytest/Allure item bo'ladi;
@@ -102,6 +123,9 @@ Source: GitHub Actions runs `30528649258`, `30878853396`; `scripts/analyze_test_
 - Parol xabari qabul qilingach chatdan o'chiriladi.
 - `TELEGRAM_CHAT_ID` GitHub workflow progress/final xabarlari uchun destination;
   manual run authoritysi emas.
+- Telegram error loglari method, kategoriya, status code, retry va redacted
+  descriptionni saqlaydi; tokenli Bot API URL, payload, chat ID yoki credential
+  user-facing xabar va logga chiqarilmaydi.
 
 ## Windows deploy
 

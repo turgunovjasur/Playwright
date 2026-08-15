@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import hmac
+import io
 import json
 import os
+import re
 import sys
 import threading
 import time
+import zipfile
 from dataclasses import dataclass, replace
 from datetime import datetime, timedelta, timezone
 
@@ -17,6 +20,8 @@ DEFAULT_WORKFLOW = "daily-smoke.yml"
 DEFAULT_REF = "main"
 STATUS_POLL_INTERVAL_SECONDS = 30
 STATUS_POLL_ERROR_LIMIT = 5
+TELEGRAM_REQUEST_ATTEMPTS = 3
+TELEGRAM_RETRY_DELAYS_SECONDS = (2, 5, 10)
 
 SUITES = {
     "smoke": "Smoke",
@@ -33,6 +38,49 @@ class ConfigError(RuntimeError):
     pass
 
 
+class TelegramAPIError(RuntimeError):
+    def __init__(
+        self,
+        method,
+        *,
+        category,
+        description,
+        error_code=None,
+        retry_after=0,
+        attempts=1,
+    ):
+        self.method = method
+        self.category = category
+        safe_description = re.sub(
+            r"https://api\.telegram\.org/bot[^/\s]+",
+            "https://api.telegram.org/bot<redacted>",
+            str(description or "Telegram API xatosi"),
+        )
+        self.description = safe_description[:300]
+        self.error_code = error_code
+        self.retry_after = max(0, int(retry_after or 0))
+        self.attempts = attempts
+        code = f"{error_code} " if error_code is not None else ""
+        super().__init__(
+            f"Telegram {method} error: {code}{self.description}; "
+            f"attempts={attempts}; retry_after={self.retry_after}s"
+        )
+
+    @property
+    def retryable(self):
+        return self.category in {"flood_control", "network", "server"}
+
+    def as_dict(self):
+        return {
+            "method": self.method,
+            "category": self.category,
+            "description": self.description,
+            "error_code": self.error_code,
+            "retry_after": self.retry_after,
+            "attempts": self.attempts,
+        }
+
+
 @dataclass(frozen=True)
 class RunRequest:
     suite_key: str
@@ -46,6 +94,9 @@ class RunRequest:
 class WorkflowRun:
     run_id: int | None
     html_url: str
+    status: str = ""
+    conclusion: str | None = None
+    event: str = ""
 
 
 @dataclass(frozen=True)
@@ -193,14 +244,127 @@ class TelegramClient:
     def __init__(self, token):
         self.base_url = f"https://api.telegram.org/bot{token}"
         self.session = requests.Session()
+        self.last_error = None
+        self.last_recovered_error = None
+
+    @staticmethod
+    def _category(error_code):
+        if error_code == 429:
+            return "flood_control"
+        if error_code in {401, 403}:
+            return "authorization"
+        if error_code == 400:
+            return "bad_request"
+        if isinstance(error_code, int) and error_code >= 500:
+            return "server"
+        return "telegram"
+
+    @staticmethod
+    def _response_error(method, response, attempt):
+        try:
+            data = response.json()
+        except ValueError:
+            data = {}
+        data = data if isinstance(data, dict) else {}
+        error_code = data.get("error_code", response.status_code)
+        try:
+            error_code = int(error_code)
+        except (TypeError, ValueError):
+            error_code = response.status_code
+        parameters = data.get("parameters")
+        parameters = parameters if isinstance(parameters, dict) else {}
+        retry_after = parameters.get("retry_after", 0)
+        try:
+            retry_after = int(retry_after or 0)
+        except (TypeError, ValueError):
+            retry_after = 0
+        description = str(
+            data.get("description")
+            or response.reason
+            or "Telegram API xatosi"
+        )
+        return TelegramAPIError(
+            method,
+            category=TelegramClient._category(error_code),
+            description=description,
+            error_code=error_code,
+            retry_after=retry_after,
+            attempts=attempt,
+        )
+
+    @staticmethod
+    def _retry_delay(error, attempt):
+        if error.retry_after:
+            return error.retry_after
+        index = min(max(0, attempt - 1), len(TELEGRAM_RETRY_DELAYS_SECONDS) - 1)
+        return TELEGRAM_RETRY_DELAYS_SECONDS[index]
 
     def request(self, method, payload):
-        response = self.session.post(f"{self.base_url}/{method}", data=payload, timeout=60)
-        response.raise_for_status()
-        data = response.json()
-        if not data.get("ok"):
-            raise RuntimeError(f"Telegram API error: {data}")
-        return data
+        recovered_error = None
+        for attempt in range(1, TELEGRAM_REQUEST_ATTEMPTS + 1):
+            try:
+                response = self.session.post(
+                    f"{self.base_url}/{method}",
+                    data=payload,
+                    timeout=60,
+                )
+            except requests.RequestException as exc:
+                error = TelegramAPIError(
+                    method,
+                    category="network",
+                    description=exc.__class__.__name__,
+                    attempts=attempt,
+                )
+            else:
+                if response.ok:
+                    try:
+                        data = response.json()
+                    except ValueError:
+                        error = TelegramAPIError(
+                            method,
+                            category="server",
+                            description="Telegram noto'g'ri JSON javob qaytardi",
+                            error_code=response.status_code,
+                            attempts=attempt,
+                        )
+                    else:
+                        if not isinstance(data, dict):
+                            error = TelegramAPIError(
+                                method,
+                                category="server",
+                                description="Telegram JSON object qaytarmadi",
+                                error_code=response.status_code,
+                                attempts=attempt,
+                            )
+                        elif data.get("ok"):
+                            if recovered_error is not None:
+                                self.last_recovered_error = recovered_error.as_dict()
+                            self.last_error = None
+                            return data
+                        else:
+                            error = self._response_error(method, response, attempt)
+                else:
+                    error = self._response_error(method, response, attempt)
+
+            if (
+                error.error_code == 400
+                and "message is not modified" in error.description.lower()
+            ):
+                self.last_error = None
+                return {"ok": True, "result": True}
+
+            self.last_error = error.as_dict()
+            recovered_error = error
+            if not error.retryable or attempt >= TELEGRAM_REQUEST_ATTEMPTS:
+                raise error
+            time.sleep(self._retry_delay(error, attempt))
+
+        raise TelegramAPIError(
+            method,
+            category="telegram",
+            description="Telegram request yakunlanmadi",
+            attempts=TELEGRAM_REQUEST_ATTEMPTS,
+        )
 
     def get_updates(self, offset):
         payload = {"timeout": 50, "allowed_updates": '["message","callback_query"]'}
@@ -348,6 +512,77 @@ class GitHubActionsClient:
         data = response.json()
         return str(data.get("status", "")), data.get("conclusion"), str(data.get("html_url", self.workflow_url))
 
+    def latest_run(self):
+        url = f"https://api.github.com/repos/{self.repository}/actions/workflows/{self.workflow}/runs"
+        response = self.session.get(
+            url,
+            params={"branch": self.ref, "per_page": "20"},
+            timeout=30,
+        )
+        response.raise_for_status()
+        runs = response.json().get("workflow_runs", [])
+        for item in runs:
+            event = str(item.get("event") or "")
+            if event not in {"schedule", "workflow_dispatch"}:
+                continue
+            run_id = item.get("id")
+            html_url = item.get("html_url")
+            if isinstance(run_id, int) and isinstance(html_url, str):
+                return WorkflowRun(
+                    run_id=run_id,
+                    html_url=html_url,
+                    status=str(item.get("status") or ""),
+                    conclusion=(
+                        str(item.get("conclusion"))
+                        if item.get("conclusion") is not None
+                        else None
+                    ),
+                    event=event,
+                )
+        return None
+
+    def delivery_statuses(self, run_id):
+        url = f"https://api.github.com/repos/{self.repository}/actions/runs/{run_id}/artifacts"
+        response = self.session.get(url, params={"per_page": "100"}, timeout=30)
+        response.raise_for_status()
+        artifacts = response.json().get("artifacts", [])
+        statuses = []
+        for artifact in artifacts:
+            name = str(artifact.get("name") or "")
+            artifact_id = artifact.get("id")
+            if not name.endswith("-telegram-status") or not isinstance(artifact_id, int):
+                continue
+            download_url = (
+                f"https://api.github.com/repos/{self.repository}/actions/"
+                f"artifacts/{artifact_id}/zip"
+            )
+            download = self.session.get(download_url, timeout=30)
+            download.raise_for_status()
+            try:
+                with zipfile.ZipFile(io.BytesIO(download.content)) as archive:
+                    status_file = next(
+                        (
+                            member
+                            for member in archive.namelist()
+                            if member.endswith("telegram-delivery.json")
+                        ),
+                        None,
+                    )
+                    if status_file is None:
+                        continue
+                    data = json.loads(archive.read(status_file).decode("utf-8"))
+            except (zipfile.BadZipFile, KeyError, UnicodeDecodeError, json.JSONDecodeError):
+                continue
+            if isinstance(data, dict):
+                statuses.append(data)
+        return sorted(
+            statuses,
+            key=lambda item: {"Smoke": 0, "Forms": 1}.get(
+                str(item.get("suite") or ""),
+                2,
+            ),
+        )
+
 
 def parse_github_time(value):
     if not value:
@@ -360,7 +595,8 @@ def parse_github_time(value):
 
 def help_text():
     return (
-        "Test run qilish uchun /run yuboring.\n\n"
+        "Test run qilish uchun /run yuboring. Oxirgi CI va Telegram "
+        "notification holati uchun /status yuboring.\n\n"
         "Bot avval Smoke yoki Forms suite'ini, keyin serverni so'raydi.\n"
         "So'ngra parol so'raladi — to'g'ri parol kiritilsa tanlangan test ishga tushadi.\n"
         "Company code/password GitHub Secrets'dan olinadi.\n"
@@ -404,8 +640,80 @@ def start_text(config):
         "\n"
         "⚠️ Test ketayotganda yangi /run xabar bilan rad etiladi.\n"
         "\n"
-        "Buyruqlar: /run  /servers  /help  /start"
+        "Buyruqlar: /run  /status  /servers  /help  /start"
     )
+
+
+def workflow_status_label(run):
+    if run.status != "completed":
+        return f"🟡 {run.status or 'queued'}"
+    labels = {
+        "success": "✅ SUCCESS",
+        "failure": "❌ FAILED",
+        "cancelled": "⚪ CANCELLED",
+        "skipped": "⏭ SKIPPED",
+    }
+    return labels.get(
+        str(run.conclusion or ""),
+        str(run.conclusion or "UNKNOWN").upper(),
+    )
+
+
+def delivery_status_line(delivery):
+    suite = str(delivery.get("suite") or "CI")
+    status = str(delivery.get("status") or "unknown")
+    labels = {
+        "delivered": "✅ yetkazildi",
+        "recovered": "⚠️ retry bilan yetkazildi",
+        "fallback_sent": "⚠️ yangi final xabar yuborildi",
+        "sent_new": "✅ yangi xabar yuborildi",
+        "failed": "❌ yetkazilmadi",
+        "disabled": "❌ sozlanmagan",
+    }
+    line = f"{suite}: {labels.get(status, status)}"
+    error = delivery.get("error")
+    if isinstance(error, dict) and error.get("description"):
+        code = f"{error.get('error_code')} " if error.get("error_code") else ""
+        line += f"\n  Telegram: {code}{str(error.get('description'))[:180]}"
+    return line
+
+
+def bot_error_line(telegram):
+    error = telegram.last_error or telegram.last_recovered_error
+    if not isinstance(error, dict):
+        return "Bot Telegram API: ✅ xato qayd etilmagan"
+    recovered = telegram.last_error is None
+    mark = "⚠️ oldingi xato tiklangan" if recovered else "❌ joriy xato"
+    code = f"{error.get('error_code')} " if error.get("error_code") else ""
+    return f"Bot Telegram API: {mark}\n  {code}{str(error.get('description') or '')[:180]}"
+
+
+def status_text(telegram, github):
+    run = github.latest_run()
+    if run is None or run.run_id is None:
+        return "CI run topilmadi."
+
+    lines = [
+        "📊 Oxirgi CI holati",
+        f"Run: {workflow_status_label(run)}",
+        f"Trigger: {run.event or 'unknown'}",
+    ]
+    deliveries = github.delivery_statuses(run.run_id)
+    if deliveries:
+        lines.extend(["", "Telegram notification:"])
+        lines.extend(delivery_status_line(item) for item in deliveries)
+    elif run.status == "completed":
+        lines.extend(
+            [
+                "",
+                "Telegram notification: status artifact topilmadi.",
+            ]
+        )
+    else:
+        lines.extend(["", "Telegram notification: ⏳ final holat kutilmoqda."])
+
+    lines.extend(["", bot_error_line(telegram), "", f"🔗 {run.html_url}"])
+    return "\n".join(lines)
 
 
 def suite_keyboard():
@@ -575,11 +883,28 @@ def handle_message(
         lines = [SERVERS[key] for key in sorted(config.allowed_server_keys)]
         telegram.send_message(chat_id, "Mavjud serverlar:\n" + "\n".join(lines))
         return
+    if command == "/status":
+        try:
+            message = status_text(telegram, github)
+        except requests.RequestException as exc:
+            print(
+                f"GitHub status request failed: {exc.__class__.__name__}",
+                file=sys.stderr,
+            )
+            message = (
+                "❌ CI statusini GitHub'dan olib bo'lmadi. "
+                "Iltimos, keyinroq qayta urinib ko'ring."
+            )
+        telegram.send_message(chat_id, message)
+        return
     if command == "/run":
         show_run_start(telegram, github, chat_id, config, active_store)
         return
 
-    telegram.send_message(chat_id, "Noto'g'ri command. Test run qilish uchun /run yuboring.")
+    telegram.send_message(
+        chat_id,
+        "Noto'g'ri command. /run, /status yoki /help yuboring.",
+    )
 
 
 def handle_callback(

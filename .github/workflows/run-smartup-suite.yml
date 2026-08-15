@@ -190,8 +190,7 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
-            echo "Telegram secrets are not configured; skipping notification."
-            exit 0
+            echo "Telegram secrets are not configured; delivery status will be recorded."
           fi
 
           SUMMARY=$(grep -E "={2,} .* (passed|failed|errors?|skipped|xfailed|xpassed).* in .* ={2,}" \
@@ -231,6 +230,15 @@ jobs:
               echo "Failed screenshot not found; trace/log is in the artifact."
             fi
           fi
+
+      - name: Upload Telegram delivery status
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}-telegram-status
+          path: test-results/telegram-delivery.json
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Upload test results
         if: ${{ always() }}
