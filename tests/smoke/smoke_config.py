@@ -417,7 +417,10 @@ def browser_launch_options(config):
 
 def browser_context_options(config):
     """Yangi browser context uchun umumiy Playwright optionlarini qaytaradi."""
-    options = {"accept_downloads": True}
+    options = {
+        "accept_downloads": True,
+        "timezone_id": "Asia/Tashkent",
+    }
     if is_headless(config):
         options["viewport"] = {"width": 1920, "height": 1080}
     else:
