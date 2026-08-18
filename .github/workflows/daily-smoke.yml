@@ -21,11 +21,6 @@ on:
         options:
           - smartup
           - app3
-      ai_summary:
-        description: Add Gemini AI conclusion
-        required: false
-        default: false
-        type: boolean
       telegram_progress_message_id:
         description: Existing Telegram progress message id
         required: false
@@ -44,7 +39,6 @@ jobs:
     with:
       target: setup-group-0
       server_key: ${{ inputs.server || 'smartup' }}
-      ai_summary: ${{ inputs.ai_summary || false }}
       telegram_progress_message_id: ${{ inputs.suite == 'smoke' && inputs.telegram_progress_message_id || '' }}
       artifact_name: smoke-test-results
     secrets: inherit
@@ -57,7 +51,6 @@ jobs:
     with:
       target: forms
       server_key: ${{ inputs.server || 'smartup' }}
-      ai_summary: ${{ inputs.ai_summary || false }}
       telegram_progress_message_id: ${{ inputs.suite == 'forms' && inputs.telegram_progress_message_id || '' }}
       artifact_name: forms-test-results
     secrets: inherit

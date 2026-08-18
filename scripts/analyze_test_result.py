@@ -9,6 +9,7 @@ import time
 import urllib.error
 import urllib.request
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -47,7 +48,6 @@ def parse_args():
     parser.add_argument("--exit-code", type=int, required=True, help="pytest exit code")
     parser.add_argument("--command", default="", help="Maskalangan pytest command")
     parser.add_argument("--started-at", type=float, default=0.0, help="Run boshlanish vaqti: time.time()")
-    parser.add_argument("--ai-summary", action="store_true", help="Gemini orqali faqat qisqa AI xulosa yaratadi.")
     parser.add_argument("--results-dir", type=Path, default=RESULTS_DIR)
     parser.add_argument("--logs-dir", type=Path, default=LOG_DIR)
     parser.add_argument("--system-output-md", type=Path, default=SYSTEM_SUMMARY_MD)
@@ -55,6 +55,10 @@ def parse_args():
     parser.add_argument("--ai-output-md", type=Path, default=AI_SUMMARY_MD)
     parser.add_argument("--ai-output-json", type=Path, default=AI_SUMMARY_JSON)
     return parser.parse_args()
+
+
+def env_flag(name):
+    return str(os.getenv(name, "0") or "0").strip() == "1"
 
 
 def _read_json(path):
@@ -470,6 +474,16 @@ def _humanize_failure(item):
     runner_test = _runner_test(item)
     form_issues = _form_monitor_issues(item.get("form_monitor"))
     form_reason = _form_issue_reason(form_issues[0]) if form_issues else ""
+    try:
+        stop_millis = int(item.get("stop") or 0)
+        if stop_millis <= 0:
+            raise ValueError("Allure stop timestamp mavjud emas")
+        stopped_at = datetime.fromtimestamp(
+            stop_millis / 1000,
+            timezone.utc,
+        ).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    except (OSError, OverflowError, TypeError, ValueError):
+        stopped_at = ""
     return {
         "name": item.get("name") or item.get("fullName") or "unknown",
         "status": item.get("status") or "unknown",
@@ -512,6 +526,7 @@ def _humanize_failure(item):
             or form_reason
             or _human_reason(failure_text)
         ),
+        "failure_at_utc": stopped_at,
         "form_issues": form_issues,
     }
 
@@ -969,36 +984,62 @@ def build_local_summary(deterministic):
 
 
 def enrich_ai_summary(summary, deterministic):
-    """AI faylida faqat AI yozgan qisqa xulosa qoladi."""
+    """AI javobini Telegram va Allure uchun kichik, barqaror contractga keltiradi."""
+    observed = _truncate(
+        _mask_sensitive(
+            str(summary.get("observed") or summary.get("summary") or "").strip()
+        ),
+        1200,
+    )
+    probable_cause = _truncate(
+        _mask_sensitive(str(summary.get("probable_cause") or "").strip()),
+        1200,
+    )
+    confidence = str(summary.get("confidence") or "low").strip().lower()
+    if confidence not in {"low", "medium", "high"}:
+        confidence = "low"
+    if not observed:
+        observed = "Test loglaridan kuzatilgan holatni aniq ajratib bo'lmadi."
+    if not probable_cause:
+        probable_cause = "Test loglaridan xatolikning aniq sababi topilmadi."
     return {
         "result": deterministic.get("result", summary.get("result", "UNKNOWN")),
-        "summary": str(summary.get("summary") or "").strip(),
-        "confidence": summary.get("confidence", "unknown"),
+        "observed": observed,
+        "probable_cause": probable_cause,
+        "summary": f"{observed} {probable_cause}".strip(),
+        "confidence": confidence,
         "provider_status": "ai",
     }
 
 
-def build_prompt(command, deterministic, results, logs):
+def build_prompt(command, deterministic, logs):
     payload = {
         "command": command,
-        "deterministic_summary": deterministic,
-        "allure_results": results,
+        "deterministic_summary": {
+            "result": deterministic.get("result"),
+            "failed_count": deterministic.get("failed_count"),
+            "skipped_count": deterministic.get("skipped_count"),
+            "failed_tests": deterministic.get("failed_tests"),
+        },
         "failure_logs": logs,
     }
     return (
-        "Smartup Playwright + pytest smoke test natijasiga qisqa AI xulosa yoz.\n"
+        "Smartup Playwright + pytest FAILED natijasini user uchun qisqa tahlil qil.\n"
         "Qoidalar:\n"
-        "- Pass/fail statusni faqat deterministic_summary.exit_code va resultlardan ol; o'zing taxmin qilib statusni o'zgartirma.\n"
-        "- Failed test, ichki step, kod joyi, skipped soni kabi faktlarni tizim o'zi chiqaradi; ularni qaytarma.\n"
-        "- Sen faqat 1-2 gaplik odam tushunadigan umumiy xulosa yoz.\n"
-        "- Xulosa root cause ehtimoli va nimani tekshirish kerakligini qisqa aytsin.\n"
-        "- Ishonching past bo'lsa confidence=low qil.\n"
+        "- Faqat berilgan deterministic failure dalili va lokal test loglariga tayan.\n"
+        "- Smartup server loglari berilmagan; backend sababini tasdiqlangan fakt sifatida yozma.\n"
+        "- observed faqat logda aniq kuzatilgan holatni sodda tilda aytsin.\n"
+        "- probable_cause eng ehtimoliy sababni aytsin; dalil yetarli bo'lmasa aynan sabab topilmaganini yoz.\n"
+        "- 'Cheklov', 'Developer uchun', umumiy tavsiya yoki takroriy failure vaqtini yozma.\n"
+        "- Har bir matn 1-2 qisqa gapdan oshmasin.\n"
+        "- Ishonch past bo'lsa confidence=low qil.\n"
         "- Javob Uzbek tilida bo'lsin.\n"
         "- Faqat JSON qaytar.\n\n"
         "JSON schema:\n"
         "{\n"
-        '  "result": "PASSED|FAILED",\n'
-        '  "summary": "1-2 gaplik umumiy AI xulosa",\n'
+        '  "result": "FAILED",\n'
+        '  "observed": "Logda kuzatilgan aniq holat",\n'
+        '  "probable_cause": "Ehtimoliy sabab yoki aniq sabab topilmagani",\n'
         '  "confidence": "low|medium|high"\n'
         "}\n\n"
         f"INPUT:\n{json.dumps(payload, ensure_ascii=False, indent=2)}"
@@ -1082,7 +1123,19 @@ def render_markdown(
     ]
     if model:
         lines.insert(2, f"- Model: `{model}`")
-    lines.extend(["", str(summary.get("summary") or "Xulosa mavjud emas.")])
+    if summary.get("provider_status") == "ai":
+        lines.extend(
+            [
+                "",
+                "## Kuzatilgan",
+                str(summary.get("observed") or "Kuzatilgan holat mavjud emas."),
+                "",
+                "## Ehtimoliy sabab",
+                str(summary.get("probable_cause") or "Aniq sabab topilmadi."),
+            ]
+        )
+    else:
+        lines.extend(["", str(summary.get("summary") or "Xulosa mavjud emas.")])
     failed_tests = summary.get("failed_tests")
     if isinstance(failed_tests, list) and failed_tests:
         lines.extend(["", "## Failed Tests"])
@@ -1252,7 +1305,12 @@ def main():
     )
     print(f"System summary yozildi: {args.system_output_md}")
 
-    if not args.ai_summary:
+    if not env_flag("AI_ANALYSIS"):
+        print("AI tahlili o'chirilgan: AI_ANALYSIS=0")
+        return 0
+
+    if deterministic.get("result") != "FAILED":
+        print("AI tahlili skipped: natija FAILED emas")
         return 0
 
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
@@ -1260,7 +1318,7 @@ def main():
         print("AI summary skipped: GEMINI_API_KEY set qilinmagan", file=sys.stderr)
         return 0
 
-    prompt = build_prompt(command, deterministic, results, logs)
+    prompt = build_prompt(command, deterministic, logs)
     try:
         raw = call_gemini(prompt, model=model, api_key=api_key)
         summary = parse_ai_json(raw)
@@ -1273,7 +1331,7 @@ def main():
         summary,
         args.ai_output_md,
         args.ai_output_json,
-        title="AI Test Summary",
+        title="AI xatolik tahlili",
         model=model,
     )
     write_allure_summary(
@@ -1281,10 +1339,10 @@ def main():
         args.ai_output_md,
         args.ai_output_json,
         args.results_dir,
-        title="AI Test Summary",
+        title="AI xatolik tahlili",
         full_name="ai.test.summary",
         epic="AI",
-        feature="Test Summary",
+        feature="Xatolik tahlili",
         story="Gemini",
     )
     print(f"AI summary yozildi: {args.ai_output_md}")

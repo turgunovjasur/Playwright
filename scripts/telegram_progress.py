@@ -23,7 +23,6 @@ SYSTEM_SUMMARY_JSON = ROOT / "test-results" / "system-summary.json"
 AI_SUMMARY_JSON = ROOT / "test-results" / "ai-summary.json"
 EVENT_PREFIX = "SMARTUP_PROGRESS "
 MAX_MESSAGE_LENGTH = 3900
-FORM_RECENT_LIMIT = 5
 OPERATIONAL_FILIAL_PLACEHOLDER = "<operatsion filial>"
 PROGRESS_EDIT_INTERVAL_SECONDS = 10
 FINAL_DELIVERY_ATTEMPTS = 3
@@ -43,6 +42,18 @@ TARGET_LABELS = {
     "group-report": "Report Group",
     "forms": "Forms",
 }
+TARGET_SUITE_LABELS = {
+    "all": "All",
+    "setup": "Setup",
+    "setup-group-0": "Smoke · Setup + A group",
+    "setup-report": "Setup + Report group",
+    "setup-a2-admin": "Setup + A2 Admin Forms",
+    "setup-forms": "Setup + Forms",
+    "company": "Company",
+    "groups": "Groups",
+    "group-report": "Report group",
+    "forms": "Forms",
+}
 GROUP_ORDER = [
     "Setup",
     "A2 Admin Forms group",
@@ -58,6 +69,11 @@ ELEMENT_STATE_LABELS = {
     "blocked": "element to'silgan",
     "resolved": "element topilgan",
     "not_found": "element topilmagan",
+}
+AI_CONFIDENCE_LABELS = {
+    "low": "past",
+    "medium": "o‘rta",
+    "high": "yuqori",
 }
 
 
@@ -212,8 +228,8 @@ def format_duration(seconds):
     total = max(0, int(seconds))
     minutes, secs = divmod(total, 60)
     if minutes:
-        return f"{minutes}m {secs}s"
-    return f"{secs}s"
+        return f"{minutes} daq {secs} son"
+    return f"{secs} son"
 
 
 def server_host(server):
@@ -228,6 +244,88 @@ def server_host(server):
 def target_label(target):
     key = (target or "all").strip().lower()
     return TARGET_LABELS.get(key, key.title() if key else "All")
+
+
+def target_suite_label(target):
+    key = (target or "all").strip().lower()
+    return TARGET_SUITE_LABELS.get(key, target_label(key))
+
+
+def _utc_now_text():
+    return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace(
+        "+00:00", "Z"
+    )
+
+
+def _parse_utc_text(value):
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _timestamp_text(value, tz, suffix):
+    parsed = _parse_utc_text(value)
+    if parsed is None:
+        return ""
+    return parsed.astimezone(tz).strftime("%Y-%m-%d %H:%M:%S") + f" {suffix}"
+
+
+def _clock_text(value, tz):
+    parsed = _parse_utc_text(value)
+    if parsed is None:
+        return ""
+    return parsed.astimezone(tz).strftime("%H:%M:%S")
+
+
+def _summary_counts(summary):
+    counts = {
+        "passed": 0,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "deselected": 0,
+    }
+    aliases = {"error": "errors", "errors": "errors"}
+    for raw_count, raw_name in re.findall(
+        r"(\d+)\s+(passed|failed|errors?|skipped|deselected)\b",
+        str(summary or "").lower(),
+    ):
+        key = aliases.get(raw_name, raw_name)
+        counts[key] += int(raw_count)
+    return counts
+
+
+def _result_counts(state):
+    summary_counts = _summary_counts(state.get("summary"))
+    results = [item for item in state.get("results", []) if isinstance(item, dict)]
+    if not results:
+        return summary_counts
+    statuses = [str(item.get("status") or "").upper() for item in results]
+    return {
+        "passed": max(statuses.count("PASSED"), summary_counts["passed"]),
+        "failed": max(statuses.count("FAILED"), summary_counts["failed"]),
+        "errors": summary_counts["errors"],
+        "skipped": max(statuses.count("SKIPPED"), summary_counts["skipped"]),
+        "deselected": summary_counts["deselected"],
+    }
+
+
+def _result_metrics(state):
+    counts = _result_counts(state)
+    failed = counts["failed"] + counts["errors"]
+    completed = counts["passed"] + failed + counts["skipped"]
+    total = completed
+    if str(state.get("target") or "").strip().lower() == "forms":
+        forms_results = _forms_results(state)
+        total = max(total, _forms_total(state, forms_results))
+    return {**counts, "failed_total": failed, "completed": completed, "total": total}
 
 
 def title_line(state):
@@ -323,6 +421,26 @@ def _form_context_display(context):
     return f"{number} | {path or 'Noma’lum forma'}"
 
 
+def _form_context_lines(context):
+    try:
+        number = f"{int(context.get('number') or 0):03d}"
+    except (TypeError, ValueError):
+        number = "—"
+    title = str(context.get("title") or "Noma’lum forma").strip()
+    lines = [f"{number} · {title}"]
+    path = " → ".join(
+        str(value).strip()
+        for value in (context.get("navbar"), context.get("menu"))
+        if str(value or "").strip()
+    )
+    if path:
+        lines.append(path)
+    filial = _form_filial_label(context)
+    if filial:
+        lines.append(f"Filial: {filial}")
+    return lines
+
+
 def _form_filial_label(context):
     filial = str(context.get("filial") or "").strip()
     if filial == OPERATIONAL_FILIAL_PLACEHOLDER:
@@ -345,7 +463,7 @@ def _forms_total(state, results):
 
 
 def forms_progress_lines(state, *, include_current=True):
-    """Forms run uchun limit-safe hisoblar, current va recent natijalarni yasaydi."""
+    """Forms run uchun hisoblar va joriy formani ixcham ko'rsatadi."""
     results = _forms_results(state)
     current = state.get("current_form")
     current = current if isinstance(current, dict) else {}
@@ -353,38 +471,56 @@ def forms_progress_lines(state, *, include_current=True):
         return []
 
     total = _forms_total(state, results)
-    statuses = [str(item.get("status") or "").upper() for item in results]
-    completed = len(results)
+    metrics = _result_metrics(state)
+    completed = metrics["completed"]
     lines = [
         "",
-        f"📊 Progress: {completed}/{total or completed}",
-        (
-            f"✅ Passed: {statuses.count('PASSED')} · "
-            f"❌ Failed: {statuses.count('FAILED')} · "
-            f"⏭ Skipped: {statuses.count('SKIPPED')}"
-        ),
+        f"Jarayon: {completed}/{total or completed}"
+        + (f" · {round(completed * 100 / total)}%" if total else ""),
+        f"Passed: {metrics['passed']} · Skipped: {metrics['skipped']}",
     ]
+    if metrics["failed_total"]:
+        lines.append(f"Xatolar: {metrics['failed_total']} ta")
+    else:
+        lines.append("Xatolik aniqlanmadi")
+
+    started_epoch = state.get("started_epoch")
+    if isinstance(started_epoch, (int, float)):
+        lines.append(f"O'tgan vaqt: {format_duration(time.time() - started_epoch)}")
 
     if include_current and current:
-        lines.extend(["", "⏳ Hozir tekshirilmoqda:", _form_context_display(current)])
-        filial = _form_filial_label(current)
-        if filial:
-            lines.append(f"Filial: {filial}")
-
-    recent = results[-FORM_RECENT_LIMIT:]
-    if recent:
-        lines.extend(["", "Oxirgi natijalar:"])
-        for item in recent:
-            mark = STATUS_MARK.get(str(item.get("status") or "").upper(), "•")
-            lines.append(f"{mark} {_form_context_display(_form_context(item))}")
+        lines.extend(["", "Hozir tekshirilmoqda:"])
+        lines.extend(_form_context_lines(current))
     return lines
 
 
-def failed_block(state):
-    failed = first_failed_result(state)
-    if not failed:
-        return []
+def _failure_time_lines(failed):
+    timestamp = failed.get("failure_at_utc") or failed.get("occurred_at_utc")
+    local_text = _timestamp_text(timestamp, TASHKENT_TZ, "UZT")
+    utc_text = _timestamp_text(timestamp, timezone.utc, "UTC")
+    if not local_text:
+        return ["Xato vaqti: aniqlanmadi"]
+    return [f"Xato vaqti: {local_text}", f"UTC vaqti: {utc_text}"]
 
+
+def _failed_result_entries(state):
+    entries = []
+    for failed in state.get("results", []):
+        if not isinstance(failed, dict) or failed.get("status") != "FAILED":
+            continue
+        form_issues = failed.get("form_issues")
+        if isinstance(form_issues, list) and form_issues:
+            entries.extend(
+                (failed, issue)
+                for issue in form_issues
+                if isinstance(issue, dict)
+            )
+        else:
+            entries.append((failed, None))
+    return entries
+
+
+def _failed_entry_lines(failed, issue, *, index, total):
     group = str(failed.get("group") or "").strip()
     test_name = str(failed.get("display") or failed.get("title") or failed.get("inner_test") or "").strip()
     test_context = " → ".join(value for value in (group, test_name) if value)
@@ -395,60 +531,48 @@ def failed_block(state):
     error_message = first_message_line(failed.get("message"))
 
     failed_form = _form_context(failed)
-    form_issues = failed.get("form_issues")
-    if isinstance(form_issues, list) and form_issues:
+    lines = ["", f"❌ Xatolik {index}/{total}"]
+    lines.extend(_failure_time_lines(failed))
+
+    if isinstance(issue, dict):
         status_labels = {
             "OPENED_WITH_DEFECT": "nuqson bilan ochildi",
             "NOT_OPENED": "ochilmadi",
             "TEST_BLOCKED": "test bloklandi",
             "NOT_CHECKED": "tekshirilmadi",
         }
-        lines = ["", f"❌ Muammoli formalar: {len(form_issues)} ta"]
-        for index, issue in enumerate(form_issues, start=1):
-            if not isinstance(issue, dict):
-                continue
-            issue_number = (
-                failed_form.get("number")
-                if len(form_issues) == 1 and failed_form
-                else issue.get("number")
-            )
-            try:
-                number = f"{int(issue_number):03d}"
-            except (TypeError, ValueError):
-                number = str(issue_number or "—")
-            title = str(
-                failed_form.get("title")
-                or issue.get("title")
-                or "unknown"
-            ).strip()
-            status = str(issue.get("status") or "").upper()
-            status_text = status_labels.get(status, status or "xato")
-            lines.append(f"{index}. {number} - {title} — {status_text}")
-            context_pairs = [
-                ("Navbar", failed_form.get("navbar")),
-                ("Menu", failed_form.get("menu")),
-                ("Filial", _form_filial_label(failed_form)),
-                (
-                    "Kutilgan URL",
-                    issue.get("expected_url") or failed_form.get("expected_url"),
-                ),
-                ("Haqiqiy URL", issue.get("actual_url")),
-            ]
-            for label, value in context_pairs:
-                text = str(value or "").strip()
-                if text:
-                    lines.append(f"   {label}: {text}")
-            reason = str(issue.get("reason") or issue.get("reason_code") or "").strip()
-            detail = first_message_line(issue.get("detail"))
-            if reason:
-                lines.append(f"   Sabab: {reason}")
-            if detail and detail != reason:
-                lines.append(f"   Texnik: {detail}")
-        if test_context:
-            lines.extend(["", f"Test: {test_context}"])
-        location = str(failed.get("location") or "").strip()
-        if location:
-            lines.append(f"Kod: {location}")
+        issue_number = failed_form.get("number") or issue.get("number")
+        try:
+            number = f"{int(issue_number):03d}"
+        except (TypeError, ValueError):
+            number = str(issue_number or "—")
+        title = str(failed_form.get("title") or issue.get("title") or "Noma’lum forma").strip()
+        lines.append(f"Forma: {number}")
+        path = " → ".join(
+            str(value).strip()
+            for value in (failed_form.get("navbar"), failed_form.get("menu"))
+            if str(value or "").strip()
+        )
+        if path:
+            lines.append(path)
+        lines.append(title)
+        filial = _form_filial_label(failed_form)
+        if filial:
+            lines.append(f"Filial: {filial}")
+        status = str(issue.get("status") or "").upper()
+        reason = str(issue.get("reason") or issue.get("reason_code") or "").strip()
+        if not reason:
+            reason = status_labels.get(status, status or "Xato sababi aniqlanmadi")
+        lines.append(f"Sabab: {reason}")
+        expected_url = str(issue.get("expected_url") or failed_form.get("expected_url") or "").strip()
+        actual_url = str(issue.get("actual_url") or "").strip()
+        if expected_url:
+            lines.append(f"Kutilgan URL: {expected_url}")
+        if actual_url:
+            lines.append(f"Amaldagi URL: {actual_url}")
+        detail = first_message_line(issue.get("detail"))
+        if detail and detail != reason:
+            lines.append(f"Texnik: {detail}")
         return lines
 
     technical = []
@@ -472,22 +596,36 @@ def failed_block(state):
         ("Filial", _form_filial_label(failed_form)),
         ("Kutilgan URL", failed_form.get("expected_url")),
         ("Test", test_context),
-        ("Allure step", step),
+        ("Qadam", step),
         ("Sahifa", failed.get("before_page")),
         ("Amal", failed.get("action")),
         ("Kutilgan", failed.get("expected")),
-        ("Haqiqiy", failed.get("actual")),
+        ("Amaldagi", failed.get("actual")),
         ("UI xabari", failed.get("ui_error")),
         ("Auth diagnostika", failed.get("auth_diagnostic")),
-        ("Xato", error_message),
+        ("Sabab", failed.get("reason") or error_message),
         ("Texnik", " · ".join(technical)),
         ("Kod", failed.get("location")),
     ]
-    lines = ["", "❌ Xato tafsiloti:"]
     for label, value in pairs:
         text = str(value or "").strip()
         if text:
             lines.append(f"{label}: {text}")
+    return lines
+
+
+def failed_block(state):
+    entries = _failed_result_entries(state)
+    lines = []
+    for index, (failed, issue) in enumerate(entries, start=1):
+        lines.extend(
+            _failed_entry_lines(
+                failed,
+                issue,
+                index=index,
+                total=len(entries),
+            )
+        )
     return lines
 
 
@@ -508,13 +646,13 @@ def final_coverage_lines(state):
         setup_statuses = [
             str(item.get("status") or "").upper() for item in setup_results
         ]
-        setup_parts = [f"✅ {setup_statuses.count('PASSED')}"]
+        setup_parts = [f"Passed: {setup_statuses.count('PASSED')}"]
         if setup_statuses.count("FAILED"):
-            setup_parts.append(f"❌ {setup_statuses.count('FAILED')}")
+            setup_parts.append(f"Failed: {setup_statuses.count('FAILED')}")
         if setup_statuses.count("SKIPPED"):
-            setup_parts.append(f"⏭ {setup_statuses.count('SKIPPED')}")
+            setup_parts.append(f"Skipped: {setup_statuses.count('SKIPPED')}")
         lines.append(
-            f"⚙️ Setup: {len(setup_results)} qadam · " + " · ".join(setup_parts)
+            f"Setup: {len(setup_results)} qadam · " + " · ".join(setup_parts)
         )
 
     coverage = state.get("form_coverage")
@@ -536,7 +674,7 @@ def final_coverage_lines(state):
     checked = _metric_count(coverage, "checked")
     passed = _metric_count(coverage, "passed")
     if checked:
-        lines.append(f"🧾 Forms: ✅ {passed}/{checked} muvaffaqiyatli")
+        lines.append(f"Forms: {passed}/{checked} muvaffaqiyatli")
 
     suites = coverage.get("suites")
     if isinstance(suites, dict):
@@ -553,13 +691,107 @@ def final_coverage_lines(state):
     return lines
 
 
-def render_html_message(main_lines, expandable_lines=None, footer_lines=None):
+def _finished_time_lines(state):
+    result = str(state.get("result") or "").upper()
+    start_utc = state.get("started_at_utc")
+    finish_utc = state.get("finished_at_utc")
+    start_local = _timestamp_text(start_utc, TASHKENT_TZ, "UZT")
+    finish_local = _timestamp_text(finish_utc, TASHKENT_TZ, "UZT")
+    lines = []
+    if result == "FAILED" and start_local:
+        lines.append(f"Boshlanish: {start_local}")
+        if finish_local:
+            lines.append(f"Yakunlanish: {finish_local}")
+    else:
+        start_clock = _clock_text(start_utc, TASHKENT_TZ) or str(state.get("started_clock") or "").strip()
+        finish_clock = _clock_text(finish_utc, TASHKENT_TZ) or str(state.get("finished_clock") or "").strip()
+        if start_clock and finish_clock:
+            lines.append(f"Vaqt: {start_clock}–{finish_clock} UZT")
+        elif str(state.get("started_at") or "").strip():
+            lines.append(f"Vaqt: {str(state.get('started_at')).strip()}")
+    duration = str(state.get("duration") or "").strip()
+    if duration:
+        lines.append(f"Davomiylik: {duration}")
+    return lines
+
+
+def _final_result_lines(state):
+    metrics = _result_metrics(state)
+    result = str(state.get("result") or "").upper()
+    is_forms = str(state.get("target") or "").strip().lower() == "forms"
+    noun = "forma" if is_forms else "test"
+    lines = [""]
+    if result == "PASSED":
+        if is_forms:
+            lines.append(f"✅ {metrics['completed']} ta forma tekshirildi")
+        else:
+            lines.append(f"✅ Yakunlandi: {metrics['completed']} ta test")
+        lines.append(
+            f"✅ Passed: {metrics['passed']} · Skipped: {metrics['skipped']}"
+        )
+        lines.append("✅ Xatolik aniqlanmadi")
+        if metrics["deselected"]:
+            lines.append(f"Tanlanmagan: {metrics['deselected']}")
+        return lines
+
+    if metrics["failed_total"]:
+        lines.append(f"❌ {metrics['failed_total']} ta xatolik aniqlandi")
+    else:
+        lines.append("❌ CI jarayonida xatolik aniqlandi")
+    if metrics["total"] and metrics["total"] != metrics["completed"]:
+        action = "Tekshirildi" if is_forms else "Yakunlandi"
+        lines.append(f"{action}: {metrics['completed']}/{metrics['total']}")
+    else:
+        lines.append(f"Yakunlandi: {metrics['completed']} ta {noun}")
+    result_parts = [
+        f"Passed: {metrics['passed']}",
+        f"Failed: {metrics['failed_total']}",
+        f"Skipped: {metrics['skipped']}",
+    ]
+    lines.append(" · ".join(result_parts))
+    if metrics["deselected"]:
+        lines.append(f"Tanlanmagan: {metrics['deselected']}")
+    return lines
+
+
+def _generic_progress_lines(state):
+    metrics = _result_metrics(state)
+    lines = [""]
+    if metrics["completed"]:
+        lines.append(f"Yakunlandi: {metrics['completed']} ta test")
+        lines.append(
+            f"Passed: {metrics['passed']} · Failed: {metrics['failed_total']} · "
+            f"Skipped: {metrics['skipped']}"
+        )
+    current = str(state.get("current") or "").strip()
+    if current:
+        lines.extend(["", "Hozir tekshirilmoqda:", current])
+    started_epoch = state.get("started_epoch")
+    if isinstance(started_epoch, (int, float)):
+        lines.append(f"O'tgan vaqt: {format_duration(time.time() - started_epoch)}")
+    return lines
+
+
+def render_html_message(
+    main_lines,
+    expandable_lines=None,
+    footer_lines=None,
+    footer_links=None,
+):
     main = "\n".join(str(line) for line in main_lines).strip()
     expandable = "\n".join(str(line) for line in (expandable_lines or [])).strip()
     footer = "\n".join(str(line) for line in (footer_lines or [])).strip()
+    links = [
+        (str(label).strip(), str(url).strip())
+        for label, url in (footer_links or [])
+        if str(label).strip() and str(url).strip()
+    ]
 
-    separators = 2 * sum(bool(part) for part in (expandable, footer))
-    fixed_length = len(main) + len(footer) + separators
+    footer_visible_length = len(footer) + sum(
+        len(label) + len(url) + 2 for label, url in links
+    )
+    separators = 2 * sum(bool(part) for part in (expandable, footer or links))
+    fixed_length = len(main) + footer_visible_length + separators
     if expandable:
         expandable = truncate_message(
             expandable,
@@ -576,82 +808,91 @@ def render_html_message(main_lines, expandable_lines=None, footer_lines=None):
         sections.append(
             f"<blockquote expandable>{html.escape(expandable, quote=False)}</blockquote>"
         )
-    if footer:
-        sections.append(html.escape(footer, quote=False))
+    footer_sections = [html.escape(footer, quote=False)] if footer else []
+    footer_sections.extend(
+        f'<a href="{html.escape(url, quote=True)}">🔗 {html.escape(label, quote=False)}</a>'
+        for label, url in links
+    )
+    if footer_sections:
+        sections.append("\n".join(footer_sections))
     return "\n\n".join(section for section in sections if section)
 
 
 def render_message(state):
     finished = bool(state.get("result"))
-    lines = [title_line(state)]
-
-    started_at = str(state.get("started_at") or "").strip()
-    if finished:
-        start_clock = str(state.get("started_clock") or "").strip()
-        finish_clock = str(state.get("finished_clock") or "").strip()
-        duration = str(state.get("duration") or "").strip()
-        bits = []
-        if start_clock and finish_clock:
-            bits.append(f"{start_clock}–{finish_clock}")
-        elif started_at:
-            bits.append(started_at)
-        if duration:
-            bits.append(duration)
-        if bits:
-            lines.append("🕒 " + " · ".join(bits))
-    elif started_at:
-        lines.append(f"🕒 Started: {started_at}")
-
-    lines.append(
-        f"🖥 {server_host(str(state.get('server') or ''))}"
-        f" · {target_label(str(state.get('target') or 'all'))}"
-    )
+    target = str(state.get("target") or "all").strip().lower()
+    result = str(state.get("result") or "").upper()
+    lines = [
+        title_line(state),
+        "",
+        f"Server: {server_host(str(state.get('server') or ''))}",
+        f"Suite: {target_suite_label(target)}",
+    ]
 
     if finished:
-        summary = str(state.get("summary") or "").strip()
-        if summary:
-            lines.append(f"🧪 Pytest cases: {summary}")
-    else:
-        status = str(state.get("status") or "").strip()
-        if status:
-            lines.append(f"Status: {status}")
-
-    if finished:
-        lines.extend(final_coverage_lines(state))
+        lines.extend(_final_result_lines(state))
+        if target in {"setup-forms", "setup-a2-admin"}:
+            lines.extend(final_coverage_lines(state))
+        lines.extend(["", *_finished_time_lines(state)])
+        run_code = str(state.get("run_code") or "").strip()
+        if run_code and run_code != "not found" and target != "forms":
+            lines.append(f"Test data kodi: {run_code}")
 
     expandable = []
     if not finished:
         forms_lines = forms_progress_lines(state)
-        lines.extend(forms_lines or grouped_result_lines(state))
-    elif str(state.get("result") or "").upper() == "FAILED":
-        forms_lines = forms_progress_lines(state, include_current=False)
-        expandable.extend(forms_lines or grouped_result_lines(state))
-        expandable.extend(failed_block(state))
+        lines.extend(forms_lines or _generic_progress_lines(state))
+    elif result == "FAILED":
+        details = failed_block(state)
+        if details:
+            lines.extend(details)
 
     footer = []
+    footer_links = []
     notification_warning = str(
         state.get("telegram_notification_warning") or ""
     ).strip()
     if notification_warning:
-        footer.extend(
-            ["⚠️ Telegram notification:", notification_warning]
-        )
+        footer.extend(["Telegram ogohlantirishi:", notification_warning])
     if finished:
-        run_code = str(state.get("run_code") or "").strip()
         run_url = str(state.get("run_url") or "").strip()
-        if run_code and run_code != "not found":
-            footer.append(f"🆔 Code: {run_code}")
         if run_url:
-            footer.append(f"🔗 {run_url}")
-        ai = str(state.get("ai_conclusion") or "").strip()
-        if ai and str(state.get("result") or "").upper() == "FAILED":
-            expandable.extend(["", "🤖 AI:", ai])
+            label = (
+                "Xato loglari va batafsil natija"
+                if result == "FAILED"
+                else "Batafsil natija"
+            )
+            footer_links.append((label, run_url))
+        ai = state.get("ai_analysis")
+        if isinstance(ai, dict) and ai and result == "FAILED":
+            confidence = AI_CONFIDENCE_LABELS.get(
+                str(ai.get("confidence") or "").lower(),
+                "past",
+            )
+            observed = str(ai.get("observed") or "").strip()
+            probable_cause = str(ai.get("probable_cause") or "").strip()
+            expandable.extend(
+                [
+                    f"🤖 AI tahlili · Ishonch: {confidence}",
+                    "",
+                    "Kuzatilgan:",
+                    observed,
+                    "",
+                    "Ehtimoliy sabab:",
+                    probable_cause,
+                ]
+            )
 
-    return render_html_message(lines, expandable, footer)
+    return render_html_message(lines, expandable, footer, footer_links)
 
 
 def render_plain_message(state):
     rendered = render_message(state)
+    rendered = re.sub(
+        r'<a href="([^"]+)">([^<]+)</a>',
+        lambda match: f"{match.group(2)}: {match.group(1)}",
+        rendered,
+    )
     return html.unescape(re.sub(r"<[^>]+>", "", rendered))
 
 
@@ -773,8 +1014,9 @@ def command_start(args):
         "current_group": "",
         "results": [],
         "result": "",
-        "started_at": now.strftime("%Y-%m-%d %H:%M"),
-        "started_clock": now.strftime("%H:%M"),
+        "started_at": now.strftime("%Y-%m-%d %H:%M:%S UZT"),
+        "started_at_utc": _utc_now_text(),
+        "started_clock": now.strftime("%H:%M:%S"),
         "started_epoch": time.time(),
     }
     if not telegram_enabled():
@@ -820,6 +1062,7 @@ def command_update(args):
 def update_from_event(state, event):
     event_name = str(event.get("event") or "")
     display = str(event.get("display") or event.get("title") or event.get("test_id") or "unknown")
+    occurred_at_utc = str(event.get("occurred_at_utc") or "").strip() or _utc_now_text()
     if event_name == "form_result":
         state["status"] = "Forms running"
         state["form_progress"] = {
@@ -860,7 +1103,10 @@ def update_from_event(state, event):
         "inner_test": event.get("title") or display,
         "error_type": event.get("error_type") or "",
         "message": event.get("message") or "",
+        "occurred_at_utc": occurred_at_utc,
     }
+    if event_name == "failed":
+        result["failure_at_utc"] = occurred_at_utc
     form = event.get("form")
     if isinstance(form, dict) and form:
         result["form"] = dict(form)
@@ -907,6 +1153,7 @@ def failed_details_from_system_summary():
         "target": str(first.get("target") or ""),
         "element_state": str(first.get("element_state") or ""),
         "timeout": str(first.get("timeout") or ""),
+        "failure_at_utc": str(first.get("failure_at_utc") or ""),
         "form_issues": (
             [dict(issue) for issue in form_issues if isinstance(issue, dict)]
             if isinstance(form_issues, list)
@@ -991,16 +1238,24 @@ def command_run(args):
     return exit_code
 
 
-def read_ai_conclusion():
+def read_ai_analysis():
     if not AI_SUMMARY_JSON.exists():
-        return ""
+        return {}
     try:
         data = json.loads(AI_SUMMARY_JSON.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
-        return ""
+        return {}
     if not isinstance(data, dict):
-        return ""
-    return str(data.get("summary") or "").strip()[:600]
+        return {}
+    observed = str(data.get("observed") or "").strip()[:600]
+    probable_cause = str(data.get("probable_cause") or "").strip()[:600]
+    if not observed or not probable_cause:
+        return {}
+    return {
+        "observed": observed,
+        "probable_cause": probable_cause,
+        "confidence": str(data.get("confidence") or "low").strip().lower(),
+    }
 
 
 def derive_summary(state):
@@ -1222,8 +1477,9 @@ def command_finish(args):
     state["current_group"] = ""
 
     now = now_tashkent()
-    state["finished_at"] = now.strftime("%Y-%m-%d %H:%M")
-    state["finished_clock"] = now.strftime("%H:%M")
+    state["finished_at"] = now.strftime("%Y-%m-%d %H:%M:%S UZT")
+    state["finished_at_utc"] = _utc_now_text()
+    state["finished_clock"] = now.strftime("%H:%M:%S")
     started_epoch = state.get("started_epoch")
     if isinstance(started_epoch, (int, float)):
         state["duration"] = format_duration(time.time() - started_epoch)
@@ -1240,9 +1496,10 @@ def command_finish(args):
         enrich_failed_result_from_summary(state)
     sync_summary_metrics(state)
 
-    ai_conclusion = read_ai_conclusion()
-    if ai_conclusion:
-        state["ai_conclusion"] = ai_conclusion
+    state.pop("ai_analysis", None)
+    ai_analysis = read_ai_analysis()
+    if ai_analysis:
+        state["ai_analysis"] = ai_analysis
 
     save_state(state)
     delivery = deliver_final(state)

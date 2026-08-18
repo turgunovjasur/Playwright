@@ -198,7 +198,6 @@ def generate_test_summary(
     test_exit,
     pytest_command,
     started_at,
-    ai_summary,
     dry_run,
 ):
     command = [
@@ -211,8 +210,6 @@ def generate_test_summary(
         "--started-at",
         str(started_at),
     ]
-    if ai_summary:
-        command.append("--ai-summary")
     run(command, env, dry_run=dry_run)
 
 
@@ -250,11 +247,6 @@ def parse_args():
     )
     parser.add_argument("--open-report", action="store_true", help="Allure reportni generate qilib ochadi.")
     parser.add_argument("--show-trace", action="store_true", help="Oxirgi Playwright trace viewerini ochadi.")
-    parser.add_argument(
-        "--ai-summary",
-        action="store_true",
-        help="Test tugagach Gemini orqali faqat qo'shimcha AI xulosa yozadi. Default: off.",
-    )
     parser.add_argument("--dry-run", action="store_true", help="Commandni ko'rsatadi, lekin ishga tushirmaydi.")
     return parser.parse_known_args()
 
@@ -264,9 +256,24 @@ def main():
     env = os.environ.copy()
     local_dotenv_exists = load_local_dotenv(env)
 
-    unsupported_ai_flags = [item for item in pytest_extra if item == "--no-ai-summary" or item.startswith("--ai-model")]
+    ai_analysis_value = str(env.get("AI_ANALYSIS", "0") or "0").strip()
+    if ai_analysis_value not in {"0", "1"}:
+        print("AI_ANALYSIS faqat 1 yoki 0 bo'lishi mumkin", file=sys.stderr)
+        return 2
+    env["AI_ANALYSIS"] = ai_analysis_value
+
+    unsupported_ai_flags = [
+        item
+        for item in pytest_extra
+        if item in {"--ai-summary", "--no-ai-summary"}
+        or item.startswith("--ai-model")
+    ]
     if unsupported_ai_flags:
-        print("--no-ai-summary va --ai-model kerak emas; AI default off, kerak bo'lsa faqat --ai-summary ishlating", file=sys.stderr)
+        print(
+            "AI flaglari CLI orqali boshqarilmaydi; AI_ANALYSIS=1 yoki "
+            "AI_ANALYSIS=0 ishlating",
+            file=sys.stderr,
+        )
         return 2
 
     if local_dotenv_exists:
@@ -413,7 +420,6 @@ def main():
         test_exit=test_exit,
         pytest_command=pytest_command,
         started_at=run_started_at,
-        ai_summary=args.ai_summary,
         dry_run=args.dry_run,
     )
 

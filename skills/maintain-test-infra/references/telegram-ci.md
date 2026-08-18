@@ -11,9 +11,10 @@
 ## Current architecture
 
 Status: code-confirmed
-Verified: 2026-08-15
+Verified: 2026-08-18
 Source: `scripts/telegram_ci_bot.py`; `.github/workflows/daily-smoke.yml`;
-`.github/workflows/run-smartup-suite.yml`
+`.github/workflows/run-smartup-suite.yml`; `scripts/telegram_progress.py`;
+`tests/smoke/progress.py`; `scripts/analyze_test_result.py`
 
 - GitHub Actions test execution va har soatlik schedulingning yagona
   authoritysi; `daily-smoke.yml`dagi `cron: "0 * * * *"` saqlangan.
@@ -75,26 +76,49 @@ Source: `scripts/telegram_ci_bot.py`; `.github/workflows/daily-smoke.yml`;
   joriy/oldingi redacted xatosi bilan birga qolgan cooldown yoki artifactdagi
   Telegram talab qilgan kutish hamda retry vaqtini ko'rsatadi.
 - Pytest progress eventlari `tests/smoke/smoke_reporting.py` va
-  `scripts/telegram_progress.py` orqali group/runner/test/title asosida chiqadi.
+  `scripts/telegram_progress.py` orqali group/runner/test/title asosida chiqadi;
+  har bir event millisekund aniqligidagi UTC timestamp saqlaydi.
 - Canonical Forms runnerda har bir forma alohida pytest/Allure item bo'ladi;
   analyzer parametr IDidagi navbarni tanib, barcha beshta navbar coverage'ini
   umumiy `Forms: muvaffaqiyatli/jami` metrikasiga qo'shadi.
 - Forms live progress barcha itemlarni Telegramning bitta xabariga yig'maydi.
-  Limit-safe dashboard `completed/total`, passed/failed/skipped hisoblari,
-  `global number | navbar → menu → forma` ko'rinishidagi joriy forma va oxirgi
-  beshta natijani ko'rsatadi. Operatsion filial placeholderi userga
-  `Operatsion filial` deb chiqariladi.
+  Limit-safe dashboard `completed/total`, foiz, passed/skipped hisoblari,
+  elapsed time va `global number · forma`, `navbar → menu`, filial
+  ko'rinishidagi faqat joriy formani ko'rsatadi; oxirgi passed formalar ro'yxati
+  chiqarilmaydi. Operatsion filial placeholderi userga `Operatsion filial` deb
+  chiqariladi.
 - Forms pytest itemining Telegram display nomi Allure decoratoridagi unresolved
   `{form_case[...]}` shablonidan olinmaydi; pytest `callspec`dagi structured
   `form_case` metadata'sidan resolve qilinadi. Bu Allure title, pytest ID va
   historyni o'zgartirmaydi.
 - Failed final xabarda mavjud structured monitor/system-summary dalillari bilan
-  forma raqami va nomi, navbar, menu, filial, expected/actual URL hamda sabab
-  ko'rsatiladi. Passed formaning to'liq texnik metadata'si Allure'da qoladi.
+  forma raqami va nomi, navbar, menu, filial, expected/actual URL, sabab hamda
+  failure event vaqti UZT va UTCda ko'rsatiladi. Allure `stop` vaqti system
+  summaryda fallback timestamp bo'ladi. Passed formaning to'liq texnik
+  metadata'si Allure'da qoladi.
 - Final xabarda credential emas, faqat data-store'dagi parametrik run `code`
-  ko'rsatilishi mumkin.
+  `Test data kodi` nomi bilan ko'rsatilishi mumkin; canonical `forms` targetida
+  bu qator chiqarilmaydi.
 - Failure tafsiloti log va Allure'dagi faktlardan tuziladi: group, runner test,
   ichki test, nested step va error turi. Taxminiy `Ta'sir`/`Yechim` qo'shilmaydi.
+- `AI_ANALYSIS=1` va final natija `FAILED` bo'lsa Gemini tahlili expandable
+  blokda `Kuzatilgan`, `Ehtimoliy sabab` va ishonch darajasi bilan chiqadi.
+  `PASSED` xabarda AI bloki bo'lmaydi. AI xatosi deterministic final xabarni
+  to'xtatmaydi.
+- Final footer GitHub run URLni `Batafsil natija` yoki failed holatda
+  `Xato loglari va batafsil natija` nomli bosiladigan link sifatida ko'rsatadi;
+  alohida hosted Allure URL mavjud emas.
+
+### Telegram final xabar UX talablari
+Status: code-confirmed
+Verified: 2026-08-18
+Source: user; `tests/smoke/progress.py`; `scripts/analyze_test_result.py`;
+`scripts/telegram_progress.py`
+- Xato sodir bo'lgan vaqt server loglaridan tegishli yozuvni topish uchun
+  Telegram xabarida va failure artifactida aniq saqlanib ko'rsatilishi kerak.
+- Final xabarning status ikonkalari run natijasiga vizual zid bo'lmasin:
+  `PASSED` xabarda qizil `❌` ko'rsatilmasin, `FAILED` xabarning status va xato
+  indikatorlari esa qizil bo'lsin.
 
 ### Legacy `setup-forms` final coverage
 Status: code-confirmed
@@ -107,9 +131,9 @@ Source: GitHub Actions runs `30528649258`, `30878853396`; `scripts/analyze_test_
   `setup-forms` runida bu 20 ta Setup case va 2 ta Forms runner case'dan iborat.
 - Shu run logida `Справочники` suite `89/89`, A2 Admin suite `22/22` forma
   ochgan — jami `111/111`.
-- Birlashtirilgan `setup-forms` final xabari `Pytest cases` deb aniq belgilangan
-  case summarydan tashqari `Setup` passed/failed/skipped qadamlar, umumiy Forms
-  muvaffaqiyatli/jami va `Справочники` hamda `A2 Admin` kesimini alohida
+- Birlashtirilgan `setup-forms` final xabari umumiy yakunlangan,
+  passed/failed/skipped case hisoblaridan tashqari `Setup` qadamlar, umumiy
+  Forms muvaffaqiyatli/jami va `Справочники` hamda `A2 Admin` kesimini alohida
   ko'rsatadi.
 - Forms coverage uchun asosiy manba Allure'dagi versionlangan
   `form-monitor.json`; markaziy monitor attachmenti bo'lmagan eski runlarda

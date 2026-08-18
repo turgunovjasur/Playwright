@@ -40,12 +40,34 @@ Source: `scripts/analyze_test_result.py`, `scripts/run_tests.py`
 
 ## AI summary
 
-- Default off; faqat `scripts/run_tests.py ... --ai-summary` bilan yoqiladi.
+- AI tahlilining yagona runtime flagi `AI_ANALYSIS`: `1` yoqadi, `0`
+  o'chiradi; boshqa qiymat configuration error hisoblanadi.
+- Lokal va Windows runlarda flag repo rootdagi `.env`dan olinadi. GitHub
+  Actions checkout lokal `.env`ni ko'rmagani uchun scheduled/manual CI ayni
+  nomdagi GitHub Repository Variable (`AI_ANALYSIS`)ni environmentga uzatadi;
+  variable yo'q bo'lsa default `0`.
+- AI faqat deterministic natija `FAILED` bo'lganda chaqiriladi. `PASSED`
+  natijada flag `1` bo'lsa ham AI chaqirilmaydi va AI artifact yaratilmaydi.
 - Provider Gemini; model `GEMINI_MODEL` yoki koddagi defaultdan olinadi.
 - Key faqat `GEMINI_API_KEY` environment variable orqali olinadi.
 - Natija `test-results/ai-summary.md/json`ga yoziladi va Allure'ga alohida
-  attachment qilinadi.
+  `AI xatolik tahlili` itemi sifatida Markdown va JSON attachmentlar bilan
+  qo'shiladi.
+- Telegram failed final xabarida shu JSONdan `Kuzatilgan`, `Ehtimoliy sabab`
+  va Uzbekcha ishonch darajasi ko'rsatiladi; `Cheklov` va `Developer uchun`
+  kabi takroriy bo'limlar chiqarilmaydi.
 - AI xulosa test pass/fail statusini o'zgartirmaydi va system summary o'rnini bosmaydi.
+
+### Server loglari va AI chegarasi
+Status: user-reported
+Verified: 2026-08-18
+Source: user
+- CI va AI tahlil oqimiga Smartup server loglari berilmaydi; AI faqat lokal
+  test logi, Allure, trace'dan ajratilgan structured dalil, form monitor va
+  system summaryni tahlil qilishi mumkin.
+- Failure timestamp developerlar Smartup server loglarini qo'lda topishi uchun
+  correlation point hisoblanadi; AI server logini ko'rmagani holda backend root
+  cause'ni tasdiqlangan fakt sifatida ko'rsatmasligi kerak.
 
 ## Safety
 

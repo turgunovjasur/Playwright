@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 
 
 EVENT_PREFIX = "SMARTUP_PROGRESS "
@@ -27,6 +28,9 @@ def emit_progress_event(
         "test_id": test_id,
         "title": title,
         "display": shown_name,
+        "occurred_at_utc": datetime.now(timezone.utc).isoformat(
+            timespec="milliseconds"
+        ).replace("+00:00", "Z"),
     }
     if error_type:
         payload["error_type"] = error_type
