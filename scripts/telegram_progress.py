@@ -228,8 +228,8 @@ def format_duration(seconds):
     total = max(0, int(seconds))
     minutes, secs = divmod(total, 60)
     if minutes:
-        return f"{minutes} daq {secs} son"
-    return f"{secs} son"
+        return f"{minutes} daqiqa {secs} soniya"
+    return f"{secs} soniya"
 
 
 def server_host(server):

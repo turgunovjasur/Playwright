@@ -124,6 +124,8 @@ Source: user; `tests/smoke/progress.py`; `scripts/analyze_test_result.py`;
 - Final xabarning status ikonkalari run natijasiga vizual zid bo'lmasin:
   `PASSED` xabarda qizil `❌` ko'rsatilmasin, `FAILED` xabarning status va xato
   indikatorlari esa qizil bo'lsin.
+- User-facing duration qisqartma yoki noaniq `son` bilan emas, to'liq
+  `N daqiqa M soniya` ko'rinishida chiqarilsin.
 
 ### Legacy `setup-forms` final coverage
 Status: code-confirmed
