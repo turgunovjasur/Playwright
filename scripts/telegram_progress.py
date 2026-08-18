@@ -484,7 +484,7 @@ def forms_progress_lines(state, *, include_current=True):
     else:
         lines.append("Xatolik aniqlanmadi")
 
-    started_epoch = state.get("started_epoch")
+    started_epoch = state.get("test_started_epoch")
     if isinstance(started_epoch, (int, float)):
         lines.append(f"O'tgan vaqt: {format_duration(time.time() - started_epoch)}")
 
@@ -757,6 +757,16 @@ def _final_result_lines(state):
 def _generic_progress_lines(state):
     metrics = _result_metrics(state)
     lines = [""]
+    test_started_epoch = state.get("test_started_epoch")
+    if not isinstance(test_started_epoch, (int, float)):
+        status = str(state.get("status") or "").strip()
+        if status:
+            lines.append(f"Bosqich: {status}")
+        started_at = str(state.get("started_at") or "").strip()
+        if started_at:
+            lines.append(f"Boshlangan: {started_at}")
+        return lines
+
     if metrics["completed"]:
         lines.append(f"Yakunlandi: {metrics['completed']} ta test")
         lines.append(
@@ -766,9 +776,9 @@ def _generic_progress_lines(state):
     current = str(state.get("current") or "").strip()
     if current:
         lines.extend(["", "Hozir tekshirilmoqda:", current])
-    started_epoch = state.get("started_epoch")
-    if isinstance(started_epoch, (int, float)):
-        lines.append(f"O'tgan vaqt: {format_duration(time.time() - started_epoch)}")
+    lines.append(
+        f"O'tgan vaqt: {format_duration(time.time() - test_started_epoch)}"
+    )
     return lines
 
 
@@ -1055,7 +1065,7 @@ def command_update(args):
     if args.current is not None:
         state["current"] = args.current
     save_state(state)
-    edit_progress(state)
+    edit_progress(state, force=bool(args.status))
     return 0
 
 
@@ -1203,9 +1213,13 @@ def command_run(args):
         return 2
 
     state = load_state()
-    state["status"] = "Starting tests"
+    now = now_tashkent()
+    state["status"] = "Testlar boshlanmoqda"
+    state["test_started_at"] = now.strftime("%Y-%m-%d %H:%M:%S UZT")
+    state["test_started_at_utc"] = _utc_now_text()
+    state["test_started_epoch"] = time.time()
     save_state(state)
-    edit_progress(state)
+    edit_progress(state, force=True)
     process = subprocess.Popen(
         command,
         cwd=ROOT,
@@ -1530,7 +1544,10 @@ def parse_args():
     start = subparsers.add_parser("start")
     start.add_argument("--server", required=True)
     start.add_argument("--target", required=True)
-    start.add_argument("--status", default="Installing requirements")
+    start.add_argument(
+        "--status",
+        default="Python kutubxonalari o‘rnatilmoqda",
+    )
     start.add_argument("--message-id", default="")
 
     update = subparsers.add_parser("update")

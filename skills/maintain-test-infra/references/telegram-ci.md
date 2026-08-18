@@ -49,6 +49,11 @@ Source: `scripts/telegram_ci_bot.py`; `.github/workflows/daily-smoke.yml`;
 
 - Progress bitta edit-in-place Telegram message'da yuradi; workflow final
   xabardan keyin progress message'ni yakunlaydi.
+- Test processi boshlanguncha progress xabari soxta elapsed taymerni
+  ko'rsatmaydi: `Bosqich` va CI boshlanish timestampi chiqadi. Workflow
+  kutubxonalar o'rnatilishi, Playwright browser o'rnatilishi va test boshlanishi
+  orasida statusni darhol edit qiladi. `O'tgan vaqt` faqat test processi
+  boshlanganidan keyin `test_started_epoch` asosida hisoblanadi.
 - Pytest eventlari lokal state'ga darhol yoziladi, ammo Telegram progress xabari
   10 soniyadan tez edit qilinmaydi. Oraliq eventlar bitta editga jamlanadi va
   render qilingan matn o'zgarmagan bo'lsa API chaqirilmaydi.
