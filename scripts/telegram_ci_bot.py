@@ -106,6 +106,14 @@ class WorkflowRun:
 
 
 @dataclass(frozen=True)
+class WorkflowJob:
+    suite: str
+    status: str
+    conclusion: str | None = None
+    current_step: str = ""
+
+
+@dataclass(frozen=True)
 class ActiveRun:
     chat_id: str
     request: RunRequest
@@ -636,6 +644,49 @@ class GitHubActionsClient:
             ),
         )
 
+    def suite_jobs(self, run_id):
+        url = f"https://api.github.com/repos/{self.repository}/actions/runs/{run_id}/jobs"
+        response = self.session.get(url, params={"per_page": "100"}, timeout=30)
+        response.raise_for_status()
+        jobs = []
+        for item in response.json().get("jobs", []):
+            name = str(item.get("name") or "")
+            suite = next(
+                (
+                    label
+                    for label in SUITES.values()
+                    if name == label or name.startswith(f"{label} /")
+                ),
+                None,
+            )
+            if suite is None:
+                continue
+            current_step = next(
+                (
+                    str(step.get("name") or "")
+                    for step in (item.get("steps") or [])
+                    if str(step.get("status") or "")
+                    in {"in_progress", "queued", "pending"}
+                ),
+                "",
+            )
+            jobs.append(
+                WorkflowJob(
+                    suite=suite,
+                    status=str(item.get("status") or ""),
+                    conclusion=(
+                        str(item.get("conclusion"))
+                        if item.get("conclusion") is not None
+                        else None
+                    ),
+                    current_step=current_step,
+                )
+            )
+        return sorted(
+            jobs,
+            key=lambda item: {"Smoke": 0, "Forms": 1}.get(item.suite, 2),
+        )
+
 
 def parse_github_time(value):
     if not value:
@@ -712,6 +763,33 @@ def workflow_status_label(run):
     )
 
 
+def workflow_job_status_line(job):
+    if job.status == "completed":
+        labels = {
+            "success": "✅ PASSED",
+            "failure": "❌ FAILED",
+            "cancelled": "⚪ CANCELLED",
+            "skipped": "⏭ SKIPPED",
+        }
+        status = labels.get(
+            str(job.conclusion or ""),
+            str(job.conclusion or "UNKNOWN").upper(),
+        )
+    else:
+        labels = {
+            "in_progress": "🟡 RUNNING",
+            "queued": "🟡 QUEUED",
+            "waiting": "🟡 WAITING",
+            "pending": "🟡 WAITING",
+            "requested": "🟡 QUEUED",
+        }
+        status = labels.get(job.status, f"🟡 {job.status.upper() or 'QUEUED'}")
+    line = f"{job.suite}: {status}"
+    if job.current_step and job.status != "completed":
+        line += f"\n  Bosqich: {job.current_step}"
+    return line
+
+
 def delivery_status_line(delivery):
     suite = str(delivery.get("suite") or "CI")
     status = str(delivery.get("status") or "unknown")
@@ -775,6 +853,10 @@ def status_text(telegram, github):
         f"Run: {workflow_status_label(run)}",
         f"Trigger: {run.event or 'unknown'}",
     ]
+    jobs = github.suite_jobs(run.run_id)
+    if jobs:
+        lines.extend(["", "Suite holati:"])
+        lines.extend(workflow_job_status_line(job) for job in jobs)
     deliveries = github.delivery_statuses(run.run_id)
     if deliveries:
         lines.extend(["", "Telegram notification:"])

@@ -28,10 +28,17 @@ Source: `scripts/telegram_ci_bot.py`; `.github/workflows/daily-smoke.yml`;
   `AUTO_RUN_*` konfiguratsiyasi olib tashlangan.
 - Manual flow: avval suite (`Smoke` yoki `Forms`), keyin server (`Online` yoki
   `Xtrade`), so'ng run password authorizationi tanlanadi.
-- `/status` oxirgi scheduled yoki manual workflow holati, run linki, Smoke/Forms
-  Telegram delivery holati va bot processining oxirgi redacted Telegram API
-  xatosini ko'rsatadi. Delivery holati katta test artifactidan emas, alohida
-  kichik `*-telegram-status` artifactidan o'qiladi.
+- `/status` oxirgi scheduled yoki manual workflow holati va run linki bilan
+  birga GitHub Jobs API'dan Smoke/Forms job holatini ko'rsatadi. Active suite
+  uchun `RUNNING` va joriy workflow stepi, tugagan suite uchun esa
+  `PASSED`/`FAILED`/`SKIPPED` chiqadi. Forma kesimidagi `190/358` singari aniq
+  hisoblar runner-local progress state'da qoladi va jonli Telegram progress
+  xabarida ko'rsatiladi; `/status` ularni takrorlamaydi.
+- `/status` Smoke/Forms Telegram delivery holati va bot processining oxirgi
+  redacted Telegram API xatosini ham ko'rsatadi. Delivery holati katta test
+  artifactidan emas, suite yakunida upload qilinadigan alohida kichik
+  `*-telegram-status` artifactidan o'qiladi; shu sabab active suite deliverysi
+  hali ro'yxatda bo'lmasligi normal.
 - Workflow erkin URL qabul qilmaydi: `smartup` yoki `app3` keyidan URL hamda
   secret source ichkarida hosil qilinadi, boshqa key fail-closed rad etiladi.
 - Bot in-memory manual run bilan birga GitHub API orqali scheduled/manual active
