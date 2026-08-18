@@ -38,6 +38,11 @@ def pytest_collection_modifyitems(config, items):
     smoke_config.modify_collected_items(config, items)
 
 
+def pytest_deselected(items):
+    """Collectiondan chiqarilgan test nomlarini progress consumeriga uzatadi."""
+    smoke_reporting.report_deselected(items)
+
+
 def pytest_configure(config):
     """Run environmentini tekshiradi va Allure metadata fayllarini tayyorlaydi."""
     expect.set_options(timeout=10_000)

@@ -268,6 +268,16 @@ def _form_progress_total(item):
     return sum(_form_case_from_item(candidate) is not None for candidate in items)
 
 
+def _progress_test_total(item):
+    """Joriy collectiondagi Telegram progress testlari sonini qaytaradi."""
+    session = getattr(item, "session", None)
+    items = getattr(session, "items", ())
+    return sum(
+        is_user_setup(candidate) or bool(smoke_group_name(candidate))
+        for candidate in items
+    )
+
+
 def _progress_metadata(item):
     """Progress event uchun test groupi, runneri va ko'rinadigan nomini yig'adi."""
     if is_user_setup(item):
@@ -287,6 +297,7 @@ def _progress_metadata(item):
         "runner": Path(str(item.path)).name,
         "test_id": item.name,
         "title": allure_title,
+        "test_total": _progress_test_total(item),
     }
     form_context = _form_progress_context(item)
     if form_context is not None:
@@ -321,6 +332,14 @@ def finish_progress(item, event, *, error_type=None, message=None):
         message=message,
         **metadata,
     )
+
+
+def report_deselected(items):
+    """Collectiondan ataylab chiqarilgan testlarni nomi bilan progressga yozadi."""
+    for item in items:
+        metadata = _progress_metadata(item)
+        if metadata:
+            emit_progress_event(event="deselected", **metadata)
 
 
 def report_message(report):

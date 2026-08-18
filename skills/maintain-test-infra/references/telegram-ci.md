@@ -104,15 +104,16 @@ Source: `scripts/telegram_ci_bot.py`; `.github/workflows/daily-smoke.yml`;
   `form_case` metadata'sidan resolve qilinadi. Bu Allure title, pytest ID va
   historyni o'zgartirmaydi.
 - Failed final xabarda mavjud structured monitor/system-summary dalillari bilan
-  forma raqami va nomi, navbar, menu, filial, expected/actual URL, sabab hamda
-  failure event vaqti UZT va UTCda ko'rsatiladi. Allure `stop` vaqti system
-  summaryda fallback timestamp bo'ladi. Passed formaning to'liq texnik
-  metadata'si Allure'da qoladi.
+  forma raqami va nomi, formaga olib boruvchi to'liq user trace, filial, xato
+  bosqichi/turi/sababi hamda failure event vaqti UZT va UTCda ko'rsatiladi.
+  Expected/actual URL va boshqa to'liq texnik metadata Allure/system-summaryda
+  qoladi. Allure `stop` vaqti system summaryda fallback timestamp bo'ladi.
 - Final xabarda credential emas, faqat data-store'dagi parametrik run `code`
   `Test data kodi` nomi bilan ko'rsatilishi mumkin; canonical `forms` targetida
   bu qator chiqarilmaydi.
-- Failure tafsiloti log va Allure'dagi faktlardan tuziladi: group, runner test,
-  ichki test, nested step va error turi. Taxminiy `Ta'sir`/`Yechim` qo'shilmaydi.
+- Smoke failure tafsiloti log va Allure'dagi faktlardan tuziladi: test nomi,
+  xato bosqichi, xato turi, sabab va failure vaqti. Taxminiy
+  `Ta'sir`/`Yechim` qo'shilmaydi.
 - `AI_ANALYSIS=1` va final natija `FAILED` bo'lsa Gemini tahlili expandable
   blokda `Kuzatilgan`, `Ehtimoliy sabab` va ishonch darajasi bilan chiqadi.
   `PASSED` xabarda AI bloki bo'lmaydi. AI xatosi deterministic final xabarni
@@ -128,11 +129,54 @@ Source: user; `tests/smoke/progress.py`; `scripts/analyze_test_result.py`;
 `scripts/telegram_progress.py`
 - Xato sodir bo'lgan vaqt server loglaridan tegishli yozuvni topish uchun
   Telegram xabarida va failure artifactida aniq saqlanib ko'rsatilishi kerak.
-- Final xabarning status ikonkalari run natijasiga vizual zid bo'lmasin:
-  `PASSED` xabarda qizil `❌` ko'rsatilmasin, `FAILED` xabarning status va xato
-  indikatorlari esa qizil bo'lsin.
+- Final xabarning status belgisi faqat title'da bir marta ko'rsatiladi:
+  `PASSED` uchun `✅`, `FAILED` uchun `❌`; natija va tafsilot qatorlarida
+  status ikonkalari takrorlanmaydi.
 - User-facing duration qisqartma yoki noaniq `son` bilan emas, to'liq
   `N daqiqa M soniya` ko'rinishida chiqarilsin.
+
+### Smoke va Forms final xabar formatlari
+Status: code-confirmed
+Verified: 2026-08-18
+Source: user; `scripts/telegram_progress.py`;
+`tests/smoke/smoke_reporting.py`; `scripts/analyze_test_result.py`
+- To'liq final xabar tartibi: title, server/suite, bo'sh qatordan keyin
+  vaqt/davomiylik va Smoke uchun test data kodi, yana bo'sh qatordan keyin
+  natija hisoblari, failed bo'lsa expandable tafsilotlar, oxirida run linki.
+- Smoke `Yakunlandi`, Forms `Tekshirildi` ishlatadi. `Passed`, `Failed`,
+  `Skipped`, mavjud bo'lsa `Tanlanmagan` alohida qatorlarda yoziladi;
+  `Xatolik aniqlandi` degan takroriy qator FAILED xabarga qo'shilmaydi.
+- `Skipped` va `Tanlanmagan` test/forma nomlari hisobdan keyin qavs ichida
+  ko'rsatiladi. Deselect nomlari pytest collection eventidan olinadi va
+  `00 - Company` rendererda hardcode qilinmaydi.
+- `Xato tafsiloti` va `AI tahlili` ikkita mustaqil Telegram expandable
+  blockquote. Har bir field orasida bo'sh qator bor. Smoke tafsiloti `Test
+  nomi`, `Bosqich`, `Xato turi`, `Sabab`, `Xato vaqti`; Forms tafsiloti
+  `Forma nomi`, to'liq `User trace`, `Filial` va shu xato maydonlaridan iborat.
+- Forms user trace FormMonitor `track` qiymatidan, fallbackda progressdagi
+  `navbar → menu → forma/action/page-link` kontekstidan tuziladi.
+- AI blockida `Kuzatilgan`, `Ehtimoliy sabab`, `Ishonch darajasi` alohida
+  bo'sh qatorlar bilan ko'rsatiladi. Forms finalida test data kodi chiqarilmaydi.
+
+### Smoke va Forms progress xabar formatlari
+Status: code-confirmed
+Verified: 2026-08-18
+Source: user; `scripts/telegram_progress.py`;
+`tests/smoke/smoke_reporting.py`
+- `RUNNING` title'da faqat bitta `🟡` status belgisi bo'ladi. Server va suite'dan
+  keyingi bo'sh blokda `Vaqt: HH:MM:SS UZT da boshlangan`, `Davomiylik` va
+  Smoke uchun data-store'da joriy qiymat paydo bo'lgach `Test data kodi`
+  ko'rsatiladi; Forms progressida test data kodi chiqarilmaydi.
+- `Jarayon` tanlangan test yoki formalar uchun `bajarildi/jami ta test|forma ·
+  foiz` ko'rinishida chiqadi. Tanlangan jami son pytest collection metadata'sidan,
+  Forms jami soni esa parametrized form collectionidan olinadi.
+- `Passed`, `Failed`, `Skipped` va mavjud bo'lsa `Tanlanmagan` alohida
+  qatorlarda yoziladi. Skip/deselect nomlari hisobdan keyin qavs ichida
+  ko'rsatiladi. `Failed: 0` bo'lsa `Hozirgacha xatolik aniqlanmadi` chiqadi;
+  failed mavjud bo'lsa bu qator takrorlanmaydi.
+- `Hozir tekshirilmoqda` blokida Smoke test nomi ko'rsatiladi. Forms uchun
+  forma raqami va qisqa nom, alohida to'liq `User trace` hamda filial
+  ko'rsatiladi.
 
 ### Legacy `setup-forms` final coverage
 Status: code-confirmed

@@ -805,6 +805,7 @@ def _form_monitor_issues(form_monitor):
                     result.get("identity") or result.get("test_identity") or ""
                 ),
                 "label": str(result.get("label") or ""),
+                "track": str(result.get("track") or ""),
                 "status": status,
                 "reason_code": str(result.get("reason_code") or ""),
                 "failed_stage": str(result.get("failed_stage") or ""),
