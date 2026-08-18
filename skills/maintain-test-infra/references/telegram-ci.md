@@ -17,7 +17,10 @@ Source: `scripts/telegram_ci_bot.py`; `.github/workflows/daily-smoke.yml`;
 `tests/smoke/progress.py`; `scripts/analyze_test_result.py`
 
 - GitHub Actions test execution va har soatlik schedulingning yagona
-  authoritysi; `daily-smoke.yml`dagi `cron: "0 * * * *"` saqlangan.
+  authoritysi; `daily-smoke.yml`dagi `cron: "17 * * * *"` har soatning
+  17-daqiqasida runni rejalashtiradi. Bu GitHub Actions yuklamasi yuqori
+  bo'ladigan soat boshidagi kechikish va dropped schedule ehtimolini kamaytiradi;
+  GitHub schedule aniq boshlanish vaqtini kafolatlamaydi.
 - Cron har soatda avval `Online Smoke`, keyin `Online Forms`ni alohida reusable
   workflow job sifatida ishlatadi. Forms job `if: always()` bilan Smoke
   natijasidan qat'i nazar boshlanadi.
