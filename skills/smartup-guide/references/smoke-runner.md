@@ -71,10 +71,14 @@ Source: `scripts/run_tests.py`; `tests/smoke/test_setup/test_0_setup_runner.py`;
   yangi code bilan collect qiladi. `groups` target setupni ishlatmasdan faqat
   Group-0 va Report runner fayllarini collect qiladi; alohida `group-0` va
   `group-report` targetlari saqlanadi.
-- Group-only code targetlarida `.env NEW_CODE=1` taqiqlanadi: yangi random code
+- Group-only code targetlari (`group-0`, `groups`)da `.env NEW_CODE=1`
+  taqiqlanadi: yangi random code
   uchun setup user/entitylar yaratilmagan bo'ladi. Joriy baseline'ni qayta
   ishlatishda `.env NEW_CODE=0`, yangi Group-0 verificationida esa
   `setup-group-0` ishlatiladi.
+- `group-report` code-independent: u `code` fixture yoki
+  `data_store.json.code`ni talab qilmaydi; yangi template va download nomlari
+  run-local UUID suffix bilan ajratiladi.
 - `CREATE_COMPANY=1` bilan setup alohida pytest sessiyasida tugagach, group
   runnerni existing rejimda davom ettirish uchun `.env`da
   `CREATE_COMPANY=0`, `DISABLE_LICENSE_POLICY=0`, `COMPANY_CODE=0` va

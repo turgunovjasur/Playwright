@@ -367,3 +367,101 @@ Replaced by: `skills/smartup-guide/references/form-monitor/check-url.md`;
   destination shell actual URLdan bir marta aniqlanib loader,
   application-error, content-ready va title checklarga parametr sifatida
   uzatiladi.
+
+### Record-dependent Forms caselarini target bo'yicha ajratish
+Status: superseded
+Observed: 2026-08-18
+Superseded: 2026-08-18
+Source: user; user correction
+Replaced by:
+`skills/write-test/references/project-rules.md#user-reported-form-crud-coverage-smoke-testlarda-kengaytiriladi`
+- Old behavior: `_edit` va `_view` alohida pytest case bo'lib, har biri `_add`
+  orqali o'z recordini yaratishi kerak deb talqin qilingan edi.
+- Current behavior: form-specific smoke testcase o'zi yaratgan record bilan
+  `list -> add/save -> view -> edit/save -> final view` lifecycle'ini boshidan
+  oxirigacha bajaradi.
+
+### Alohida universal CRUD Forms subsystemi
+Status: superseded
+Observed: 2026-08-18
+Superseded: 2026-08-18
+Source: user; user correction
+Replaced by:
+`skills/write-test/references/project-rules.md#user-reported-form-crud-coverage-smoke-testlarda-kengaytiriladi`
+- Old behavior: yangi `test_crud_forms` mexanizmi bitta form familyning `list`,
+  `add`, `view` va `edit` holatlarini FormMonitor orqali boshqarishi kerak deb
+  rejalashtirilgan edi.
+- Current behavior: alohida universal CRUD framework yaratilmaydi; kerakli CRUD
+  qadamlar mavjud yoki yangi form-specific business smoke testlarga qo'shiladi.
+
+## Superseded integration report qoidalari
+
+### CisLink global skip va legacy settings modal
+Status: superseded
+Observed: 2026-06-12
+Superseded: 2026-08-20
+Source: `smartup.online` live Chromium UI
+Replaced by: `skills/smartup-guide/references/forms/cislink.md`
+- Old behavior: Smartup Online CisLink formasida `Настройки` inline paneli bor,
+  Xtrade'da esa template-based forma bo'lgani uchun deploymentlar farqi sabab
+  Report-01 global skip qilinishi kerak deb yozilgan edi.
+- Current behavior: `smartup.online` ham template-based main formaga migratsiya
+  qilingan; `Настройки` yo'q, `Шаблоны` orqali alohida template list/create
+  formasi ochiladi va global skip olib tashlangan.
+
+### Optimum `Все филиалы` va sticky loader gap
+Status: superseded
+Observed: 2026-07-23
+Superseded: 2026-08-20
+Source: `smartup.online` live Chromium UI
+Replaced by: `skills/smartup-guide/references/forms/integration-reports.md#optimum-optimum`
+- Old behavior: main formada `Все филиалы` default checked va birinchi generate
+  ortidan sticky overlay ikkinchi generate'ni bloklaydi deb qabul qilingan.
+- Current behavior: joriy main formada `Все филиалы` controli yo'q; test real
+  period, settings va bitta ZIP export kontraktini tekshiradi.
+
+### Integration Two to'rtta XML download flowi
+Status: superseded
+Observed: 2026-07-23
+Superseded: 2026-08-20
+Source: `smartup.online` live Chromium UI
+Replaced by: `skills/smartup-guide/references/forms/integration-reports.md#integration-two--monolith-integration_two`
+- Old behavior: `URL=https` saqlab to'rtta exchange mode uchun XML download
+  kutilgan; balance va internal movement modelari qamrab olinmagan.
+- Current behavior: test fake URL yozmaydi; configured HTTP(S) Monolith
+  endpointini precondition sifatida tekshiradi va barcha oltita mode uchun
+  non-empty XML downloadni talab qiladi.
+
+### CisLinkni faqat side-effectsiz forma kontrakti sifatida tekshirish
+Status: superseded
+Observed: 2026-08-20
+Superseded: 2026-08-20
+Source: user correction; live Chromium UI
+Replaced by: `skills/smartup-guide/references/forms/cislink.md#end-to-end-test-flowi`
+- Old behavior: template yo'q filialda Report-01 create formasini ochib,
+  hech narsa saqlamasdan yopar va generate/download qilmas edi.
+- Current behavior: test code'ga tegishli template yaratadi yoki tanlaydi,
+  report sanasini beradi va CisLink ZIP downloadni majburiy tekshiradi.
+
+### `b_input(select_first=True)` qidiruv natijasini tanlashi
+Status: superseded
+Observed: 2026-08-20
+Superseded: 2026-08-20
+Source: user correction; `utils/base_page.py`; `utils/angular_base_page.py`
+Replaced by: `skills/smartup-guide/references/ui-patterns.md#select_first-va-search_text-kontrakti`
+- Old behavior: `select_first=True` bilan `search_text` birga berilib, qidiruvdan
+  keyingi birinchi visible option tanlanar edi.
+- Current behavior: `select_first=True` qidiruvsiz birinchi optionni tanlaydi;
+  non-empty `search_text`ning o'zi qidirib, qaytgan birinchi optionni tanlaydi.
+
+### Template-based reportda mavjud template'ni qayta ishlatish
+Status: superseded
+Observed: 2026-08-20
+Superseded: 2026-08-20
+Source: user correction; `tests/smoke/test_groups/test_report_grup/test_01_cislink.py`; `test_03_saleswork.py`; `test_05_spot.py`
+Replaced by: `skills/smartup-guide/references/forms/cislink.md#end-to-end-test-flowi`; `skills/smartup-guide/references/forms/integration-reports.md#saleswork-saleswork`; `skills/smartup-guide/references/forms/integration-reports.md#spot2d-spot`
+- Old behavior: CisLink, SalesWork va Spot2D testlari code'ga tegishli template
+  mavjud bo'lsa uni qayta ishlatar, faqat topilmasa yangi template yaratar edi.
+- Current behavior: uchala template-based report har bir run uchun UUID suffixli
+  yangi template yaratadi, aynan shu template tanlanganini tekshiradi va shu
+  bilan reportni download qiladi.

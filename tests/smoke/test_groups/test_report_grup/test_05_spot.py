@@ -1,51 +1,73 @@
-import allure
-from playwright.sync_api import expect
-from tests.smoke.flows.flow_authorization import authorization
-from utils.base_page import BasePage
-from tests.smoke.test_groups.test_report_grup.report_helpers import generate_and_verify_download, select_b_input_option
+import re
+from uuid import uuid4
 
-pytestmark = [allure.epic("Report Group"), allure.feature("Integration Report"), allure.story("Spot 2d")]
+import allure
+import pytest
+
+from tests.smoke.flows.flow_authorization import authorization
+from tests.smoke.test_groups.test_report_grup.report_helpers import generate_and_verify_download, open_report
+from utils.base_page import BasePage
+
+pytestmark = [
+    pytest.mark.smoke_group("Report", independent=True),
+    allure.epic("Report Group"),
+    allure.feature("Integration Report"),
+    allure.story("Spot 2D"),
+]
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def run_report_spot_check(page, code):
-    """Report-05: Spot 2d report — yangi shablon yaratib, Spot2D.zip yuklab olishni tekshirish.
+def run_report_spot_check(page):
+    """Testcase: Spot2D period/settings contracti va yangi template bilan ZIP downloadini tekshirish.
 
-    Test admin login va test filialiga (filial-pw{code}) o'tishdan boshlanadi.
-
-    Qadamlar (Allure step):
-      1. Spot sahifasini ochish
-      2. Шаблоны -> Создать -> nom + Продуктовое направление (Группа) -> Сохранить
-      3. Yaratilgan shablon Spot'da tanlanib, Сформировать tugmasi ko'rinishini tekshirish
-      4. Сформировать -> Spot2D.zip yuklanishi va bo'sh emasligini tekshirish
+    1. Birinchi operatsion filialda Spot2D reportini ochib period defaultlarini tekshirish.
+    2. Settings modalida VAT va optional flag defaultlarini tekshirish.
+    3. Har bir run uchun yangi template required maydon va fayl kontrakti bilan yaratish.
+    4. Template tanlanganini va Spot2D ZIP downloadini tekshirish.
     """
     base = BasePage(page)
-    template_name = f"Spot2D-pw{code}"
+    run_suffix = uuid4().hex[:8]
+    template_name = f"Spot2D-pw{run_suffix}"
 
     authorization(page, who="admin")
-    base.switch_filial(name=f"filial-pw{code}")
+    base.switch_filial(first_filial=True)
 
-    with allure.step("1 - Spot sahifasini ochish"):
-        base_url, _, rest = page.url.partition("#/")
-        session_token = rest.split("/", 1)[0]
-        page.goto(f"{base_url}#/{session_token}/trade/rep/integration/spot")
-        expect(page.get_by_role("button", name="Шаблоны")).to_be_visible()
+    with allure.step("1 - Spot2D reporti va period defaultlarini tekshirish"):
+        open_report(base, "spot", re.compile(r"^\s*Spot2D\(\d+\)\s*$"))
+        base.radio("Последние 45 дней", expect_checked=True)
+        base.radio("Пользовательский период", expect_checked=False)
+        base.date_picker(label="Дата окончания периода", date="yesterday")
 
-    with allure.step("2 - Yangi shablon yaratish"):
-        page.locator('button[ng-click="selectSpotTemplate()"]').click()
-        page.locator('button[ng-click="add()"]').click()
-        base.input(ng_model="d.name", value=template_name)
-        select_b_input_option(page, "product_groups", "Группа")
-        page.locator('button[b-hotkey="save"]').click()
+    with allure.step("2 - Settings VAT va optional flag defaultlarini tekshirish"):
+        base.click(name="Настройки", exact=True)
+        base.checkbox(label="Разделить по дням (файл receive)", expect_checked=False)
+        base.checkbox(label="Дублировать Код клиента ERP (ID#ID)", expect_checked=False)
+        base.radio("Системный ввод НДС(%)", expect_checked=True)
+        base.radio("Ручной ввод НДС(%)", expect_checked=False)
+        base.text("Сброс настроек")
+        base.click(name="Закрыть", exact=True)
 
-    with allure.step("3 - Yaratilgan shablon Spot'da tanlanganini tekshirish"):
-        expect(page.get_by_role("button", name="Сформировать", exact=True)).to_be_visible()
+    with allure.step("3 - Har bir run uchun yangi Spot2D templateini yaratish"):
+        base.click(name="Шаблоны", exact=True)
+        base.expect_page(heading="Шаблоны Spot2D", url="spot_template_list")
+        base.click(name="Добавить", exact=True)
+        base.expect_page(heading="Шаблон Spot2D (создание)", url="spot_template+add")
+        base.input(label="Название", value=template_name)
+        base.b_input(label="Продуктовое направление", value="Группа")
+        base.checkbox(label="Подтипы характеристик", expect_checked=True)
+        base.checkbox(label="Активный", expect_checked=True)
+        base.text("Файл : delivery", "Файл : stocks", "Файл : clients", "Файл : receive", "Файл : warehouse", root="b-page:visible")
+        base.click(name="Сохранить", exact=True)
+        base.expect_page(heading=re.compile(r"^\s*Spot2D\(\d+\)\s*$"), url="spot")
 
-    with allure.step("4 - Сформировать -> Spot2D.zip yuklanishi"):
-        generate_and_verify_download(
-            page,
-            page.get_by_role("button", name="Сформировать", exact=True),
-            expected_prefix="Spot2D",
-            save_name=f"Spot2D_pw{code}.zip",
-        )
+    with allure.step("4 - Template tanlovi va Spot2D ZIP downloadini tekshirish"):
+        base.b_input(label="Шаблон", expect_value=template_name)
+        generate_and_verify_download(base, "Сформировать", "Spot2D", f"Spot2D_pw{run_suffix}.zip", expected_suffix=".zip")
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+@allure.title("Report-05 - Spot2D settings, template va ZIP eksporti")
+def test_report_spot(page):
+    run_report_spot_check(page)

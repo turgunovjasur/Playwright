@@ -3,6 +3,7 @@
 ## Mundarija
 
 - [Current architecture](#current-architecture)
+- [User-facing execution phase contract](#user-facing-execution-phase-contract)
 - [Forms central monitoring](#forms-central-monitoring)
 - [Failure artifacts](#failure-artifacts)
 - [Local Allure lifecycle](#local-allure-lifecycle)
@@ -21,6 +22,76 @@ Source: `tests/smoke/smoke_reporting.py`, `scripts/open_allure_report.py`
   wrapper o'z nomini `run_*` funksiyasiga uzatadi.
 - Allure results run boshida history, environment, categories va executor bilan
   tayyorlanadi.
+- Har yangi pytest session boshida oldingi joriy `allure-results` fayllari
+  tozalanadi; faqat oldingi generated reportdan olingan `history/` saqlanadi.
+  Bu qoida runner va direct pytest uchun bir xil bo'lib, eski standalone
+  urinishlarning yangi reportga retry/current result sifatida aralashishini
+  oldini oladi.
+- Direct pytest run ham session oxirida deterministic analyzerni ishlatadi;
+  `OPEN_REPORT` faqat tayyor reportni generate/open qilishni boshqaradi.
+
+## User-facing execution phase contract
+
+### Allure phase ownershipi
+Status: code-confirmed
+Verified: 2026-08-24
+Source: `tests/smoke/conftest.py`; installed `allure-pytest==2.15.3`
+
+- Pytest fixture `yield`igacha bajarilgan `allure.step`lar `Execution -> Set up`,
+  test funksiyasi ichidagilar `Test body`, `yield`dan keyingi fixture ishlari
+  `Tear down` ostida ko'rinadi. Test body ichida yaratilgan stepni nomi orqali
+  `Set up`ga ko'chirib bo'lmaydi; precondition haqiqatan fixture setupida
+  bajarilishi kerak.
+- Session/module-scoped fixture setupi faqat resursni birinchi yaratgan consumer
+  testda ko'rinadi. Har test uchun bir xil setup konteksti kerak bo'lsa,
+  function-scoped reporting fixture mavjud resurs holatini qayd etadi; browser,
+  context yoki loginni faqat report uchun qayta yaratmaydi.
+- `.env` yuklash, pytest configuration va collection test item lifecycle'idan
+  oldin bajariladi. Ular per-test `Set up` execution step emas; kerakli qismi
+  keyin secretlardan tozalangan setup metadata sifatida attach qilinadi.
+
+### AI'siz user-facing diagnostika
+Status: user-reported
+Verified: 2026-08-24
+Source: user; `test_report_integration_two` Allure failure muhokamasi
+
+- Allure'dagi asosiy failure xulosasi AI'ga bog'lanmaydi. User raw stacktrace'ni
+  tahlil qilmasdan `nima tayyorlandi`, `qaysi action bajarildi`, `nima
+  kutilgan`, `amalda nima bo'ldi`, `qayerda to'xtadi` va `qaysi keyingi
+  qadamlar bajarilmadi`ni ko'ra olishi kerak.
+- `Set up` userga faqat qaror uchun kerakli, sanitizatsiya qilingan kontekstni
+  beradi: run mode, test-data source/mavjudligi, browser/context scope,
+  action/navigation timeoutlari, diagnostika yoqilganligi va authorization
+  role/natijasi. Password, API key, token, session hash va credential qiymati
+  ko'rsatilmaydi.
+- `Test body` raqamlangan biznes qadamlarini ko'rsatadi. Failure xulosasi kamida
+  `Bosqich`, `Kutilgan`, `Haqiqiy`, `Sabab klassi` va `Keyingi qadamlar`
+  maydonlariga ega bo'ladi. Exception stack qo'shimcha texnik detail bo'lib
+  qoladi, user-facing asosiy sabab o'rnini bosmaydi.
+- `Tear down` artifact va cleanup natijasini ko'rsatadi: failure screenshot,
+  trace/log saqlanishi va page/context yopilishi. Cleanup xatosi test bodydagi
+  original root cause'ni yashirmaydi.
+
+Tavsiya etilgan ko'rinish:
+
+```text
+Execution
+├── Set up
+│   ├── 01 | Test data — source=data_store, mavjud=ha
+│   ├── 02 | Browser — Chromium, context=fresh
+│   ├── 03 | Timeout — action=10000 ms, navigation=20000 ms
+│   └── 04 | Authorization — role=admin, status=PASSED
+├── Test body
+│   └── 01 | Integration Two reportini ochish — FAILED
+│       ├── Kutilgan: target URL va heading tayyor
+│       ├── Haqiqiy: URL/heading tayyor, `load` 20000 msda tugamadi
+│       ├── Sabab klassi: TEST_HELPER_NAVIGATION_WAIT_ERROR
+│       └── Keyingi qadamlar: 02-09 NOT RUN
+└── Tear down
+    ├── Failure screenshot — SAVED
+    ├── Trace/log — SAVED
+    └── Page/context — CLOSED
+```
 
 ## Forms central monitoring
 
@@ -222,8 +293,21 @@ Source: `tests/smoke/test_forms/test_0_forms_runner.py`,
 
 ## Failure artifacts
 
-- Failed test uchun current URL, page title, redacted full-page screenshot va mavjud
-  data-store Allure'ga attach qilinadi.
+- Failed test uchun `00 - Failure Summary`, `01 - Browser State`, redacted
+  full-page screenshot, tayyor Playwright trace, session-tokeni yashirilgan
+  current URL, page title va mavjud data-store Allure'ga attach qilinadi.
+- `Browser State` current URL/title, visible headinglar, visible Biruni/UI
+  alertlar va blocking loader countini strukturali JSON sifatida beradi.
+- Deterministic analyzer failed Allure step, exception, browser state va trace
+  reference'ni birlashtirib aynan failed testcase ichiga human-readable
+  Markdown va JSON summary qo'shadi. Alohida System Summary'ni ochish failure
+  sababini tushunish uchun majburiy emas.
+- Function-scoped test trace'i testga, module/session-scoped trace esa shu
+  contextni qamragan failed testlarga biriktiriladi; bir xil katta trace
+  Allure results ichiga faqat bir marta ko'chiriladi.
+- Failure kategoriyalari o'zaro takrorlanmaydigan synchronization, navigation,
+  locator/UI state, download, verification, unclassified va ignored guruhlarga
+  ajratiladi.
 - Forms runnerda umumiy pytest failure screenshoti bilan birga har bir muammo
   aniqlangan paytdagi forma screenshoti ham alohida attach qilinadi. Yakuniy
   sahifa screenshoti `pytest-final-page-context — failed-form dalili emas` deb
@@ -231,6 +315,19 @@ Source: `tests/smoke/test_forms/test_0_forms_runner.py`,
 - Pytest longrepr `test-results/logs/` ichiga yoziladi.
 - Failure diagnostikasi add/edit formdagi asl save/error transitionini
   keyingi list/view timeoutidan oldin ko'rsatishi kerak.
+
+### Integration report navigatsiyasi
+
+Status: code-confirmed
+Verified: 2026-08-24
+Source: `tests/smoke/test_groups/test_report_grup/report_helpers.py`
+
+- Hash-route integration reporti `page.goto(..., wait_until="commit")` bilan
+  ochiladi; global browser `load` eventi biznes readiness signali emas.
+- Route commitdan keyin real readiness `BasePage.expect_page()` orqali target
+  URL, heading va Smartup loader holati bilan tekshiriladi.
+- `open_report(..., timeout=...)` timeouti navigation commitga ham,
+  `expect_page()`ga ham uzatiladi.
 
 ## Local Allure lifecycle
 

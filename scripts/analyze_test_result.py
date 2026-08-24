@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import sys
 import time
 import urllib.error
@@ -104,6 +105,22 @@ def _auth_diagnostic_attachment(item, results_dir):
     return {}
 
 
+def _json_attachment(item, results_dir, attachment_name):
+    attachments = item.get("attachments")
+    if not isinstance(attachments, list):
+        return {}
+    for attachment in attachments:
+        if not isinstance(attachment, dict):
+            continue
+        if str(attachment.get("name") or "") != attachment_name:
+            continue
+        source = Path(str(attachment.get("source") or "")).name
+        if not source:
+            return {}
+        return _read_json(results_dir / source) or {}
+    return {}
+
+
 def _form_monitor_attachment(item, results_dir):
     """Top-level yoki nested Allure stepdagi yagona form-monitor payloadini topadi."""
 
@@ -143,6 +160,7 @@ def _mask_sensitive(text):
         (r"(GEMINI_API_KEY\s*[=:]\s*)(\S+)", r"\1***"),
         (r"(AIza[0-9A-Za-z_\-]{20,})", "***"),
         (r"(sk-[0-9A-Za-z_\-]{20,})", "***"),
+        (r"(#/)[^/\s\"']+", r"\1<session>"),
     ]
     masked = text
     for pattern, repl in replacements:
@@ -484,6 +502,40 @@ def _humanize_failure(item):
         ).isoformat(timespec="milliseconds").replace("+00:00", "Z")
     except (OSError, OverflowError, TypeError, ValueError):
         stopped_at = ""
+    browser_state = (
+        item.get("browser_state")
+        if isinstance(item.get("browser_state"), dict)
+        else {}
+    )
+    target_url_match = re.search(r'navigating to "([^"]+)"', failure_text)
+    target_url = _mask_sensitive(target_url_match.group(1)) if target_url_match else ""
+    current_url = _mask_sensitive(str(browser_state.get("current_url") or ""))
+    target_url_reached = bool(target_url and current_url and target_url == current_url)
+    if "Page.goto: Timeout" in failure_text and target_url_reached:
+        reason = (
+            "Target URL ochilgan, ammo browser load eventi timeout ichida tugamagan. "
+            "Bu sahifa ochilmaganini emas, navigatsiya synchronization muammosini ko'rsatadi."
+        )
+        classification = "TEST_SYNCHRONIZATION_DEFECT"
+    elif "Page.goto: Timeout" in failure_text:
+        reason = _human_reason(failure_text)
+        classification = "NAVIGATION_TIMEOUT_DEFECT"
+    elif auth_diagnostic:
+        reason = auth_diagnostic.get("summary") or "Authorization precondition bajarilmadi."
+        classification = "ENVIRONMENT_PRECONDITION_DEFECT"
+    elif "Locator" in failure_text and "Timeout" in failure_text:
+        reason = _human_reason(failure_text)
+        classification = "LOCATOR_OR_UI_STATE_DEFECT"
+    elif "download" in failure_text.casefold():
+        reason = _human_reason(failure_text)
+        classification = "DOWNLOAD_DEFECT"
+    elif "AssertionError" in failure_text:
+        reason = _human_reason(failure_text)
+        classification = "VERIFICATION_DEFECT"
+    else:
+        reason = _human_reason(failure_text)
+        classification = "UNCLASSIFIED_TEST_DEFECT"
+
     return {
         "name": item.get("name") or item.get("fullName") or "unknown",
         "status": item.get("status") or "unknown",
@@ -521,11 +573,11 @@ def _humanize_failure(item):
         "target": _waited_target(failure_text),
         "element_state": _element_state(failure_text),
         "timeout": _timeout_text(failure_text) if "Timeout" in failure_text else "",
-        "reason": (
-            auth_diagnostic.get("summary")
-            or form_reason
-            or _human_reason(failure_text)
-        ),
+        "reason": form_reason or reason,
+        "classification": classification,
+        "target_url": target_url,
+        "target_url_reached": target_url_reached,
+        "browser_state": browser_state,
         "failure_at_utc": stopped_at,
         "form_issues": form_issues,
     }
@@ -553,6 +605,7 @@ def collect_allure_results(results_dir, started_at):
         form_monitor = _form_monitor_attachment(data, results_dir)
         rows.append(
             {
+                "result_path": str(path),
                 "name": data.get("name") or "",
                 "fullName": data.get("fullName") or "",
                 "status": data.get("status") or "unknown",
@@ -564,11 +617,198 @@ def collect_allure_results(results_dir, started_at):
                 "a2_form_steps": form_steps if form_suite == "a2_admin" else [],
                 "auth_diagnostic": auth_diagnostic,
                 "form_monitor": form_monitor,
+                "browser_state": _json_attachment(data, results_dir, "01 - Browser State"),
+                "trace_reference": _json_attachment(data, results_dir, "trace-reference"),
                 "start": data.get("start"),
                 "stop": data.get("stop"),
             }
         )
     return rows
+
+
+def _failure_summary_payload(failure):
+    state = failure.get("browser_state") if isinstance(failure.get("browser_state"), dict) else {}
+    return {
+        "test": failure.get("name") or "unknown",
+        "status": failure.get("status") or "unknown",
+        "classification": failure.get("classification") or "UNCLASSIFIED_TEST_DEFECT",
+        "failed_step": failure.get("failed_step") or "Allure step aniqlanmadi",
+        "reason": failure.get("reason") or "Xato sababi aniqlanmadi.",
+        "action": failure.get("action") or "",
+        "expected": failure.get("expected") or "",
+        "actual": failure.get("actual") or "",
+        "ui_error": failure.get("ui_error") or "",
+        "location": failure.get("location") or "",
+        "timeout": failure.get("timeout") or "",
+        "target_url": failure.get("target_url") or "",
+        "target_url_reached": bool(failure.get("target_url_reached")),
+        "current_url": state.get("current_url") or "",
+        "document_title": state.get("document_title") or "",
+        "visible_headings": state.get("visible_headings") or [],
+        "visible_alerts": state.get("visible_alerts") or [],
+        "visible_loader_count": int(state.get("visible_loader_count") or 0),
+        "failure_at_utc": failure.get("failure_at_utc") or "",
+    }
+
+
+def _render_failure_summary(payload):
+    lines = [
+        "# Failure Summary",
+        "",
+        f"- Test: {payload['test']}",
+        f"- Status: `{str(payload['status']).upper()}`",
+        f"- Klassifikatsiya: `{payload['classification']}`",
+        f"- Yiqilgan qadam: {payload['failed_step']}",
+        f"- Sabab: {payload['reason']}",
+    ]
+    if payload.get("location"):
+        lines.append(f"- Kod joyi: `{payload['location']}`")
+    if payload.get("timeout"):
+        lines.append(f"- Timeout: {payload['timeout']}")
+    if payload.get("action"):
+        lines.append(f"- Amal: {payload['action']}")
+    if payload.get("expected"):
+        lines.append(f"- Kutilgan: {payload['expected']}")
+    if payload.get("actual"):
+        lines.append(f"- Haqiqiy: {payload['actual']}")
+    if payload.get("ui_error"):
+        lines.append(f"- UI xato: {payload['ui_error']}")
+    lines.extend(
+        [
+            "",
+            "## Browser holati",
+            "",
+            f"- Target URL ochildi: `{'HA' if payload['target_url_reached'] else 'YO‘Q/ANIQLANMADI'}`",
+            f"- Joriy URL: `{payload['current_url'] or 'aniqlanmadi'}`",
+            f"- Page title: {payload['document_title'] or 'aniqlanmadi'}",
+            f"- Visible heading: {', '.join(payload['visible_headings']) or 'aniqlanmadi'}",
+            f"- Visible loaderlar: `{payload['visible_loader_count']}`",
+            f"- Visible UI xato: {', '.join(payload['visible_alerts']) or 'topilmadi'}",
+            "",
+            "Texnik stacktrace shu testning Allure `Status details` bo‘limida qoladi.",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _workspace_trace(path_text, *, minimum_mtime=0):
+    if not path_text:
+        return None
+    candidate = (ROOT / path_text).resolve()
+    try:
+        candidate.relative_to(ROOT.resolve())
+    except ValueError:
+        return None
+    if not candidate.is_file():
+        return None
+    try:
+        if minimum_mtime and candidate.stat().st_mtime < minimum_mtime:
+            return None
+    except OSError:
+        return None
+    return candidate
+
+
+def enrich_failed_allure_results(results, results_dir):
+    """Har bir failed resultga human summary va tayyor Playwright trace'ni biriktiradi."""
+    trace_sources = {}
+    for item in results:
+        if item.get("status") not in FAILED_STATUSES:
+            continue
+        result_path = Path(str(item.get("result_path") or ""))
+        result = _read_json(result_path)
+        if not result:
+            continue
+
+        failure = _humanize_failure(item)
+        payload = _failure_summary_payload(failure)
+        result_uuid = str(result.get("uuid") or uuid.uuid4())
+        markdown_source = f"{result_uuid}-failure-summary.md"
+        json_source = f"{result_uuid}-failure-summary.json"
+        (results_dir / markdown_source).write_text(
+            _render_failure_summary(payload),
+            encoding="utf-8",
+        )
+        (results_dir / json_source).write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+
+        old_attachments = result.get("attachments")
+        if not isinstance(old_attachments, list):
+            old_attachments = []
+        attachments = [
+            {
+                "name": "00 - Failure Summary",
+                "source": markdown_source,
+                "type": "text/markdown",
+            },
+            {
+                "name": "00 - Failure Summary JSON",
+                "source": json_source,
+                "type": "application/json",
+            },
+        ]
+
+        trace_reference = item.get("trace_reference") if isinstance(item.get("trace_reference"), dict) else {}
+        try:
+            minimum_trace_mtime = max(int(item.get("start") or 0) / 1000 - 5, 0)
+        except (TypeError, ValueError):
+            minimum_trace_mtime = 0
+        trace_path = _workspace_trace(
+            str(trace_reference.get("path") or ""),
+            minimum_mtime=minimum_trace_mtime,
+        )
+        if trace_path is not None:
+            trace_key = str(trace_path)
+            trace_source = trace_sources.get(trace_key)
+            if trace_source is None:
+                trace_source = f"{uuid.uuid5(uuid.NAMESPACE_URL, trace_key)}-playwright-trace.zip"
+                shutil.copyfile(trace_path, results_dir / trace_source)
+                trace_sources[trace_key] = trace_source
+            attachments.append(
+                {
+                    "name": "03 - Playwright Trace",
+                    "source": trace_source,
+                    "type": "application/zip",
+                }
+            )
+
+        for attachment in old_attachments:
+            if not isinstance(attachment, dict):
+                continue
+            attachment_name = str(attachment.get("name") or "")
+            if attachment_name in {"00 - Failure Summary", "00 - Failure Summary JSON"}:
+                continue
+            if attachment_name == "03 - Playwright Trace" and trace_path is not None:
+                continue
+            if attachment_name == "trace-reference":
+                reference_source = Path(str(attachment.get("source") or "")).name
+                if reference_source:
+                    (results_dir / reference_source).unlink(missing_ok=True)
+                continue
+            attachments.append(attachment)
+
+        result["attachments"] = attachments
+        existing_description = str(result.get("description") or "").strip()
+        summary_description = (
+            f"**{payload['classification']}** — {payload['reason']}\n\n"
+            f"Yiqilgan qadam: {payload['failed_step']}"
+        )
+        result["description"] = (
+            f"{summary_description}\n\n---\n\n{existing_description}"
+            if existing_description
+            else summary_description
+        )
+        status_details = result.get("statusDetails") if isinstance(result.get("statusDetails"), dict) else {}
+        status_details["message"] = _mask_sensitive(str(status_details.get("message") or ""))
+        status_details["trace"] = _mask_sensitive(str(status_details.get("trace") or ""))
+        marker = f"[{payload['classification']}]"
+        if marker not in status_details["message"]:
+            status_details["message"] = f"{marker} {status_details['message']}".strip()
+        result["statusDetails"] = status_details
+        result_path.write_text(json.dumps(result, ensure_ascii=False), encoding="utf-8")
 
 
 def collect_failure_logs(logs_dir, started_at):
@@ -1281,6 +1521,7 @@ def main():
     results = collect_allure_results(args.results_dir, args.started_at)
     logs = collect_failure_logs(args.logs_dir, args.started_at)
     deterministic = build_deterministic_summary(args.exit_code, results)
+    enrich_failed_allure_results(results, args.results_dir)
     model = os.getenv("GEMINI_MODEL", DEFAULT_MODEL)
 
     args.ai_output_md.unlink(missing_ok=True)

@@ -5,6 +5,7 @@ from playwright.sync_api import expect
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 from utils.date_utils import format_date, resolve_date
+from utils.helper_utils import first_non_admin_filial, label_pattern
 
 
 logger = logging.getLogger(__name__)
@@ -71,12 +72,32 @@ class BasePage:
         root=None,
         timeout=10_000,
     ):
-        """Semantic role va accessible name orqali elementni topib bosadi."""
+        """Semantic role va accessible name orqali elementni topib bosadi.
+
+        Styled radio inputlar ko'rinadigan label/span ostida qolishi mumkin;
+        radio tanlash uchun ``radio(label, click=True)`` ishlatiladi.
+        """
         root = self._resolve_root(root)
         target = root.get_by_role(role, name=name, exact=exact).nth(index)
         expect(target).to_be_visible(timeout=timeout)
         target.click()
         return target
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def choice(self, label, option, *, index=0, root=None, timeout=10_000):
+        """Label bilan bog'langan segmented button optionni tanlaydi."""
+        root = self._resolve_root(root)
+        label_item = root.get_by_text(self._label_pattern(label)).filter(visible=True).nth(index)
+        expect(label_item).to_be_visible(timeout=timeout)
+        container = label_item.locator(
+            "xpath=ancestor::*[self::div or self::section or self::fieldset][.//button][1]"
+        )
+        expect(container).to_be_visible(timeout=timeout)
+        button = container.get_by_role("button", name=option, exact=True).first
+        expect(button).to_be_visible(timeout=timeout)
+        button.click()
+        return button
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -175,19 +196,29 @@ class BasePage:
         self,
         label,
         *,
+        click=False,
         expect_checked=True,
         return_value=False,
         index=0,
         root=None,
     ):
-        """Label orqali forma radiosini topib, tanlangan holatini tekshiradi.
+        """Label orqali forma radiosini tanlaydi yoki holatini tekshiradi.
 
-        Masalan: ``radio("Цена продажи", expect_checked=True)``.
-        Radio holatini o'zgartirish bu helper vazifasi emas; kerakli optionni tanlash
-        uchun alohida user action ishlatiladi.
+        ``click=True`` bo'lsa styled inputning o'zini emas, ko'rinadigan parent
+        labelni bosadi. Masalan: ``radio("Цена продажи", click=True)``.
         """
+        if not isinstance(click, bool):
+            raise TypeError("radio(): click bool bo'lishi kerak")
+
         root = self._resolve_root(root)
         radio_el = self._field_locator_by_label(label, index=index, root=root, target="radio")
+
+        if click:
+            label_el = radio_el.locator("xpath=ancestor::label[1]")
+            if label_el.count() > 0 and label_el.first.is_visible():
+                label_el.first.click()
+            else:
+                radio_el.click()
 
         if expect_checked is not _UNSET:
             expect(radio_el).to_be_checked() if expect_checked else expect(radio_el).not_to_be_checked()
@@ -471,7 +502,14 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def switch_filial(self, name, timeout=30_000):
+    def switch_filial(self, name=None, timeout=30_000, *, first_filial=False):
+        if not isinstance(first_filial, bool):
+            raise TypeError("switch_filial(first_filial=...): bool bo'lishi kerak")
+        if first_filial and name is not None:
+            raise ValueError("switch_filial(): name va first_filial=True birga berilmaydi")
+        if not first_filial and name is None:
+            raise ValueError("switch_filial(): name yoki first_filial=True berilishi kerak")
+
         locations = (
             self.page.locator(".header-logo.custom-dropdown:visible")
             .filter(has=self.page.locator(".dropdown-locations-custom"))
@@ -483,7 +521,12 @@ class BasePage:
 
         menu = locations.locator(".dropdown-menu")
         expect(menu).to_be_visible(timeout=timeout)
-        option = menu.get_by_role("link", name=name, exact=True)
+        target_name = name
+        if first_filial:
+            target_name = first_non_admin_filial(
+                menu.locator(".filial-list").get_by_role("link").all_inner_texts()
+            )
+        option = menu.get_by_role("link", name=target_name, exact=True)
         expect(option).to_be_visible(timeout=timeout)
         option.click(timeout=timeout)
 
@@ -491,12 +534,12 @@ class BasePage:
             self.wait_for_loader(timeout=timeout)
         except Exception as exc:
             raise AssertionError(
-                f"switch_filial: '{name}' filialiga o'tishda loader {timeout // 1000}s ichida "
+                f"switch_filial: '{target_name}' filialiga o'tishda loader {timeout // 1000}s ichida "
                 f"yo'qolmadi, url={self.page.url}"
             ) from exc
 
         current_filial = trigger.locator(".project-filial p").nth(1)
-        expect(current_filial).to_have_text(name, timeout=timeout)
+        expect(current_filial).to_have_text(target_name, timeout=timeout)
         return option
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -962,7 +1005,7 @@ class BasePage:
     # ------------------------------------------------------------------------------------------------------------------
 
     def _label_pattern(self, label):
-        return re.compile(rf"^\s*{re.escape(label)}\s*(?:\*)?\s*$", re.IGNORECASE)
+        return label_pattern(label)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -1184,11 +1227,19 @@ class BasePage:
         clear=False,
         exact=True,
         server_search=False,
+        select_first=False,
         delay=50,
         index=0,
         root=None,
         timeout=10_000,
     ):
+        """Legacy b-inputni label/model orqali tanlaydi yoki tekshiradi.
+
+        ``select_first=True`` qidiruvga hech narsa yozmasdan ochilgan ro'yxatdagi
+        birinchi optionni tanlaydi. Non-empty ``search_text`` berilsa qidiradi
+        va qaytgan birinchi optionni tanlaydi. Faqat ``value`` berilganda esa
+        shu qiymatga mos option tanlanadi.
+        """
         root = self._resolve_root(root)
         if label is not None and ng_model is not None:
             raise ValueError("b_input(): label yoki ng_model dan faqat bittasini bering")
@@ -1202,8 +1253,9 @@ class BasePage:
         search = b_input.locator("input[placeholder]").first
         expect(search).to_be_visible()
 
-        if value is not _UNSET:
-            option_text = str(value)
+        has_search_query = search_text not in (None, "")
+        if value is not _UNSET or has_search_query or select_first:
+            option_text = str(value) if value is not _UNSET else None
             search.click()
 
             if clear:
@@ -1212,7 +1264,7 @@ class BasePage:
                     edit.first.click()
                 search.click()
 
-            query = option_text if search_text is None else search_text
+            query = None if select_first else option_text if search_text is None else search_text
             if query:
                 if server_search:
                     search.press("ControlOrMeta+A")
@@ -1226,12 +1278,13 @@ class BasePage:
             # locator tanlanishiga olib keladi. ``expect`` option DOMga kelib,
             # ko'ringuncha auto-retry qiladi; has_text esa qo'shimcha ustun
             # matnlari (ombor, narx turi va hokazo) bo'lsa ham mos tushadi.
-            option = b_input.locator(".hint-item:visible").filter(has_text=option_text).first
+            options = b_input.locator(".hint-item:visible")
+            option = options.first if select_first or has_search_query else options.filter(has_text=option_text).first
             expect(option).to_be_visible(timeout=timeout)
             option.click()
 
         expected = expect_value
-        if expected is _UNSET and value is not _UNSET:
+        if expected is _UNSET and value is not _UNSET and not select_first and not has_search_query:
             expected = str(value)
         if expected is not _UNSET:
             if isinstance(expected, str):

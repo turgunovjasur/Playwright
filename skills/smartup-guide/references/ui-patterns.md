@@ -51,13 +51,28 @@ Tags: mcp, playwright, locator, snapshot, workflow
 - Grid/natija tekshirish uchun butun snapshot o'rniga `browser_evaluate` bilan aniq elementni target qilib olish yengilroq (masalan `b-grid .tbl-row` matnlarini `innerText` orqali). 2026-07-02 da user grid login ustunini shu yo'l bilan tekshirdim.
 - Sabab: har `browser_snapshot` yuzlab qator YAML qaytaradi va kontekstni behuda to'ldiradi; locator allaqachon guide/flow'da bo'lsa snapshot ortiqcha.
 
+### Birinchi operatsion filialni tanlash
+Tags: filial, navigation, legacy, a2, report
+Status: code-confirmed
+Verified: 2026-08-20
+Source: user; `utils/base_page.py`; `utils/angular_base_page.py`; `utils/helper_utils.py`
+- Qoida: `BasePage.switch_filial(first_filial=True)` va
+  `AngularBasePage.switch_filial(first_filial=True)` filial ro'yxatidagi
+  `Администрирование` bo'lmagan birinchi ko'rinadigan filialni tanlaydi. Bu
+  rejimda `name` berilmaydi; aniq filial kerak bo'lsa avvalgidek
+  `switch_filial(name=...)` ishlatiladi.
+
 ### Heading / Sahifa Tekshirish — `expect_page` helper
 Tags: locator, heading, get_by_role, navigation, url
+Status: trace-confirmed
+Verified: 2026-08-20
+Source: `test-results/traces/tests_smoke_test_groups_test_report_grup_test_0_group_runner.zip`; `utils/base_page.py`; `utils/angular_base_page.py`
 - **DOM fakti** (2026-06-29 live tekshirilgan): sahifa sarlavhasi yagona `<h6 class="text-dark font-weight-bolder ...">` (Angular `ng-binding`). `<h1>` mavjud, lekin **bo'sh** — sarlavha uchun `h1` ISHLATMA, `get_by_role("heading")` ishlat.
+- Report trace'da heading `innerText`i ko'rinadigan nom bilan bir xil bo'lsa ham raw `textContent` boshida va oxirida newline/whitespace saqlashi tasdiqlangan. Playwright'da `filter(has_text=regex)` ham, `get_by_role(name=regex)` ham anchored regexning tashqi whitespace'ini avtomatik olib tashlamaydi. Exact dynamic heading uchun regex `^\s*...\s*$` ko'rinishida yoziladi; shared `expect_page` string contracti o'zgartirilmaydi.
 - Oddiy list/create sahifada `role=heading` aniq **1 ta**. Sahifa o'zgarsa shu elementning matni **almashadi** (yangi heading element qo'shilmaydi). `navigate_to` transition o'rtasida heading matni qisqa vaqt **bo'sh `''`** bo'ladi — shuning uchun tekshiruv doim **auto-retry qiluvchi `expect(...)`** bilan bo'lsin, bir martalik `inner_text()` emas.
 - **Ko'p heading muammosi:** wizard yoki ko'p bo'limli formalarda bir vaqtda bir nechta ko'rinadigan heading bo'ladi (masalan Акция create: `Акция (создание)`, `Главное`, `Условия`). Bunda `expect(page.get_by_role("heading")).to_contain_text(X)` — kerakli matn ulardan birida bo'lsa ham — **FAIL bo'ladi** (2026-06-29 sintetik isbotlangan: locator 2+ elementga to'g'ri kelsa, scalar `to_contain_text` to'g'ri matnda ham yiqiladi). Ya'ni to'g'ri sahifada turib ham false-negative beradi.
 - **Afzal yechim — `base.expect_page(heading=None, url=None, timeout=...)`** (`base.navigate_to(...)` dan keyin chaqiriladi; `navigate_to` o'zi faqat navigatsiya qiladi, tekshirmaydi):
-  - `base.expect_page(heading="Цены")` — `heading` str (substring, registrga befarq) yoki `re.compile(...)` bo'lishi mumkin (masalan `re.compile(r"Комп|Comp")`). Ichida `get_by_role("heading").filter(has_text=...).first` + `to_be_visible()` ishlatiladi: ortiqcha heading bo'lsa ham mosini tanlaydi, `.first` strict-mode'dan saqlaydi, retry qiladi.
+  - `base.expect_page(heading="Цены")` — `heading` str (substring) yoki `re.compile(...)` bo'lishi mumkin (masalan `re.compile(r"Комп|Comp")`). Ichida `get_by_role("heading").filter(has_text=heading).first` + `to_be_visible()` ishlatiladi: ortiqcha heading bo'lsa mosini tanlaydi, `.first` strict-mode'dan saqlaydi va retry qiladi. Exact anchored regex raw DOM whitespace'ini ham qamrashi uchun `re.compile(r"^\s*Spot2D\(\d+\)\s*$")` kabi yoziladi; registrga befarq qidiruv kerak bo'lsa `re.IGNORECASE` ochiq beriladi.
   - `root` faqat to'liq sahifa uchun emas: modal headingini `base.expect_page(heading="Добавить курс", root=page.get_by_role("dialog"))` kabi scoped tekshirish mumkin.
   - `base.expect_page(url="price_type_list")` — `url` bo'lagi (substring) yoki regex. **URL slug eng ishonchli signal**: locale'ga bog'liq emas, har sahifada unikal.
   - `base.expect_page(heading="...", url="...")` — ikkalasi birga, eng kuchli tekshiruv.
@@ -73,6 +88,7 @@ Tags: locator, order-view, label, xpath
 
 ### Form Field Discovery
 Tags: form, discovery, checkbox, switch, radio
+- `BasePage` va `AngularBasePage` label resolverlari semantic labeldagi qo'shtirnoqlar yonida legacy tarjima DOM'i chiqarishi mumkin bo'lgan literal backslashlarni optional deb oladi. Masalan test `Значение поля "manfid"` deb yoziladi va normal hamda `Значение поля \\"manfid"\\` DOM variantlariga mos keladi; testga escaped deployment matni hardcode qilinmaydi.
 - Yangi add/edit forma o'rganilganda faqat `input[type=text]`, `textarea`, `select` va `b-input`larni yig'ish yetarli emas.
 - Smartup switchlar ko'pincha styled checkbox sifatida chiqadi; `input[type="checkbox"]`, `input[type="radio"]`, ularning label/group texti, `ng-model`, `checked`, `disabled`, `visible` holati alohida yig'ilsin.
 - Switch yoqilgandan keyin yangi required maydon paydo bo'lishi mumkin; masalan filial add’da `НДС` (`d.vat_enabled`) yoqilganda `Ставка НДС (%)` (`d.vat_percent`) majburiy input bo'ladi.
@@ -80,14 +96,31 @@ Tags: form, discovery, checkbox, switch, radio
 
 ### b-input
 Tags: b-input, locator
+
+#### `select_first` va `search_text` kontrakti
+Status: code-confirmed
+Verified: 2026-08-20
+Source: user; `utils/base_page.py`; `utils/angular_base_page.py`
+- `select_first=True` qidiruv maydoniga hech narsa yozmasdan ochilgan optionlar ichidan birinchi ko'rinadiganini tanlaydi; `search_text` birga berilgan bo'lsa ham qidiruv qilmaydi.
+- Non-empty `search_text=query` optionlarni query bilan qidiradi va natija bitta yoki ko'p bo'lishidan qat'i nazar birinchi ko'rinadigan optionni tanlaydi; buning uchun `select_first=True` qo'shilmaydi.
+- Faqat `value=option_text` berilsa option matn bo'yicha tanlanadi. `value=option_text, search_text=""` esa qidiruvga yozmasdan ochiq ro'yxatdan aynan shu optionni tanlaydi.
+
 - Qoida: `b-input` uchun public API bitta bo'lsin: `BasePage.b_input(...)`.
 - Ishlatish:
   - `BasePage.b_input(label, value=option_text)` — tanlash
   - `BasePage.b_input(label, value=option_text, search_text="")` — dropdown clickda kerakli variant allaqachon ko'rinsa, searchga yozmasdan tanlash (masalan Product `Ед. изм.` → `шт`)
+  - `BasePage.b_input(label, search_text=query, server_search=True)` yoki `AngularBasePage.b_input(...)` — qidiruvdan qaytgan birinchi ko'rinadigan optionni tanlash
+  - `BasePage.b_input(label, select_first=True)` — qidiruvsiz birinchi ko'rinadigan optionni tanlash
   - `BasePage.b_input(ng_model="d.x", value=option_text)` — label ishonchsiz/yo'q bo'lsa fallback
   - `BasePage.b_input(label, expect_value=expected_value)` — value assert
   - `BasePage.b_input(label, return_value=True)` — joriy value olish
 - Eslatma: ba'zi input value'lar sahifa textiga kirmaydi; input value assert qilish kerak.
+
+#### Mavjud tanlov bilan `select_first`
+Status: trace-confirmed
+Verified: 2026-08-24
+Source: user correction; `tests/smoke/test_groups/test_report_grup/test_06_integration_two.py`; `test-results/traces/tests_smoke_test_groups_test_report_grup_test_06_integration_two.py__test_report_integration_two.zip`
+- `b-input`da oldindan tanlangan qiymat turgan bo'lsa, qidiruvsiz boshqa birinchi optionni tanlash uchun `clear=True, select_first=True` birga beriladi; `clear=True` mavjud tanlovni olib tashlab dropdown optionlarini ochadi.
 
 ### b-input Server-Search (report group)
 Tags: b-input, server-search, hint, clear
@@ -96,10 +129,10 @@ Tags: b-input, server-search, hint, clear
 - Allaqachon tanlangan qiymat bo'lsa: X tugmasi `.edit` (Angular `ng-hide`) — `is_visible()` tekshirish kerak, `count() > 0` emas.
 - Agar `.edit` ko'rinsa — avval clear qil, keyin yoz; ko'rinmasa — to'g'ri click qil.
 - Server-search uchun `press_sequentially(search_text, delay=50)` ishlatiladi (debounce trigger); client-search uchun oddiy `fill()` yetarli.
-- Dropdown locator faqat visible optionni oladi: `b_input.locator(".hint-item:visible").filter(has_text=option).first`. Hidden stale optionni `.first` qilib kutish mumkin emas — server/client refreshdan keyingi visible row DOMda boshqa element bo'lishi mumkin.
+- Dropdown locator faqat visible optionni oladi. Exact `value` flowi `.filter(has_text=option).first`, non-empty `search_text` flowi esa qidiruv natijasidagi `.first`ni oladi. Hidden stale optionni kutish mumkin emas — server/client refreshdan keyingi visible row DOMda boshqa element bo'lishi mumkin.
 - Asinxron dropdown natijasidan keyin `option.count()` bilan darhol fallback tanlanmasin. `expect(option).to_be_visible(timeout=...)` visible `.hint-item` DOMga kelguncha auto-retry qilsin. Aks holda qidiruv javobi hali kelmagan paytda exact-text fallback tanlanadi; option qatorida ombor/narx turi kabi qo'shimcha matnlar bo'lsa, backend natija qaytargan bo'lsa ham false-negative timeout yuz beradi (2026-07-22 order product trace bilan tasdiqlangan).
-- Radio button ustida label span tursa `label:has(input[value="..."])` orqali click qilinadi (force=True ishlamaydi — Angular ng-model update bo'lmaydi).
-- Shared helper: `report_helpers.select_b_input_option(page, b_input_name, option, search_text=None)`.
+- Radio button ustida label span tursa generic `click(role="radio")` ishlatilmaydi; `BasePage.radio(label, click=True)` yoki `AngularBasePage.radio(label, click=True)` ko'rinadigan parent labelni bosib, keyin checked holatini tekshiradi. `click=False` defaulti faqat holatni tekshiradi.
+- Report testlarda eski raw `report_helpers.select_b_input_option(...)` ishlatilmaydi; public `BasePage.b_input(...)` API qo'llanadi.
 
 ### UI Select
 Tags: ui-select, locator, dropdown

@@ -1,20 +1,41 @@
 [
   {
-    "name": "Product defects",
-    "matchedStatuses": ["failed"],
-    "messageRegex": ".*AssertionError.*"
+    "name": "Test synchronization defects",
+    "matchedStatuses": ["failed", "broken"],
+    "messageRegex": "(?s).*\\[TEST_SYNCHRONIZATION_DEFECT\\].*"
   },
   {
-    "name": "Test defects",
-    "matchedStatuses": ["broken"]
+    "name": "Navigation timeouts",
+    "matchedStatuses": ["failed", "broken"],
+    "messageRegex": "(?s).*\\[NAVIGATION_TIMEOUT_DEFECT\\].*"
+  },
+  {
+    "name": "Locator or UI state defects",
+    "matchedStatuses": ["failed", "broken"],
+    "messageRegex": "(?s).*\\[LOCATOR_OR_UI_STATE_DEFECT\\].*"
+  },
+  {
+    "name": "Download defects",
+    "matchedStatuses": ["failed", "broken"],
+    "messageRegex": "(?s).*\\[DOWNLOAD_DEFECT\\].*"
+  },
+  {
+    "name": "Verification defects",
+    "matchedStatuses": ["failed", "broken"],
+    "messageRegex": "(?s).*\\[VERIFICATION_DEFECT\\].*"
+  },
+  {
+    "name": "Environment or precondition defects",
+    "matchedStatuses": ["failed", "broken"],
+    "messageRegex": "(?s).*\\[ENVIRONMENT_PRECONDITION_DEFECT\\].*"
+  },
+  {
+    "name": "Unclassified test defects",
+    "matchedStatuses": ["failed", "broken"],
+    "messageRegex": "(?s).*\\[UNCLASSIFIED_TEST_DEFECT\\].*"
   },
   {
     "name": "Ignored tests",
     "matchedStatuses": ["skipped"]
-  },
-  {
-    "name": "Timeout errors",
-    "matchedStatuses": ["failed", "broken"],
-    "messageRegex": ".*TimeoutError.*"
   }
 ]

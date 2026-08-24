@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -29,6 +30,11 @@ _PROGRESS_FINISHED_ATTR = "_smartup_progress_finished"
 _AUTH_LISTENER_ATTR = "_smartup_auth_diagnostics_installed"
 _AUTH_RESPONSE_ATTR = "_smartup_first_unauthorized_response"
 _LICENSE_401_MESSAGE = "Нет лицензии для входа в систему!"
+
+
+def safe_page_url(value):
+    """Smartup session tokenini URL diagnostikasidan yashiradi."""
+    return re.sub(r"(#/)[^/]+", r"\1<session>", str(value or ""), count=1)
 
 
 def safe_page_screenshot(page, *, full_page=True, mask_profile=None):
@@ -357,12 +363,24 @@ def report_message(report):
     )
 
 
+def _clean_current_allure_results(results_dir):
+    """Oldingi run resultlarini o'chiradi, faqat Allure history'ni saqlaydi."""
+    results_dir.mkdir(parents=True, exist_ok=True)
+    for item in results_dir.iterdir():
+        if item.name == "history":
+            continue
+        if item.is_dir():
+            shutil.rmtree(item, ignore_errors=True)
+        else:
+            item.unlink(missing_ok=True)
+
+
 def prepare_allure_results(config, run_info, root_dir):
     """Run boshida Allure history, environment, categories va executorni tayyorlaydi."""
     root_dir = Path(root_dir)
     results_dir = root_dir / ALLURE_RESULTS_DIR
     report_dir = root_dir / ALLURE_REPORT_DIR
-    results_dir.mkdir(parents=True, exist_ok=True)
+    _clean_current_allure_results(results_dir)
 
     history_source = report_dir / "history"
     history_destination = results_dir / "history"
@@ -412,6 +430,83 @@ def prepare_allure_results(config, run_info, root_dir):
         json.dump(executor_data, executor_file, indent=2)
 
 
+def _visible_texts(page, selector, *, limit=20):
+    """Ko'rinadigan diagnostika matnlarini takrorsiz va cheklangan holda oladi."""
+    try:
+        raw_texts = page.locator(selector).all_inner_texts()
+    except Exception:
+        return []
+
+    texts = []
+    for raw_text in raw_texts:
+        text = " ".join(str(raw_text or "").split())
+        if text and text not in texts:
+            texts.append(text[:500])
+        if len(texts) >= limit:
+            break
+    return texts
+
+
+def browser_state(page):
+    """Failure paytidagi browser holatini machine-readable payloadga aylantiradi."""
+    try:
+        current_url = safe_page_url(page.url)
+    except Exception:
+        current_url = ""
+    try:
+        document_title = str(page.title() or "")
+    except Exception:
+        document_title = ""
+    try:
+        visible_loader_count = page.locator(
+            ".block-ui-overlay:visible, .smt-skeleton:visible"
+        ).count()
+    except Exception:
+        visible_loader_count = 0
+
+    return {
+        "current_url": current_url,
+        "document_title": document_title,
+        "visible_headings": _visible_texts(
+            page,
+            "h1:visible, h2:visible, h3:visible, h4:visible, "
+            "h5:visible, h6:visible, [role='heading']:visible",
+        ),
+        "visible_alerts": _visible_texts(
+            page,
+            "#biruniAlert:visible, #biruniAlertExtended:visible, "
+            "[role='alert']:visible",
+        ),
+        "visible_loader_count": visible_loader_count,
+    }
+
+
+def trace_reference_for_item(item):
+    """Testni qamrab olgan trace faylining run tugagach paydo bo'ladigan pathini qaytaradi."""
+    fixture_names = getattr(item, "funcargs", {})
+    if fixture_names.get("page") is not None:
+        safe_name = item.nodeid.replace("/", "_").replace("::", "__")
+        return {
+            "path": f"{TRACE_DIR}/{safe_name}.zip",
+            "scope": "test",
+        }
+    if (
+        fixture_names.get("group_session_page") is not None
+        or fixture_names.get("group_user_page") is not None
+    ):
+        module_name = item.module.__name__.replace(".", "_")
+        return {
+            "path": f"{TRACE_DIR}/{module_name}.zip",
+            "scope": "module",
+        }
+    if fixture_names.get("session_page") is not None:
+        return {
+            "path": f"{TRACE_DIR}/smoke_trace.zip",
+            "scope": "session",
+        }
+    return {}
+
+
 def attach_failure_artifacts(item, data_path, auth_diagnostic=None):
     """Failed testning browser holati va strukturali diagnostikasini Allurega qo'shadi."""
     page = page_from_item(item)
@@ -425,14 +520,20 @@ def attach_failure_artifacts(item, data_path, auth_diagnostic=None):
 
     if page is not None:
         try:
+            state = browser_state(page)
             allure.attach(
-                page.url,
-                name="current-url",
+                json.dumps(state, ensure_ascii=False, indent=2),
+                name="01 - Browser State",
+                attachment_type=allure.attachment_type.JSON,
+            )
+            allure.attach(
+                state["current_url"],
+                name="04 - Current URL",
                 attachment_type=allure.attachment_type.TEXT,
             )
             allure.attach(
                 page.title(),
-                name="page-title",
+                name="05 - Page Title",
                 attachment_type=allure.attachment_type.TEXT,
             )
             is_forms_runner = smoke_group_name(item) == "Forms"
@@ -443,7 +544,7 @@ def attach_failure_artifacts(item, data_path, auth_diagnostic=None):
             )
             allure.attach(
                 safe_page_screenshot(page, full_page=True),
-                name=screenshot_name,
+                name=f"02 - {screenshot_name}",
                 attachment_type=allure.attachment_type.PNG,
             )
         except Exception as exc:
@@ -453,11 +554,19 @@ def attach_failure_artifacts(item, data_path, auth_diagnostic=None):
                 attachment_type=allure.attachment_type.TEXT,
             )
 
+    trace_reference = trace_reference_for_item(item)
+    if trace_reference:
+        allure.attach(
+            json.dumps(trace_reference, ensure_ascii=False, indent=2),
+            name="trace-reference",
+            attachment_type=allure.attachment_type.JSON,
+        )
+
     data_path = Path(data_path)
     if data_path.exists():
         allure.attach(
             data_path.read_text(encoding="utf-8"),
-            name="data-store",
+            name="06 - Data Store",
             attachment_type=allure.attachment_type.JSON,
         )
 
@@ -481,12 +590,28 @@ def log_failed_report(report):
     print(f"\n[LOG] Xato logi saqlandi: {log_path}")
 
 
-def finish_session(root_dir):
+def _generate_test_summary(root_dir, exitstatus):
+    """Direct pytest run uchun Allure generatsiyasidan oldin summary yaratadi."""
+    command = [
+        sys.executable,
+        str(root_dir / "scripts" / "analyze_test_result.py"),
+        "--exit-code",
+        str(exitstatus),
+        "--command",
+        "direct pytest run",
+        "--started-at",
+        "0",
+    ]
+    subprocess.call(command, cwd=root_dir)
+
+
+def finish_session(root_dir, exitstatus):
     """Direct pytest run tugaganda so'ralgan trace viewer yoki Allure reportni ochadi."""
     if env_flag("SMARTUP_RUNNER"):
         return
 
     root_dir = Path(root_dir)
+    _generate_test_summary(root_dir, exitstatus)
     if env_flag("SHOW_TRACE"):
         _open_latest_trace(root_dir)
 

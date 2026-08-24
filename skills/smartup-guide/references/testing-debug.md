@@ -27,6 +27,15 @@ Tags: timeout, playwright, base-page, conftest, debug
 - `BasePage.expect_page(url=...)` URL mosligini kutadi, lekin hozirgi implementatsiyada loader `check_unblocked` tekshiruvi faqat `heading` branchida ishlaydi; URL-only chaqiruv loader kutishi deb qabul qilinmaydi. Umumiy menu flowida loaderni `BasePage.navigate_to()`, standalone URL tekshiruvida esa alohida `BasePage.wait_for_loader()` kutadi. Forms monitoring oqimi bundan mustasno: unda URLdan keyingi yagona loader authority `check_loader`.
 - `requests`/`urllib` HTTP timeoutlari sekundlarda va UI kutishlaridan boshqa mas'uliyatga ega; ular ham tegishli request funksiyasi yonida turadi.
 
+### Integration report direct route `load` timeouti
+Tags: report, navigation, playwright, timeout, load, open-report
+Status: trace-confirmed
+Verified: 2026-08-24
+Source: `tests/smoke/test_groups/test_report_grup/report_helpers.py:15`; `test-results/traces/tests_smoke_test_groups_test_report_grup_test_06_integration_two.py__test_report_integration_two.zip`
+- `open_report(..., timeout=...)`dagi timeout hozir faqat keyingi `expect_page()`ga uzatiladi; ichki `page.goto()` esa contextdagi `20_000 ms` navigation timeout bilan default `load` eventini kutadi.
+- Trace'da `goto` timeout paytida target URL, `Интеграция с системой монолит` headingi va report radio control'lari allaqachon render bo'lgan. Shuning uchun bu failure forma ochilmagani yoki radio locator xatosi emas, readiness signal noto'g'ri tanlangan navigation-helper xatosidir.
+- Testda ishlatish: Step 1 shu stack bilan yiqilsa keyingi settings/radio qadamlari bajarilmagan deb yoz; `open_report` timeoutini oshirishning o'zi `goto` timeoutini o'zgartirmaydi.
+
 ### Bitta pytest sessiyasida yagona Sync Playwright runtime
 Tags: playwright, fixture, session-browser, asyncio, ci
 - `sync_playwright()` bir threadda ichma-ich ochilmaydi. Session-scoped runtime faol
@@ -137,10 +146,13 @@ Tags: report, group, integration, download
 - Report testlar: `tests/smoke/test_groups/test_report_grup/` — CisLink, Integration Three, SalesWork, Optimum, Spot 2d, Integration Two.
 - Alohida run: `python scripts/run_tests.py group-report --url ... --company-code ... --company-password ...`
 - Report testlar `independent=True` — biri yiqilsa qolganlari davom etadi.
-- Integration Two faqat "Администрирование" filialida ishlaydi — admin login, switch_filial yo'q.
-- Integration Two Тип цены: user_setup `price_type_name_UZB` kaliti `data_store.json`ga saqlaydi; yo'q bo'lsa test `pytest.skip` qiladi.
-- Download testlarida `generate_and_verify_download(page, trigger, expected_prefix, save_name)` helper ishlatiladi — fayl `test-results/downloads/` ga saqlanadi.
-- Biruní alert (integration_two) generate'dan keyin chiqishi normal — fake URL bilan ishlanganda; `_close_alert_if_open` Escape bilan yopadi.
+- Report testlar `code` fixture yoki `data_store.json.code`ga bog'liq emas;
+  template va saqlanadigan download nomlari run-local UUID suffix oladi.
+- Integration Two faqat `Администрирование` filialida ishlaydi; test admin loginidan keyin shu filialga aniq o'tadi.
+- Integration Two `Тип цены`ni qidiruv qiymatisiz `select_first=True` bilan
+  birinchi mavjud optiondan tanlaydi.
+- Download testlarida `generate_and_verify_download(base, button_name, expected_prefix, save_name, expected_suffix=...)` helper ishlatiladi; fayl `test-results/downloads/`ga saqlanadi.
+- Integration Two fake URL yozmaydi: configured Monolith `User` va valid HTTP(S) URL majburiy precondition. Generate download bermasa helper URL, Biruni alert va screenshotni Allurega biriktirib fail qiladi.
 
 ### Runner Va Debug Helper Qoidalari
 Tags: runner, debug, modal, data-store

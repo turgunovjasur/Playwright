@@ -82,7 +82,6 @@ TARGETS = {
 GROUP_ONLY_CODE_TARGETS = {
     "groups",
     "group-0",
-    "group-report",
 }
 
 
@@ -294,7 +293,7 @@ def main():
     if disable_license_policy and not create_company:
         print("DISABLE_LICENSE_POLICY faqat CREATE_COMPANY=1 bilan ishlaydi", file=sys.stderr)
         return 2
-    group_only_targets = {*GROUP_ONLY_CODE_TARGETS, "forms"}
+    group_only_targets = {*GROUP_ONLY_CODE_TARGETS, "group-report", "forms"}
     if create_company and args.target in group_only_targets:
         print(
             "CREATE_COMPANY=1 group-only targetlar bilan ishlamaydi; all, setup yoki company ishlating",

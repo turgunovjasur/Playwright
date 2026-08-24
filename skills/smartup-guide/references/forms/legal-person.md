@@ -20,6 +20,24 @@ Tags: legal-person, setup, form, navigation
 - Setup chainda alohida Authorization testi yo'q: `run_legal_person` birinchi
   qadamda joriy company admini bilan login qiladi.
 
+### Menu add icon route
+Tags: legal-person, menu, add, navigation
+Status: live-ui-confirmed
+Verified: 2026-08-18
+Source: live UI
+- `Справочники` -> `Юридические лица` menu qatoridagi alohida `+add` ikonka-link
+  `/anor/mr/person/legal_person+add` formasini record ID siz ochadi.
+
+### List row view va edit route'lari
+Tags: legal-person, list, view, edit, navigation, person-id
+Status: live-ui-confirmed
+Verified: 2026-08-18
+Source: live UI
+- Listdagi mavjud qator tanlangach `Просмотреть` va `Изменить` actionlari
+  ko'rinadi. Ular tanlangan yozuv ID sini query orqali uzatib, mos ravishda
+  `/anor/mr/person/legal_person_view?person_id=<person_id>` va
+  `/anor/mr/person/legal_person+edit?person_id=<person_id>` formalarini ochadi.
+
 ## Screenshotlar
 
 ### Add form screenshotlari

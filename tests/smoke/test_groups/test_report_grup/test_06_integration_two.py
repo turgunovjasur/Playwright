@@ -1,107 +1,102 @@
-from datetime import datetime
+import re
+from uuid import uuid4
 
 import allure
 import pytest
 from playwright.sync_api import expect
+
 from tests.smoke.flows.flow_authorization import authorization
-from tests.smoke.test_groups.test_report_grup.report_helpers import generate_and_verify_download, select_b_input_option
+from tests.smoke.test_groups.test_report_grup.report_helpers import generate_and_verify_download, open_report
 from utils.base_page import BasePage
 
-pytestmark = [allure.epic("Report Group"), allure.feature("Integration Report"), allure.story("Integration Two")]
-
-SETTING_CHECKBOXES = ["d.edit_person", "d.ignore_updated_deals", "d.show_owner_person_code", "d.send_all_deals"]
-OPTIONAL_ALERT_TIMEOUT = 1_500
-ALERT_CLOSE_TIMEOUT = 10_000
-SETTINGS_BUTTON_TIMEOUT = 60_000
-ACCESS_DENIED_TEXT = "Нет доступа к форме Интеграция с системой монолит"
-
-# (exchange_mode value, yuklanadigan fayl prefiksi, begin_date kerakmi)
-EXCHANGE_MODES = [
-    ("CRMOrder", "import_order", False),
-    ("CRMDespatch", "export_order", True),
-    ("CRMOrderStatus", "import_order_status", False),
-    ("CRMInput", "export_input", True),
+pytestmark = [
+    pytest.mark.smoke_group("Report", independent=True),
+    allure.epic("Report Group"),
+    allure.feature("Integration Report"),
+    allure.story("Integration Two"),
 ]
 
+ACCESS_DENIED_TEXT = "Нет доступа к форме Интеграция с системой монолит"
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def _close_alert_if_open(page):
-    """Generate'dan keyin chiqishi mumkin bo'lgan biruni xato modalini yopadi va yo'qolishini kutadi."""
-    for selector in ("#biruniAlertExtended", "#biruniAlert"):
-        alert = page.locator(selector)
-        try:
-            alert.wait_for(state="visible", timeout=OPTIONAL_ALERT_TIMEOUT)
-            page.keyboard.press("Escape")
-            alert.wait_for(state="hidden", timeout=ALERT_CLOSE_TIMEOUT)
-            return
-        except Exception:
-            continue
+def run_report_integration_two_check(page):
+    """Testcase: Monolith settings va barcha oltita XML downloadini tekshirish.
 
-
-# ----------------------------------------------------------------------------------------------------------------------
-
-def run_report_integration_two_check(page, code, load_data):
-    """Report-06: Integration Two (монолит) — sozlamalar va 4 ta exchange rejimi uchun .xml yuklab olish.
-
-    integration_two faqat "Администрирование" filialida ochiladi, shuning uchun sahifa ochishdan oldin
-    har doim shu filialga o'tiladi (group chain boshqa report testlar uchun filial-pw{code}ga o'tib qo'ygan
-    bo'lishi mumkin). Тип цены user_setup saqlagan data_store kalitidan olinadi.
-
-    Qadamlar (Allure da 6 step):
-      1. Администрирование filialiga o'tib integration_two sahifasini ochish
-      2. Настройки -> company_id, user, url, ед. измерения, Тип цены (data_store), Характеристика ТМЦ + 4 checkbox -> Сохранить
-      3. import_order (CRMOrder) -> .xml yuklab olish
-      4. export_order (CRMDespatch) -> begin_date + .xml yuklab olish
-      5. import_order_status (CRMOrderStatus) -> .xml yuklab olish
-      6. export_input (CRMInput) -> begin_date + .xml yuklab olish
+    1. Administration filialida Integration Two reportini ochish.
+    2. Mavjud Monolith endpoint/user sozlamalarini tekshirib report filterlarini saqlash.
+    3. Saqlangan price type va o'lchov birliklarini qayta tekshirish.
+    4. Import order XML downloadini tekshirish.
+    5. Export order XML downloadini tekshirish.
+    6. Export status XML downloadini tekshirish.
+    7. Export balance XML downloadini tekshirish.
+    8. Export input XML downloadini tekshirish.
+    9. Export internal movement XML downloadini tekshirish.
     """
     base = BasePage(page)
-    price_type_name = load_data("price_type_name_UZB") if load_data else None
-    if not price_type_name:
-        pytest.skip("price_type_name_UZB data_store'da yo'q — avval user_setup runnerini ishga tushiring")
+    run_suffix = uuid4().hex[:8]
 
     authorization(page, who="admin")
 
-    with allure.step("1 - Администрирование filialiga o'tib Integration Two sahifasini ochish"):
+    with allure.step("1 - Administration filialida Integration Two reportini ochish"):
         base.switch_filial(name="Администрирование")
-        base_url, _, rest = page.url.partition("#/")
-        session_token = rest.split("/", 1)[0]
-        page.goto(f"{base_url}#/{session_token}/trade/rep/integration/integration_two")
-        settings_button = page.locator('button[ng-click="q.show_setting = true"]')
-        access_denied = page.locator("#biruniAlertExtended").get_by_text(ACCESS_DENIED_TEXT, exact=True)
-        expect(settings_button.or_(access_denied).first).to_be_attached(timeout=SETTINGS_BUTTON_TIMEOUT)
-        if access_denied.count() > 0:
-            pytest.skip(f"Integration Two forma accessi yo'q: {ACCESS_DENIED_TEXT}")
-        expect(settings_button).to_be_visible()
+        open_report(base, "integration_two", timeout=60_000)
+        base.expect_page(heading="Интеграция с системой монолит", url="integration_two")
 
-    with allure.step("2 - Настройки: filtrlar va checkboxlar -> saqlash"):
-        page.locator('button[ng-click="q.show_setting = true"]').click()
-        base.input(ng_model="d.company_id", value="8605425")
-        base.input(ng_model="d.user_name", value="123")
-        base.input(ng_model="d.url", value="https")
-        base.input(ng_model="d.unit_of_quant_measurement", value="шт")
-        base.input(ng_model="d.unit_of_box_measurement", value="шт")
-        select_b_input_option(page, "price_types", price_type_name, search_text=str(code))
-        select_b_input_option(page, "product_groups", "Группа")
-        for ng_model in SETTING_CHECKBOXES:
-            base.checkbox(ng_model=ng_model, checked=True)
-        save_btn = page.locator('button[ng-click="save()"]')
-        save_btn.click()
-        expect(save_btn).to_be_hidden()
+    with allure.step("2 - Monolith endpoint preconditioni va report filterlarini saqlash"):
+        base.click(name="Настройки", exact=True)
+        base.input(label="User", expect_value=re.compile(r"^.+$"), value=123)
+        base.input(label="URL", expect_value="https", value="https")
+        base.b_input(label="Тип цены", clear=True, select_first=True)
+        base.input(label="Ед. измерения (количество)", expect_value="шт", value="шт")
+        base.input(label="Ед. измерения (блок)", expect_value="шт", value="шт")
 
-    for i, (value, file_prefix, needs_date) in enumerate(EXCHANGE_MODES, start=3):
-        with allure.step(f"{i} - {file_prefix} ({value}) yuklab olish"):
-            page.locator(f'label:has(input[value="{value}"])').click()
-            if needs_date:
-                begin_date = page.locator('input[ng-model="d.begin_date"]')
-                if begin_date.count() > 0 and begin_date.first.is_visible():
-                    begin_date.first.fill(datetime.now().strftime("%d.%m.%Y"))
-                    page.keyboard.press("Escape")
-            generate_and_verify_download(
-                page,
-                page.get_by_role("button", name="Генерировать", exact=True),
-                expected_prefix=file_prefix,
-                save_name=f"{file_prefix}_pw{code}.xml",
-            )
-            _close_alert_if_open(page)
+        base.checkbox(label="Редактирование контрагента", checked=True)
+        base.checkbox(label="Отправлять данные по всем заказам", checked=True)
+        base.checkbox(label="Игнорировать обновление существующих заказов", checked=True)
+        base.checkbox(label="Отображать код владельца", checked=True)
+
+        base.b_input(label="Характеристика ТМЦ", value="Группа", clear=True)
+        base.checkbox(label="Подтипы характеристик ТМЦ", expect_checked=True)
+        base.click(name="Сохранить", exact=True)
+        base.expect_page(heading="Интеграция с системой монолит", url="integration_two")
+
+    with allure.step("4 - Import order XML downloadini tekshirish"):
+        base.radio(label="Импорт заказа", click=True, expect_checked=True)
+        generate_and_verify_download(base, "Генерировать", None, f"integration_two_import_order_pw{run_suffix}.xml", expected_suffix=".xml")
+
+    with allure.step("5 - Export order XML downloadini tekshirish"):
+        base.radio(label="Экспорт заказа", click=True, expect_checked=True)
+        base.date_picker(label="Начало периода", date="today")
+        base.date_picker(label="Конец периода", date="today")
+        generate_and_verify_download(base, "Генерировать", None, f"integration_two_export_order_pw{run_suffix}.xml", expected_suffix=".xml")
+
+    with allure.step("6 - Export status XML downloadini tekshirish"):
+        base.radio(label="Экспорт статусов", click=True, expect_checked=True)
+        generate_and_verify_download(base, "Генерировать", None, f"integration_two_export_status_pw{run_suffix}.xml", expected_suffix=".xml")
+
+    with allure.step("7 - Export balance XML downloadini tekshirish"):
+        base.radio(label="Экспорт остатков", click=True, expect_checked=True)
+        base.date_picker(label="Начало периода", date="today")
+        base.date_picker(label="Конец периода", date="today")
+        generate_and_verify_download(base, "Генерировать", None, f"integration_two_export_balance_pw{run_suffix}.xml", expected_suffix=".xml")
+
+    with allure.step("8 - Export input XML downloadini tekshirish"):
+        base.radio(label="Экспорт приходов", click=True, expect_checked=True)
+        base.date_picker(label="Начало периода", date="today")
+        base.date_picker(label="Конец периода", date="today")
+        base.b_input(label="Исключение по организациям (только для экспорта приходов)", select_first=True)
+        generate_and_verify_download(base, "Генерировать", None, f"integration_two_export_input_pw{run_suffix}.xml", expected_suffix=".xml")
+
+    with allure.step("9 - Export internal movement XML downloadini tekshirish"):
+        base.radio(label="Экспорт внутренних перемещений", click=True, expect_checked=True)
+        base.date_picker(label="Начало периода", date="today")
+        base.date_picker(label="Конец периода", date="today")
+        generate_and_verify_download(base, "Генерировать", None, f"integration_two_export_movement_pw{run_suffix}.xml", expected_suffix=".xml")
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+@allure.title("Report-06 - Integration Two settings va oltita XML eksporti")
+def test_report_integration_two(page):
+    run_report_integration_two_check(page)

@@ -1,52 +1,75 @@
-import allure
-from playwright.sync_api import expect
-from tests.smoke.flows.flow_authorization import authorization
-from utils.base_page import BasePage
-from tests.smoke.test_groups.test_report_grup.report_helpers import generate_and_verify_download, select_b_input_option
+import re
+from datetime import datetime
+from uuid import uuid4
 
-pytestmark = [allure.epic("Report Group"), allure.feature("Integration Report"), allure.story("Sales Work")]
+import allure
+import pytest
+
+from tests.smoke.flows.flow_authorization import authorization
+from tests.smoke.test_groups.test_report_grup.report_helpers import generate_and_verify_download, open_report
+from utils.base_page import BasePage
+
+pytestmark = [
+    pytest.mark.smoke_group("Report", independent=True),
+    allure.epic("Report Group"),
+    allure.feature("Integration Report"),
+    allure.story("SalesWork"),
+]
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def run_report_saleswork_check(page, code):
-    """Report-03: SalesWork report — yangi shablon yaratib, sales_work.zip yuklab olishni tekshirish.
+def run_report_saleswork_check(page):
+    """Testcase: yangi SalesWork templatei bilan ZIP eksportini tekshirish.
 
-    Test admin login va test filialiga (filial-pw{code}) o'tishdan boshlanadi.
-
-    Qadamlar (Allure step):
-      1. SalesWork sahifasini ochish (URL orqali)
-      2. Шаблоны -> Создать -> nom + Продуктовое направление (Группа) -> Сохранить
-      3. SalesWork'da tanlangan shablon nomi kiritilgan nom bilan mosligini tekshirish
-      4. Экспорт -> sales_work.zip yuklanishi va bo'sh emasligini tekshirish
+    1. Birinchi operatsion filialda SalesWork reportini ochib period defaultlarini tekshirish.
+    2. Har bir run uchun yangi template required maydon va defaultlari bilan yaratish.
+    3. Template main formada tanlanganini tekshirish.
+    4. Export download nomi va fayl bo'sh emasligini tekshirish.
     """
     base = BasePage(page)
-    template_name = f"SalesWork-pw{code}"
+    run_suffix = uuid4().hex[:8]
+    template_name = f"SalesWork-pw{run_suffix}"
+    month_start = datetime.now().replace(day=1)
 
     authorization(page, who="admin")
-    base.switch_filial(name=f"filial-pw{code}")
+    base.switch_filial(first_filial=True)
 
-    with allure.step("1 - SalesWork sahifasini ochish"):
-        base_url, _, rest = page.url.partition("#/")
-        session_token = rest.split("/", 1)[0]
-        page.goto(f"{base_url}#/{session_token}/trade/rep/integration/saleswork")
-        expect(page.get_by_role("button", name="Шаблоны")).to_be_visible()
+    with allure.step("1 - SalesWork reporti va period defaultlarini tekshirish"):
+        open_report(base, "saleswork", "Saleswork")
+        base.date_picker(label="Дата начала периода", date=month_start)
+        base.date_picker(label="Дата окончания периода", date="today")
 
-    with allure.step("2 - Yangi shablon yaratish"):
-        page.locator('button[ng-click="selectTemplate()"]').click()
-        page.locator('button[ng-click="add()"]').click()
-        expect(page.get_by_role("heading")).to_contain_text("Шаблон Saleswork")
-        base.input(ng_model="d.name", value=template_name)
-        select_b_input_option(page, "product_groups", "Группа")
-        page.locator('button[ng-click="save()"]').click()
+    with allure.step("2 - Har bir run uchun yangi SalesWork templateini yaratish"):
+        base.click(name="Шаблоны", exact=True)
+        base.expect_page(heading="Шаблоны SalesWorks", url="saleswork_template_list")
+        base.click(name="Создать", exact=True)
+        base.expect_page(heading="Шаблон Saleswork (Создание)", url="saleswork_template+add")
+        base.input(label="Название", value=template_name)
+        base.b_input(label="Продуктовое направление", value="Группа")
+        base.checkbox(label="Активный", expect_checked=True)
+        base.checkbox(label="Подтипы характеристик", expect_checked=True)
+        base.radio("MarevenFoodCentral", expect_checked=True)
+        base.radio("Kimberly-Clark", expect_checked=False)
+        base.checkbox(label="ParentCompanies", expect_checked=True)
+        base.checkbox(label="Outlets", expect_checked=True)
+        base.checkbox(label="ArchivedStocks", expect_checked=True)
+        base.checkbox(label="LocalProducts", expect_checked=True)
+        base.checkbox(label="OutletDebts", expect_checked=False)
+        base.checkbox(label="SalOuts", expect_checked=True)
+        base.checkbox(label="SalIns", expect_checked=True)
+        base.click(name="Сохранить", exact=True)
+        base.expect_page(heading=re.compile(r"^\s*Saleswork\s*$"), url=re.compile(r"/trade/rep/integration/saleswork$"))
 
-    with allure.step("3 - Tanlangan shablon nomi tekshiriladi"):
-        expect(page.locator('input[ng-model="d.template_name"]')).to_have_value(template_name)
+    with allure.step("3 - Template main formada tanlanganini tekshirish"):
+        base.b_input(label="Шаблон", expect_value=template_name)
 
-    with allure.step("4 - Экспорт -> sales_work.zip yuklanishi"):
-        generate_and_verify_download(
-            page,
-            page.get_by_role("button", name="Экспорт", exact=True),
-            expected_prefix="sales_work",
-            save_name=f"sales_work_pw{code}.zip",
-        )
+    with allure.step("4 - SalesWork ZIP downloadini tekshirish"):
+        generate_and_verify_download(base, "Экспорт", "sales_work", f"sales_work_pw{run_suffix}.zip", expected_suffix=".zip")
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+@allure.title("Report-03 - SalesWork template va ZIP eksporti")
+def test_report_saleswork(page):
+    run_report_saleswork_check(page)

@@ -1,54 +1,96 @@
-# Integration reportlar (trade/rep/integration/*) — umumiy bilim
-
-Bu fayl Report group'dagi integration reportlarni jamlaydi. Ular **menyuda yo'q**, URL orqali ochiladi:
-`#/<session_token>/trade/rep/integration/<name>` (token login'dan keyingi `page.url` dan olinadi). Hammasi **admin login** talab qiladi. Download'lar Playwright `page.expect_download` bilan tekshiriladi (umumiy helper: `test_report_grup/report_helpers.py`).
+# Integration reportlar (`trade/rep/integration/*`)
 
 Alohida dossierlar: [cislink.md](cislink.md), [integration-three.md](integration-three.md).
 
-Report flowlarda `BasePage` obyekti `base` nomida saqlanadi. URL ajratishda shu nomni qayta ishlatish mumkin emas: `base_url, _, rest = page.url.partition("#/")` yoziladi. Aks holda keyingi `base.input()`/`base.wait_for_loader()` chaqirig'i URL string ustida ishlashga urinib, `'str' object has no attribute ...` bilan yiqiladi.
+### Umumiy navigatsiya va filial
+Status: code-confirmed
+Verified: 2026-08-24
+Source: `tests/smoke/test_groups/test_report_grup/report_helpers.py`; `test_01_cislink.py` ... `test_06_integration_two.py`
+- Integration reportlar menyuda yo'q; `open_report()` joriy URLdan session tokenini olib direct route ochadi va heading/URLni tekshiradi.
+- Report-01–05 admin loginidan keyin `base.switch_filial(first_filial=True)` bilan birinchi `Администрирование` bo'lmagan filialga o'tadi.
+- Report-06 Integration Two faqat `Администрирование` filialida tekshiriladi.
+- UI maydonlari label-first `BasePage` API bilan boshqariladi; legacy `select_b_input_option()` raw-locator helperi olib tashlangan.
+- Report testlari setup `code` fixturega bog'liq emas. Yangi template va lokal
+  download nomlari collision bo'lmasligi uchun har test runida UUID suffix
+  yaratiladi.
 
-## b-input tanlash (umumiy)
+### Download tekshiruvi
+Status: code-confirmed
+Verified: 2026-08-24
+Source: `tests/smoke/test_groups/test_report_grup/report_helpers.py`
+- `generate_and_verify_download()` accessible button nomi bilan actionni bosadi, download failure yo'qligini, filename prefiksini va non-zero fayl hajmini tekshiradi.
+- Filename aniq prefiksi noma'lum outputlarda helper kutilgan suffixni (`.xlsx`/`.xml`) tekshiradi; timeoutda URL, Biruni alert va full-page screenshot Allurega biriktiriladi.
+- Downloadlar `test-results/downloads/` ostiga saqlanadi.
 
-`select_b_input_option(page, name, option)`: `b-input[name="..."]` → Поиск'ni bos → fill(option) → `.hint-body, div.hint` ichidan `get_by_text(option, exact=True)` ni bos. Option container `.hint-body` yoki `div.hint` bo'lishi mumkin (b-input konfiguratsiyasiga qarab).
+## SalesWork (`saleswork`)
 
-## SalesWork (`saleswork`) — sales_work.zip ✅
+### Main va template contract
+Status: live-ui-confirmed
+Verified: 2026-08-20
+Source: live Chromium UI; `tests/smoke/test_groups/test_report_grup/test_03_saleswork.py`
+- Main tugmalar: `Экспорт`, `Сформировать(MQ)`, `Шаблоны`, `Закрыть`; period defaulti joriy oy boshi–bugun.
+- Main `Шаблон` b-inputi tanlangan template nomini ko'rsatadi.
+- Template list route `saleswork_template_list`, create route `saleswork_template+add`; list create actioni `Создать` deb nomlangan.
+- Create required maydonlari `Название` va `Продуктовое направление`.
+- Defaultlar: `Активный`, barcha product subtype, report type `MarevenFoodCentral`; `ParentCompanies`, `Outlets`, `ArchivedStocks`, `LocalProducts`, `SalOuts`, `SalIns` checked, `OutletDebts` unchecked.
+- Test har bir run uchun UUID suffixli yangi template yaratadi, main formada aynan shu template tanlanganini tekshiradi va uni mavjud template bilan almashtirmaydi. `Экспорт` natijasi `sales_work` prefiksli non-empty ZIP.
 
-- Tugmalar: **Экспорт** (`generate()`), **Шаблоны** (`selectTemplate()`).
-- Flow: Шаблоны → template list (`saleswork_template_list`) → **Создать** (`add()`) → `saleswork_template+add`: `d.name` + `product_groups`=Группа → Сохранить (`save()`).
-- Save'dan keyin SalesWork'ga qaytadi va shablon **avto-tanlanadi**: `input[ng-model="d.template_name"]` = yaratilgan nom (assert).
-- **Экспорт** (`generate()`) → `sales_work.zip` yuklanadi.
+## Optimum (`optimum`)
 
-## Optimum (`optimum`) — optimum.zip ✅ (qisman)
+### Main va settings contract
+Status: live-ui-confirmed
+Verified: 2026-08-20
+Source: live Chromium UI; `tests/smoke/test_groups/test_report_grup/test_04_optimum.py`
+- Main tugmalar: `Сформировать`, `Сформировать(MQ)`, `Настройки`, `Закрыть`.
+- Period defaulti joriy oy boshi–bugun; UI `Выбранный период не должен превышать 3 месяца` cheklovini ko'rsatadi.
+- Live main formada `Все филиалы` checkboxi yo'q; oldingi all-filials/sticky-overlay taxmini joriy kontrakt emas.
+- Settingsdagi real label `Продуктовое группа`; product subtype default `Все`.
+- Sakkiz prefiks: warehouse transfer out/in, inventory write-off/receipt, distributor site out/in, production write-off/receipt; default/saqlanadigan qiymatlar `1`–`8`.
+- `Сформировать` natijasi `optimum` prefiksli non-empty ZIP.
 
-- Tugmalar: **Сформировать** (`generate()`), **Настройки** (`q.show_setting = true`), save `button[ng-click="save()"]`.
-- Settings: `product_groups`=Группа (`Продуктовое группа*`) + 8 ta prefiks `input[ng-model="d.prefix_<key>"]` (transfer_out=1 … production_receipt=8).
-- **Сформировать** (barcha filial, `q.is_all_filials` default checked) → `optimum.zip`.
-- ⚠️ **GAP**: 1-generate'dan keyin turg'un `.block-ui-overlay` qoladi → "Все филиалы"ni toggle qilib bitta filial bo'yicha 2-generate qilish bloklanadi. Test faqat all-filials generate'ni tekshiradi.
+## Spot2D (`spot`)
 
-## Spot 2d (`spot`) — Spot2D.zip ✅ (soddalashtirilgan)
+### Main, settings va template contract
+Status: live-ui-confirmed
+Verified: 2026-08-20
+Source: live Chromium UI; `tests/smoke/test_groups/test_report_grup/test_05_spot.py`
+- Heading `Spot2D(<dynamic-id>)`; tugmalar `Сформировать`, `Настройки`, `Шаблоны`.
+- `Последние 45 дней` default checked, custom period unchecked, `Дата окончания периода` default kechagi sana.
+- Settingsda `Разделить по дням (файл receive)` va `Дублировать Код клиента ERP (ID#ID)` default unchecked; VAT default `Системный ввод НДС(%)`; `Сброс настроек` actioni mavjud. Test destructive resetni bosmaydi.
+- Template list route `spot_template_list`, create route `spot_template+add`; list create actioni `Добавить`.
+- Create required maydonlari `Название` va `Продуктовое направление`; product subtype `Все`, status `Активный`.
+- Template form delivery, stocks, clients, ttoptions, ta, cancellations, receive, sku va warehouse file mappinglarini ko'rsatadi.
+- Test har bir run uchun UUID suffixli yangi template yaratadi, main formada aynan shu template tanlanganini tekshiradi va uni mavjud template bilan almashtirmaydi. `Сформировать` natijasi `Spot2D` prefiksli non-empty ZIP.
 
-- Tugmalar: **Сформировать** (`run()`), **Настройки** (`setting()`), **Шаблоны** (`selectSpotTemplate()`).
-- Flow: Шаблоны → template list → **Создать** (`add()`) → `d.name` + `product_groups`=Группа → save (`button[b-hotkey="save"]` — `ng-click="save()"` da "Оцените нас" feedback modalining save'i ham bor, strict violation; b-hotkey ishlatiladi).
-- Save'dan keyin Spot'ga qaytadi → **Сформировать** (`run()`) → `Spot2D.zip`.
-- ⚠️ **GAP**: checklistdagi "template listdan find_row → close → Настройки → Очистить настройки" qadamlari olib tashlandi (close tugmasi `page.close()` ng-hide, clear-settings noaniq). Yadro: template yaratish + Spot2D.zip.
+## Integration Two / Monolith (`integration_two`)
 
-## Integration Two (`integration_two`) — 4 xml ⚠️ SKIP (muhitga bog'liq)
+### Settings contract
+Status: live-ui-confirmed
+Verified: 2026-08-20
+Source: live Chromium UI; `tests/smoke/test_groups/test_report_grup/test_06_integration_two.py`
+- Heading `Интеграция с системой монолит`; tugmalar `Генерировать`, `Настройки`, `Закрыть`.
+- Required settings: `User`, `URL`, `Тип цены`, `Ед. измерения (количество)`, `Ед. измерения (блок)`, `Характеристика ТМЦ`; `ИД компании` ham ko'rinadi.
+- `Тип цены` setup `code` bilan qidirilmaydi;
+  `BasePage.b_input(clear=True, select_first=True)` birinchi mavjud optionni
+  tanlaydi.
+- Checkboxlar: `Редактирование контрагента`, `Отправлять данные по всем заказам`, `Игнорировать обновление существующих заказов`, `Отображать код владельца`.
+- Combined export flaglari default `Нет`; person identity default `код лица`.
 
-- Title "Интеграция с системой монолит". Tugmalar: **Генерировать** (`generate()`), **Настройки** (`q.show_setting = true`), save `button[ng-click="save()"]`.
-- Settings: `d.company_id`, `d.user_name`*, `d.url`*, `d.unit_of_quant_measurement`*, `d.unit_of_box_measurement`* (checklistda yo'q, lekin majburiy!), `price_types`* , `product_groups`* (Характеристика ТМЦ); checkboxlar `d.edit_person`/`d.ignore_updated_deals`/`d.show_owner_person_code`/`d.send_all_deals`.
-- Exchange mode radiolari `input[ng-model="d.exchange_mode"][value="..."]`: **CRMOrder**=import_order, **CRMDespatch**=export_order, **CRMOrderStatus**=import_order_status, **CRMInput**=export_input (CRMWhBalance=4 commentlangan, CRMMovement=6).
-- ⚠️ **SKIP sababi (muhit)**: `integration_two` report
-  `filial-pw{code}`da yoqilmagan bo'lishi mumkin (faqat company default
-  filialida ochiladi — switch_filial qilinsa sahifa "Дашборд"da qolib
-  yuklanmaydi). Lekin `Price Type UZB-pw{code}` operatsion filialda bo'lishi
-  mumkin. Test `integration_two` yoqilgan va price-type/data mos filialli
-  muhitda ishlaydi.
-- 2026-07-23 Xtrade verification: `Администрирование` filialida URL ochiladi, lekin server `Пользователь не авторизован` / `Нет доступа к форме Интеграция с системой монолит` modalini qaytaradi. Extended Biruni alert avtomatik yopilishi mumkin, shuning uchun test `#biruniAlertExtended` ichidagi aniq matn DOM'ga biriktirilganini tekshirib environment skip qiladi; `Настройки` DOM'ga biriktirilsa to'liq 4 XML flow davom etadi.
-- Screenshot: `skills/smartup-guide/references/forms/screenshots/integration-reports/integration-two__access-denied__desktop-2880x1566.png`.
-- 2026-07-23 yakuniy Xtrade report runner natijasi: Integration Three, SalesWork, Optimum va Spot passed; CisLink deployment migratsiyasi sabab oldindan skip; Integration Two aniq access-denied javobi sabab environment skip; failed test yo'q.
+### Oltita exchange mode
+Status: live-ui-confirmed
+Verified: 2026-08-20
+Source: live Chromium UI; `tests/smoke/test_groups/test_report_grup/test_06_integration_two.py`
+- `Импорт заказа` va `Экспорт статусов` period maydonlarini ko'rsatmaydi.
+- `Экспорт заказа`, `Экспорт остатков`, `Экспорт приходов`, `Экспорт внутренних перемещений` `Начало периода` va `Конец периода` maydonlarini ko'rsatadi; ikkalasi default bugungi sana.
+- `Экспорт приходов` qo'shimcha `Исключение по организациям (только для экспорта приходов)` maydonini ko'rsatadi.
+- Oldingi test faqat to'rtta modeni qamragan; `Экспорт остатков` va `Экспорт внутренних перемещений` endi testga qo'shilgan.
 
-## Eslatmalar
-
-- Admin parol: autotest uchun `greenwhite` (`CREATED_COMPANY_PASSWORD`).
-- Yuklangan fayllar `test-results/downloads/` ga saqlanadi.
-- Testlar: `tests/smoke/test_groups/test_report_grup/` — Report-03..06; runner `test_05_report_group_runner` (all-runner). IntTwo chain'da emas, standalone wrapper'da `@pytest.mark.skip`.
+### Endpoint preconditioni va XML natijalari
+Status: code-confirmed
+Verified: 2026-08-20
+Source: user; live Chromium UI; `tests/smoke/test_groups/test_report_grup/test_06_integration_two.py`
+- Oldingi `URL=https` qiymati serverda scheme xatosi berishi live UI'da tasdiqlangan; test fake endpoint yozmaydi.
+- Report-06 mavjud configured `User` va `https://` yoki `http://` Monolith URLni majburiy precondition sifatida tekshiradi.
+- Har bir oltita exchange mode uchun `Генерировать` bosiladi va non-empty `.xml` download tekshiriladi; endpoint noto'g'ri bo'lsa download timeout diagnostika bilan testcase failure bo'ladi.
+- Forma accessi bo'lmagan deploymentda aniq Biruni access-denied xabari environment skip sifatida qayd etiladi.
+- Archived access-denied evidence: `screenshots/integration-reports/integration-two__access-denied__desktop-2880x1566.png`.

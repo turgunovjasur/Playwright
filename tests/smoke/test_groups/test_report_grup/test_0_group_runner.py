@@ -15,42 +15,31 @@ pytestmark = [
     allure.story("Integration Reports"),
 ]
 
-# CisLink integration report sahifasi Smartup deploymentlar bo'ylab o'zgarmoqda
-# (xtrade'da "Настройки" tugmasi yo'q, filtrlar inline) — barqarorlashguncha
-# BARCHA serverda skip. Qayta yoqish uchun quyidagi testdagi
-# @pytest.mark.skip ni olib tashlang.
-CISLINK_SKIP_REASON = (
-    "CisLink sahifasi Smartup deploymentlar bo'ylab o'zgarmoqda "
-    "(xtrade'da Настройки tugmasi yo'q) — barqarorlashguncha barcha serverda skip"
-)
+@allure.title("Report-01 - CisLink template va ZIP eksporti")
+def test_report_01_cislink(group_session_page):
+    run_report_cislink_check(group_session_page)
 
 
-@pytest.mark.skip(reason=CISLINK_SKIP_REASON)
-@allure.title("Report-01 - CisLink integration report")
-def test_report_01_cislink(group_session_page, code):
-    run_report_cislink_check(group_session_page, code)
-
-
-@allure.title("Report-02 - Integration №3 report")
-def test_report_02_integration_three(group_session_page, code):
-    run_report_integration_three_check(group_session_page, code)
+@allure.title("Report-02 - Integration №3 HTML preview va XLSX eksporti")
+def test_report_02_integration_three(group_session_page):
+    run_report_integration_three_check(group_session_page)
 
 
 @allure.title("Report-03 - SalesWork report")
-def test_report_03_saleswork(group_session_page, code):
-    run_report_saleswork_check(group_session_page, code)
+def test_report_03_saleswork(group_session_page):
+    run_report_saleswork_check(group_session_page)
 
 
 @allure.title("Report-04 - Optimum report")
-def test_report_04_optimum(group_session_page, code):
-    run_report_optimum_check(group_session_page, code)
+def test_report_04_optimum(group_session_page):
+    run_report_optimum_check(group_session_page)
 
 
 @allure.title("Report-05 - Spot 2d report")
-def test_report_05_spot(group_session_page, code):
-    run_report_spot_check(group_session_page, code)
+def test_report_05_spot(group_session_page):
+    run_report_spot_check(group_session_page)
 
 
-@allure.title("Report-06 - Integration Two report")
-def test_report_06_integration_two(group_session_page, code, load_data):
-    run_report_integration_two_check(group_session_page, code, load_data)
+@allure.title("Report-06 - Integration Two settings va oltita XML eksporti")
+def test_report_06_integration_two(group_session_page):
+    run_report_integration_two_check(group_session_page)

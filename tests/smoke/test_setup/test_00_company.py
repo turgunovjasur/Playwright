@@ -42,7 +42,7 @@ def run_company(page, code, save_data):
 
     with allure.step("3 - Company mavjudligini code bo'yicha tekshirish"):
         angular.grid_controller(search=company_code)
-        company_exists = angular.grid(company_code, is_visible=True)
+        company_exists = angular.grid(company_code, return_bool=True)
 
     if not company_exists:
         with allure.step("4 - Yangi company formasini ochish"):
@@ -52,12 +52,12 @@ def run_company(page, code, save_data):
         with allure.step("5 - Majburiy maydonlarni to'ldirish"):
             angular.input(label="Код сервера", value=company_code)
             angular.input(label="Название", value=f"Autotest company {code}")
-            angular.select(label="Язык", expect_value="Русский")
+            angular.b_input(label="Язык", expect_value="Русский")
 
         with allure.step("6 - Majburiy shablonlarni tanlash"):
-            angular.select(label="Маркировка", value="UZ Marking")
-            angular.select(label="План счетов", value="UZ COA")
-            angular.select(label="Банки", value="UZ BANK")
+            angular.b_input(label="Маркировка", value="UZ Marking")
+            angular.b_input(label="План счетов", value="UZ COA")
+            angular.b_input(label="Банки", value="UZ BANK")
 
         with allure.step("7 - Trade va modullarni yoqish"):
             root = "app-project-module"
@@ -80,18 +80,20 @@ def run_company(page, code, save_data):
                 "Warehouse - Main",
                 "Warehouse - Advanced",
             )
-            angular.switch(label="trade", checked=True, root=root)
+            angular.checkbox(label="trade", checked=True, root=root)
             for module in trade_modules:
-                angular.switch(label=module, checked=True, root=root)
+                angular.checkbox(label=module, checked=True, root=root)
             for module in trade_modules:
-                angular.switch(label=module, expect_checked=True, root=root)
+                angular.checkbox(label=module, expect_checked=True, root=root)
 
         with allure.step("8 - Companyni saqlab, ro'yxatga qaytish"):
-            angular.save_and_expect_page(expected_heading="Компании", expected_url="/a2/biruni/md/company_list", timeout=COMPANY_SAVE_TIMEOUT)
+            angular.click(name="Сохранить", exact=True)
+            angular.confirm_biruni()
+            angular.expect_page(heading="Компании", url="/a2/biruni/md/company_list", timeout=COMPANY_SAVE_TIMEOUT)
 
     with allure.step("9 - Company code ni ro'yxatda tekshirish"):
         angular.grid_controller(search=company_code)
-        angular.grid(company_code, is_visible=True)
+        angular.grid(company_code)
 
     with allure.step("10 - Company viewni ochish"):
         angular.grid(company_code, click=True)
@@ -99,10 +101,10 @@ def run_company(page, code, save_data):
         angular.expect_page(heading="Компания (просмотр)", url="company_view")
 
     with allure.step("11 - Company viewda security sozlamalarini qo'llash"):
-        angular.tab(name="Безопасность", root="app-company-view")
+        angular.click(name="Безопасность", role="tab", exact=True, root="app-company-view")
         angular.choice(label="Ограничение количества одновременных сеансов", option="Отключено", root="app-company-security-form")
         if license_policy_disabled():
-            angular.switch(label="Политика лицензирования", checked=False, root="app-company-security-form")
+            angular.checkbox(label="Политика лицензирования", checked=False, root="app-company-security-form")
 
     with allure.step("12 - Company code ni data storega saqlash"):
         save_data("company_code", company_code)

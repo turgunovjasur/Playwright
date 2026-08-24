@@ -121,7 +121,10 @@ Source: user
 - **Assert**: `expect(locator).to_be_visible()` ishlatilsin, Python `assert` EMAS
 - **Project helper first**: sahifa ochilishi, heading, semantic click, grid row/cell, form input, checkbox/switch, b-input/multiselect va loader kutish uchun avval mavjud loyiha helperlarini ishlat (`base.expect_page(...)`, `base.click(...)`, `base.grid(...)`, `base.grid_cell(...)`, `base.input(...)`, `base.checkbox(...)`, `base.wait_for_loader(...)`). `utils/base_page.py` ichida mos method bor bo'lsa raw `page.locator(...)`, raw `page.get_by_role(...)` yoki yangi local helper yozilmaydi; raw `expect(...)` faqat mos helper yo'q bo'lsa yoki yangi reusable helper yozishdan oldin lokal tekshiruv uchun ishlatiladi.
 - **b-input API bir xilligi**: single-select uchun `base.b_input(label=..., value=..., expect_value=..., return_value=...)`, multi-select uchun ham shu uslubdagi `base.multiselect(label=..., value=..., expect_value=..., return_value=..., clear=...)` ishlatiladi. Auto-selected chipni tekshirish uchun `expect_value`, tanlash uchun `value` beriladi.
+- **Label-first form API**: `input`, `b_input`, `checkbox` va boshqa forma helperlarida avval ko'rinadigan `label=` ishlatiladi. `ng_model=` faqat label yo'q yoki live DOM/trace bilan label resolver noto'g'ri fieldni target qilishi tasdiqlangan legacy forma uchun hujjatlashtirilgan fallback; A2 migratsiya uchun yangi test contracti `ng_model`ga bog'lanmaydi.
+- **BasePage va AngularBasePage parity**: `utils/base_page.py` yoki `utils/angular_base_page.py`dagi umumiy UI primitive/public API o'zgarsa, shu taskning o'zida ikkinchi page-objectdagi ekvivalent method ham bir xil nom, parametr, default, tanlash/assert/clear/search/timeout semantikasi bilan yangilanadi. Legacy va A2 DOM locatorlari turlicha bo'lishi mumkin (`BasePage.b_input()` ↔ `AngularBasePage.b_input()`), lekin tashqi behavior contract doim bir xil saqlanadi; test forma A2'ga migratsiya bo'lganda test body o'zgarmasdan faqat import va `base = AngularBasePage(page)` almashtirilishi kerak. Parity `./.venv/bin/python scripts/validate_page_object_parity.py` bilan tekshiriladi; ekvivalent komponent bo'lmasa farq kod va canonical qoidada ochiq hujjatlanadi, jim API mismatch qoldirilmaydi.
 - **BasePage scope**: `utils/base_page.py` ga hamma yoki ko'p testlar ishlatadigan umumiy UI primitive'lar yoziladi. Faqat bitta testga kerak bo'lgan biznes/helper logika test faylida `_helper_name(...)` local helper bo'lib qoladi.
+- **Umumiy pure helperlar joyi**: DOM/UI action bajarmaydigan, bir nechta modul ishlatadigan kichik umumiy helperlar `utils/helper_utils.py` ichida saqlanadi; har biri uchun alohida `*_utils.py` fayl ochilmaydi. UI interaction esa tegishli `BasePage`/`AngularBasePage` methodida qoladi.
 - **Navigation wrapper ishlatilmaydi**: `navigate_to`, `expect_page`, `switch_filial` flow helper sifatida import qilinmaydi; test/flow ichida `base = BasePage(page)` qilib, to'g'ridan-to'g'ri `base.navigate_to(...)`, `base.expect_page(...)`, `base.switch_filial(...)` ishlatiladi.
 - **Page ready check**: `base.expect_page(..., heading=...)` heading visible bo'lishi bilan birga Smartup loader (`.block-ui-overlay:visible`) yo'qolganini ham kutadi. Loader yo'q bo'lsa 2 sekund kutmaydi; darhol davom etadi. Bu route/page state check uchun yetarli; lekin keyingi action aynan grid/form ichki async reloadga bog'liq bo'lsa `base.wait_for_loader()` alohida qoladi.
 - **Save transition ochiq yoziladi**: `base.click(name="Сохранить", exact=True)` → confirm majburiy bo'lsa `base.confirm_biruni(...)` → `base.expect_page(heading=..., url=...)`. `expect_page(heading=...)` loader overlay yo'qolishini ham kutgani uchun yangi list/view sahifasiga o'tishda alohida `wait_for_loader()` yozilmaydi. Order wizard ikonkalı save tugmasida partial match default bo'lgani uchun faqat `base.click(name="Сохранить")` yoziladi.
@@ -534,6 +537,26 @@ Source: user; `tests/smoke/test_forms/test_0_forms_runner.py`; `tests/smoke/test
 - Oddiy forma-opening test chegarasi bitta `navbar_tab`: kelajakdagi `Склад`,
   `Финансы` va boshqa tablar markaziy package'da o'z inventory moduliga,
   alohida `run_*` leaf funksiyasi va runner wrapperiga ega bo'ladi.
+
+### User-reported: form CRUD coverage smoke testlarda kengaytiriladi
+Status: user-reported
+Verified: pending
+Source: user
+
+- Alohida universal `test_crud_forms` mexanizmi yoki CRUD FormMonitor
+  subsystemi yaratilmaydi: bu mavjud business smoke testlarning vazifasini
+  takrorlaydi.
+- CRUD coverage kerak bo'lgan forma uchun mavjud smoke testcase kengaytiriladi
+  yoki alohida form-specific smoke testcase yoziladi. Test boshqa setup, group,
+  Forms yoki smoke testcase yaratgan record IDsi va `data_store` qiymatiga
+  bog'lanmaydi; kerakli recordni o'z lifecycle'i ichida yaratadi.
+- Form-specific smoke lifecycle real user trace orqali
+  `list -> add + save -> listda yaratilgan record -> view -> list -> edit +
+  save -> list -> yakuniy view` ketma-ketligini bajaradi.
+- `_add` uchun menu qatoridagi `+` ikonka va `_list` ichidagi `Создать` tugmasi
+  bir xil formani ochadi. Smoke coverage'da asosiy user trace sifatida
+  listdagi `Создать` tugmasi afzal; `+` ikonka secondary navigation
+  hisoblanadi.
 
 ### Forms leaf raqami Smartup navbar tartibiga mos
 Status: code-confirmed

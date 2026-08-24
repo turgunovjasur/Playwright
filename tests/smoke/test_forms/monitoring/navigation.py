@@ -12,6 +12,7 @@ from tests.smoke.test_forms.monitoring.reporting import (
 from tests.smoke.test_forms.monitoring.checks import canonical_form_path
 from utils.angular_base_page import AngularBasePage
 from utils.base_page import BasePage
+from utils.helper_utils import first_non_admin_filial
 
 
 # Reporting helperlari oldingi consumerlar uchun shu moduldan re-export qilinadi.
@@ -26,14 +27,7 @@ FORM_TIMEOUT = 15_000
 
 def _select_operational_filial(names):
     """Filial nomlaridan birinchi ``Администрирование`` bo'lmaganini tanlaydi."""
-    cleaned_names = [str(name).strip() for name in names if str(name).strip()]
-    for name in cleaned_names:
-        if name != "Администрирование":
-            return name
-    raise AssertionError(
-        "'Администрирование' bo'lmagan operatsion filial topilmadi. "
-        f"Ko'ringan filiallar: {cleaned_names}"
-    )
+    return first_non_admin_filial(names)
 
 
 def first_operational_filial(page):
@@ -140,7 +134,6 @@ def open_menu_form(
                 tab=navbar_tab,
                 name=menu_item,
                 timeout=FORM_TIMEOUT,
-                wait_loader=False,
             )
         else:
             BasePage(page).navigate_to_form(

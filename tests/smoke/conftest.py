@@ -402,4 +402,4 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
 @pytest.hookimpl(trylast=True)
 def pytest_sessionfinish(session, exitstatus):
     """Direct pytest run tugaganda so'ralgan trace yoki Allure reportni ochadi."""
-    smoke_reporting.finish_session(ROOT_DIR)
+    smoke_reporting.finish_session(ROOT_DIR, exitstatus)

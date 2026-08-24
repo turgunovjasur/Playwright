@@ -69,13 +69,12 @@ python -m pytest tests/smoke/test_setup/test_0_setup_runner.py::test_<nomi> -v
 
 Repo rootda `.env` mavjud bo'lsa direct pytest/PyCharm run konfiguratsiyasi undan olinadi; `.env` yo'q bo'lsa terminal/CI flaglari ishlaydi.
 
-### Group-only run uchun majburiy preflight
+### Code-dependent group-only run uchun majburiy preflight
 
-- `group-0`, `group-report` va `groups`
-  targetlari setup yaratmaydi; ular faqat oldin muvaffaqiyatli tugagan setup
-  baseline'ni qayta ishlatadi.
+- `group-0` va `groups` targetlari setup yaratmaydi; Group-0 testlari oldin
+  muvaffaqiyatli tugagan setup baseline'dagi `code`ni qayta ishlatadi.
 - Repo rootda `.env` bo'lsa `NEW_CODE` ham CLI'dan ustun. `NEW_CODE=1` bilan
-  group-only targetni ishlatma: fixture yangi random code yaratadi, lekin shu
+  code-dependent group-only targetni ishlatma: fixture yangi random code yaratadi, lekin shu
   code uchun setup user/entitylar yaratilmagan bo'ladi. Runner bunday
   kombinatsiyani configuration error bilan bloklaydi.
 - Group-0ni yangi baseline bilan tekshirish uchun `setup-group-0` ishlat:
@@ -83,6 +82,8 @@ Repo rootda `.env` mavjud bo'lsa direct pytest/PyCharm run konfiguratsiyasi unda
 - `group-0`ni alohida qayta run qilish faqat `.env`da `NEW_CODE=0` va
   `data_store.json.code` aynan joriy server/companydagi muvaffaqiyatli setupdan
   qolganiga ishonch bo'lsa to'g'ri.
+- `group-report` testlari `code` fixturega bog'liq emas; template va download
+  nomlarining unikalligi run-local UUID suffix bilan ta'minlanadi.
 
 ### Allure hisobot ko'rish:
 ```bash
