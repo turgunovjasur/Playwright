@@ -9,18 +9,19 @@ import sys
 import time
 from pathlib import Path
 
+from allure_report_cli import (
+    AllureCliNotInstalled,
+    build_generate_command,
+    generate_report as generate_allure_report,
+)
+
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS_DIR = ROOT / "test-results" / "allure-results"
 REPORT_DIR = ROOT / "test-results" / "allure-report"
+ALLURE_CONFIG_PATH = ROOT / "allurerc.mjs"
 TRACE_DIR = ROOT / "test-results" / "traces"
 DATA_STORE_PATH = ROOT / "test-results" / "data" / "data_store.json"
-SUMMARY_FILES = (
-    ROOT / "test-results" / "system-summary.md",
-    ROOT / "test-results" / "system-summary.json",
-    ROOT / "test-results" / "ai-summary.md",
-    ROOT / "test-results" / "ai-summary.json",
-)
 CREATED_COMPANY_PASSWORD = "greenwhite"
 
 GROUP_0_RUNNER_PATH = "tests/smoke/test_groups/test_a_grup/test_0_group_runner.py"
@@ -132,19 +133,6 @@ def load_local_dotenv(env):
     return True
 
 
-def clean_allure_results():
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    for item in RESULTS_DIR.iterdir():
-        if item.name == "history":
-            continue
-        if item.is_dir():
-            shutil.rmtree(item, ignore_errors=True)
-        else:
-            item.unlink(missing_ok=True)
-    for item in SUMMARY_FILES:
-        item.unlink(missing_ok=True)
-
-
 def command_text(command):
     masked = []
     hide_next = False
@@ -167,15 +155,31 @@ def run(command, env, dry_run=False):
 
 
 def generate_report(env, open_report, dry_run):
-    allure = shutil.which("allure")
-    if not allure:
-        return
+    try:
+        generate_command = build_generate_command(
+            RESULTS_DIR,
+            REPORT_DIR,
+            ALLURE_CONFIG_PATH,
+        )
+        print(command_text(generate_command))
+        result = generate_allure_report(
+            RESULTS_DIR,
+            REPORT_DIR,
+            ALLURE_CONFIG_PATH,
+            env=env,
+            dry_run=dry_run,
+        )
+    except (AllureCliNotInstalled, OSError, ValueError) as error:
+        print(f"[ALLURE] Report generate failed: {error}")
+        return 2
 
-    generate_command = [allure, "generate", str(RESULTS_DIR), "-o", str(REPORT_DIR), "--clean"]
-    run(generate_command, env, dry_run=dry_run)
+    if result.returncode != 0:
+        print(f"[ALLURE] Report generate failed: exit_code={result.returncode}")
+        return result.returncode
 
     if open_report:
         run([sys.executable, str(ROOT / "scripts" / "open_allure_report.py"), str(REPORT_DIR)], env, dry_run=dry_run)
+    return 0
 
 
 def show_trace(env, dry_run):
@@ -245,6 +249,11 @@ def parse_args():
         help="--create-company bilan company Security tabidagi 'Политика лицензирования'ni o'chiradi.",
     )
     parser.add_argument("--open-report", action="store_true", help="Allure reportni generate qilib ochadi.")
+    parser.add_argument(
+        "--clean-results",
+        action="store_true",
+        help="Oldingi Allure raw natijalarini o'chirib, yangi toza report boshlaydi.",
+    )
     parser.add_argument("--show-trace", action="store_true", help="Oxirgi Playwright trace viewerini ochadi.")
     parser.add_argument("--dry-run", action="store_true", help="Commandni ko'rsatadi, lekin ishga tushirmaydi.")
     return parser.parse_known_args()
@@ -289,6 +298,10 @@ def main():
         return 2
     env["SMARTUP_RUNNER"] = "1"
     env["COMPANY_URL"] = company_url_arg
+    if args.clean_results or env_flag(env, "CLEAN_ALLURE_RESULTS"):
+        env["CLEAN_ALLURE_RESULTS"] = "1"
+    else:
+        env.pop("CLEAN_ALLURE_RESULTS", None)
 
     if disable_license_policy and not create_company:
         print("DISABLE_LICENSE_POLICY faqat CREATE_COMPANY=1 bilan ishlaydi", file=sys.stderr)
@@ -409,8 +422,6 @@ def main():
     else:
         print(f"Company setup: skipped; using company_code={env['COMPANY_CODE']}")
 
-    if not args.dry_run:
-        clean_allure_results()
     run_started_at = time.time()
     test_exit = run(pytest_command, env, dry_run=args.dry_run)
 
@@ -422,7 +433,12 @@ def main():
         dry_run=args.dry_run,
     )
 
-    generate_report(env, open_report=args.open_report or env_flag(env, "OPEN_REPORT"), dry_run=args.dry_run)
+    if not env_flag(env, "DEFER_ALLURE_REPORT"):
+        generate_report(
+            env,
+            open_report=args.open_report or env_flag(env, "OPEN_REPORT"),
+            dry_run=args.dry_run,
+        )
     if args.show_trace or env_flag(env, "SHOW_TRACE"):
         show_trace(env, dry_run=args.dry_run)
 

@@ -363,9 +363,6 @@ Tags: test-results, data-store, traces, allure, cleanup
 ### Diagnostika va kod o'zgartirish chegarasi
 - Foydalanuvchi test xatosining sababini so'rasa, avval faqat diagnostika beriladi; test yoki production kod faqat foydalanuvchi tuzatishni aniq so'ragandan keyin o'zgartiriladi.
 
-### PyCharmdagi Allure report cleanup
-- PyCharm/direct pytest hookidagi `subprocess.Popen(["allure", "open", ...])` browser oynasi yopilganda Java serverini to'xtatmaydi; jarayonlar qolib ketmasligi uchun `scripts/open_allure_report.py`dagi heartbeatli serverdan foydalanish kerak.
-
 ### Xato Case Va Dublikat Kod
 Tags: review, duplicate, testcase
 Status: user-reported

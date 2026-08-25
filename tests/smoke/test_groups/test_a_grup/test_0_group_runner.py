@@ -22,21 +22,21 @@ pytestmark = [
 ]
 
 
-@allure.title("0-01 - Order yaratish va IDni saqlash")
+@allure.title("Setup baseline asosida oddiy order yaratish va IDni saqlash")
 def test_0_01_create_base_order(group_user_page, code, save_data):
     run_create_base_order(group_user_page, code, save_data)
 
 
-@allure.title("0-02 - Exact orderni Архивga o'tkazish va debt detailda tekshirish")
+@allure.title("Exact orderni Архивga o'tkazish va debt detailda tekshirish")
 def test_0_02_archive_base_order(group_user_page, code, require_data):
     run_archive_base_order(group_user_page, code, require_data)
 
 
-@allure.title("0-03 - Client paymentni Провести qilish")
+@allure.title("Client paymentni Провести qilish")
 def test_0_03_post_client_payment(group_user_page, code, require_data):
     run_post_client_payment(group_user_page, code, require_data)
 
 
-@allure.title("0-04 - Debt va prepaymentni o'zaro hisob-kitob qilish")
+@allure.title("Client debt va prepaymentini o'zaro hisob-kitob qilish")
 def test_0_04_offset_client_balance(group_user_page, code, require_data):
     run_offset_client_balance(group_user_page, code, require_data)

@@ -1,0 +1,7 @@
+{
+  "name": "smartup-playwright-tooling",
+  "private": true,
+  "devDependencies": {
+    "allure": "3.14.3"
+  }
+}

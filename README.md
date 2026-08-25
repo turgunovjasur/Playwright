@@ -58,22 +58,19 @@ cd Playwright
 **macOS / Linux:**
 ```bash
 python3 --version      # 3.11+ bo'lishi kerak
-allure --version
+node --version
+npm --version
 ```
 
 **Windows (PowerShell):**
 ```powershell
 python --version       # 3.11+ bo'lishi kerak
-allure --version
+node --version
+npm --version
 ```
 
-Allure CLI yo'q bo'lsa (barchasi uchun Java JDK 8+ ham kerak):
-
-| Tizim   | O'rnatish buyrug'i |
-|---------|--------------------|
-| macOS   | `brew install allure` |
-| Linux   | `brew install allure` yoki [scoop/manual](https://allurereport.org/docs/install/) |
-| Windows | `scoop install allure` yoki `choco install allure-commandline` ([qo'llanma](https://allurereport.org/docs/install/)) |
+Allure Report 3 CLI repo ichida `package-lock.json` bilan pin qilingan. Global
+Allure CLI va Java o'rnatilmaydi; Node.js va npm yetarli.
 
 > Python yo'q bo'lsa → https://www.python.org/downloads/ (Windowsda o'rnatishda **"Add Python to PATH"** ni belgilang).
 
@@ -107,6 +104,7 @@ Virtual muhit aktiv bo'lgach, barcha tizimda bir xil:
 ```bash
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
+npm ci
 ```
 
 ### <a id="chromium"></a>5. Chromium brauzerini o'rnatish
@@ -151,8 +149,20 @@ macOS / Linuxda qisqa wrapper ham bor:
 ./run_tests.sh --url <server_url> --company-code <company_code> --company-password <company_password> --open-report
 ```
 
-Bu bitta buyruq: eski natijalarni tozalaydi → smoke testlarni o'tkazadi → Allure hisobotini yaratadi → brauzerda ochadi.
+Bu bitta buyruq: oldingi lokal raw natijalarni saqlaydi → smoke testlarni
+o'tkazadi → yangi natijalarni oldingilar bilan birga Allure hisobotida
+ko'rsatadi → brauzerda ochadi.
 `--open-report` o'rniga shell env yoki repo `.env` ichida `OPEN_REPORT=1` ham ishlatish mumkin.
+
+Butunlay yangi toza Allure report boshlash kerak bo'lsa `--clean-results`
+beriladi. Direct pytest uchun ekvivalenti `CLEAN_ALLURE_RESULTS=1`:
+
+```bash
+python scripts/run_tests.py setup --url <server_url> --company-code <company_code> --company-password <company_password> --clean-results --open-report
+```
+
+Bir xil test keyin qayta run qilinsa Allure 3 eng yangi natijani asosiy status
+sifatida ko'rsatadi, avvalgi natijani esa retry ichida saqlaydi.
 
 Yangi company yaratish kerak bo'lsa shu command ishlatiladi:
 
@@ -184,7 +194,7 @@ Keyinroq hisobotni qayta ochish uchun: `python scripts/open_allure_report.py`.
 ## <a id="talablar"></a>Talablar
 
 - Python 3.11+
-- [Allure CLI](https://allurereport.org/docs/install/) (`brew install allure`)
+- Node.js va npm (`npm ci` project-local Allure 3 CLI'ni o'rnatadi)
 
 ---
 
@@ -192,6 +202,7 @@ Keyinroq hisobotni qayta ochish uchun: `python scripts/open_allure_report.py`.
 
 ```bash
 python -m pip install -r requirements.txt
+npm ci
 python -m playwright install chromium
 ```
 
@@ -221,6 +232,7 @@ ishlatiladi.
 | `--head-password <password>` | Yangi company yaratish uchun head profil paroli. |
 | `--disable-license-policy` | Yangi companyda license policy ni off qiladi. |
 | `--open-report` / `OPEN_REPORT=1` | Testdan keyin Allure reportni generate qilib ochadi. `OPEN_REPORT=1` shell env yoki repo `.env` ichida berilishi mumkin. |
+| `--clean-results` / `CLEAN_ALLURE_RESULTS=1` | Oldingi raw natijalarni o'chirib, yangi toza Allure report zanjirini boshlaydi. Default lokal run oldingi natijalarni saqlaydi. |
 | `--headless` | Browserni ko'rsatmasdan ishlatadi. |
 | `--show-trace` / `SHOW_TRACE=1` | Testdan keyin oxirgi Playwright trace viewerini ochadi. `SHOW_TRACE=1` shell env yoki repo `.env` ichida berilishi mumkin. |
 | `--ai-summary` | Gemini orqali qo'shimcha AI xulosa yozadi. Default: off. |
@@ -484,11 +496,11 @@ Group runnerlar — har bir case alohida pytest/Allure test. User grouplarida gr
 ```
 test-results/
 ├── allure-results/          # pytest tomonidan yoziladigan xom natijalar
-│   ├── history/             # Trend grafigi uchun tarix
 │   ├── environment.properties
-│   ├── executor.json
-│   └── categories.json
-├── allure-report/           # Allure CLI tomonidan render qilingan HTML
+│   └── executor.json
+├── allure-report/           # Allure 3 tomonidan render qilingan Awesome HTML
+├── allure-history/
+│   └── history.jsonl        # Allure 3 trend/status-transition tarixi
 ├── data/                    # Runnerlar orasida ishlatiladigan saqlangan code va test ma'lumotlari
 │   └── data_store.json
 ├── playwright/              # pytest-playwright output papkasi
@@ -501,6 +513,11 @@ test-results/
 └── ai-summary.md/json       # Faqat --ai-summary bilan yoziladigan AI xulosa
 ```
 
+Allure 2'dagi `allure-report/history → allure-results/history` papka copy
+lifecycle'i ishlatilmaydi. Allure 3 history migratsiyadan keyingi birinchi
+generationdan `allure-history/history.jsonl`da boshlanadi; eski Allure 2
+history avtomatik convert qilinmaydi.
+
 ---
 
 ## <a id="allure-hisoboti"></a>Allure hisoboti
@@ -509,16 +526,19 @@ test-results/
 
 ```bash
 # Natijalardan hisobot yaratish
-allure generate test-results/allure-results -o test-results/allure-report --clean
+python scripts/allure_report_cli.py generate \
+  test-results/allure-results \
+  --output test-results/allure-report \
+  --config allurerc.mjs
 
 # Hisobotni brauzerda ochish; report tabini yopganda server ham to'xtaydi
 python scripts/open_allure_report.py
 ```
 
-### <a id="allure-serve"></a>Faqat serve qilish (papkani yaratmasdan)
+### <a id="allure-serve"></a>Tayyor reportni qayta ochish
 
 ```bash
-allure serve test-results/allure-results
+python scripts/open_allure_report.py test-results/allure-report
 ```
 
 ---

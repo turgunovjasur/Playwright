@@ -25,17 +25,17 @@ def test_report_02_integration_three(group_session_page):
     run_report_integration_three_check(group_session_page)
 
 
-@allure.title("Report-03 - SalesWork report")
+@allure.title("Report-03 - SalesWork template va ZIP eksporti")
 def test_report_03_saleswork(group_session_page):
     run_report_saleswork_check(group_session_page)
 
 
-@allure.title("Report-04 - Optimum report")
+@allure.title("Report-04 - Optimum sozlamalari va ZIP eksporti")
 def test_report_04_optimum(group_session_page):
     run_report_optimum_check(group_session_page)
 
 
-@allure.title("Report-05 - Spot 2d report")
+@allure.title("Report-05 - Spot2D settings, template va ZIP eksporti")
 def test_report_05_spot(group_session_page):
     run_report_spot_check(group_session_page)
 

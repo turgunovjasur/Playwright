@@ -214,6 +214,8 @@ forms-test-results*
 playwright-report/
 allure-results/
 allure-report/
+node_modules/
+test-results/allure-history/
 
 .DS_Store
 .claude/.DS_Store

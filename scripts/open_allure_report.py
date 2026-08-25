@@ -59,6 +59,28 @@ HEARTBEAT_SCRIPT = """
 """
 
 
+def _inject_heartbeat(content: str) -> str:
+    """Inject heartbeat before app scripts, with a nonstandard HTML fallback."""
+    lower_content = content.lower()
+    head_start = lower_content.find("<head")
+    if head_start >= 0:
+        head_end = content.find(">", head_start)
+        if head_end >= 0:
+            return (
+                f"{content[:head_end + 1]}{HEARTBEAT_SCRIPT}"
+                f"{content[head_end + 1:]}"
+            )
+
+    closing_body = "</body>"
+    if closing_body in content:
+        return content.replace(
+            closing_body,
+            f"{HEARTBEAT_SCRIPT}{closing_body}",
+            1,
+        )
+    return f"{content}\n{HEARTBEAT_SCRIPT}"
+
+
 class ReportHandler(SimpleHTTPRequestHandler):
     def log_message(self, *_args):
         """Keep the test runner output focused on test/report status."""
@@ -94,7 +116,7 @@ class ReportHandler(SimpleHTTPRequestHandler):
             index = Path(self.directory) / "index.html"
             if index.exists():
                 content = index.read_text(encoding="utf-8")
-                content = content.replace("</body>", f"{HEARTBEAT_SCRIPT}</body>", 1)
+                content = _inject_heartbeat(content)
                 encoded = content.encode("utf-8")
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")

@@ -20,13 +20,15 @@ Source: `tests/smoke/smoke_reporting.py`, `scripts/open_allure_report.py`
 - Forms ichki `form_result` eventi ham parent pytest itemning ayni
   `request.node.name` identitysidan foydalanadi; main runner va standalone
   wrapper o'z nomini `run_*` funksiyasiga uzatadi.
-- Allure results run boshida history, environment, categories va executor bilan
-  tayyorlanadi.
-- Har yangi pytest session boshida oldingi joriy `allure-results` fayllari
-  tozalanadi; faqat oldingi generated reportdan olingan `history/` saqlanadi.
-  Bu qoida runner va direct pytest uchun bir xil bo'lib, eski standalone
-  urinishlarning yangi reportga retry/current result sifatida aralashishini
-  oldini oladi.
+- Allure results run boshida environment va executor metadata bilan
+  tayyorlanadi; category authoritysi rootdagi `allurerc.mjs`dir.
+- Lokal pytest sessionlari oldingi `allure-results` fayllarini default
+  saqlaydi; shu sabab setup, group va Forms kabi ketma-ket targetlar bitta
+  joriy report daraxtida jamlanadi. `--clean-results` yoki
+  `CLEAN_ALLURE_RESULTS=1` explicit berilgandagina raw natijalar tozalanadi.
+  Allure 3 history alohida `test-results/allure-history/history.jsonl`da
+  saqlanadi va raw reset unga tegmaydi. CI har jobni `--clean-results` bilan
+  izolyatsiyalaydi.
 - Direct pytest run ham session oxirida deterministic analyzerni ishlatadi;
   `OPEN_REPORT` faqat tayyor reportni generate/open qilishni boshqaradi.
 
@@ -305,9 +307,9 @@ Source: `tests/smoke/test_forms/test_0_forms_runner.py`,
 - Function-scoped test trace'i testga, module/session-scoped trace esa shu
   contextni qamragan failed testlarga biriktiriladi; bir xil katta trace
   Allure results ichiga faqat bir marta ko'chiriladi.
-- Failure kategoriyalari o'zaro takrorlanmaydigan synchronization, navigation,
-  locator/UI state, download, verification, unclassified va ignored guruhlarga
-  ajratiladi.
+- Failure kategoriyalari `allurerc.mjs`da o'zaro takrorlanmaydigan
+  synchronization, navigation, locator/UI state, download, verification,
+  environment/precondition, unclassified va ignored guruhlarga ajratiladi.
 - Forms runnerda umumiy pytest failure screenshoti bilan birga har bir muammo
   aniqlangan paytdagi forma screenshoti ham alohida attach qilinadi. Yakuniy
   sahifa screenshoti `pytest-final-page-context — failed-form dalili emas` deb
@@ -331,13 +333,73 @@ Source: `tests/smoke/test_groups/test_report_grup/report_helpers.py`
 
 ## Local Allure lifecycle
 
-- Direct pytest run `OPEN_REPORT=1` bo'lsa report generate/open qiladi;
-  `SMARTUP_RUNNER=1` bo'lsa runner o'zi lifecycle'ni boshqaradi.
+### Allure 3 startup heartbeat tartibi
+Status: live-ui-confirmed
+Verified: 2026-08-24
+Source: Chrome `http://127.0.0.1:<port>`; `test-results/logs/allure-report-server.log`;
+`scripts/open_allure_report.py`
+
+- Allure 3 app bundle'i birinchi heartbeatdan oldin yuklansa, 12 soniyalik
+  watchdog serverni yopib, qisman ochilgan report widgetlarida
+  `Failed to fetch` chiqarishi mumkin.
+- Heartbeat standart report HTMLida `<head>` boshiga, app bundle'dan oldin
+  inject qilinadi; `</head>` bo'lmagan nonstandard HTML uchun body/append
+  fallback saqlanadi.
+- Tuzatilgan server real Chrome'da 15 soniyadan keyin ham healthy qoldi,
+  reportda `Failed to fetch` yo'q va 11 ta result ko'rindi.
+
+### Ketma-ket lokal run natijalarini jamlash talabi
+Status: code-confirmed
+Verified: 2026-08-24
+Source: user; `scripts/run_tests.py`; `tests/smoke/smoke_reporting.py`;
+`.github/workflows/run-smartup-suite.yml`
+
+- Setup, Group-0 va boshqa lokal targetlar alohida-alohida ketma-ket run
+  qilinganda oldingi target natijalari keyingi Allure report daraxtida saqlanib,
+  yangi target natijalari bilan birga ko'rinishi kerak.
+- JSONL history bu talabning o'rnini bosmaydi: history trend va status
+  transitionlar uchun, joriy report daraxti esa ketma-ket targetlarning
+  jamlangan raw resultlarini ko'rsatishi kerak.
+- Yangi toza report boshlash alohida explicit reset bo'lishi kerak; oddiy
+  target runi oldingi boshqa target natijalarini avtomatik o'chirmaydi.
+- Bir xil `historyId`li test qayta run qilinsa Allure 3 eng yangi natijani
+  primary status sifatida ko'rsatadi, oldingi natijani esa retry sifatida
+  saqlaydi; bir xil test ikkita primary leaf bo'lib ko'rinmaydi.
+
+- Status: code-confirmed
+- Verified: 2026-08-24
+- Source: `allurerc.mjs`, `scripts/allure_report_cli.py`,
+  `scripts/run_tests.py`, `tests/smoke/smoke_reporting.py`,
+  `scripts/open_allure_report.py`, `.github/workflows/run-smartup-suite.yml`
+- Allure Report 3 CLI `package-lock.json`da `3.14.3`ga pin qilingan va faqat
+  `node_modules/.bin/allure[.cmd]` orqali resolve qilinadi; global CLI yoki Java
+  fallback yo'q.
+- Direct pytest run `OPEN_REPORT=1` bo'lsa shared helper bilan Awesome report
+  generate/open qiladi; `SMARTUP_RUNNER=1` bo'lsa runner lifecycle'ni
+  boshqaradi. CI `DEFER_ALLURE_REPORT=1` bilan runner generationini o'tkazib,
+  `if: always()` workflow stepida shu helperni bir marta chaqiradi.
+- Allure 3 config primary daraxtni `epic → feature → story`, report nomini
+  `Smartup Smoke Tests`, tilni `en` va multi-file outputni explicit belgilaydi.
+- Har executable smoke test title va hierarchy label manbasiga ega. Group
+  runner wrapper title'lari standalone leaf title'lari bilan bir xil;
+  parametrized Forms itemlari feature/story marklarini `pytest.param`ga qo'yadi,
+  shuning uchun test body boshlanmasdan skip bo'lsa ham hierarchy saqlanadi.
+- System va AI summary resultlari hierarchy uchun faqat `epic`, `feature`,
+  `story` label'lariga tayanadi; `titlePath` compatibility maydoni yozilmaydi.
+- History default `test-results/allure-history/history.jsonl`, append yoqilgan
+  va 50 entry bilan cheklangan. CI cache `server_key + target` prefixi bilan
+  izolyatsiyalanadi; har run unique cache key saqlaydi.
+- Eski Allure 2 `allure-report/history → allure-results/history` copy qilinmaydi
+  va avtomatik convert qilinmaydi; yangi JSONL history migratsiyadan keyingi
+  birinchi generationdan boshlanadi.
 - `scripts/open_allure_report.py` state + lock + health-check bilan mavjud
   healthy serverni qayta ishlatadi.
 - Stale state yangi server bilan almashtiriladi.
-- Report tab heartbeat yuboradi; tab yopilgach lokal server grace perioddan
-  keyin to'xtaydi.
+- Report tab heartbeat yuboradi; `</body>` bo'lmagan HTMLda script oxiriga
+  fail-safe append qilinadi. Allure 3'ning katta app bundle'i birinchi signalni
+  kechiktirmasligi uchun standart HTMLda heartbeat `<head>` boshiga, barcha app
+  scriptlaridan oldin inject qilinadi. Tab yopilgach lokal server grace
+  perioddan keyin to'xtaydi.
 - Helper process parent stdout/stderr va session lifecycle'iga bog'lanib
   qolmasligi kerak.
 

@@ -1507,7 +1507,6 @@ def write_allure_summary(
             {"name": "language", "value": "python"},
             {"name": "package", "value": full_name.rsplit(".", 1)[0]},
         ],
-        "titlePath": [epic, feature],
     }
     (results_dir / f"{result_uuid}-result.json").write_text(
         json.dumps(result, ensure_ascii=False),

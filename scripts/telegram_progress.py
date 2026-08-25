@@ -530,11 +530,7 @@ def forms_progress_lines(state, *, include_current=True):
         _progress_line(completed, total, "forma"),
         _count_line("Passed", metrics["passed"], "forma"),
         _count_line("Failed", metrics["failed_total"], "forma"),
-        _count_line(
-            "Skipped",
-            metrics["skipped"],
-            names=_result_names(state, "SKIPPED", is_forms=True),
-        ),
+        _count_line("Skipped", metrics["skipped"]),
     ]
     if metrics["deselected"]:
         lines.append(
@@ -773,14 +769,11 @@ def _final_result_lines(state):
     if metrics["total"] and metrics["total"] != metrics["completed"]:
         completed = f"{metrics['completed']}/{metrics['total']}"
     action = "Tekshirildi" if is_forms else "Yakunlandi"
-    skipped_names = _result_names(state, "SKIPPED", is_forms=is_forms)
     deselected_names = _result_names(state, "DESELECTED", is_forms=is_forms)
     lines = [f"{action}: {completed} ta {noun}"]
     if result == "PASSED":
         lines.append(_count_line("Passed", metrics["passed"], noun))
-        lines.append(
-            _count_line("Skipped", metrics["skipped"], names=skipped_names)
-        )
+        lines.append(_count_line("Skipped", metrics["skipped"]))
         if metrics["deselected"]:
             lines.append(
                 _count_line(
@@ -800,9 +793,7 @@ def _final_result_lines(state):
             noun if is_forms else "",
         )
     )
-    lines.append(
-        _count_line("Skipped", metrics["skipped"], names=skipped_names)
-    )
+    lines.append(_count_line("Skipped", metrics["skipped"]))
     if metrics["deselected"]:
         lines.append(
             _count_line(
@@ -830,11 +821,7 @@ def _generic_progress_lines(state):
             _progress_line(metrics["completed"], total, "test"),
             _count_line("Passed", metrics["passed"], "test"),
             _count_line("Failed", metrics["failed_total"], "test"),
-            _count_line(
-                "Skipped",
-                metrics["skipped"],
-                names=_result_names(state, "SKIPPED"),
-            ),
+            _count_line("Skipped", metrics["skipped"]),
         ]
     )
     if metrics["deselected"]:

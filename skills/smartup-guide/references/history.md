@@ -16,6 +16,7 @@ fayldagi ma'lumotni current truth sifatida ishlatmasin.
 - [Removed BasePage helperlari](#removed-basepage-helperlari)
 - [Superseded locator qoidalari](#superseded-locator-qoidalari)
 - [Eski server xatti-harakati](#eski-server-xatti-harakati)
+- [Superseded Allure server lifecycle](#superseded-allure-server-lifecycle)
 
 ## Entry formati
 
@@ -28,6 +29,20 @@ Source: <fayl, trace yoki live UI>
 Replaced by: <joriy reference heading yoki kod path>
 - Old behavior: <eski qoida>
 ```
+
+## Superseded Allure server lifecycle
+
+### Global Allure open subprocessi
+Status: superseded
+Observed: 2026-07
+Superseded: 2026-08-24
+Source: eski PyCharm/direct pytest reporting hooki
+Replaced by: `skills/maintain-test-infra/references/reporting.md#local-allure-lifecycle`
+- Old behavior: global Allure CLI Java serveri `allure open` subprocessi orqali
+  ochilar va browser yopilgach server processi qolib ketishi mumkin edi.
+- Current behavior: project-local Allure Report 3 HTML yaratadi;
+  `scripts/open_allure_report.py` heartbeat va grace period bilan lokal static
+  server lifecycle'ini boshqaradi.
 
 ## Superseded runner scope
 

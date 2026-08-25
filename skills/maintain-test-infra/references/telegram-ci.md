@@ -149,9 +149,10 @@ Source: user; `scripts/telegram_progress.py`;
 - Smoke `Yakunlandi`, Forms `Tekshirildi` ishlatadi. `Passed`, `Failed`,
   `Skipped`, mavjud bo'lsa `Tanlanmagan` alohida qatorlarda yoziladi;
   `Xatolik aniqlandi` degan takroriy qator FAILED xabarga qo'shilmaydi.
-- `Skipped` va `Tanlanmagan` test/forma nomlari hisobdan keyin qavs ichida
-  ko'rsatiladi. Deselect nomlari pytest collection eventidan olinadi va
-  `00 - Company` rendererda hardcode qilinmaydi.
+- `Skipped` qatorida faqat hisob ko'rsatiladi; skip qilingan test/forma nomlari
+  Telegram xabariga chiqarilmaydi. `Tanlanmagan` nomlari hisobdan keyin qavs
+  ichida ko'rsatiladi, pytest collection eventidan olinadi va `00 - Company`
+  rendererda hardcode qilinmaydi.
 - `Xato tafsiloti` va `AI tahlili` ikkita mustaqil Telegram expandable
   blockquote. Har bir field orasida bo'sh qator bor. Smoke tafsiloti `Test
   nomi`, `Bosqich`, `Xato turi`, `Sabab`, `Xato vaqti`; Forms tafsiloti
@@ -174,9 +175,10 @@ Source: user; `scripts/telegram_progress.py`;
   foiz` ko'rinishida chiqadi. Tanlangan jami son pytest collection metadata'sidan,
   Forms jami soni esa parametrized form collectionidan olinadi.
 - `Passed`, `Failed`, `Skipped` va mavjud bo'lsa `Tanlanmagan` alohida
-  qatorlarda yoziladi. Skip/deselect nomlari hisobdan keyin qavs ichida
-  ko'rsatiladi. `Failed: 0` bo'lsa `Hozirgacha xatolik aniqlanmadi` chiqadi;
-  failed mavjud bo'lsa bu qator takrorlanmaydi.
+  qatorlarda yoziladi. `Skipped` qatorida ro'yxat emas, faqat hisob chiqadi;
+  deselect nomlari hisobdan keyin qavs ichida ko'rsatiladi. `Failed: 0` bo'lsa
+  `Hozirgacha xatolik aniqlanmadi` chiqadi; failed mavjud bo'lsa bu qator
+  takrorlanmaydi.
 - `Hozir tekshirilmoqda` blokida Smoke test nomi ko'rsatiladi. Forms uchun
   forma raqami va qisqa nom, alohida to'liq `User trace` hamda filial
   ko'rsatiladi.

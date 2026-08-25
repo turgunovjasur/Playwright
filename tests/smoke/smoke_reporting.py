@@ -14,6 +14,11 @@ from urllib.parse import urlsplit
 import allure
 import pytest
 
+from scripts.allure_report_cli import (
+    AllureCliNotInstalled,
+    build_generate_command,
+    generate_report,
+)
 from tests.smoke.progress import emit_progress_event
 from tests.smoke.screenshot_masking import masked_page_screenshot
 from tests.smoke.smoke_config import env_flag, is_headless
@@ -23,6 +28,7 @@ from utils.logger import write_failure_log
 TRACE_DIR = "test-results/traces"
 ALLURE_RESULTS_DIR = "test-results/allure-results"
 ALLURE_REPORT_DIR = "test-results/allure-report"
+ALLURE_CONFIG_PATH = "allurerc.mjs"
 ALLURE_SERVER_LOG = "test-results/logs/allure-report-server.log"
 
 _PROGRESS_STARTED_ATTR = "_smartup_progress_started"
@@ -364,11 +370,9 @@ def report_message(report):
 
 
 def _clean_current_allure_results(results_dir):
-    """Oldingi run resultlarini o'chiradi, faqat Allure history'ni saqlaydi."""
+    """Explicit resetda raw resultlarni o'chiradi; JSONL history alohida."""
     results_dir.mkdir(parents=True, exist_ok=True)
     for item in results_dir.iterdir():
-        if item.name == "history":
-            continue
         if item.is_dir():
             shutil.rmtree(item, ignore_errors=True)
         else:
@@ -376,24 +380,13 @@ def _clean_current_allure_results(results_dir):
 
 
 def prepare_allure_results(config, run_info, root_dir):
-    """Run boshida Allure history, environment, categories va executorni tayyorlaydi."""
+    """Run boshida Allure environment va executor metadata fayllarini tayyorlaydi."""
     root_dir = Path(root_dir)
     results_dir = root_dir / ALLURE_RESULTS_DIR
-    report_dir = root_dir / ALLURE_REPORT_DIR
-    _clean_current_allure_results(results_dir)
-
-    history_source = report_dir / "history"
-    history_destination = results_dir / "history"
-    if history_source.exists():
-        shutil.rmtree(history_destination, ignore_errors=True)
-        try:
-            shutil.copytree(
-                history_source,
-                history_destination,
-                dirs_exist_ok=True,
-            )
-        except FileNotFoundError:
-            pass
+    if env_flag("CLEAN_ALLURE_RESULTS"):
+        _clean_current_allure_results(results_dir)
+    else:
+        results_dir.mkdir(parents=True, exist_ok=True)
 
     environment_path = results_dir / "environment.properties"
     with environment_path.open("w", encoding="utf-8") as environment_file:
@@ -413,11 +406,6 @@ def prepare_allure_results(config, run_info, root_dir):
         environment_file.write("Language=Python 3.11\n")
         environment_file.write("Environment=Staging\n")
         environment_file.write(f"Host={socket.gethostname()}\n")
-
-    categories_source = root_dir / "allure" / "categories.json"
-    categories_destination = results_dir / "categories.json"
-    if categories_source.exists():
-        shutil.copy(categories_source, categories_destination)
 
     executor_path = results_dir / "executor.json"
     executor_data = {
@@ -650,30 +638,37 @@ def _open_latest_trace(root_dir):
 
 
 def _generate_and_open_allure_report(root_dir):
-    """Allure HTML reportini generatsiya qiladi va lokal serverda ochadi."""
-    allure_bin = shutil.which("allure")
-    if not allure_bin:
-        print("\n[ALLURE] OPEN_REPORT=1, lekin allure CLI topilmadi")
-        return
-
-    generate_command = [
-        allure_bin,
-        "generate",
-        str(root_dir / ALLURE_RESULTS_DIR),
-        "-o",
-        str(root_dir / ALLURE_REPORT_DIR),
-        "--clean",
-    ]
+    """Shared Allure 3 helper bilan report yaratib, keyin lokal serverni ochadi."""
+    results_dir = root_dir / ALLURE_RESULTS_DIR
+    report_dir = root_dir / ALLURE_REPORT_DIR
+    config_path = root_dir / ALLURE_CONFIG_PATH
     open_command = [
         sys.executable,
         str(root_dir / "scripts" / "open_allure_report.py"),
-        str(root_dir / ALLURE_REPORT_DIR),
+        str(report_dir),
     ]
 
     print("\n[ALLURE] Report generate qilinmoqda...")
-    generate_result = subprocess.call(generate_command, cwd=root_dir)
-    if generate_result != 0:
-        print(f"[ALLURE] Report generate failed: exit_code={generate_result}")
+    try:
+        command = build_generate_command(
+            results_dir,
+            report_dir,
+            config_path,
+            project_root=root_dir,
+        )
+        print(" ".join(command))
+        result = generate_report(
+            results_dir,
+            report_dir,
+            config_path,
+            project_root=root_dir,
+            env=os.environ,
+        )
+    except (AllureCliNotInstalled, OSError, ValueError) as error:
+        print(f"[ALLURE] Report generate failed: {error}")
+        return
+    if result.returncode != 0:
+        print(f"[ALLURE] Report generate failed: exit_code={result.returncode}")
         return
 
     print("[ALLURE] Report ochilmoqda...")
