@@ -406,10 +406,13 @@ Default target `all`, ya'ni full suite.
 targetlari bilan ishlatiladi. `groups`, `forms` va alohida group targetlari
 uchun avval mavjud company va setup data kerak.
 
-CI va Telegram bot Smoke uchun `setup-group-0`, Forms uchun `forms` targetini
-alohida `CREATE_COMPANY=0` run sifatida ishlatadi; serverga mos company
-code/password GitHub Secrets'dan olinadi. GitHub cron har soatda avval Online
-Smoke'ni, keyin natijasidan qat'i nazar Online Forms'ni ishga tushiradi.
+CI Smoke uchun `setup-group-0`, mustaqil Report job uchun `group-report`, Forms
+uchun `forms` targetini alohida `CREATE_COMPANY=0` run sifatida ishlatadi;
+serverga mos company code/password GitHub Secrets'dan olinadi. GitHub cron har
+soatda Online Smoke va Report'ni mustaqil boshlaydi; Online Forms Smoke
+tugagach, uning natijasidan qat'i nazar ishlaydi. Telegram bot manual menyusi
+Smoke va Forms targetlarini taklif qiladi; Reportni GitHub Actions UI'dan
+alohida manual dispatch qilish mumkin.
 
 Code tanlovi `.env` dagi yagona `NEW_CODE` flagi bilan boshqariladi: `NEW_CODE=1` yangi 6 xonali code yaratadi, `NEW_CODE=0` esa `test-results/data/data_store.json` dagi mavjud code ni ishlatadi.
 

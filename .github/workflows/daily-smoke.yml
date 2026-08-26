@@ -1,4 +1,4 @@
-name: Hourly Smoke and Forms Tests
+name: Hourly Smoke, Report and Forms Tests
 
 on:
   schedule:
@@ -12,6 +12,7 @@ on:
         type: choice
         options:
           - smoke
+          - report
           - forms
       server:
         description: Server
@@ -41,6 +42,17 @@ jobs:
       server_key: ${{ inputs.server || 'smartup' }}
       telegram_progress_message_id: ${{ inputs.suite == 'smoke' && inputs.telegram_progress_message_id || '' }}
       artifact_name: smoke-test-results
+    secrets: inherit
+
+  report:
+    name: Report
+    if: ${{ github.event_name == 'schedule' || inputs.suite == 'report' }}
+    uses: ./.github/workflows/run-smartup-suite.yml
+    with:
+      target: group-report
+      server_key: ${{ inputs.server || 'smartup' }}
+      telegram_progress_message_id: ${{ inputs.suite == 'report' && inputs.telegram_progress_message_id || '' }}
+      artifact_name: report-test-results
     secrets: inherit
 
   forms:

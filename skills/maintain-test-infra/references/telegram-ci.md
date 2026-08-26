@@ -21,23 +21,24 @@ Source: `scripts/telegram_ci_bot.py`; `.github/workflows/daily-smoke.yml`;
   17-daqiqasida runni rejalashtiradi. Bu GitHub Actions yuklamasi yuqori
   bo'ladigan soat boshidagi kechikish va dropped schedule ehtimolini kamaytiradi;
   GitHub schedule aniq boshlanish vaqtini kafolatlamaydi.
-- Cron har soatda avval `Online Smoke`, keyin `Online Forms`ni alohida reusable
-  workflow job sifatida ishlatadi. Forms job `if: always()` bilan Smoke
-  natijasidan qat'i nazar boshlanadi.
-- `Smoke` `scripts/run_tests.py setup-group-0`, `Forms` esa
-  `scripts/run_tests.py forms` targetini bajaradi. Har job o'z Telegram
-  progress/final xabari, `test-results`, HTML Allure reporti va artifactiga ega.
+- Cron har soatda `Online Smoke` va `Online Report`ni bir-biridan mustaqil
+  reusable workflow job sifatida boshlaydi. Forms job `if: always()` bilan
+  Smoke tugagach, uning natijasidan qat'i nazar boshlanadi.
+- `Smoke` `scripts/run_tests.py setup-group-0`, `Report`
+  `scripts/run_tests.py group-report`, `Forms` esa `scripts/run_tests.py forms`
+  targetini bajaradi. Har job o'z Telegram progress/final xabari,
+  `test-results`, HTML Allure reporti va artifactiga ega.
 - Windows serverdagi bot faqat manual trigger qiladi; bot auto-run loopi va
   `AUTO_RUN_*` konfiguratsiyasi olib tashlangan.
-- Manual flow: avval suite (`Smoke` yoki `Forms`), keyin server (`Online` yoki
+- Telegram bot manual flowida avval suite (`Smoke` yoki `Forms`), keyin server (`Online` yoki
   `Xtrade`), so'ng run password authorizationi tanlanadi.
 - `/status` oxirgi scheduled yoki manual workflow holati va run linki bilan
-  birga GitHub Jobs API'dan Smoke/Forms job holatini ko'rsatadi. Active suite
+  birga GitHub Jobs API'dan Smoke/Report/Forms job holatini ko'rsatadi. Active suite
   uchun `RUNNING` va joriy workflow stepi, tugagan suite uchun esa
   `PASSED`/`FAILED`/`SKIPPED` chiqadi. Forma kesimidagi `190/358` singari aniq
   hisoblar runner-local progress state'da qoladi va jonli Telegram progress
   xabarida ko'rsatiladi; `/status` ularni takrorlamaydi.
-- `/status` Smoke/Forms Telegram delivery holati va bot processining oxirgi
+- `/status` Smoke/Report/Forms Telegram delivery holati va bot processining oxirgi
   redacted Telegram API xatosini ham ko'rsatadi. Delivery holati katta test
   artifactidan emas, suite yakunida upload qilinadigan alohida kichik
   `*-telegram-status` artifactidan o'qiladi; shu sabab active suite deliverysi
@@ -50,6 +51,8 @@ Source: `scripts/telegram_ci_bot.py`; `.github/workflows/daily-smoke.yml`;
   Telegram xabari bilan rad etiladi.
 - Bot workflow'ni `main` ref va `daily-smoke.yml` bilan dispatch qiladi;
   `smartup` va `app3` serverlari alohida secret source ishlatadi.
+- GitHub Actions UI manual dispatchi `Smoke`, `Report` yoki `Forms`ni tanlaydi;
+  Telegram bot menyusiga alohida Report tugmasi qo'shilmagan.
 - GitHub status polling vaqtinchalik API/network xatosini retry qiladi; ketma-ket
   5 xatodan keyin failure sifatida chiqaradi.
 - Telegramga ZIP yuborilmaydi; final xabarda qisqa natija va GitHub run linki

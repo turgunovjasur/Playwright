@@ -34,11 +34,11 @@ Source: `scripts/run_tests.py`; `tests/smoke/test_setup/test_0_setup_runner.py`;
 `tests/smoke/test_forms/test_05_spravochniki_forms.py`; `tests/smoke/conftest.py`;
 `.github/workflows/daily-smoke.yml`; `.github/workflows/run-smartup-suite.yml`;
 `scripts/telegram_ci_bot.py`
-- GitHub Actions cron har soatda ikkita alohida job ishlatadi: avval
-  `setup-group-0` targetli Online Smoke, keyin Smoke natijasidan qat'i nazar
-  `forms` targetli Online Forms. Har job alohida Telegram progress/final xabar,
-  Allure report va result artifact yaratadi; Report group CI dispatchga
-  kiritilmaydi.
+- GitHub Actions cron har soatda uchta job ishlatadi: `setup-group-0` targetli
+  Online Smoke va `group-report` targetli Online Report bir-biridan mustaqil
+  boshlanadi; Online Forms esa Smoke tugagach, uning natijasidan qat'i nazar
+  `forms` targetida ishlaydi. Har job alohida Telegram progress/final xabar,
+  Allure report va result artifact yaratadi.
 - `setup-forms` existing-company rejimida 22 ta Setup case va Forms runnerdagi
   `Главное`, `Продажа`, `Склад`, `Финансы`, `Справочники` inventorylarining har
   bir formasini alohida parametrized pytest item sifatida tanlaydi;
@@ -49,8 +49,9 @@ Source: `scripts/run_tests.py`; `tests/smoke/test_setup/test_0_setup_runner.py`;
 - CI ikkala serverda ham `CREATE_COMPANY=0` va `DISABLE_LICENSE_POLICY=0`
   existing-company rejimida ishlaydi; serverga mos company credentiallari
   GitHub Secrets'dan olinadi.
-- Manual dispatch `suite=smoke|forms` inputi orqali faqat tanlangan targetni
-  ishlatadi. Bot GitHub'dagi scheduled yoki manual active runni ko'rsa yangi
+- GitHub Actions manual dispatch `suite=smoke|report|forms` inputi orqali faqat
+  tanlangan targetni ishlatadi. Telegram bot menyusi Smoke va Forms bilan
+  cheklangan. Bot GitHub'dagi scheduled yoki manual active runni ko'rsa yangi
   triggerni queue'ga qo'ymaydi va busy xabar bilan rad etadi.
 - Full run `scripts/run_tests.py` orqali `test_0_setup_runner.py`, keyin Group-0,
   Report runnerlari va `test_forms/test_0_forms_runner.py`ni shu tartibda bitta
@@ -171,7 +172,7 @@ Tags: smoke, setup, runner, allure, collection
   `setup-a2-admin`, `setup-forms`, `company`, `groups`, `group-0`,
   `group-report`, `forms`; foydalanuvchi odatda
   bo'laklarga bo'lib run qilmaydi, normal lokal run `all`; CI Smoke targeti
-  `setup-group-0`, CI Forms targeti `forms`.
+  `setup-group-0`, CI Report targeti `group-report`, CI Forms targeti `forms`.
 
 ### Smoke Credentiallari Majburiy
 Tags: setup, runner, credential

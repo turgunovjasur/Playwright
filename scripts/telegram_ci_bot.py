@@ -30,6 +30,14 @@ SUITES = {
     "smoke": "Smoke",
     "forms": "Forms",
 }
+WORKFLOW_JOB_SUITES = ("Smoke", "Report", "Forms")
+WORKFLOW_JOB_ORDER = {suite: index for index, suite in enumerate(WORKFLOW_JOB_SUITES)}
+DELIVERY_SUITE_ORDER = {
+    "Smoke": 0,
+    "Report": 1,
+    "Report Group": 1,
+    "Forms": 2,
+}
 
 SERVERS = {
     "smartup": "https://smartup.online",
@@ -638,9 +646,9 @@ class GitHubActionsClient:
                 statuses.append(data)
         return sorted(
             statuses,
-            key=lambda item: {"Smoke": 0, "Forms": 1}.get(
+            key=lambda item: DELIVERY_SUITE_ORDER.get(
                 str(item.get("suite") or ""),
-                2,
+                len(DELIVERY_SUITE_ORDER),
             ),
         )
 
@@ -654,7 +662,7 @@ class GitHubActionsClient:
             suite = next(
                 (
                     label
-                    for label in SUITES.values()
+                    for label in WORKFLOW_JOB_SUITES
                     if name == label or name.startswith(f"{label} /")
                 ),
                 None,
@@ -684,7 +692,10 @@ class GitHubActionsClient:
             )
         return sorted(
             jobs,
-            key=lambda item: {"Smoke": 0, "Forms": 1}.get(item.suite, 2),
+            key=lambda item: WORKFLOW_JOB_ORDER.get(
+                item.suite,
+                len(WORKFLOW_JOB_ORDER),
+            ),
         )
 
 
@@ -707,7 +718,8 @@ def help_text():
         "Smoke: User setup va Group-0. Forms: faqat markaziy Forms runner.\n"
         "Yakuniy test natijasini GitHub Actions workflow yuboradi.\n"
         "Manual yoki GitHub cron testi jarayonda bo'lsa yangi /run rad etiladi.\n"
-        "Soatlik runni faqat GitHub cron boshqaradi; bot faqat manual trigger uchun.\n\n"
+        "Soatlik Smoke, Report va Forms runlarini faqat GitHub cron boshqaradi; "
+        "bot faqat Smoke yoki Forms manual triggeri uchun.\n\n"
         "To'liq qo'llanma uchun /start yuboring."
     )
 
@@ -740,7 +752,8 @@ def start_text(config):
         "Status, hozirgi qadam, passed ro'yxati; failed bo'lsa Group / Runner test / "
         "Ichki test / Step / Error turi ko'rsatiladi.\n"
         "\n"
-        "⏱ Soatlik run:\nGitHub cron avval Online Smoke, keyin Online Forms'ni ishga tushiradi.\n"
+        "⏱ Soatlik run:\nGitHub cron Online Smoke va Report'ni mustaqil "
+        "boshlaydi; Online Forms Smoke tugagach ishlaydi.\n"
         "\n"
         "⚠️ Test ketayotganda yangi /run xabar bilan rad etiladi.\n"
         "\n"
