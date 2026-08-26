@@ -42,6 +42,9 @@ FORM_MONITOR_FAILURE_STATUSES = {
     "NOT_OPENED",
     "TEST_BLOCKED",
 }
+FAILURE_DESCRIPTION_START = "<!-- smartup-failure-summary:start -->"
+FAILURE_DESCRIPTION_END = "<!-- smartup-failure-summary:end -->"
+DESCRIPTION_SEPARATOR = "\n\n---\n\n"
 
 
 def parse_args():
@@ -710,6 +713,27 @@ def _workspace_trace(path_text, *, minimum_mtime=0):
     return candidate
 
 
+def _failure_description(summary_description, existing_description):
+    """Generated summaryni bitta saqlab, user descriptionini takrorsiz qoldiradi."""
+    generated_pattern = re.compile(
+        rf"{re.escape(FAILURE_DESCRIPTION_START)}.*?{re.escape(FAILURE_DESCRIPTION_END)}",
+        re.DOTALL,
+    )
+    unique_blocks = []
+    for raw_block in str(existing_description or "").split(DESCRIPTION_SEPARATOR):
+        block = generated_pattern.sub("", raw_block).strip()
+        if not block or block == summary_description or block in unique_blocks:
+            continue
+        unique_blocks.append(block)
+
+    generated_block = (
+        f"{FAILURE_DESCRIPTION_START}\n"
+        f"{summary_description}\n"
+        f"{FAILURE_DESCRIPTION_END}"
+    )
+    return DESCRIPTION_SEPARATOR.join([generated_block, *unique_blocks])
+
+
 def enrich_failed_allure_results(results, results_dir):
     """Har bir failed resultga human summary va tayyor Playwright trace'ni biriktiradi."""
     trace_sources = {}
@@ -791,15 +815,13 @@ def enrich_failed_allure_results(results, results_dir):
             attachments.append(attachment)
 
         result["attachments"] = attachments
-        existing_description = str(result.get("description") or "").strip()
         summary_description = (
             f"**{payload['classification']}** — {payload['reason']}\n\n"
             f"Yiqilgan qadam: {payload['failed_step']}"
         )
-        result["description"] = (
-            f"{summary_description}\n\n---\n\n{existing_description}"
-            if existing_description
-            else summary_description
+        result["description"] = _failure_description(
+            summary_description,
+            result.get("description"),
         )
         status_details = result.get("statusDetails") if isinstance(result.get("statusDetails"), dict) else {}
         status_details["message"] = _mask_sensitive(str(status_details.get("message") or ""))
@@ -1532,17 +1554,6 @@ def main():
         args.system_output_md,
         args.system_output_json,
         title="System Test Summary",
-    )
-    write_allure_summary(
-        system_summary,
-        args.system_output_md,
-        args.system_output_json,
-        args.results_dir,
-        title="System Test Summary",
-        full_name="system.test.summary",
-        epic="System",
-        feature="Test Summary",
-        story="Deterministic",
     )
     print(f"System summary yozildi: {args.system_output_md}")
 

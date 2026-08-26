@@ -35,16 +35,16 @@ def run_report_spot_check(page):
 
     with allure.step("1 - Spot2D reporti va period defaultlarini tekshirish"):
         open_report(base, "spot", re.compile(r"^\s*Spot2D\(\d+\)\s*$"))
-        base.radio("Последние 45 дней", expect_checked=True)
-        base.radio("Пользовательский период", expect_checked=False)
+        base.radio(label="Последние 45 дней", expect_checked=True)
+        base.radio(label="Пользовательский период", expect_checked=False)
         base.date_picker(label="Дата окончания периода", date="yesterday")
 
     with allure.step("2 - Settings VAT va optional flag defaultlarini tekshirish"):
         base.click(name="Настройки", exact=True)
         base.checkbox(label="Разделить по дням (файл receive)", expect_checked=False)
         base.checkbox(label="Дублировать Код клиента ERP (ID#ID)", expect_checked=False)
-        base.radio("Системный ввод НДС(%)", expect_checked=True)
-        base.radio("Ручной ввод НДС(%)", expect_checked=False)
+        base.radio(label="Системный ввод НДС(%)", expect_checked=True)
+        base.radio(label="Ручной ввод НДС(%)", expect_checked=False)
         base.text("Сброс настроек")
         base.click(name="Закрыть", exact=True)
 

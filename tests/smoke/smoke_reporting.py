@@ -4,7 +4,6 @@ import json
 import os
 import re
 import shutil
-import socket
 import subprocess
 import sys
 from collections.abc import Mapping
@@ -394,25 +393,17 @@ def prepare_allure_results(config, run_info, root_dir):
         environment_file.write(
             f"Browser.Headless={is_headless(config)}\n"
         )
-        environment_file.write(f"Company.URL={run_info['company_url']}\n")
-        environment_file.write(
-            f"Company.Create={run_info['create_company']}\n"
-        )
-        if not run_info["create_company"]:
-            environment_file.write(
-                f"Company.Code={run_info['company_code']}\n"
-            )
-        environment_file.write("Framework=Playwright\n")
-        environment_file.write("Language=Python 3.11\n")
+        environment_file.write(f"Server={run_info['company_url']}\n")
+        run_mode = "Create company" if run_info["create_company"] else "Existing company"
+        environment_file.write(f"Run.Mode={run_mode}\n")
         environment_file.write("Environment=Staging\n")
-        environment_file.write(f"Host={socket.gethostname()}\n")
 
     executor_path = results_dir / "executor.json"
     executor_data = {
-        "name": socket.gethostname(),
+        "name": "Local runner",
         "type": "local",
-        "buildName": "Smoke Tests",
-        "reportName": "Allure Report",
+        "buildName": "Smartup smoke run",
+        "reportName": "Smartup test hisoboti",
     }
     with executor_path.open("w", encoding="utf-8") as executor_file:
         json.dump(executor_data, executor_file, indent=2)

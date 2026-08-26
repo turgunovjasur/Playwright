@@ -251,8 +251,10 @@ def parse_args():
     parser.add_argument("--open-report", action="store_true", help="Allure reportni generate qilib ochadi.")
     parser.add_argument(
         "--clean-results",
+        "--new-report",
+        dest="clean_results",
         action="store_true",
-        help="Oldingi Allure raw natijalarini o'chirib, yangi toza report boshlaydi.",
+        help="Yangi toza Allure report boshlaydi; --clean-results eski alias sifatida ishlaydi.",
     )
     parser.add_argument("--show-trace", action="store_true", help="Oxirgi Playwright trace viewerini ochadi.")
     parser.add_argument("--dry-run", action="store_true", help="Commandni ko'rsatadi, lekin ishga tushirmaydi.")

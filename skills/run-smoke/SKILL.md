@@ -117,8 +117,8 @@ Repo rootda `.env` mavjud bo'lsa direct pytest/PyCharm run konfiguratsiyasi unda
 - Trace fayllari `test-results/traces/` ga, Allure natijalar `test-results/allure-results/` ga yoziladi
 - Lokal targetlar default ketma-ket jamlanadi: masalan `setup`dan keyingi
   `group-0` reportida setup natijalari ham qoladi. Yangi toza report boshlash
-  uchun runnerga `--clean-results`, direct pytestga
-  `CLEAN_ALLURE_RESULTS=1` beriladi.
+  uchun runnerga user-facing `--new-report` beriladi; `--clean-results` eski
+  alias sifatida qoladi. Direct pytestga `CLEAN_ALLURE_RESULTS=1` beriladi.
 - `scripts/run_tests.py` Allure reportni `--open-report` yoki shell/repo `.env` dagi `OPEN_REPORT=1` bilan ochadi.
 - `scripts/run_tests.py` trace viewerini faqat `--show-trace` bo'lsa ochadi.
 - Directory/default collectionda runner bo'lmagan smoke testlar duplicate flow bo'lmasligi uchun deselect qilinadi; leaf testni debug qilish uchun uning fayl yo'lini pytestga aniq ber.

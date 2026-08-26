@@ -24,13 +24,47 @@ Source: `tests/smoke/smoke_reporting.py`, `scripts/open_allure_report.py`
   tayyorlanadi; category authoritysi rootdagi `allurerc.mjs`dir.
 - Lokal pytest sessionlari oldingi `allure-results` fayllarini default
   saqlaydi; shu sabab setup, group va Forms kabi ketma-ket targetlar bitta
-  joriy report daraxtida jamlanadi. `--clean-results` yoki
+  joriy report daraxtida jamlanadi. User-facing `--new-report`, eski
+  `--clean-results` aliasi yoki
   `CLEAN_ALLURE_RESULTS=1` explicit berilgandagina raw natijalar tozalanadi.
   Allure 3 history alohida `test-results/allure-history/history.jsonl`da
   saqlanadi va raw reset unga tegmaydi. CI har jobni `--clean-results` bilan
   izolyatsiyalaydi.
 - Direct pytest run ham session oxirida deterministic analyzerni ishlatadi;
   `OPEN_REPORT` faqat tayyor reportni generate/open qilishni boshqaradi.
+
+### Minimal va user-first Allure ko'rinishi
+
+Status: user-reported
+Verified: 2026-08-26
+Source: user
+
+- Allure 3 Awesome reportning o'zi yaxshilanadi; custom dashboard, custom CSS
+  yoki alohida reporting frontend yaratilmaydi.
+- Professional ko'rinish ko'p ma'lumot chiqarish degani emas: user asosiy
+  status, suite/test nomi va failure sababini tez tushunishi, texnik detailni
+  esa faqat kerak bo'lganda ochishi kerak.
+
+Status: code-confirmed
+Verified: 2026-08-26
+Source: `allurerc.mjs`; `tests/smoke/smoke_reporting.py`;
+`scripts/analyze_test_result.py`
+
+- Awesome report default `Report` bo'limida ochiladi, light theme ishlatadi va
+  step daraxtida faqat failed/broken kontekstni default yoyadi.
+- Charts faqat `Joriy holat` va `Natijalar dinamikasi`dan iborat. Allure 3
+  `Timeline` bo'limini doim ko'rsatadi, lekin asosiy ochilish sahifasi `Report`
+  bo'lib qoladi.
+- `host`, `thread`, `framework`, `language`, `package` va suite compatibility
+  labellari detailda yashiriladi; canonical `epic -> feature -> story` daraxti
+  saqlanadi.
+- Environment metadata browser, headless holati, server, run mode va staging
+  konteksti bilan cheklanadi. Company code, host va framework takrorlanmaydi.
+- Deterministic System Summary tashqi Markdown/JSON artefakt bo'lib qoladi va
+  Allure totaliga passed pseudo-test qo'shmaydi; oldingi raw papkada qolgan
+  legacy `system.test.summary` resultlari ham Awesome filterda yashiriladi.
+- Failure description enrichment marker bilan idempotent: analyzer bir resultni
+  qayta ko'rsa ayni human summaryni takroran prepend qilmaydi.
 
 ## User-facing execution phase contract
 
@@ -379,13 +413,15 @@ Source: user; `scripts/run_tests.py`; `tests/smoke/smoke_reporting.py`;
   boshqaradi. CI `DEFER_ALLURE_REPORT=1` bilan runner generationini o'tkazib,
   `if: always()` workflow stepida shu helperni bir marta chaqiradi.
 - Allure 3 config primary daraxtni `epic → feature → story`, report nomini
-  `Smartup Smoke Tests`, tilni `en` va multi-file outputni explicit belgilaydi.
+  `Smartup test hisoboti`, tilni `en`, light theme va multi-file outputni
+  explicit belgilaydi.
 - Har executable smoke test title va hierarchy label manbasiga ega. Group
   runner wrapper title'lari standalone leaf title'lari bilan bir xil;
   parametrized Forms itemlari feature/story marklarini `pytest.param`ga qo'yadi,
   shuning uchun test body boshlanmasdan skip bo'lsa ham hierarchy saqlanadi.
-- System va AI summary resultlari hierarchy uchun faqat `epic`, `feature`,
-  `story` label'lariga tayanadi; `titlePath` compatibility maydoni yozilmaydi.
+- Optional AI summary resulti hierarchy uchun faqat `epic`, `feature`, `story`
+  label'lariga tayanadi; `titlePath` compatibility maydoni yozilmaydi. System
+  Summary Allure resulti sifatida yozilmaydi.
 - History default `test-results/allure-history/history.jsonl`, append yoqilgan
   va 50 entry bilan cheklangan. CI cache `server_key + target` prefixi bilan
   izolyatsiyalanadi; har run unique cache key saqlaydi.

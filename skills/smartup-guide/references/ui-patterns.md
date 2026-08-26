@@ -9,6 +9,7 @@
 - [UI select](#ui-select)
 - [Masked inputs](#masked-dateamount-inputs)
 - [Biruni confirm va error](#biruni-confirm)
+- [Legacy va A2 modal helper ownershipi](#legacy-va-a2-modal-helper-ownershipi)
 - [Status dialog return semantikasi](#status-dialog-return-semantikasi)
 - [Alert kutish va o'lik timeout](#alert-kutish--is_visibletimeout-olik-parametr)
 - [Blocking loader va aria-busy](#blocking-loader-va-aria-busy-2026-08-05)
@@ -162,7 +163,7 @@ Tags: input, mask, date, amount
 
 ### Biruni Confirm
 Tags: biruni, confirm, modal
-- Preferred: majburiy confirm uchun `BasePage.confirm_biruni(expected_text=...)`, faqat ayrim holatda chiqadigan confirm uchun `BasePage.confirm_biruni_if_visible(expected_text=...)` ishlatiladi. Optional helper modal ko'rinmasa `False`, tasdiqlasa `True` qaytaradi.
+- Preferred: majburiy confirm uchun `BasePage.confirm_biruni(expected_text=...)` ishlatiladi.
 - Pattern:
   - `confirm = page.get_by_role("dialog").filter(has=page.get_by_role("button", name="да"))`
   - `expect(confirm).to_be_visible()`
@@ -170,6 +171,29 @@ Tags: biruni, confirm, modal
   - `confirm.wait_for(state="hidden")`
 - Qoida: `да` button har doim confirm modal ichida scope qilinadi.
 - Order status o'zgartirish confirm matni: `Изменить статус на {status}?` (masalan `Изменить статус на Отменен?`). Ilgari `Изменить на {status}?` edi — 2026-06-21 da ilova matni o'zgargan, `confirm_biruni` `to_contain_text` mosligi buzilgan (modal ochiq qolib ketgan ko'rinadi). `flow_order_list` shu yangi matnga moslangan.
+
+### Legacy va A2 modal helper ownershipi
+Tags: modal, biruni, a2, cdk, locator, page-object
+Status: live-ui-confirmed
+Verified: 2026-08-25
+Source: live UI `*/trade/rep/integration/integration_two`;
+`utils/base_page.py`; `utils/angular_base_page.py`
+- Legacy Biruni modal primitive'lari `BasePage`, A2/CDK modal primitive'lari
+  `AngularBasePage` ichida alohida qoladi; ikki DOM kontrakti bitta generic
+  utils helperga yoki bitta selector ro'yxatiga aralashtirilmaydi.
+- Ikkala page-object bir xil public API'ni saqlaydi: majburiy confirm uchun
+  `confirm_biruni(...)`, error dialogni tekshirib yopish uchun
+  `close_biruni_alert(*expected_text)`.
+- Legacy ona locator faqat ko'rinadigan `#biruniConfirm`,
+  `#biruniAlertExtended` va `#biruniAlert` candidate'larini bir marta yig'adi;
+  public metod modal turini button/error matni bilan filterlaydi.
+- A2 ona locator `[role='dialog']:visible`. Jonli CDK error modali bir vaqtda
+  tashqi `.cdk-overlay-pane` va ichki `[role='dialog']`ga mos tushadi; ikkisini
+  union qilish bitta vizual modalni ikki candidate sifatida qaytaradi. Action
+  scope sifatida ichki dialog ishlatiladi.
+- Close tugmasi faqat visible semantic `Закрыть`/`Close`/`×` candidate'laridan
+  tanlanadi. Legacy oddiy alertdagi `button.close` DOMda mavjud bo'lsa ham
+  nol o'lchamli hidden nusxa bo'lishi mumkin.
 
 ### Status Dialog Return Semantikasi
 
@@ -197,9 +221,10 @@ Source: user; live UI `*/anor/mr/product/inventory+add`;
   duplicate-code xatosi shu modalda chiqdi.
 - Extended varianti `#biruniAlertExtended[role="dialog"]`; oddiy va extended
   modal DOMda bir vaqtda mavjud bo'lishi mumkin, lekin faqat `.show`/`:visible`
-  holati xato signali hisoblanadi. Extended alertni tekshirib yopish uchun
-  `BasePage.close_biruni_alert(*expected_text)` ishlatiladi; unda ba'zan
-  `Закрыть` textli button yo'q.
+  holati xato signali hisoblanadi. Ko'rinadigan oddiy yoki extended alertni
+  tekshirib yopish uchun `BasePage.close_biruni_alert(*expected_text)`
+  ishlatiladi; helper visible `button.close` bo'lmasa `Закрыть`/`Close` textli
+  buttonni bosadi va modal yashirilishini kutadi.
 - Barcha forma xatolari aynan shu modal ko'rinishida chiqmaydi. Legacy formani
   saqlash/tranzaksiya backend xatolari ko'pincha Biruni modalida; forma
   ochilishidagi vaqtinchalik xabar `[role="alert"]`, inline validatsiya

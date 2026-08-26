@@ -36,7 +36,10 @@ Source: `scripts/analyze_test_result.py`, `scripts/run_tests.py`
   generic `AssertionError`ga qaytib ketadi.
 - Analyzer schema v2 payloadlarni ham defensive o'qiydi; schema v3 inventory
   qo'shimchalari eski result/status maydonlarini o'zgartirmaydi.
-- Allure ichida `System Test Summary` sifatida attach qilinadi.
+- System summary tashqi Markdown/JSON artefakt bo'lib qoladi; Allure test
+  totalini sun'iy oshirmaslik uchun alohida passed pseudo-test yozilmaydi.
+- Failed testcase ichidagi `00 - Failure Summary` AI'siz asosiy user-facing
+  diagnostika bo'lib, system summaryni ochishni majburiy qilmaydi.
 
 ## AI summary
 

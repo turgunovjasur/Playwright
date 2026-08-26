@@ -85,7 +85,7 @@ def test_<nomi>(page, code, save_data):
 
 ### `run_` / `test_` konvensiyasi qoidalari
 
-- **Maksimal base funksiya**: `base = BasePage(page)` qilib olinadi va `base.navigate_to/expect_page/switch_filial/click/text/form_view/input/b_input/multiselect/checkbox/grid_controller/grid/grid_cell/confirm_biruni/confirm_biruni_if_visible/close_biruni_alert/wait_for_loader` ishlatiladi. Raw `page.get_by_role/locator` faqat mos base funksiya yo'q joyda (masalan murakkab scoped filter yoki upload elementi). Grid qatorini bosish kerak bo'lsa alohida wrapper emas, `base.grid(..., click=True)` ishlatiladi; qaytgan rowning aniq ustunini tekshirish yoki o'qish uchun raw `.tbl-cell.nth(...)` emas, `base.grid_cell(row, index, ...)` ishlatiladi.
+- **Maksimal base funksiya**: `base = BasePage(page)` qilib olinadi va `base.navigate_to/expect_page/switch_filial/click/text/form_view/input/b_input/multiselect/checkbox/grid_controller/grid/grid_cell/confirm_biruni/close_biruni_alert/wait_for_loader` ishlatiladi. Raw `page.get_by_role/locator` faqat mos base funksiya yo'q joyda (masalan murakkab scoped filter yoki upload elementi). Grid qatorini bosish kerak bo'lsa alohida wrapper emas, `base.grid(..., click=True)` ishlatiladi; qaytgan rowning aniq ustunini tekshirish yoki o'qish uchun raw `.tbl-cell.nth(...)` emas, `base.grid_cell(row, index, ...)` ishlatiladi.
 - **allure.step raqamlari docstring qadamlari bilan mantiqan mos** kelsin; step nomi qisqa va professional.
 - **Test data** — `run_` boshida lokal `f"...{code}"` o'zgaruvchilar; faqat
   setup baseline'ni group testlarga uzatish kerak bo'lsa oxirgi stepda

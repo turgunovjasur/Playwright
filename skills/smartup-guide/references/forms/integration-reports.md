@@ -2,6 +2,15 @@
 
 Alohida dossierlar: [cislink.md](cislink.md), [integration-three.md](integration-three.md).
 
+## Mundarija
+
+- [Umumiy navigatsiya va filial](#umumiy-navigatsiya-va-filial)
+- [Download tekshiruvi](#download-tekshiruvi)
+- [SalesWork](#saleswork-saleswork)
+- [Optimum](#optimum-optimum)
+- [Spot2D](#spot2d-spot)
+- [Integration Two / Monolith](#integration-two--monolith-integration_two)
+
 ### Umumiy navigatsiya va filial
 Status: code-confirmed
 Verified: 2026-08-24
@@ -91,6 +100,15 @@ Verified: 2026-08-20
 Source: user; live Chromium UI; `tests/smoke/test_groups/test_report_grup/test_06_integration_two.py`
 - Oldingi `URL=https` qiymati serverda scheme xatosi berishi live UI'da tasdiqlangan; test fake endpoint yozmaydi.
 - Report-06 mavjud configured `User` va `https://` yoki `http://` Monolith URLni majburiy precondition sifatida tekshiradi.
-- Har bir oltita exchange mode uchun `Генерировать` bosiladi va non-empty `.xml` download tekshiriladi; endpoint noto'g'ri bo'lsa download timeout diagnostika bilan testcase failure bo'ladi.
+- XML download kutiladigan exchange mode'larda `Генерировать` bosiladi va non-empty `.xml` download tekshiriladi; endpoint noto'g'ri bo'lsa download timeout diagnostika bilan testcase failure bo'ladi.
 - Forma accessi bo'lmagan deploymentda aniq Biruni access-denied xabari environment skip sifatida qayd etiladi.
 - Archived access-denied evidence: `screenshots/integration-reports/integration-two__access-denied__desktop-2880x1566.png`.
+
+### Export order error modal
+Status: user-reported
+Verified: pending
+Source: user; `tests/smoke/test_groups/test_report_grup/test_06_integration_two.py`
+- `Экспорт заказа` mode'ida `Генерировать` Biruni error modalini chiqaradi,
+  qolgan exchange mode'larda bu muammo kuzatilmagan. Report-06 shu modalni
+  `BasePage.close_biruni_alert()` bilan yopib, keyingi mode'larni tekshirishda
+  davom etadi; bu mode uchun XML download talab qilinmaydi.

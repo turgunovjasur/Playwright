@@ -736,14 +736,18 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    def _visible_modal_candidates(self, root="body"):
+        """Ko'rinadigan A2/CDK dialog rootlarini qaytaradi."""
+        root = self._resolve_root(root)
+        return root.locator("[role='dialog']:visible")
+
+    # ------------------------------------------------------------------------------------------------------------------
+
     def _visible_error_locator(self, root="body"):
         error_text = re.compile(r"ошибка|error|URL\s*:", re.IGNORECASE)
-        root = self._resolve_root(root)
-        return root.locator(
-            "#biruniAlertExtended:visible, #biruniAlert:visible, "
-            "[role='alert']:visible, [role='dialog']:visible, "
-            ".alert-danger:visible, .cdk-overlay-pane:visible"
-        ).filter(has_text=error_text).last
+        return self._visible_modal_candidates(root=root).filter(
+            has_text=error_text
+        ).last
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -1105,16 +1109,13 @@ class AngularBasePage:
         expected_text=None,
         button_name="да",
     ):
-        """Legacy Biruni yoki A2/CDK confirm dialogini tasdiqlaydi."""
-        root = self._resolve_root("body")
+        """A2/CDK confirm dialogini tasdiqlaydi."""
         matcher = (
             button_name
             if isinstance(button_name, re.Pattern)
             else re.compile(rf"^\s*{re.escape(str(button_name))}\s*$", re.IGNORECASE)
         )
-        confirm = root.locator(
-            "#biruniConfirm:visible, [role='dialog']:visible, .cdk-overlay-pane:visible"
-        ).filter(
+        confirm = self._visible_modal_candidates(root="body").filter(
             has=self.page.get_by_role("button", name=matcher)
         ).last
         expect(confirm).to_be_visible(timeout=10_000)
@@ -1127,49 +1128,18 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def confirm_biruni_if_visible(
-        self,
-        expected_text=None,
-        button_name="да",
-        timeout=1_000,
-    ):
-        root = self._resolve_root("body")
-        matcher = (
-            button_name
-            if isinstance(button_name, re.Pattern)
-            else re.compile(rf"^\s*{re.escape(str(button_name))}\s*$", re.IGNORECASE)
-        )
-        confirm = root.locator(
-            "#biruniConfirm:visible, [role='dialog']:visible, .cdk-overlay-pane:visible"
-        ).filter(
-            has=self.page.get_by_role("button", name=matcher)
-        ).last
-        try:
-            expect(confirm).to_be_visible(timeout=timeout)
-        except (AssertionError, PlaywrightTimeoutError):
-            return False
-        if expected_text:
-            expect(confirm).to_contain_text(expected_text, timeout=timeout)
-        confirm.get_by_role("button", name=matcher).first.click()
-        expect(confirm).to_be_hidden(timeout=timeout)
-        return True
-
-    # ------------------------------------------------------------------------------------------------------------------
-
     def close_biruni_alert(self, *expected_text):
-        """A2/legacy ko'rinadigan error alertini tekshiradi va yopadi."""
+        """Ko'rinadigan A2/CDK error dialogini tekshiradi va yopadi."""
         alert = self._visible_error_locator(root="body")
         expect(alert).to_be_visible(timeout=10_000)
         for value in expected_text:
             if value:
                 expect(alert).to_contain_text(value, timeout=10_000)
 
-        close = alert.locator("button.close").first
-        if close.count() == 0:
-            close = alert.get_by_role(
-                "button",
-                name=re.compile(r"закрыть|close|×", re.IGNORECASE),
-            ).first
+        close = alert.get_by_role(
+            "button",
+            name=re.compile(r"закрыть|close|×", re.IGNORECASE),
+        ).filter(visible=True).first
         expect(close).to_be_visible(timeout=10_000)
         close.click()
         expect(alert).to_be_hidden(timeout=10_000)

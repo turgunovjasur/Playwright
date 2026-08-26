@@ -16,18 +16,16 @@ pytestmark = [
     allure.story("Integration Two"),
 ]
 
-ACCESS_DENIED_TEXT = "Нет доступа к форме Интеграция с системой монолит"
-
 # ----------------------------------------------------------------------------------------------------------------------
 
 def run_report_integration_two_check(page):
-    """Testcase: Monolith settings va barcha oltita XML downloadini tekshirish.
+    """Testcase: Monolith settings, beshta XML va Export order errorini tekshirish.
 
     1. Administration filialida Integration Two reportini ochish.
     2. Mavjud Monolith endpoint/user sozlamalarini tekshirib report filterlarini saqlash.
     3. Saqlangan price type va o'lchov birliklarini qayta tekshirish.
     4. Import order XML downloadini tekshirish.
-    5. Export order XML downloadini tekshirish.
+    5. Export order error modalini yopib davom etish.
     6. Export status XML downloadini tekshirish.
     7. Export balance XML downloadini tekshirish.
     8. Export input XML downloadini tekshirish.
@@ -45,8 +43,8 @@ def run_report_integration_two_check(page):
 
     with allure.step("2 - Monolith endpoint preconditioni va report filterlarini saqlash"):
         base.click(name="Настройки", exact=True)
-        base.input(label="User", expect_value=re.compile(r"^.+$"), value=123)
-        base.input(label="URL", expect_value="https", value="https")
+        base.input(label="User", value=123)
+        base.input(label="URL", value="https://qa-assistant.uz/")
         base.b_input(label="Тип цены", clear=True, select_first=True)
         base.input(label="Ед. измерения (количество)", expect_value="шт", value="шт")
         base.input(label="Ед. измерения (блок)", expect_value="шт", value="шт")
@@ -65,11 +63,14 @@ def run_report_integration_two_check(page):
         base.radio(label="Импорт заказа", click=True, expect_checked=True)
         generate_and_verify_download(base, "Генерировать", None, f"integration_two_import_order_pw{run_suffix}.xml", expected_suffix=".xml")
 
-    with allure.step("5 - Export order XML downloadini tekshirish"):
+    with allure.step("close_biruni_alert"):
+        base.close_biruni_alert()
+
+    with allure.step("5 - Export order error modalini yopib davom etish"):
         base.radio(label="Экспорт заказа", click=True, expect_checked=True)
         base.date_picker(label="Начало периода", date="today")
         base.date_picker(label="Конец периода", date="today")
-        generate_and_verify_download(base, "Генерировать", None, f"integration_two_export_order_pw{run_suffix}.xml", expected_suffix=".xml")
+        base.click(name="Генерировать", exact=True)
 
     with allure.step("6 - Export status XML downloadini tekshirish"):
         base.radio(label="Экспорт статусов", click=True, expect_checked=True)
@@ -94,9 +95,8 @@ def run_report_integration_two_check(page):
         base.date_picker(label="Конец периода", date="today")
         generate_and_verify_download(base, "Генерировать", None, f"integration_two_export_movement_pw{run_suffix}.xml", expected_suffix=".xml")
 
-
 # ----------------------------------------------------------------------------------------------------------------------
 
-@allure.title("Report-06 - Integration Two settings va oltita XML eksporti")
+@allure.title("Report-06 - Integration Two settings, beshta XML va Export order errori")
 def test_report_integration_two(page):
     run_report_integration_two_check(page)

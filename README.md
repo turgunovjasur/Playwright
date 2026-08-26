@@ -154,11 +154,12 @@ o'tkazadi → yangi natijalarni oldingilar bilan birga Allure hisobotida
 ko'rsatadi → brauzerda ochadi.
 `--open-report` o'rniga shell env yoki repo `.env` ichida `OPEN_REPORT=1` ham ishlatish mumkin.
 
-Butunlay yangi toza Allure report boshlash kerak bo'lsa `--clean-results`
-beriladi. Direct pytest uchun ekvivalenti `CLEAN_ALLURE_RESULTS=1`:
+Butunlay yangi toza Allure report boshlash kerak bo'lsa user-facing
+`--new-report` beriladi. Eski `--clean-results` aliasi backward compatibility
+uchun saqlanadi. Direct pytest uchun ekvivalenti `CLEAN_ALLURE_RESULTS=1`:
 
 ```bash
-python scripts/run_tests.py setup --url <server_url> --company-code <company_code> --company-password <company_password> --clean-results --open-report
+python scripts/run_tests.py setup --url <server_url> --company-code <company_code> --company-password <company_password> --new-report --open-report
 ```
 
 Bir xil test keyin qayta run qilinsa Allure 3 eng yangi natijani asosiy status
@@ -178,13 +179,15 @@ AI xulosa kerak bo'lsa Gemini API keyni environment variable qilib bering. Key r
 
 ```bash
 export GEMINI_API_KEY="<gemini_api_key>"
-python scripts/run_tests.py --url <server_url> --company-code <company_code> --company-password <company_password> --ai-summary --open-report
+export AI_ANALYSIS=1
+python scripts/run_tests.py --url <server_url> --company-code <company_code> --company-password <company_password> --open-report
 ```
 
-AI default holatda off. `--ai-summary` flagi berilsa testdan keyin qo'shimcha
-`test-results/ai-summary.md` va `test-results/ai-summary.json` yozadi. Allure
-report ichida `System Test Summary` har doim, `AI Test Summary` esa faqat
-`--ai-summary` bilan ko'rinadi.
+AI default holatda off. `AI_ANALYSIS=1` bo'lsa failed run uchun qo'shimcha
+`test-results/ai-summary.md` va `test-results/ai-summary.json` yoziladi.
+Deterministic System Summary har doim tashqi Markdown/JSON artefakt bo'lib
+qoladi va Allure test totaliga alohida pseudo-test qo'shmaydi. Optional AI
+tahlili failed run uchun Allure'da alohida item sifatida ko'rinadi.
 
 ✅ Tayyor — hisobot brauzerda ochiladi. Report tabini yopsangiz, lokal server ham avtomatik to'xtaydi.
 Keyinroq hisobotni qayta ochish uchun: `python scripts/open_allure_report.py`.
@@ -232,10 +235,10 @@ ishlatiladi.
 | `--head-password <password>` | Yangi company yaratish uchun head profil paroli. |
 | `--disable-license-policy` | Yangi companyda license policy ni off qiladi. |
 | `--open-report` / `OPEN_REPORT=1` | Testdan keyin Allure reportni generate qilib ochadi. `OPEN_REPORT=1` shell env yoki repo `.env` ichida berilishi mumkin. |
-| `--clean-results` / `CLEAN_ALLURE_RESULTS=1` | Oldingi raw natijalarni o'chirib, yangi toza Allure report zanjirini boshlaydi. Default lokal run oldingi natijalarni saqlaydi. |
+| `--new-report` / `--clean-results` / `CLEAN_ALLURE_RESULTS=1` | Oldingi raw natijalarni o'chirib, yangi toza Allure report zanjirini boshlaydi. `--clean-results` eski alias; default lokal run oldingi natijalarni saqlaydi. |
 | `--headless` | Browserni ko'rsatmasdan ishlatadi. |
 | `--show-trace` / `SHOW_TRACE=1` | Testdan keyin oxirgi Playwright trace viewerini ochadi. `SHOW_TRACE=1` shell env yoki repo `.env` ichida berilishi mumkin. |
-| `--ai-summary` | Gemini orqali qo'shimcha AI xulosa yozadi. Default: off. |
+| `AI_ANALYSIS=1` | Failed run uchun Gemini orqali qo'shimcha AI xulosa yozadi. Default: off. |
 | `--dry-run` | Testni ishga tushirmaydi, faqat pytest commandni ko'rsatadi. |
 | `all` | Default target. Setup + Group-0 + Report + Forms runner ishlaydi. |
 | `setup` | Faqat setup runner ishlaydi. |
@@ -332,10 +335,14 @@ Nima qiladi: test tugagandan keyin Allure reportni generate qilib ochadi.
 
 ```bash
 export GEMINI_API_KEY="<gemini_api_key>"
-python scripts/run_tests.py --url <server_url> --company-code <company_code> --company-password <company_password> --ai-summary --open-report
+export AI_ANALYSIS=1
+python scripts/run_tests.py --url <server_url> --company-code <company_code> --company-password <company_password> --open-report
 ```
 
-Nima qiladi: tizim xulosasi har doim yoziladi. `--ai-summary` berilganda Gemini qo'shimcha 1-2 gaplik AI xulosa yozadi va `test-results/ai-summary.md/json` saqlanadi. AI pass/fail, failed step yoki kod joyini hal qilmaydi; bu faktlarni tizim o'zi chiqaradi.
+Nima qiladi: tizim xulosasi har doim yoziladi. `AI_ANALYSIS=1` bo'lsa failed
+run uchun Gemini qo'shimcha qisqa AI xulosa yozadi va
+`test-results/ai-summary.md/json` saqlanadi. AI pass/fail, failed step yoki kod
+joyini hal qilmaydi; bu faktlarni tizim o'zi chiqaradi.
 
 #### Browserni ko'rsatmasdan ishlatish
 
@@ -510,7 +517,7 @@ test-results/
 ├── logs/                    # Muvaffaqiyatsiz testlar uchun log fayllar
 │   └── *.log
 ├── system-summary.md/json   # Har doim yoziladigan tizim xulosasi
-└── ai-summary.md/json       # Faqat --ai-summary bilan yoziladigan AI xulosa
+└── ai-summary.md/json       # Faqat failed run + AI_ANALYSIS=1 uchun AI xulosa
 ```
 
 Allure 2'dagi `allure-report/history → allure-results/history` papka copy

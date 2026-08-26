@@ -20,7 +20,7 @@ from urllib.request import urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_REPORT_DIR = ROOT / "test-results" / "allure-report"
-HEARTBEAT_TIMEOUT_SECONDS = 12
+HEARTBEAT_TIMEOUT_SECONDS = 120
 SERVER_STATUS_PATH = "/__allure_status"
 SERVER_HEARTBEAT_PATH = "/__allure_heartbeat"
 SERVER_STATE_VERSION = 1

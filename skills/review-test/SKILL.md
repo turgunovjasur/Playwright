@@ -44,7 +44,7 @@ Bir turga tegishli qoidani boshqa turga xato sifatida qo'llama.
 - [ ] UI primitive uchun mos page-object metodi avval ishlatilgan:
   `expect_page`, `grid`, `grid_cell`, `grid_controller`, `text`, `form_view`,
   `input`, `select`/`b_input`, `switch`/`checkbox`, `confirm_biruni`,
-  `confirm_biruni_if_visible`, `close_biruni_alert`, `wait_for_loader`
+  `close_biruni_alert`, `wait_for_loader`
 - [ ] Mos page-object metodi mavjud bo'lsa raw `page.locator()`,
   `page.get_by_role()` yoki local wrapper ishlatilmagan; raw locator faqat helper
   mavjud bo'lmagan UI harakati uchun qolgan

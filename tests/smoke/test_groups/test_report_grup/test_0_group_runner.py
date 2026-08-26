@@ -40,6 +40,6 @@ def test_report_05_spot(group_session_page):
     run_report_spot_check(group_session_page)
 
 
-@allure.title("Report-06 - Integration Two settings va oltita XML eksporti")
+@allure.title("Report-06 - Integration Two settings, beshta XML va Export order errori")
 def test_report_06_integration_two(group_session_page):
     run_report_integration_two_check(group_session_page)

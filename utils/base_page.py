@@ -544,9 +544,24 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    def _visible_modal_candidates(self):
+        """Ko'rinadigan legacy Biruni modal rootlarini qaytaradi."""
+        return self.page.locator(
+            "#biruniConfirm:visible, "
+            "#biruniAlertExtended:visible, "
+            "#biruniAlert:visible"
+        )
+
+    # ------------------------------------------------------------------------------------------------------------------
+
     def confirm_biruni(self, expected_text=None, button_name="да"):
         """Biruni confirm modalini barqaror tasdiqlaydi."""
-        confirm = self.page.locator("#biruniConfirm")
+        button = self.page.get_by_role(
+            "button",
+            name=button_name,
+            exact=True,
+        )
+        confirm = self._visible_modal_candidates().filter(has=button).first
         expect(confirm).to_be_visible()
         if expected_text:
             expect(confirm).to_contain_text(expected_text)
@@ -556,40 +571,24 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def confirm_biruni_if_visible(
-        self,
-        expected_text=None,
-        button_name="да",
-        timeout=1_000,
-    ):
-        """Biruni confirm ko'rinsa tasdiqlaydi, bo'lmasa ``False`` qaytaradi."""
-        confirm = self.page.locator("#biruniConfirm")
-        try:
-            expect(confirm).to_be_visible(timeout=timeout)
-        except (AssertionError, PlaywrightTimeoutError):
-            return False
-
-        if expected_text:
-            expect(confirm).to_contain_text(expected_text)
-        expect(confirm).to_have_css("opacity", "1")
-        confirm.get_by_role("button", name=button_name, exact=True).click()
-        confirm.wait_for(state="hidden")
-        return True
-
-    # ------------------------------------------------------------------------------------------------------------------
-
     def close_biruni_alert(self, *expected_text):
-        """Ko'rinadigan Biruni extended error alertini tekshiradi va yopadi."""
-        alert = self.page.locator("#biruniAlertExtended")
+        """Ko'rinadigan Biruni error alertini tekshiradi va yopadi."""
+        error_text = re.compile(r"ошибка|error|URL\s*:|Uri\s*:", re.IGNORECASE)
+        alert = self._visible_modal_candidates().filter(has_text=error_text).first
         expect(alert).to_be_visible()
         for value in expected_text:
             if value:
                 expect(alert).to_contain_text(value)
 
-        close_button = alert.locator("button.close").first
+        close_button = alert.locator("button.close").filter(visible=True).first
+        if close_button.count() == 0:
+            close_button = alert.get_by_role(
+                "button",
+                name=re.compile(r"закрыть|close|×", re.IGNORECASE),
+            ).filter(visible=True).first
         expect(close_button).to_be_visible()
         close_button.click()
-        alert.wait_for(state="hidden")
+        expect(alert).to_be_hidden()
 
     # ------------------------------------------------------------------------------------------------------------------
 
