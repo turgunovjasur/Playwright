@@ -11,7 +11,7 @@ if not defined TELEGRAM_BOT_TOKEN (
 )
 
 if not defined TELEGRAM_RUN_PASSWORD (
-    echo TELEGRAM_RUN_PASSWORD environment variable is required (test run password).
+    echo TELEGRAM_RUN_PASSWORD environment variable is required (CI run/stop password).
     exit /b 1
 )
 

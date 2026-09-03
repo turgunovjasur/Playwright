@@ -38,6 +38,13 @@ DELIVERY_SUITE_ORDER = {
     "Report Group": 1,
     "Forms": 2,
 }
+ACTIVE_WORKFLOW_RUN_STATUSES = (
+    "queued",
+    "in_progress",
+    "waiting",
+    "requested",
+    "pending",
+)
 
 SERVERS = {
     "smartup": "https://smartup.online",
@@ -122,6 +129,13 @@ class WorkflowJob:
 
 
 @dataclass(frozen=True)
+class CancelRunsResult:
+    active_run_ids: tuple[int, ...]
+    cancelled_run_ids: tuple[int, ...]
+    failed_run_ids: tuple[int, ...]
+
+
+@dataclass(frozen=True)
 class ActiveRun:
     chat_id: str
     request: RunRequest
@@ -202,6 +216,35 @@ class PendingRunStore:
 
 
 @dataclass(frozen=True)
+class PendingStop:
+    prompt_message_id: int | None
+
+
+class PendingStopStore:
+    """Parol kutilayotgan /stop so'rovlarini chat bo'yicha saqlaydi."""
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._pending = {}
+
+    def set(self, chat_id, pending):
+        with self._lock:
+            self._pending[chat_id] = pending
+
+    def get(self, chat_id):
+        with self._lock:
+            return self._pending.get(chat_id)
+
+    def has(self, chat_id):
+        with self._lock:
+            return chat_id in self._pending
+
+    def clear(self, chat_id):
+        with self._lock:
+            self._pending.pop(chat_id, None)
+
+
+@dataclass(frozen=True)
 class BotConfig:
     telegram_token: str
     run_password: str
@@ -248,7 +291,7 @@ def server_keys_from_env(value):
 def load_config():
     allowed_server_keys = server_keys_from_env(os.getenv("ALLOWED_SERVER_URLS", ""))
 
-    # Botdan hamma foydalana oladi; testni run qilish faqat to'g'ri parol bilan ochiladi.
+    # Botdan hamma foydalana oladi; run/stop faqat to'g'ri parol bilan ochiladi.
     run_password = env_required("TELEGRAM_RUN_PASSWORD")
 
     return BotConfig(
@@ -545,6 +588,66 @@ class GitHubActionsClient:
                 return WorkflowRun(run_id=run_id, html_url=html_url)
         return None
 
+    def active_runs(self):
+        """Repo bo'yicha barcha active workflow runlarini qaytaradi."""
+        url = f"https://api.github.com/repos/{self.repository}/actions/runs"
+        runs_by_id = {}
+        for status in ACTIVE_WORKFLOW_RUN_STATUSES:
+            page = 1
+            while True:
+                response = self.session.get(
+                    url,
+                    params={"status": status, "per_page": "100", "page": str(page)},
+                    timeout=30,
+                )
+                response.raise_for_status()
+                items = response.json().get("workflow_runs", [])
+                for item in items:
+                    run_id = item.get("id")
+                    html_url = item.get("html_url")
+                    if not isinstance(run_id, int) or not isinstance(html_url, str):
+                        continue
+                    runs_by_id[run_id] = WorkflowRun(
+                        run_id=run_id,
+                        html_url=html_url,
+                        status=str(item.get("status") or status),
+                        conclusion=(
+                            str(item.get("conclusion"))
+                            if item.get("conclusion") is not None
+                            else None
+                        ),
+                        event=str(item.get("event") or ""),
+                    )
+                if len(items) < 100:
+                    break
+                page += 1
+        return sorted(runs_by_id.values(), key=lambda run: run.run_id or 0)
+
+    def force_cancel_all_active_runs(self):
+        active_runs = self.active_runs()
+        cancelled_run_ids = []
+        failed_run_ids = []
+        for run in active_runs:
+            if run.run_id is None:
+                continue
+            url = (
+                f"https://api.github.com/repos/{self.repository}/actions/"
+                f"runs/{run.run_id}/force-cancel"
+            )
+            try:
+                response = self.session.post(url, timeout=30)
+                if response.status_code not in {202, 204}:
+                    response.raise_for_status()
+            except requests.RequestException:
+                failed_run_ids.append(run.run_id)
+                continue
+            cancelled_run_ids.append(run.run_id)
+        return CancelRunsResult(
+            active_run_ids=tuple(run.run_id for run in active_runs if run.run_id is not None),
+            cancelled_run_ids=tuple(cancelled_run_ids),
+            failed_run_ids=tuple(failed_run_ids),
+        )
+
     def find_new_run(self, started_at):
         deadline = time.monotonic() + 30
         earliest = started_at - timedelta(seconds=15)
@@ -711,7 +814,8 @@ def parse_github_time(value):
 def help_text():
     return (
         "Test run qilish uchun /run yuboring. Oxirgi CI va Telegram "
-        "notification holati uchun /status yuboring.\n\n"
+        "notification holati uchun /status yuboring. Barcha active CI runlarini "
+        "to'xtatish uchun /stop yuboring.\n\n"
         "Bot avval Smoke yoki Forms suite'ini, keyin serverni so'raydi.\n"
         "So'ngra parol so'raladi — to'g'ri parol kiritilsa tanlangan test ishga tushadi.\n"
         "Company code/password GitHub Secrets'dan olinadi.\n"
@@ -757,7 +861,7 @@ def start_text(config):
         "\n"
         "⚠️ Test ketayotganda yangi /run xabar bilan rad etiladi.\n"
         "\n"
-        "Buyruqlar: /run  /status  /servers  /help  /start"
+        "Buyruqlar: /run  /stop  /status  /servers  /help  /start"
     )
 
 
@@ -950,6 +1054,112 @@ def safe_delete_transient_messages(telegram, active):
         safe_delete_message(telegram, active.chat_id, message_id)
 
 
+def edit_or_send_message(telegram, chat_id, message_id, text):
+    if message_id is None:
+        telegram.send_message(chat_id, text)
+        return
+    telegram.edit_message(chat_id, message_id, text)
+
+
+def stop_result_text(result):
+    if not result.active_run_ids:
+        return "✅ Active CI run topilmadi."
+    cancelled = len(result.cancelled_run_ids)
+    failed = len(result.failed_run_ids)
+    if failed:
+        return (
+            f"⚠️ {len(result.active_run_ids)} ta active CI run topildi.\n"
+            f"Force-cancel yuborildi: {cancelled}\n"
+            f"To'xtatib bo'lmadi: {failed}\n"
+            "Qolgan runlar holatini /status orqali tekshiring."
+        )
+    return f"🛑 {cancelled} ta active CI run uchun force-cancel yuborildi."
+
+
+def show_stop_prompt(telegram, chat_id, pending_stop_store):
+    prompt_message_id = telegram.send_message(
+        chat_id,
+        (
+            "🔒 Barcha active CI runlarini to'xtatish uchun parolni yuboring.\n"
+            "Bu queued va running workflow runlarning barchasini bekor qiladi."
+        ),
+    )
+    pending_stop_store.set(
+        chat_id,
+        PendingStop(prompt_message_id=prompt_message_id),
+    )
+
+
+def verify_stop_password(
+    telegram,
+    github,
+    config,
+    active_store,
+    pending_stop_store,
+    chat_id,
+    text,
+    user_message_id,
+):
+    pending = pending_stop_store.get(chat_id)
+    if pending is None:
+        return
+
+    safe_delete_message(telegram, chat_id, user_message_id)
+    if not password_matches(config.run_password, text):
+        edit_or_send_message(
+            telegram,
+            chat_id,
+            pending.prompt_message_id,
+            "❌ Parol noto'g'ri. Qaytadan parolni yuboring yoki /stop bilan boshidan boshlang.",
+        )
+        return
+
+    pending_stop_store.clear(chat_id)
+    edit_or_send_message(
+        telegram,
+        chat_id,
+        pending.prompt_message_id,
+        "Active CI runlar to'xtatilmoqda...",
+    )
+    local_active = active_store.get()
+    try:
+        result = github.force_cancel_all_active_runs()
+    except Exception as exc:
+        print(
+            f"GitHub stop request failed: {exc.__class__.__name__}",
+            file=sys.stderr,
+        )
+        edit_or_send_message(
+            telegram,
+            chat_id,
+            pending.prompt_message_id,
+            "❌ CI runlarini GitHub'da to'xtatib bo'lmadi. Iltimos, keyinroq qayta urinib ko'ring.",
+        )
+        return
+
+    if (
+        local_active is not None
+        and local_active.workflow_run.run_id in result.cancelled_run_ids
+    ):
+        active_store.clear(local_active.workflow_run.run_id)
+        safe_delete_transient_messages(telegram, local_active)
+        edit_or_send_message(
+            telegram,
+            local_active.chat_id,
+            local_active.status_message_id,
+            f"⚪ {local_active.request.suite_label} CI run uchun "
+            "force-cancel yuborildi.\n"
+            f"Run: {local_active.workflow_run.html_url}",
+        )
+
+    edit_or_send_message(
+        telegram,
+        chat_id,
+        pending.prompt_message_id,
+        stop_result_text(result),
+    )
+
+
 def show_run_start(
     telegram,
     github,
@@ -1027,11 +1237,25 @@ def handle_message(
     config,
     active_store,
     pending_store,
+    pending_stop_store,
     chat_id,
     text,
     message_id,
 ):
     is_command = text.startswith("/")
+
+    if pending_stop_store.has(chat_id) and not is_command:
+        verify_stop_password(
+            telegram,
+            github,
+            config,
+            active_store,
+            pending_stop_store,
+            chat_id,
+            text,
+            message_id,
+        )
+        return
 
     # Parol kutilayotgan bo'lsa va bu buyruq bo'lmasa — matnni parol urinishi deb qaraymiz.
     if pending_store.has(chat_id) and not is_command:
@@ -1043,6 +1267,7 @@ def handle_message(
     # Buyruq kelsa, oldingi parol kutish holatini bekor qilamiz.
     if is_command:
         pending_store.clear(chat_id)
+        pending_stop_store.clear(chat_id)
 
     command = text.split(maxsplit=1)[0].split("@", 1)[0].lower() if text else ""
     if command == "/start":
@@ -1072,10 +1297,13 @@ def handle_message(
     if command == "/run":
         show_run_start(telegram, github, chat_id, config, active_store)
         return
+    if command == "/stop":
+        show_stop_prompt(telegram, chat_id, pending_stop_store)
+        return
 
     telegram.send_message(
         chat_id,
-        "Noto'g'ri command. /run, /status yoki /help yuboring.",
+        "Noto'g'ri command. /run, /stop, /status yoki /help yuboring.",
     )
 
 
@@ -1284,6 +1512,7 @@ def main():
     github = GitHubActionsClient(config.github_token, config.repository, config.workflow, config.ref)
     active_store = ActiveRunStore()
     pending_store = PendingRunStore()
+    pending_stop_store = PendingStopStore()
 
     offset = None
     print(f"Telegram CI bot started for {config.repository}/{config.workflow} on {config.ref}")
@@ -1310,6 +1539,7 @@ def main():
                             config,
                             active_store,
                             pending_store,
+                            pending_stop_store,
                             chat_id,
                             text.strip(),
                             message_id if isinstance(message_id, int) else None,

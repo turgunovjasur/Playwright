@@ -8,9 +8,9 @@ if (-not $env:TELEGRAM_BOT_TOKEN) {
     throw "TELEGRAM_BOT_TOKEN environment variable is required."
 }
 
-# Botdan hamma foydalana oladi; testni run qilish faqat to'g'ri parol bilan ochiladi.
+# Botdan hamma foydalana oladi; CI run/stop faqat to'g'ri parol bilan ochiladi.
 if (-not $env:TELEGRAM_RUN_PASSWORD) {
-    throw "TELEGRAM_RUN_PASSWORD environment variable is required (test run paroli)."
+    throw "TELEGRAM_RUN_PASSWORD environment variable is required (CI run/stop paroli)."
 }
 
 if (-not $env:GITHUB_TOKEN -and -not $env:GITHUB_PAT) {

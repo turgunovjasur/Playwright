@@ -32,6 +32,12 @@ Source: `scripts/telegram_ci_bot.py`; `.github/workflows/daily-smoke.yml`;
   `AUTO_RUN_*` konfiguratsiyasi olib tashlangan.
 - Telegram bot manual flowida avval suite (`Smoke` yoki `Forms`), keyin server (`Online` yoki
   `Xtrade`), so'ng run password authorizationi tanlanadi.
+- `/stop` repo bo'yicha `queued`, `waiting`, `pending`, `requested` va
+  `in_progress` GitHub Actions runlarini topib, force-cancel qiladi. Buyruq
+  `/run` bilan bir xil `TELEGRAM_RUN_PASSWORD` orqali himoyalangan; parol xabari
+  tekshiruvdan oldin chatdan best-effort o'chiriladi. Standalone ekvivalenti
+  `scripts/stop_ci_runs.py`; u `GITHUB_TOKEN` yoki `GITHUB_PAT` va ixtiyoriy
+  `GITHUB_REPOSITORY` environment qiymatidan foydalanadi.
 - `/status` oxirgi scheduled yoki manual workflow holati va run linki bilan
   birga GitHub Jobs API'dan Smoke/Report/Forms job holatini ko'rsatadi. Active suite
   uchun `RUNNING` va joriy workflow stepi, tugagan suite uchun esa
@@ -219,6 +225,8 @@ Source: GitHub Actions runs `30528649258`, `30878853396`; `scripts/analyze_test_
   `TELEGRAM_RUN_PASSWORD` faqat environment/secret store'dan olinadi.
 - Bot chat allow-listga tayanmaydi; manual run faqat
   `hmac.compare_digest` bilan tekshirilgan run password orqali ochiladi.
+- `/stop` ham `hmac.compare_digest` bilan tekshirilgan shu paroldan keyingina
+  barcha active GitHub Actions runlariga force-cancel yuboradi.
 - Parol xabari qabul qilingach chatdan o'chiriladi.
 - `TELEGRAM_CHAT_ID` GitHub workflow progress/final xabarlari uchun destination;
   manual run authoritysi emas.
