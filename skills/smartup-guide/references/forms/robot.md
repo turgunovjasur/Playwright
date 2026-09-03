@@ -54,6 +54,18 @@ Natija ro'yxatda (`grid(robot_name, robot_code)`):
 - `c_rb_pw{code}` ko'rinadi
 - `robot-pw{code}` ko'rinadi
 
+### View URLdan robot IDni olish
+
+Tags: robot, view, id, data-store
+Status: live-ui-confirmed
+Verified: 2026-08-27
+Source: live UI; `tests/smoke/test_setup/test_04_robot.py`
+
+- Robot view URL patterni `anor/mrf/robot_view?robot_id=<id>`; summary ham
+  `robot-pw{code} (<id>)` ko'rinishida IDni ko'rsatadi.
+- Setup test save'dan keyin view'ni ochib, `robot_id`ni musbat integer sifatida
+  tekshiradi va `data_store.json.robot_id`ga saqlaydi.
+
 ## Downstream ta'siri
 
 - `test_06_user.py`: user yaratishda `robot-pw{code}` "Штат" maydoniga biriktiriladi

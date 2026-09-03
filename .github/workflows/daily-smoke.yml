@@ -38,7 +38,7 @@ jobs:
     if: ${{ github.event_name == 'schedule' || inputs.suite == 'smoke' }}
     uses: ./.github/workflows/run-smartup-suite.yml
     with:
-      target: setup-group-0
+      target: setup-smoke
       server_key: ${{ inputs.server || 'smartup' }}
       telegram_progress_message_id: ${{ inputs.suite == 'smoke' && inputs.telegram_progress_message_id || '' }}
       artifact_name: smoke-test-results

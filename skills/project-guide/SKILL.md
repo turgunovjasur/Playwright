@@ -62,6 +62,11 @@ Smartup reference ownershipi:
 
 - Savol, taklif yoki `nima deysan?` yozish ruxsati emas. Read-only tahlildan
   so'ng o'zgartirishdan oldin tasdiq ol.
+- Foydalanuvchining loyiha haqida aytgan gapi o'z-o'zidan skill yoki
+  knowledge-base'ga write-back ruxsati emas. Agent uni durable bilim yoki qoida
+  sifatida saqlash kerak deb hisoblasa, avval nima va qaysi canonical ownerga
+  yozilishini aytib, foydalanuvchidan aniq tasdiq so'rasin. Faqat tasdiqdan
+  keyin `learn` orqali skill yoki reference faylini o'zgartirsin.
 - `yoz`, `o'zgartir`, `tuzat`, `amalga oshir`, `qoidaga qo'sh` faqat aytilgan
   scope'ni implement qilishga ruxsat beradi; scope'ni kengaytirma.
 - Boshqa branch aniq aytilmasa kod tahriridan oldin branchni tekshir va
@@ -85,9 +90,12 @@ Smartup reference ownershipi:
   o'chiriladi.
 - Cache, snapshot, review diff va agent ledger final validatordan oldin tozalanadi.
 
-## Avtomatik O'rganish
+## Tasdiqli O'rganish
 
 Foydalanuvchi loyiha UI xatti-harakati, root cause, project pattern yoki oldingi
-yechimning noto'g'riligini aniq fakt sifatida bildirsa `learn`ni proaktiv
-ishlatish pre-authorized. Savol, gipoteza, rad etilgan variant, tasdiqlanmagan
-dizayn, secret yoki vaqtinchalik session qiymati avtomatik yozilmaydi.
+yechimning noto'g'riligini aniq fakt sifatida bildirsa, agent uni canonical
+bilimga nomzod deb taklif qilishi mumkin, lekin avtomatik yozmaydi. Taklifda
+yoziladigan fakt va canonical owner ko'rsatiladi; foydalanuvchi aniq
+tasdiqlagandan keyingina `learn` ishlatiladi. Savol, gipoteza, rad etilgan
+variant, tasdiqlanmagan dizayn, secret yoki vaqtinchalik session qiymati
+tasdiq bo'lsa ham durable bilimga yozilmaydi.

@@ -480,3 +480,15 @@ Replaced by: `skills/smartup-guide/references/forms/cislink.md#end-to-end-test-f
 - Current behavior: uchala template-based report har bir run uchun UUID suffixli
   yangi template yaratadi, aynan shu template tanlanganini tekshiradi va shu
   bilan reportni download qiladi.
+
+### Har bir listda table fieldni search field sifatida yoqish
+Status: superseded
+Observed: 2026-08-27
+Superseded: 2026-08-27
+Source: live UI `*/a2/trade/tvt/visit_list`
+Replaced by: `skills/smartup-guide/references/ui-patterns.md#list-va-grid-setting`;
+`skills/smartup-guide/references/forms/visit-list.md`
+- Old behavior: grid settingdagi har qanday table field shu nom bilan search
+  settingda ham mavjud deb qabul qilinar edi.
+- Current behavior: search fieldlar formaga bog'liq; Visit listda `ИД` table
+  fieldi mavjud, ammo `Настройки поиска` dialogida `ИД` yo'q.

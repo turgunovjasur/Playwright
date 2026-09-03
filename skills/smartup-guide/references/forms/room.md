@@ -1,6 +1,6 @@
 # Рабочая зона (Room) — yaratish va prikreplenie
 
-Room = **Рабочая зона**. Create test: `tests/smoke/test_setup/test_03_room.py` (`run_room`); attachment test: `tests/smoke/test_setup/test_20_room_attachment.py` (`run_room_attachment`).
+Room = **Рабочая зона**. Create test: `tests/smoke/test_setup/test_03_room.py` (`run_room`); attachment test: `tests/smoke/test_setup/test_21_room_attachment.py` (`run_room_attachment`).
 
 ## Navigatsiya
 
@@ -14,6 +14,18 @@ Tags: room, locator, loader, helper
 - 2026-06-26 debug: `Создать` bosilgandan keyin `room+add` sahifasida blocking loader/title kech yuklanishi mumkin; heading assertdan oldin `BasePage(page).wait_for_loader()` chaqirilsin.
 - Label helper: `Код` va `Название` ketma-ket maydonlar. Keng card/col konteyneridagi birinchi inputni olish `Название` qiymatini `Код` inputiga yozib yuboradi. `BasePage.input(...)` labeldan keyingi birinchi real inputni target qilishi kerak.
 - Screenshot: `references/forms/screenshots/room/room__add-loader__desktop-20260626.png`.
+
+### View URLdan room IDni olish
+
+Tags: room, view, id, data-store
+Status: live-ui-confirmed
+Verified: 2026-08-27
+Source: live UI; `tests/smoke/test_setup/test_03_room.py`
+
+- Room view URL patterni `anor/mrf/room_view?room_id=<id>`; summary ham
+  `room-pw{code} (<id>)` ko'rinishida IDni ko'rsatadi.
+- Setup test save'dan keyin view'ni ochib, `room_id`ni musbat integer sifatida
+  tekshiradi va `data_store.json.room_id`ga saqlaydi.
 
 ## Прикрепление tablari (link role)
 
@@ -31,6 +43,19 @@ Tags: room, attachment, test, base-page, idempotent
 - Mijoz va `Акция` qatorining Available/Attached holati raw `.tbl-row.filter(...).is_visible()` bilan emas, `base.grid(<row text>, return_bool=True)` orqali aniqlanadi; helper target qator ko'rinsa `True`, bo'lmasa `False` qaytaradi.
 - `Типы оплат`da `Доступные`/`Прикрепленные` bosilganda mavjud `table_payment_type` grid asinxron yangilanadi: clickdan darhol keyin loader ko'rinsa ham eski tabning qatorlari qisqa vaqt DOMda qoladi. `grid(state="empty", return_bool=True)` yoki `grid(..., return_bool=True)`dan oldin `base.wait_for_loader()` shart; 2026-07-14 live probe'da oldingi 4 qator sabab darhol tekshiruv `False`, loader tugagach `нет данных` sabab `True` qaytardi.
 - Qayta-runda `Доступные` bo'sh bo'lsa test shunchaki skip qilmaydi: `Прикрепленные`da 4 payment type, `Основной склад`, `Основная касса`, `natural_client-pw{code}` va `Акция` mavjudligini tekshiradi.
+
+### Warehouse ID alohida setup testida olinadi
+
+Tags: room, attachment, warehouse, ownership, data-store
+Status: code-confirmed
+Verified: 2026-08-27
+Source: user; `tests/smoke/test_setup/test_21_room_attachment.py`;
+`tests/smoke/test_setup/test_22_warehouse.py`
+
+- `run_room_attachment` faqat `Основной склад`ni roomga biriktiradi.
+- Warehouse view tekshiruvi va `warehouse_id`ni saqlash Room Attachment ichida
+  bajarilmaydi; bu ish setup runnerdagi alohida **22 - Warehouse** case'ga
+  tegishli. UI kontrakti uchun [warehouse.md](warehouse.md)ga qarang.
 
 ### Oddiy tablar patterni (Типы оплат / Склады / Кассы / Физические лица)
 `link → expect b-page text → "Доступные" → (grid checkall yoki kerakli qatorni bosish) → "Прикрепить" → confirm_biruni("Прикрепить N?" / "...nomi?") → "Прикрепленные"da tekshirish`.
@@ -53,4 +78,4 @@ Room'ga `Акция` narx turi ulanmasa, aksiya chegirmasi order'ning "Акци�
 ### 2026-07-14 qoidalarga mos refactor
 Tags: room, attachment, refactor, run-result
 - Raw `expect(page.locator(...))` tekshiruvlari BasePage helperlariga o'tkazildi, 3 ta attachment bo'limi alohida Allure step sifatida ochiq yozildi va oldindan attached holat uchun aniq verifikatsiya qo'shildi.
-- Joriy `test_20_room_attachment.py` saqlangan code (`NEW_CODE=0`) va `--headless` bilan mavjud attached state, `expect_page(root="#kt_content")` hamda boolean `grid(state="empty", return_bool=True)` / `grid(<row>, return_bool=True)` orqali **1 passed in 28.41s**.
+- Joriy `test_21_room_attachment.py` saqlangan code (`NEW_CODE=0`) va `--headless` bilan mavjud attached state, `expect_page(root="#kt_content")` hamda boolean `grid(state="empty", return_bool=True)` / `grid(<row>, return_bool=True)` orqali **1 passed in 28.41s**.

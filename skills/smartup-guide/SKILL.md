@@ -111,12 +111,14 @@ Setup formalar:
 - [price-type.md](references/forms/price-type.md) — Narx turi yaratish
 - [currency-view.md](references/forms/currency-view.md) — Valyuta ko'rish va kurs qo'shish modali
 - [room.md](references/forms/room.md) — Рабочая зона yaratish va prikreplenie
+- [warehouse.md](references/forms/warehouse.md) — Asosiy ombor view'i va ID olish
 - [user.md](references/forms/user.md) — Foydalanuvchi, rol, ruxsatlar, parol
 - [legal-person.md](references/forms/legal-person.md) — Yuridik shaxs
 - [natural-person.md](references/forms/natural-person.md) — Jismoniy shaxs
 - [login.md](references/forms/login.md) — Login sahifasi
 
 Biznes formalar:
+- [visit-list.md](references/forms/visit-list.md) — A2 vizitlar ro'yxati, ID ustuni va web verification
 - [order-list.md](references/forms/order-list.md) — Order ro'yxati, row selection va action tugmalari
 - [order-add.md](references/forms/order-add.md) — Order yaratish
 - [client-payment.md](references/forms/client-payment.md) — Client to'lovi yaratish va o'tkazish

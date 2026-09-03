@@ -379,10 +379,32 @@ Source: real Chromium probe — legacy va A2 formalarida 4 kanal;
 
 ### List va Grid Setting
 Tags: list, grid, search, column
-- Qoida: Smartup list formalarida kerakli ustun yoki search field ko'rinmasa, grid setting orqali ustun va shu ustun bo'yicha searchni yoqish mumkin.
-- Bu pattern barcha listlarda umumiy.
-- Testda ishlatish: qo'shilgan elementni listda topish uchun kerakli ustun/search yo'q bo'lsa, avval grid settingdan yoq.
+- Qoida: Smartup list formalarida kerakli ustun grid setting orqali yoqiladi;
+  shu field `Настройки поиска` dialogida ham mavjud bo'lsagina `search_name`
+  orqali search yoqiladi. Search fieldlar ro'yxati formaga bog'liq.
+- Testda ishlatish: `base.grid_setting(menu_name="Настройка таблицы", field_name="ИД", search_name="ИД")` faqat ikkala dialogda ham `ИД` mavjud listda ishlatiladi. Visit listda `ИД` faqat table field bo'lgani uchun `search_name` berilmaydi.
+- `Дополнительные поля` va `Настройки поиска` section nomlari helperning ichki UI kontrakti; consumer ularni parametr sifatida takrorlamaydi.
 - Qoida: Listda qatorlar ko'p bo'lsa grid faqat birinchi sahifadagi qatorlarni render qiladi; yaratilgan entity 50 tadan keyin bo'lsa `b-grid` bo'yicha to'g'ridan-to'g'ri `to_contain_text` fail qiladi. List assertdan oldin global `Поиск`ga unique code/name yozib `Enter` bos.
+
+### A2 grid setting alohida DOM kontrakti
+
+Tags: a2, grid, setting, column, search, angular-base-page
+Status: live-ui-confirmed
+Verified: 2026-08-27
+Source: live UI; `https://kernel.greenwhite.uz/anor/mkr/price_type_list`;
+`utils/angular_base_page.py`
+
+- A2 `smt-data-table` actions menyusi `smtvalue="menu"` buttoni orqali ochiladi;
+  actionlar CDK overlaydagi `menuitem` elementlar.
+- Table fieldlar `Настройки таблицы` dialogidagi `Активные поля` va
+  `Неактивные поля`da boshqariladi; inactive field button bosilganda active
+  listga o'tadi, `Сохранить` dialogni yopadi.
+- Search fieldlar table dialogida emas, alohida `Настройки поиска` dialogida
+  checkbox orqali yoqiladi va `Подтвердить` bilan saqlanadi.
+- Search fieldlar tarkibi formaga bog'liq: Visit listda `ИД` table fieldi bor,
+  ammo search settingda `ИД` yo'q.
+- `AngularBasePage.grid_setting()` shu A2 kontraktni ishlatadi; legacy
+  `BasePage.grid_setting()` esa Biruni grid-setting route kontraktini saqlaydi.
 
 ### Umumiy CRUD Sahifa Tuzilishi
 Tags: list, add, edit, view, grid, loader

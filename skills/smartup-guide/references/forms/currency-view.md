@@ -6,6 +6,19 @@ Tags: currency, currency-view, rate, modal
 - Sahifa headingi: `Валюта (просмотр)`.
 - `Курсы` tabida `Установить курс` tugmasi kurs qo'shish modalini ochadi.
 - Related test: `tests/smoke/test_setup/test_15_currency.py`.
+- USD view URLdagi `currency_id` musbat integer sifatida tekshirilib
+  `data_store.json.currency_id`ga saqlanadi.
+
+### USD va UZS ID keylari
+Tags: currency, setup, usd, uzs, data-store
+Status: live-ui-confirmed
+Verified: 2026-08-28
+Source: live UI; `tests/smoke/test_setup/test_15_currency.py`
+- Qoida: `currency_id` USD view IDsi; UZS row listda `860`, `сум`,
+  `Узбекский сум` qiymatlari bilan ko'rinadi va uning view IDsi alohida
+  `currency_id_uzb` keyiga saqlanadi.
+- Testda ishlatish: UZS price type/productli order `currency_id_uzb`ni,
+  USD order esa `currency_id`ni ishlatadi; ikkala keyni almashtirma.
 
 ### Добавить курс modali
 Tags: currency, rate, modal, dialog, heading, locator

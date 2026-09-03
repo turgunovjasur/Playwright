@@ -85,7 +85,7 @@ def test_<nomi>(page, code, save_data):
 
 ### `run_` / `test_` konvensiyasi qoidalari
 
-- **Maksimal base funksiya**: `base = BasePage(page)` qilib olinadi va `base.navigate_to/expect_page/switch_filial/click/text/form_view/input/b_input/multiselect/checkbox/grid_controller/grid/grid_cell/confirm_biruni/close_biruni_alert/wait_for_loader` ishlatiladi. Raw `page.get_by_role/locator` faqat mos base funksiya yo'q joyda (masalan murakkab scoped filter yoki upload elementi). Grid qatorini bosish kerak bo'lsa alohida wrapper emas, `base.grid(..., click=True)` ishlatiladi; qaytgan rowning aniq ustunini tekshirish yoki o'qish uchun raw `.tbl-cell.nth(...)` emas, `base.grid_cell(row, index, ...)` ishlatiladi.
+- **Maksimal base funksiya**: `base = BasePage(page)` qilib olinadi va `base.navigate_to/expect_page/switch_filial/click/text/form_view/input/b_input/multiselect/checkbox/grid_controller/grid_setting/grid/grid_cell/confirm_biruni/close_biruni_alert/wait_for_loader` ishlatiladi. Raw `page.get_by_role/locator` faqat mos base funksiya yo'q joyda (masalan murakkab scoped filter yoki upload elementi). Grid qatorini bosish kerak bo'lsa alohida wrapper emas, `base.grid(..., click=True)` ishlatiladi; qaytgan rowning aniq ustunini tekshirish yoki o'qish uchun raw `.tbl-cell.nth(...)` emas, `base.grid_cell(row, index, ...)` ishlatiladi.
 - **allure.step raqamlari docstring qadamlari bilan mantiqan mos** kelsin; step nomi qisqa va professional.
 - **Test data** — `run_` boshida lokal `f"...{code}"` o'zgaruvchilar; faqat
   setup baseline'ni group testlarga uzatish kerak bo'lsa oxirgi stepda
@@ -115,7 +115,7 @@ Source: user
 
 - **Fixtures** — conftest.py dan keladi, import qilma:
   - `page` — yakka test uchun fresh page; `session_page` — setup chain; `group_user_page` — group chain (login qilingan)
-  - `code` — 6 xonali unikal son; `save_data` / `load_data` / `require_data` — data_store; `logger`
+  - `code` — 6 xonali unikal son; `save_data` / `load_data` — data_store; `logger`
 - **Allure**: har bir test `@allure.title()` va `with allure.step()` bilan bo'lishi SHART
 - **Locator**: `page.locator()` ishlatilsin, `page.find_element()` EMAS
 - **Assert**: `expect(locator).to_be_visible()` ishlatilsin, Python `assert` EMAS
@@ -131,7 +131,9 @@ Source: user
 - **Timeout**: DEFAULT_TIMEOUT (10s) yetarli; kerak bo'lsa `page.wait_for_timeout()` emas, `expect(...).to_be_visible()` kutish
 - **Session data**: `save_data("key", value)` va `load_data("key")` setup
   baseline → group yo'nalishida ishlatiladi; group testcase'lar o'zaro data
-  almashmaydi.
+  almashmaydi. `load_data("key")` defaultda missing/bo'sh key uchun aniq
+  dependency xatosi ko'taradi; faqat optional key
+  `load_data("key", allow_missing=True)` bilan `None` qaytarishi mumkin.
 - **`code`**: har bir test uchun unikal identifikator, nom sifatida ishlating
 
 ## 4. Runnerga qo'shish
@@ -249,6 +251,10 @@ Source: user; `skills/write-test/SKILL.md:33`; `skills/write-test/references/pro
 - Add formadagi barcha majburiy `*` inputlarni albatta to'ldir.
 - Test add qilgan har bir element list formada ham, view formada ham ko'ringanini tekshirishi shart.
 - Agar qo'shilgan elementni list formadan topish uchun kerakli ustun yoki search yo'q bo'lsa, grid settingdan kerakli ustunni va shu ustun bo'yicha searchni yoq; Smartup listlarida bu umumiy pattern.
+- Grid setting uchun form-specific `#deal_id` yoki raw drag/click locator yozma;
+  `base.grid_setting(menu_name="Настройка таблицы", field_name="...", search_name="...")`
+  ishlat. `search_name` ixtiyoriy, return qiymat esa saqlangandan keyingi grid
+  ustun indeksi bo'lib `base.grid_cell(...)`ga beriladi.
 - Add formaga kiritiladigan nom, kompaniya, shaxs, manzil kabi biznes qiymatlarni mantiqan `Faker` bilan generatsiya qil; testda qidirish/bog'lash oson bo'lishi uchun kerakli joyda `code` yoki saqlangan entity code qo'shimchasini saqla.
 - Smartup test yozish jarayonida yangi formaga kirilganda yoki URL/form state o'zgarganda screenshotni `skills/smartup-guide/references/forms/screenshots/<form-slug>/` ichiga saqla; `test-results/screens/smartup/` forma arxivi uchun ishlatilmasin.
 - Natural Person alohida entity flow/test hisoblanadi; boshqa testcase jismoniy
@@ -264,6 +270,41 @@ Source: user; 2026-07-31 current group/flow code audit
 Bu bo'lim yangi yoziladigan va refactor qilinadigan group testlari uchun target
 architecture hisoblanadi. Eski A/B/C implementatsiyasi 2026-07-31 kuni
 o'chirilgan; ular qayta yozilganda quyidagi qoidalar joriy contract bo'ladi.
+
+#### API va Web testcase chegarasi
+
+Status: code-confirmed
+Verified: 2026-09-03
+Source: user; `utils/base_api.py`;
+`tests/smoke/flows/flow_mobile_authorization.py`;
+`tests/smoke/flows/flow_visit_sync.py`;
+`tests/smoke/test_groups/test_visit_grup/test_01_mobile_visit.py`;
+`tests/smoke/test_groups/test_visit_grup/test_02_mobile_order_visit.py`;
+`tests/smoke/test_groups/test_visit_grup/test_0_visit_runner.py`
+
+- API test arxitekturasi Web testlar kabi
+  `BaseAPI -> reusable flow -> scenario-specific run bosqichi -> runner`
+  qatlamlariga bo'linadi. `BaseAPI` umumiy HTTP primitive'larini, flow esa
+  bir nechta testda takrorlanadigan mobile authorization va Visit sync
+  choreography'ni egallaydi.
+- Har bir Visit leaf `run_*` funksiyasi bitta to'liq biznes scenariyni saqlaydi:
+  mobile login, Visit sync, Web login va Web verification. Shu scenariyning
+  barcha `allure.step`lari leaf ichida turadi. Katta scenario API va Web
+  mas'uliyatlariga ajratilsa, funksiyalar mos ravishda `api_*` va `web_*`
+  prefiksini oladi, `run_*` esa ularning natijasini bevosita uzatadi.
+- Visit runner Allure/pytestda faqat ikkita scenario beradi: ordersiz minimal
+  Visit va orderli Visit. Har scenario mobile login, bitta Visit sync endpoint
+  bosqichi, Web login va Web verificationni ketma-ket chaqiradi.
+- Runner wrapper faqat mos leaf `run_*` funksiyasini chaqiradi; unda
+  `allure.step`, payload, API response parseri, authorization yoki UI locator
+  bo'lmaydi.
+- Bitta kichik vazifani takroriy thin wrapper bilan ikki qatlamga ajratma:
+  umumiy mobile authorization bevosita `authorize_mobile` flowida, Visit sync
+  esa bevosita `sync_visit` flowida bajariladi.
+- Minimal va orderli pytest testcase orasida `data_store` consumer dependency
+  yaratilmaydi.
+- Bu kompozitsiya bir biznes testcase'ning qatlamlarini yig'ish uchun istisno;
+  boshqa group testcase yaratgan state'ga tayanishga ruxsat bermaydi.
 
 #### Group testcase mustaqilligi
 

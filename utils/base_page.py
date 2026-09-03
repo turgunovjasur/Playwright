@@ -760,6 +760,64 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    def grid_setting(self, *, menu_name, field_name, search_name=None, timeout=30_000):
+        """Grid settingda ustunni va ixtiyoriy search maydonini yoqadi.
+
+        Setting saqlanib listga qaytilgach, ``field_name`` ustunining grid
+        indeksini qaytaradi. Ustun/search oldindan yoqilgan bo'lsa qayta
+        o'zgartirilmaydi.
+        """
+        for argument_name, value in (("menu_name", menu_name), ("field_name", field_name)):
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"grid_setting(): {argument_name} bo'sh bo'lmagan string bo'lishi kerak")
+        if search_name is not None and (not isinstance(search_name, str) or not search_name.strip()):
+            raise ValueError("grid_setting(): search_name None yoki bo'sh bo'lmagan string bo'lishi kerak")
+
+        list_url = self.page.url
+        self.grid_controller(open_setting=True)
+        menu = self.page.get_by_role("link", name=menu_name).filter(visible=True).first
+        additional_heading = self.page.get_by_role("heading", name="Дополнительные поля", exact=True).first
+        expect(menu.or_(additional_heading).first).to_be_visible(timeout=timeout)
+        if menu.is_visible():
+            menu.click()
+        expect(additional_heading).to_be_visible(timeout=timeout)
+        selected_fields = additional_heading.locator(
+            "xpath=preceding-sibling::div[1]//ul[contains(@class, 'gs-main-list')]"
+        )
+        additional_fields = additional_heading.locator(
+            "xpath=following-sibling::ul[contains(@class, 'gs-extra-list')][1]"
+        )
+        selected_field = selected_fields.get_by_text(field_name, exact=True)
+        if selected_field.count() == 0:
+            field = additional_fields.get_by_text(field_name, exact=True).first
+            expect(field).to_be_visible(timeout=timeout)
+            field.click()
+        expect(selected_fields.get_by_text(field_name, exact=True)).to_be_visible(timeout=timeout)
+
+        if search_name is not None:
+            search_heading = self.page.get_by_role("heading", name="Настройки поиска", exact=True).first
+            expect(search_heading).to_be_visible(timeout=timeout)
+            search_card = search_heading.locator(
+                "xpath=ancestor::div["
+                "contains(concat(' ', normalize-space(@class), ' '), ' card ')"
+                "][1]"
+            )
+            self.checkbox(label=search_name, checked=True, root=search_card)
+
+        self.page.get_by_role("button", name="Сохранить", exact=True).click()
+        self.page.wait_for_url(list_url, timeout=timeout)
+        self.wait_for_loader(timeout=timeout)
+
+        headers = self.page.locator("b-grid:visible .tbl-header-cell")
+        expected_header = _whitespace_agnostic_pattern(field_name, exact=True)
+        expect(headers.filter(has_text=expected_header).first).to_be_visible(timeout=timeout)
+        for index in range(headers.count()):
+            if expected_header.search(headers.nth(index).inner_text()):
+                return index
+        raise AssertionError(f"grid_setting(): saqlangandan keyin '{field_name}' ustuni topilmadi")
+
+    # ------------------------------------------------------------------------------------------------------------------
+
     def text(self, *values, root="b-page", timeout=10_000):
         """Ko'rinadigan root ichida berilgan matnlar borligini tekshiradi.
 

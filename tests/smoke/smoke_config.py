@@ -144,6 +144,10 @@ def full_runner_paths(config):
         ).resolve(),
         (
             root
+            / "tests/smoke/test_groups/test_visit_grup/test_0_visit_runner.py"
+        ).resolve(),
+        (
+            root
             / "tests/smoke/test_groups/test_report_grup/test_0_group_runner.py"
         ).resolve(),
         (root / "tests/smoke/test_forms/test_0_forms_runner.py").resolve(),

@@ -2,12 +2,13 @@ import allure
 
 from tests.smoke.flows.flow_authorization import authorization
 from utils.base_page import BasePage
+from utils.helper_utils import query_int_from_url
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Robot")]
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def run_robot(page, code):
+def run_robot(page, code, save_data):
     """Testcase: yangi xodim (robot) yaratish.
 
     1. Справочники -> Штат ro'yxatini ochish.
@@ -15,6 +16,8 @@ def run_robot(page, code):
     3. ATS rolini "Админ" qilib belgilab, Рабочая зона sifatida room-pw{code} ni
        biriktirish va "Активный" statusini tekshirish.
     4. Saqlab, ro'yxatda xodim nomi va kodi ko'rinishini tekshirish.
+    5. View formasini ochib, robot IDni data_store ga saqlash.
+    6. View formasini yopib, ro'yxatga qaytish.
     """
     base = BasePage(page)
     robot_name = f"robot-pw{code}"
@@ -41,11 +44,22 @@ def run_robot(page, code):
         base.expect_page(heading="Штат")
         base.grid(robot_name, robot_code)
 
+    with allure.step("5 - View formasidan robot IDni olish va saqlash"):
+        base.grid(robot_name, robot_code, click=True)
+        base.click(name="Просмотреть", exact=True)
+        base.expect_page(heading="Штат (просмотр)", url="robot_view?robot_id=")
+        base.text(robot_name, robot_code, "Активный")
+        save_data("robot_id", query_int_from_url(page.url, "robot_id"))
+
+    with allure.step("6 - View formasini yopib, ro'yxatga qaytish"):
+        base.click(name="Закрыть", exact=True)
+        base.expect_page(heading="Штат", url="robot_list")
+
 # ----------------------------------------------------------------------------------------------------------------------
 
 @allure.title("Xodim (robot) yaratish")
-def test_robot(page, code):
+def test_robot(page, code, save_data):
     base = BasePage(page)
     authorization(page, who="admin")
     base.switch_filial(name=f"filial-pw{code}")
-    run_robot(page, code)
+    run_robot(page, code, save_data)

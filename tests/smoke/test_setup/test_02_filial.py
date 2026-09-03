@@ -2,6 +2,7 @@ import allure
 
 from tests.smoke.flows.flow_authorization import authorization
 from utils.base_page import BasePage
+from utils.helper_utils import query_int_from_url
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Filial")]
 FILIAL_SAVE_LOADER_TIMEOUT = 60_000
@@ -17,9 +18,9 @@ def run_filial(page, code, load_data, save_data):
        Юридическое лицо (legal_person_code orqali qidirib) ni to'ldirish.
     3. Saqlab, Организации ro'yxatiga qaytishni tasdiqlash.
     4. Ro'yxatda yaratilgan filial nomi, legal_person_code va "Активный" statusini tekshirish.
-    5. Filial view formasini ochib, yaratilgan qiymatlarni tekshirish.
+    5. Filial view formasini ochib, yaratilgan qiymatlar va filial IDni tekshirish.
     6. View formasini yopib, ro'yxatga qaytish.
-    7. Filial nomi, valyutasi va bog'langan legal person ma'lumotlarini data_store ga saqlash.
+    7. Filial ID, nomi, valyutasi va bog'langan legal person ma'lumotlarini data_store ga saqlash.
     """
     base = BasePage(page)
     filial_name = f"filial-pw{code}"
@@ -55,14 +56,16 @@ def run_filial(page, code, load_data, save_data):
         base.grid_controller(search=filial_name)
         base.grid(filial_name, legal_person_code, "Активный", click=True)
         base.click(name="Просмотреть")
-        base.expect_page(heading="Организация (просмотр)")
+        base.expect_page(heading="Организация (просмотр)", url="filial_view?filial_id=")
         base.text(filial_name, filial_currency, legal_person_code, legal_person_name, "Активный")
+        filial_id = query_int_from_url(page.url, "filial_id")
 
     with allure.step("6 - View formasini yopib, ro'yxatga qaytish"):
         base.click(name="Закрыть", exact=True)
         base.expect_page(heading="Организации")
 
     with allure.step("7 - Muhim ma'lumotlarni data storega saqlash"):
+        save_data("filial_id", filial_id)
         save_data("filial_name", filial_name)
         save_data("filial_currency", filial_currency)
         save_data("filial_legal_person_code", legal_person_code)

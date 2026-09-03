@@ -30,14 +30,14 @@
 
 ## Test
 
-- `tests/smoke/test_setup/test_21_init_balance.py`:
+- `tests/smoke/test_setup/test_23_init_balance.py`:
   - yagona `run_init_balance(page, code)` `product-pw{code}` uchun 100 dona,
     UZS valyutasida 5000 kirim narxini va `product-usa-pw{code}` uchun 100 dona,
     `Доллар США` valyutasida 1 kirim narxini ketma-ket yaratadi.
-- Setup runner **21 - Init Balance** wrapperida shu bitta `run_init_balance`
+- Setup runner **23 - Init Balance** wrapperida shu bitta `run_init_balance`
   funksiyasini chaqiradi.
 - USD hujjat raqami birinchi hujjat bilan to'qnashmasligi uchun `1{code}`.
-- Setup 22-qadam `Остатки ТМЦ` sahifasida ikkala productni ham tekshiradi.
+- Setup 24-qadam `Остатки ТМЦ` sahifasida ikkala productni ham tekshiradi.
 
 ## Debug Notes
 

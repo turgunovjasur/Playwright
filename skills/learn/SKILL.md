@@ -1,6 +1,6 @@
 ---
 name: learn
-description: Use when foydalanuvchi Smartup UI xatti-harakati, xato sababi, loyiha test qoidasi yoki avvalgi yechim noto'g'riligini tushuntirsa.
+description: Use when foydalanuvchi Smartup UI xatti-harakati, xato sababi, loyiha test qoidasi yoki oldingi yechim haqidagi faktni canonical skillga yozishni aniq tasdiqlasa.
 ---
 
 # Yangi Bilimni Canonical Skillga Qo'shish
@@ -11,24 +11,37 @@ Bu skill yangi project factni `skills/` ichidagi yagona ownerga xavfsiz yozadi.
 Savol, gipoteza, rad etilgan variant, tasdiqlanmagan dizayn, secret/PII yoki
 vaqtinchalik session qiymatini yozma.
 
+## Write-back Tasdig'i
+
+- Foydalanuvchining fakt, qoida, tuzatish yoki e'tiroz aytishi write-back
+  ruxsati emas.
+- Yozishdan oldin agent saqlamoqchi bo'lgan faktni va tanlangan canonical
+  ownerni foydalanuvchiga aytib, aniq tasdiq so'raydi.
+- Faqat foydalanuvchi shu write-backni tasdiqlagandan keyin quyidagi algoritm
+  bajariladi. Tasdiq bo'lmasa skill yoki knowledge-base fayli o'zgartirilmaydi.
+- Foydalanuvchining joriy aniq `skillga yoz`, `qoidaga qo'sh` yoki unga teng
+  buyrug'i aynan aytilgan scope uchun tasdiq hisoblanadi.
+
 ## Algoritm
 
-1. **Atomize:** xabarni bittadan tekshiriladigan, loyihaga xos faktlarga ajrat.
-2. **Sanitize:** password, token, email, credential, session code va real company
+1. **Approval:** joriy suhbatda aynan shu write-back uchun foydalanuvchi
+   tasdig'i borligini tekshir; yo'q bo'lsa yozishni boshlama.
+2. **Atomize:** xabarni bittadan tekshiriladigan, loyihaga xos faktlarga ajrat.
+3. **Sanitize:** password, token, email, credential, session code va real company
    qiymatini olib tashla; `<company_code>` kabi placeholder ishlat.
-3. **Evidence:** har faktga eng kuchli mavjud statusni qo'y:
+4. **Evidence:** har faktga eng kuchli mavjud statusni qo'y:
    - `user-reported` — faqat foydalanuvchi aytgan;
    - `code-confirmed` — amaldagi kod tasdiqlagan;
    - `live-ui-confirmed` — real UI tasdiqlagan;
    - `trace-confirmed` — trace/log tasdiqlagan.
-4. **Owner:** [project-guide](../project-guide/SKILL.md#ownership-va-routing)
+5. **Owner:** [project-guide](../project-guide/SKILL.md#ownership-va-routing)
    xaritasidan bitta canonical owner tanla.
-5. **Search:** tanlangan current owner va `smartup-guide/references/history.md`
+6. **Search:** tanlangan current owner va `smartup-guide/references/history.md`
    ichidan semantik duplicate yoki conflictni qidir.
-6. **Outcome:** quyidagi qaror jadvaliga amal qil.
-7. **Validate:** har qanday yozuvdan keyin
+7. **Outcome:** quyidagi qaror jadvaliga amal qil.
+8. **Validate:** har qanday yozuvdan keyin
    `./.venv/bin/python skills/scripts/validate_skills.py`ni ishlat.
-8. **Report:** owner fayl, evidence status, outcome va validator natijasini ayt.
+9. **Report:** owner fayl, evidence status, outcome va validator natijasini ayt.
 
 ## Qaror Jadvali
 

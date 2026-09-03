@@ -34,7 +34,8 @@ Bir turga tegishli qoidani boshqa turga xato sifatida qo'llama.
 - [ ] `code` fixture to'g'ri ishlatilgan (import qilinmagan, parametr sifatida kelgan)
 - [ ] `save_data` faqat downstream consumer bo'lsa ishlatilgan; kerak bo'lmagan
   test majburan data-store'ga yozmaydi
-- [ ] Downstream qiymat `load_data`/`require_data` orqali olinadi
+- [ ] Downstream qiymat default fail-fast `load_data` orqali olinadi; optional
+  key uchungina `allow_missing=True` beriladi
 - [ ] `logger` xato loglash uchun to'g'ri ishlatilgan
 
 ### 4. BasePage-first (majburiy)

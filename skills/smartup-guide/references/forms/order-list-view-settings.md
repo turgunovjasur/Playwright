@@ -27,6 +27,7 @@ formasi.
 ## Flow And Tests
 
 - Table helper:
+  `utils/base_page.py::BasePage.grid_setting`; Order consumer wrapperi
   `tests/smoke/flows/flow_order/flow_order_list.py::flow_order_list_grid_setting`.
 - Existing lifecycle coverage:
   `tests/smoke/test_life_cycle/test_order.py::run_order_add_column_order_id`.
@@ -70,15 +71,17 @@ Source: live UI
 - Setting testlari shared user preference'ni o'zgartiradi; parallel run uchun
   alohida user yoki teardown/default restore talab qilinadi.
 
-### Table helper generic emas
+### Table setting uchun umumiy BasePage helper
 
-Tags: order, grid-setting, helper, locator, typo
+Tags: order, grid-setting, helper, locator, base-page
 Status: code-confirmed
-Verified: 2026-08-14
-Source: `tests/smoke/flows/flow_order/flow_order_list.py`
+Verified: 2026-08-27
+Source: `utils/base_page.py`; `utils/angular_base_page.py`; `tests/smoke/flows/flow_order/flow_order_list.py`
 
-- `flow_order_list_grid_setting(page, colum_name, search_name)` generic nomga
-  ega bo'lsa ham `#deal_id`ga hardcode qilingan va faqat Order table settingiga
-  mos; `colum_name` parametri ham tarixiy typo bilan qolgan.
-- Uni boshqa gridlar uchun reusable helper deb ishlatma. Umumlashtirish kerak
-  bo'lsa avval consumerlar va form-specific selected-list rootlarini ajrat.
+- `BasePage.grid_setting(menu_name, field_name, search_name=None)` form-specific
+  `#deal_id` locatorisiz `Дополнительные поля`dan ustun qo'shadi va ixtiyoriy
+  `Настройки поиска` checkboxini yoqadi.
+- Helper oldindan yoqilgan field/searchni qayta o'zgartirmaydi, saqlagach listga
+  qaytadi va `grid_cell` uchun ustun indeksini beradi.
+- Order wrapper tarixiy `colum_name` parametrini consumer compatibility uchun
+  saqlaydi, lekin ichkarida umumiy BasePage helperini chaqiradi.

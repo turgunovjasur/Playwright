@@ -1,5 +1,6 @@
-from tests.smoke.test_setup import test_21_init_balance as test_init_balance
+from tests.smoke.test_setup import test_23_init_balance as test_init_balance
 from tests.smoke.test_setup import test_18_product as test_product
+from tests.smoke.test_setup import test_19_product_usa as test_product_usa
 
 
 def test_setup_products_use_separate_uzs_and_usd_price_types(monkeypatch):
@@ -10,12 +11,17 @@ def test_setup_products_use_separate_uzs_and_usd_price_types(monkeypatch):
 
     monkeypatch.setattr(
         test_product,
-        "_create_product_with_price",
+        "create_product_with_price",
+        fake_create,
+    )
+    monkeypatch.setattr(
+        test_product_usa,
+        "create_product_with_price",
         fake_create,
     )
 
     test_product.run_product(object(), "900184")
-    test_product.run_product_usa(object(), "900184")
+    test_product_usa.run_product_usa(object(), "900184")
 
     assert calls == [
         {

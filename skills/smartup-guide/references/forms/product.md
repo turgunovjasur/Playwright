@@ -98,19 +98,23 @@ Live UI probe (2026-07-13) narx grid headerlari: `Название`, `Тип ц�
 - `action.md` aksiya ssenariysi: `product-pw{code}` x10 = 70 000; 10% skidka = 63 000
 - `order-add.md`: `product-pw{code}` va `product-usa-pw{code}` ikkita alohida
   product sifatida ishlatiladi.
-- Har ikkala product uchun Setup 21-qadamda 100 donadan boshlang'ich qoldiq
+- Har ikkala product uchun Setup 23-qadamda 100 donadan boshlang'ich qoldiq
   o'tkaziladi; shuning uchun fresh run'da ikkalasi ham Order product pickerda
   stock preconditioniga ega.
 
 ## Test
 
-- `tests/smoke/test_setup/test_18_product.py` → yagona `run_product(page, code)`
-  UZS va USD productlarni yaratib, tegishli narx turlarini belgilaydi; `run_`
-  auth qilmaydi.
-- Setup runner **18 - Product** wrapperida shu bitta `run_product` funksiyasini
-  chaqiradi.
-- Standalone `test_product` user sifatida login qiladi, kerakli
-  `filial-pw{code}` filialiga o'tadi va ikkala productni yaratadi.
+- `tests/smoke/test_setup/test_18_product.py` ichidagi
+  `run_product(page, code, save_data)` UZS productni,
+  `tests/smoke/test_setup/test_19_product_usa.py` ichidagi
+  `run_product_usa(page, code)` esa USD productni yaratib tegishli narxini
+  belgilaydi; `run_*` auth qilmaydi.
+- Setup runner **18 - Product UZS** va **19 - Product USD** wrapperlarida bu
+  funksiyalarni alohida pytest case sifatida chaqiradi.
+- UZS product view URLidagi `product_id` `data_store.json.product_id`ga
+  saqlanadi; USD product ID sini saqlash talab qilinmaydi.
+- Standalone `test_product` va `test_product_usa` har biri user sifatida login
+  qiladi, `filial-pw{code}` filialiga o'tadi va faqat o'z mahsulotini yaratadi.
 - Validation (2026-07-13): production `test_product` create → list → price save oqimi `1 passed`; view → close → list → set-price navigatsiya probe'i `1 passed`.
 
 ## 2026-07-30 — Ikkinchi USD product

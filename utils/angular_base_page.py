@@ -944,11 +944,11 @@ class AngularBasePage:
 
         action = None
         if reload:
-            action = root.get_by_role("button", name=re.compile(r"обновить|reload", re.IGNORECASE)).first
+            action = root.locator('smt-data-table-menu smt-button-group-item[smtvalue="reload"] button').first
         elif open_filter:
-            action = root.get_by_role("button", name=re.compile(r"фильтр|filter", re.IGNORECASE)).first
+            action = root.locator("smt-data-table-filter button").first
         elif open_setting:
-            action = root.get_by_role("button", name=re.compile(r"настрой|setting|columns", re.IGNORECASE)).first
+            action = root.locator('smt-data-table-menu smt-button-group-item[smtvalue="menu"] button').first
         if action is None:
             raise ValueError(
                 'grid_controller(): search, expand="50"/"100"/"500"/"1000", reload, open_filter yoki open_setting dan bittasini bering'
@@ -957,6 +957,77 @@ class AngularBasePage:
         action.click()
         if reload:
             self._wait_for_loader(timeout=30_000, root=root)
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def grid_setting(self, *, menu_name, field_name, search_name=None, timeout=30_000):
+        """Grid settingda ustunni va ixtiyoriy search maydonini yoqadi.
+
+        A2 table-setting va search-setting dialoglarini boshqaradi va
+        saqlangan ustun indeksini qaytaradi.
+        """
+        for argument_name, value in (("menu_name", menu_name), ("field_name", field_name)):
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"grid_setting(): {argument_name} bo'sh bo'lmagan string bo'lishi kerak")
+        if search_name is not None and (not isinstance(search_name, str) or not search_name.strip()):
+            raise ValueError("grid_setting(): search_name None yoki bo'sh bo'lmagan string bo'lishi kerak")
+
+        grid = self._content_root(None).locator("smt-data-table").filter(visible=True).first
+        expect(grid).to_be_visible(timeout=timeout)
+
+        self.grid_controller(open_setting=True)
+        menu = self.page.get_by_role("menu").filter(visible=True).last
+        expect(menu).to_be_visible(timeout=timeout)
+        menu.get_by_role("menuitem", name=menu_name, exact=True).click()
+
+        setting_dialog = self.page.get_by_role("dialog").filter(
+            has=self.page.get_by_role("heading", name="Настройки таблицы", exact=True)
+        ).first
+        expect(setting_dialog).to_be_visible(timeout=timeout)
+        active_fields = setting_dialog.locator(".smt-main-list")
+        active_field = active_fields.get_by_title(field_name, exact=True)
+        if active_field.count() == 0:
+            inactive_field = setting_dialog.get_by_role("button", name=field_name, exact=True).first
+            expect(inactive_field).to_be_visible(timeout=timeout)
+            inactive_field.click()
+        expect(active_fields.get_by_title(field_name, exact=True)).to_be_visible(timeout=timeout)
+
+        setting_dialog.get_by_role("button", name="Сохранить", exact=True).filter(visible=True).first.click()
+        expect(setting_dialog).not_to_be_visible(timeout=timeout)
+
+        if search_name is not None:
+            self.grid_controller(open_setting=True)
+            search_menu = self.page.get_by_role("menu").filter(visible=True).last
+            expect(search_menu).to_be_visible(timeout=timeout)
+            search_menu.get_by_role("menuitem", name="Настройки поиска", exact=True).click()
+
+            search_dialog = self.page.get_by_role("dialog").filter(
+                has=self.page.get_by_role("heading", name="Настройки поиска", exact=True)
+            ).first
+            expect(search_dialog).to_be_visible(timeout=timeout)
+            search_option = search_dialog.locator("label[smt-checkbox]").filter(
+                has_text=_whitespace_agnostic_pattern(search_name, exact=True)
+            ).first
+            expect(search_option).to_be_visible(timeout=timeout)
+            self._set_toggle(search_option.get_by_role("checkbox"), True, timeout=timeout)
+            search_dialog.get_by_role("button", name="Подтвердить", exact=True).filter(visible=True).first.click()
+            expect(search_dialog).not_to_be_visible(timeout=timeout)
+
+        self.wait_for_loader(timeout=timeout)
+
+        # Headerda selection/action uchun texnik ``div`` ham bo'lishi mumkin,
+        # rowdagi ``.smt-data-cell`` esa faqat haqiqiy data ustunlarini sanaydi.
+        # Indeks grid_cell() bilan bir xil koordinata tizimida bo'lishi uchun
+        # faqat data-smt-col-key mavjud headerlarni hisoblaymiz.
+        headers = grid.locator(".smt-grid-header").first.locator(
+            ":scope > div[data-smt-col-key]"
+        )
+        expected_header = _whitespace_agnostic_pattern(field_name, exact=True)
+        expect(headers.filter(has_text=expected_header).first).to_be_visible(timeout=timeout)
+        for index in range(headers.count()):
+            if expected_header.search(headers.nth(index).inner_text()):
+                return index
+        raise AssertionError(f"grid_setting(): saqlangandan keyin '{field_name}' ustuni topilmadi")
 
     # ------------------------------------------------------------------------------------------------------------------
 

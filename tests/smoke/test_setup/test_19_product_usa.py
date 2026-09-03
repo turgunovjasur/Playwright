@@ -3,40 +3,39 @@ import allure
 from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.flows.flow_product import create_product_with_price
 from utils.base_page import BasePage
-from utils.helper_utils import query_int_from_url
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Product")]
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def run_product(page, code, save_data=None):
-    """Testcase: UZS TMC yaratish, IDni saqlash va 7000 UZS narx belgilash.
+def run_product_usa(page, code):
+    """Testcase: USD TMC yaratish va 1 USD narx belgilash.
 
     1. TMC ro'yxatini ochish.
-    2. UZS TMC yaratish formasini to'ldirish.
+    2. USD TMC yaratish formasini to'ldirish.
     3. TMCni saqlab, ro'yxatda tekshirish.
-    4. View formasidan product IDni olish.
+    4. View formasida yaratilgan TMCni tekshirish.
     5. View formasini yopish.
     6. Narx belgilash formasini ochish.
-    7. 7000 UZS narxni saqlash va ro'yxatda tekshirish.
+    7. 1 USD narxni saqlash va ro'yxatda tekshirish.
     """
-    product_view_url = create_product_with_price(
+    create_product_with_price(
         page,
-        product_name=f"product-pw{code}",
-        product_code=f"c_p_pw{code}",
+        product_name=f"product-usa-pw{code}",
+        product_code=f"c_p_usa_pw{code}",
         sector_name=f"sector-pw{code}",
-        price_type_name=f"Price Type UZB-pw{code}",
-        price="7000",
-        price_label="UZS",
+        price_type_name=f"Price Type USA-pw{code}",
+        price="1",
+        price_label="USD",
     )
-    if save_data is not None:
-        save_data("product_id", query_int_from_url(product_view_url, "product_id"))
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-@allure.title("UZS mahsulotini yaratish va narx belgilash")
-def test_product(page, code, save_data):
+@allure.title("USD mahsulotini yaratish va narx belgilash")
+def test_product_usa(page, code):
     authorization(page, who="user", code=code)
     BasePage(page).switch_filial(name=f"filial-pw{code}")
-    run_product(page, code, save_data)
+    run_product_usa(page, code)

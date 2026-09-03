@@ -18,11 +18,14 @@ Tags: smoke, setup, runner, dependency, data-store, license, balance, tmc, room,
 Tags: smoke, setup, runner, balance, init-balance, structure
 Status: code-confirmed
 Verified: 2026-08-03
-Source: `tests/smoke/test_setup/test_0_setup_runner.py`; `tests/smoke/test_setup/test_21_init_balance.py`; `tests/smoke/test_setup/test_22_balance.py`
-- `Init Balance` moduli joriy tartibda `tests/smoke/test_setup/test_21_init_balance.py`da.
-- `Balance` moduli joriy tartibda `tests/smoke/test_setup/test_22_balance.py`da.
-- `test_0_setup_runner.py` ikkala `run_*` funksiyani shu setup modullaridan import qiladi; hozirgi zanjirda ular `test_21_init_balance` va `test_22_balance`.
-- Ikkala modulning Allure feature qiymati `Setup`; hozirgi setup runner create rejimida 23, existing rejimida 22 test collect qiladi.
+Source: `tests/smoke/test_setup/test_0_setup_runner.py`; `tests/smoke/test_setup/test_23_init_balance.py`; `tests/smoke/test_setup/test_24_balance.py`
+- `Init Balance` moduli joriy tartibda `tests/smoke/test_setup/test_23_init_balance.py`da.
+- `Balance` moduli joriy tartibda `tests/smoke/test_setup/test_24_balance.py`da.
+- `test_0_setup_runner.py` ikkala `run_*` funksiyani shu setup modullaridan import
+  qiladi; UZS va USD productlar alohida 18/19-qadam bo'lgani uchun runnerda
+  init balance `test_23_init_balance`, balance `test_24_balance` deb nomlangan.
+- Ikkala modulning Allure feature qiymati `Setup`; hozirgi setup runner create
+  rejimida 25, existing rejimida 24 test collect qiladi.
 
 ### Runner Qoidasi
 Tags: smoke, setup, dependency, data-store
@@ -154,7 +157,7 @@ Tags: smoke, telegram, failure, playwright, locator, summary
 Tags: smoke, setup, runner, allure, collection
 - `allure.step` faqat bitta pytest test ichidagi nested step yaratadi; Allure'da alohida test case chiqishi uchun har setup/group bosqichi pytest tomonidan alohida `test_*` item sifatida collect qilinishi shart.
 - Amaldagi model: `test_0_setup_runner.py` ichida optional `test_00_company`,
-  `test_01_legal_person` ... `test_22_balance` wrapperlari `session_page` bilan
+  `test_01_legal_person` ... `test_24_balance` wrapperlari `session_page` bilan
   collect qilinadi. Moduldagi `pytest.mark.user_setup` barcha wrapperlarga tatbiq qilinadi.
 - Mavjud `pytest_runtest_makereport`/`pytest_runtest_setup` mexanizmi alohida
   setup itemlar bilan mos: bir setup item fail bo'lsa `_USER_SETUP_FAILED=True`
@@ -168,11 +171,23 @@ Tags: smoke, setup, runner, allure, collection
 - Setup zanjiri buzilsa keyingi testlar ham precondition yo'qligi sabab yiqilishi mumkin; yakka testdan oldin to'liq runner yoki mos precondition ma'lumotlari kerak.
 - Directory/default collection duplicate business flow yurmasligi uchun faqat mos runner fayllarini qoldiradi; leaf testni debug qilish uchun uning fayl yo'li pytestga aniq beriladi.
 - Cross-platform asosiy run: `python scripts/run_tests.py --url {server_url} --company-code {code} --company-password {password}` yoki `python scripts/run_tests.py --url {server_url} --create-company --head-email {email} --head-password {password}`; Mac/Linux wrapper: `./run_tests.sh ...`.
-- Runner targetlari: `all`, `setup`, `setup-group-0`, `setup-report`,
-  `setup-a2-admin`, `setup-forms`, `company`, `groups`, `group-0`,
-  `group-report`, `forms`; foydalanuvchi odatda
+- Runner targetlari: `all`, `setup`, `setup-group-0`, `setup-visit`,
+  `setup-report`, `setup-a2-admin`, `setup-forms`, `company`, `groups`,
+  `group-0`, `group-visit`, `group-report`, `forms`; foydalanuvchi odatda
   bo'laklarga bo'lib run qilmaydi, normal lokal run `all`; CI Smoke targeti
   `setup-group-0`, CI Report targeti `group-report`, CI Forms targeti `forms`.
+
+### Visit group runner
+Tags: smoke, visit, mobile, runner, setup
+Status: code-confirmed
+Verified: 2026-08-28
+Source: `scripts/run_tests.py`; `tests/smoke/smoke_config.py`; `tests/smoke/test_groups/test_visit_grup/test_0_visit_runner.py`
+- `setup-visit` yangi setup baseline va Visit runnerni bitta pytest sessiyasida
+  bajaradi; `.env NEW_CODE=1` uchun canonical Visit verification targeti shu.
+- `group-visit` saqlangan setup baseline bilan faqat Visit runnerni bajaradi va
+  boshqa group-only code targetlari kabi `NEW_CODE=1` kombinatsiyasida bloklanadi.
+- Visit runnerdagi minimal va orderli visit caselari `independent=True`; bittasi
+  failed bo'lsa ikkinchisi cascade-skip qilinmaydi.
 
 ### Smoke Credentiallari Majburiy
 Tags: setup, runner, credential
@@ -246,7 +261,7 @@ Tags: filial, organization, legal-person
 - `filial-pw{code}` tashkilot yaratiladi, valyuta `Узбекский сум` va
   `c_l_p_pw{code}` yuridik shaxs bilan ulanadi.
 - Ro'yxatda filial va legal person code tekshirilib, reload + loader kutiladi.
-- Data store: `filial_name`, `filial_code`, `filial_currency`, `filial_legal_person_code`, va agar mavjud bo'lsa `filial_legal_person_name` saqlanadi.
+- Data store: view URLdagi `filial_id`, `filial_name`, `filial_code`, `filial_currency`, `filial_legal_person_code`, va agar mavjud bo'lsa `filial_legal_person_name` saqlanadi.
 
 ### 03 Room
 Tags: room, filial, work-zone
@@ -255,6 +270,7 @@ Tags: room, filial, work-zone
 - Navigation: `Справочники` -> `Рабочие зоны`.
 - Nima yaratadi: `c_rm_pw{code}` / `room-pw{code}` ish zonasi.
 - Tekshiruv: saqlagandan keyin `Рабочие зоны` ro'yxatida code va nom ko'rinadi.
+- Data store: view URLdagi `room_id` saqlanadi.
 
 ### 04 Robot
 Tags: robot, staff, room
@@ -262,6 +278,7 @@ Tags: robot, staff, room
 - Navigation: `Справочники` -> `Штат`.
 - Nima yaratadi: `c_rb_pw{code}` / `robot-pw{code}` xodim.
 - Bog'lanish: `Админ` tanlanadi va `room-pw{code}` ish zonasi ulanadi.
+- Data store: view URLdagi `robot_id` saqlanadi.
 
 ### 05 Natural Person
 Tags: natural-person, employee
@@ -271,6 +288,8 @@ Tags: natural-person, employee
 - Nima yaratadi: xodim uchun `c_n_p_pw{code}` code va `natural_person-pw{code}` ko'rinadigan nomli jismoniy shaxs.
 - Majburiy `d.first_name`, `d.code` va `Активный` minimal path; list va viewda
   nom/status tekshiriladi.
+- Data store: view URLdagi `person_id` `user_person_id` kaliti bilan saqlanadi;
+  bu keyingi testda userga bog'lanadigan person IDsi.
 - Arxitektura: reusable create/view oqimlari
   `tests/smoke/flows/flow_natural_person.py`da turadi.
 
@@ -281,6 +300,8 @@ Tags: user, robot, natural-person
 - Nima yaratadi: `user-pw{code}@<active_company_code>` loginli user.
 - Bog'lanish: `robot-pw{code}` va `natural_person-pw{code}` ulanadi; password kod ichidagi test user default qiymati.
 - Tekshiruv: user ro'yxatida natural person va login ko'rinadi.
+- Data store: user view URLdagi `user_id` saqlanadi; bu `user_person_id`dan
+  alohida identifikator.
 
 ### 07 User Attach Form
 Tags: user, permissions, forms
@@ -343,6 +364,8 @@ Tags: price-type, room, nps
 - Nima qiladi: NPS Survey modal chiqsa 10 ball bilan yuboradi; `Справочники` -> `Цены` sahifasida UZB price type yaratadi.
 - Bog'lanish: `room-pw{code}` ish zonasi ulanadi; `Цена продажи` ko'rinishi tekshiriladi.
 - Tekshiruv: `Price Type UZB-pw{code}` searchdan keyin ro'yxatda ko'rinadi.
+- Data store: `price_type_name_UZB` bilan birga view URLdagi
+  `price_type_id_uzb` saqlanadi.
 
 ### 14 Price Type USA
 Tags: price-type, room, usd
@@ -353,6 +376,8 @@ Source: `tests/smoke/test_setup/test_14_price_type_usa.py`; `tests/smoke/test_se
 - Nima qiladi: `Справочники` -> `Цены` sahifasida USA price type yaratadi.
 - Bog'lanish: `room-pw{code}` ish zonasi va `Доллар США` valyutasi tanlanadi.
 - Tekshiruv: `Price Type USA-pw{code}` searchdan keyin ro'yxatda ko'rinadi.
+- Data store: `price_type_name_USA` bilan birga view URLdagi
+  `price_type_id_usa` saqlanadi.
 
 ### 15 Currency
 Tags: currency, usd, rate
@@ -362,11 +387,14 @@ Source: `tests/smoke/test_setup/test_15_currency.py`; `tests/smoke/test_setup/te
 - Fayl: `tests/smoke/test_setup/test_15_currency.py`.
 - Nima qiladi: USD view formasida Markaziy bank kursini yangilaydi va bugungi manual kursni saqlaydi.
 - Tekshiruv: bugungi sana va saqlangan kurs `Курсы` gridida ko'rinadi.
+- Data store: USD view URLdagi `currency_id` saqlanadi.
 
 ### 16 Payment Type
 Tags: payment-type, room-attachment
 - Fayl: `tests/smoke/test_setup/test_16_payment_type.py`.
 - Nima qiladi: `Цены` -> `Типы оплат` ichida `Прикрепление` orqali barcha 4 payment typeni tizimga ulaydi.
+- Data store: grid settingdagi `ИД` ustuni orqali `Наличные деньги` IDsi olinib
+  `payment_type_id` kaliti bilan saqlanadi.
 - Tekshiruv: `Наличные деньги`, `Перечисление`, `Терминал`, `Чековая книжка` ro'yxatda ko'rinadi.
 
 ### 17 Sector
@@ -375,33 +403,58 @@ Tags: tmc, sector, room
 - Nima yaratadi: `Наборы ТМЦ` ichida `c_s_pw{code}` / `sector-pw{code}` TMC to'plami.
 - Bog'lanish: `room-pw{code}` tanlanadi.
 
-### 18 Product
+### 18 Product UZS
 Tags: tmc, product, price
 - Fayl: `tests/smoke/test_setup/test_18_product.py`.
-- Nima yaratadi: `ТМЦ` ichida `c_p_pw{code}` / `product-pw{code}` va
-  `c_p_usa_pw{code}` / `product-usa-pw{code}` mahsulotlari.
+- Nima yaratadi: `ТМЦ` ichida `c_p_pw{code}` / `product-pw{code}` mahsuloti.
 - Bog'lanish: measure `шт`, product type `Товар`, sahifada `sector-pw{code}` ko'rinishi precondition sifatida tekshiriladi.
-- Qo'shimcha: yagona `run_product` UZS productga `Price Type UZB-pw{code}`
-  bo'yicha `7000`, USD productga `Price Type USA-pw{code}` bo'yicha `1` narx
-  yozib saqlaydi.
+- Qo'shimcha: `run_product` `Price Type UZB-pw{code}` bo'yicha `7000` narx
+  yozadi va view URLdagi IDni `product_id` kaliti bilan saqlaydi.
 
-### 19 Natural Person For Client 1
+### 19 Product USD
+Tags: tmc, product, price, usd
+Status: code-confirmed
+Verified: 2026-08-27
+Source: `tests/smoke/test_setup/test_19_product_usa.py`;
+`tests/smoke/test_setup/test_0_setup_runner.py`
+- Fayl: `tests/smoke/test_setup/test_19_product_usa.py`.
+- Nima yaratadi: `ТМЦ` ichida `c_p_usa_pw{code}` / `product-usa-pw{code}`
+  mahsuloti.
+- Qo'shimcha: `run_product_usa` `Price Type USA-pw{code}` bo'yicha `1` narx
+  yozadi; bu case product ID saqlamaydi.
+
+### 20 Natural Person For Client 1
 Tags: natural-person, client
-- Fayl: `tests/smoke/test_setup/test_19_natural_person_for_client_1.py`.
+- Fayl: `tests/smoke/test_setup/test_20_natural_person_for_client_1.py`.
 - Nima yaratadi: `c_n_c_pw{code}` code va `natural_client-pw{code}` ko'rinadigan nomli jismoniy shaxs, `Клиент` belgisi yoqiladi.
 - Tekshiruv: avval `Физические лица` list va `Просмотр` viewda nom/status
   tekshiriladi, keyin `Клиенты` ro'yxatida ko'rinadi.
+- Data store: client view URLdagi `person_id` qiymati `client_person_id`
+  kaliti bilan saqlanadi.
 
-### 20 Room Attachment
+### 21 Room Attachment
 Tags: room, payment-type, warehouse, cashbox, client
-- Fayl: `tests/smoke/test_setup/test_20_room_attachment.py`.
+- Fayl: `tests/smoke/test_setup/test_21_room_attachment.py`.
 - Nima qiladi: yangi user sifatida kirib `room-pw{code}` ish zonasi `Прикрепление` sahifasiga kiradi.
 - Bog'lanishlar: 4 payment type, 1 warehouse, 1 cashbox va `natural_client-pw{code}` client ish zonasiga ulanadi.
 - Tekshiruv: payment/warehouse/cashbox available listlari `нет данных`; client attached listida `natural_client-pw{code}` ko'rinadi.
+- Data store: bu case ID saqlamaydi; warehouse ID keyingi alohida case'da olinadi.
 
-### 21 Init Balance
+### 22 Warehouse
+Tags: warehouse, view, id, data-store
+Status: code-confirmed
+Verified: 2026-08-27
+Source: `tests/smoke/test_setup/test_22_warehouse.py`; `tests/smoke/test_setup/test_0_setup_runner.py`
+- Fayl: `tests/smoke/test_setup/test_22_warehouse.py`.
+- Nima qiladi: `Склад` -> `Склады` ro'yxatidan `Основной склад` view formasini
+  ochib nom/statusni tekshiradi.
+- Data store: view URLdagi `warehouse_id` musbat integer sifatida tekshirilib
+  `warehouse_id` kaliti bilan saqlanadi.
+- Bu Room Attachment ichidagi qo'shimcha qadam emas, alohida pytest case.
+
+### 23 Init Balance
 Tags: inventory, init-balance, product
-- Fayl: `tests/smoke/test_setup/test_21_init_balance.py`.
+- Fayl: `tests/smoke/test_setup/test_23_init_balance.py`.
 - Nima qiladi: standalone wrapper `authorization(page, who="user", code=code)`
   bilan kiradi; yagona `run_init_balance` `Склад` ->
   `Ввод начальных остатков ТМЦ` sahifasida ikkita boshlang'ich qoldiq hujjati yaratadi.
@@ -410,9 +463,9 @@ Tags: inventory, init-balance, product
   `1{code}` / `c_p_usa_pw{code}` / `100` / `1` USD.
 - Tekshiruv: hujjat o'tkazilgandan keyin `Проводки` popupida `100` va `500 000` borligi tekshiriladi.
 
-### 22 Balance
+### 24 Balance
 Tags: inventory, balance, product
-- Fayl: `tests/smoke/test_setup/test_22_balance.py`.
+- Fayl: `tests/smoke/test_setup/test_24_balance.py`.
 - Navigation: `Склад` -> `Остатки ТМЦ`.
 - Tekshiruv: qoldiq sahifasida `c_p_pw{code}` va `c_p_usa_pw{code}` ko'rinadi.
 

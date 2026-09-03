@@ -188,6 +188,16 @@ def _first_non_empty_line(text):
 def _timeout_text(message):
     match = re.search(r"Timeout\s+(\d+)ms", message)
     if not match:
+        match = re.search(r"API HTTPS ulanishi\s+(\d+(?:\.\d+)?)\s+sekundda", message)
+        if match:
+            return f"{match.group(1)} sekund"
+        match = re.search(r"connect timeout=(\d+(?:\.\d+)?)", message, flags=re.IGNORECASE)
+        if match:
+            return f"{match.group(1)} sekund"
+        match = re.search(r"address\s*=.*?timeout\s*=\s*(\d+(?:\.\d+)?)", message, flags=re.DOTALL)
+        if match:
+            return f"{match.group(1)} sekund"
+    if not match:
         return "berilgan vaqt"
     milliseconds = int(match.group(1))
     seconds = milliseconds // 1000
@@ -230,9 +240,18 @@ def _target_text(target):
     return f" Maqsad: {target}." if target else ""
 
 
+def _is_api_connect_timeout(message):
+    explicit_markers = ("APIConnectTimeout", "ConnectTimeoutError", "requests.exceptions.ConnectTimeout")
+    if any(marker in message for marker in explicit_markers):
+        return True
+    return "API request bajarilmadi:" in message and "TimeoutError: timed out" in message and "urllib3" in message
+
+
 def _error_type(message):
     if "Smartup transition failed" in message:
         return "SmartupTransitionError"
+    if _is_api_connect_timeout(message):
+        return "ConnectTimeout"
     if "TimeoutError" in message:
         return "TimeoutError"
     if "AssertionError" in message:
@@ -414,6 +433,15 @@ def _human_reason(message):
             "boshqa Sync Playwright runtime hali faol edi. Test UI qadamlariga yetib bormagan."
         )
 
+    if _is_api_connect_timeout(message):
+        for line in message.splitlines():
+            if "API HTTPS ulanishi" in line:
+                return _truncate(line[line.index("API HTTPS ulanishi"):].strip(), 500)
+        timeout = _timeout_text(message)
+        request_match = re.search(r"(?:method = ['\"]|\b)(GET|POST|PUT|PATCH|DELETE)(?:['\"]|\b).*?(\/[^\s'\"]+)", message, flags=re.DOTALL)
+        request_text = f": {request_match.group(1)} {request_match.group(2)}" if request_match else ""
+        return f"API server bilan HTTPS ulanishi {timeout} ichida o'rnatilmadi{request_text}."
+
     timeout = _timeout_text(message)
     target = _waited_target(message)
     target_text = _target_text(target)
@@ -523,6 +551,9 @@ def _humanize_failure(item):
     elif "Page.goto: Timeout" in failure_text:
         reason = _human_reason(failure_text)
         classification = "NAVIGATION_TIMEOUT_DEFECT"
+    elif _is_api_connect_timeout(failure_text):
+        reason = _human_reason(failure_text)
+        classification = "ENVIRONMENT_NETWORK_DEFECT"
     elif auth_diagnostic:
         reason = auth_diagnostic.get("summary") or "Authorization precondition bajarilmadi."
         classification = "ENVIRONMENT_PRECONDITION_DEFECT"
@@ -635,6 +666,7 @@ def _failure_summary_payload(failure):
         "test": failure.get("name") or "unknown",
         "status": failure.get("status") or "unknown",
         "classification": failure.get("classification") or "UNCLASSIFIED_TEST_DEFECT",
+        "error_type": failure.get("error_type") or "",
         "failed_step": failure.get("failed_step") or "Allure step aniqlanmadi",
         "reason": failure.get("reason") or "Xato sababi aniqlanmadi.",
         "action": failure.get("action") or "",
@@ -664,6 +696,8 @@ def _render_failure_summary(payload):
         f"- Yiqilgan qadam: {payload['failed_step']}",
         f"- Sabab: {payload['reason']}",
     ]
+    if payload.get("error_type"):
+        lines.append(f"- Xato turi: `{payload['error_type']}`")
     if payload.get("location"):
         lines.append(f"- Kod joyi: `{payload['location']}`")
     if payload.get("timeout"):
@@ -827,8 +861,8 @@ def enrich_failed_allure_results(results, results_dir):
         status_details["message"] = _mask_sensitive(str(status_details.get("message") or ""))
         status_details["trace"] = _mask_sensitive(str(status_details.get("trace") or ""))
         marker = f"[{payload['classification']}]"
-        if marker not in status_details["message"]:
-            status_details["message"] = f"{marker} {status_details['message']}".strip()
+        clean_message = re.sub(r"^\[[A-Z0-9_]+DEFECT\]\s*", "", status_details["message"])
+        status_details["message"] = f"{marker} {clean_message}".strip()
         result["statusDetails"] = status_details
         result_path.write_text(json.dumps(result, ensure_ascii=False), encoding="utf-8")
 

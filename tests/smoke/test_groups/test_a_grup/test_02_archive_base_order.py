@@ -16,7 +16,7 @@ pytestmark = [
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def run_archive_base_order(page, code, require_data):
+def run_archive_base_order(page, code, load_data):
     """Testcase: 0-01 yaratgan aniq orderni archive qilib, qarz detailda tekshirish.
 
     1. Saqlangan order IDni olib, order listini ochish.
@@ -27,8 +27,8 @@ def run_archive_base_order(page, code, require_data):
     base = BasePage(page)
     client = f"natural_client-pw{code}"
     order_amount = 7_000
-    order_id = str(require_data("group_0_order_id"))
-    baseline = require_data("group_0_offset_baseline")
+    order_id = str(load_data("group_0_order_id"))
+    baseline = load_data("group_0_offset_baseline")
     expected_debt = baseline["debt"] + order_amount
     expected_prepayment = baseline["prepayment"]
     expected_order = baseline["order"]
@@ -74,6 +74,6 @@ def run_archive_base_order(page, code, require_data):
 
 
 @allure.title("Exact orderni Архивga o'tkazish va debt detailda tekshirish")
-def test_archive_base_order(page, code, require_data):
+def test_archive_base_order(page, code, load_data):
     authorization(page, who="user", code=code)
-    run_archive_base_order(page, code, require_data)
+    run_archive_base_order(page, code, load_data)

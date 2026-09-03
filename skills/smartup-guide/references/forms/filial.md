@@ -1,5 +1,14 @@
 # Filial (Организация) legacy Biruni formasi
 
+## Mundarija
+
+- [Quick Lookup](#quick-lookup)
+- [Screenshot Paths](#screenshot-paths)
+- [Known Locators](#known-locators)
+- [Flow And Tests](#flow-and-tests)
+- [Business Rules](#business-rules)
+- [Known Issues](#known-issues)
+
 ## Quick Lookup
 
 Tags: filial, organization, biruni, angularjs, setup
@@ -44,6 +53,18 @@ Source: `tests/smoke/test_setup/test_02_filial.py`; archived screenshots/JSON
   `BasePage.grid(...)` bilan bajariladi.
 - Button/actionlar ikkala page objectda yagona `click(...)` API nomidan
   foydalanadi; legacy formada `BasePage.click(...)` ishlatiladi.
+
+### View URLdan filial IDni olish
+
+Tags: filial, view, id, data-store
+Status: live-ui-confirmed
+Verified: 2026-08-27
+Source: live UI; `tests/smoke/test_setup/test_02_filial.py`
+
+- Filial view URL patterni `anor/mr/filial_view?filial_id=<id>`; summary ham
+  `filial-pw{code} (<id>)` ko'rinishida IDni ko'rsatadi.
+- Setup test view ochilgach `filial_id` query parametrini musbat integer
+  sifatida tekshiradi va `data_store.json.filial_id`ga saqlaydi.
 
 ### Add forma field xaritasi
 

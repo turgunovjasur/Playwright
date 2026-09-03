@@ -246,29 +246,20 @@ def save_data():
 
 @pytest.fixture(scope="session")
 def load_data():
-    """Testlarga data-store ichidan optional qiymat o'qish funksiyasini beradi."""
+    """Testlarga data-store ichidan qiymat o'qish funksiyasini beradi."""
 
-    def _load(key, file_name="data_store"):
-        """Key topilsa qiymatini, topilmasa `None` qaytaradi."""
-        return _load_data_file(file_name).get(key)
-
-    return _load
-
-
-@pytest.fixture(scope="session")
-def require_data(load_data):
-    """Testlarga data-store ichidan majburiy qiymat o'qish funksiyasini beradi."""
-
-    def _require(key, file_name="data_store"):
-        """Key yo'q bo'lsa aniq dependency xatosi ko'taradi."""
-        value = load_data(key, file_name=file_name)
+    def _load(key, file_name="data_store", *, allow_missing=False):
+        """Key yo'q bo'lsa defaultda dependency xatosi, ruxsat berilsa `None` qaytaradi."""
+        value = _load_data_file(file_name).get(key)
         if value in (None, ""):
+            if allow_missing:
+                return None
             raise AssertionError(
                 f"{file_name}.json ichida majburiy key topilmadi: {key}"
             )
         return value
 
-    return _require
+    return _load
 
 
 @pytest.fixture

@@ -3,6 +3,7 @@ import allure
 from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.flows.flow_modal import fill_nps_survey
 from utils.base_page import BasePage
+from utils.helper_utils import query_int_from_url
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Price Type")]
 
@@ -15,6 +16,8 @@ def run_price_type_uzb(page, code, logger, save_data):
     2. Справочники -> Цены ro'yxatini ochish.
     3. Yangi narx turiga kod va nom kiritib, room-pw{code} ish zonasini tanlash.
     4. Saqlab, ro'yxatda narx turini tekshirish va keyingi flowlar uchun nomini saqlash.
+    5. View formasini ochib, UZB price type IDni data_store ga saqlash.
+    6. View formasini yopib, narx turlari ro'yxatiga qaytish.
     """
     price_type_code = f"c_p_t_uzb_pw{code}"
     price_type_name = f"Price Type UZB-pw{code}"
@@ -43,6 +46,17 @@ def run_price_type_uzb(page, code, logger, save_data):
         base.grid_controller(search=price_type_name)
         base.grid(price_type_name)
         save_data("price_type_name_UZB", price_type_name)
+
+    with allure.step("5 - View formasidan UZB price type IDni olish va saqlash"):
+        base.grid(price_type_name, click=True)
+        base.click(name="Просмотр", exact=True)
+        base.expect_page(heading="Цена (просмотр)", url="price_type_view?price_type_id=")
+        base.text(price_type_name, price_type_code, "Активный")
+        save_data("price_type_id_uzb", query_int_from_url(page.url, "price_type_id"))
+
+    with allure.step("6 - View formasini yopib, narx turlari ro'yxatiga qaytish"):
+        base.click(name="Закрыть", exact=True)
+        base.expect_page(heading="Цены", url="price_type_list")
 
 # ----------------------------------------------------------------------------------------------------------------------
 

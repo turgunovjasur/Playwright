@@ -15,7 +15,7 @@ pytestmark = [
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def run_post_client_payment(page, code, require_data):
+def run_post_client_payment(page, code, load_data):
     """Testcase: archive order qarziga teng client paymentni post qilish.
 
     1. Client payment listini ochish.
@@ -27,7 +27,7 @@ def run_post_client_payment(page, code, require_data):
     base = BasePage(page)
     client = f"natural_client-pw{code}"
     payment_amount = 7_000
-    baseline = require_data("group_0_offset_baseline")
+    baseline = load_data("group_0_offset_baseline")
     expected_debt = baseline["debt"] + payment_amount
     expected_prepayment = baseline["prepayment"] + payment_amount
     expected_order = baseline["order"]
@@ -73,6 +73,6 @@ def run_post_client_payment(page, code, require_data):
 
 
 @allure.title("Client paymentni Провести qilish")
-def test_post_client_payment(page, code, require_data):
+def test_post_client_payment(page, code, load_data):
     authorization(page, who="user", code=code)
-    run_post_client_payment(page, code, require_data)
+    run_post_client_payment(page, code, load_data)

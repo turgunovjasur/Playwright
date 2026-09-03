@@ -28,7 +28,8 @@ test execution va run summary `run-smoke` ownerligida qoladi.
      [references/order-test-coverage.md](references/order-test-coverage.md);
    - har qanday kod/test o'zgarishi → `Unit test qo'shmaslik va run qilmaslik`;
    - group test → `Group testcase mustaqilligi, flow chegarasi va
-     BasePage-first`, so'ng `Setup va Group test execution modeli`.
+     BasePage-first`, undagi `API va Web testcase chegarasi`, so'ng
+     `Setup va Group test execution modeli`.
 3. O'xshash amaldagi test, flow va mos page-object API'larini tekshir.
 
 ## Majburiy invariantlar

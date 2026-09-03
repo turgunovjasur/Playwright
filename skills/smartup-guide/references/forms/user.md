@@ -67,6 +67,19 @@ base.grid(f"natural_person-pw{code}", user_email_for(code), "Активный")
 
 MCP bilan tasdiqlangan (2026-07): grid login ustuni `<login>@<company>` formatida; mavjud `natural_client-pw{code}` qatori login'i `123456789` bo'lgani uchun grid `123456789@<company>` ko'rsatgan — bu maxsus holat, `run_user` esa login'ni `user-pw{code}` qiladi.
 
+### User IDni view URLdan olish
+
+Tags: user, view, id, data-store
+Status: live-ui-confirmed
+Verified: 2026-08-27
+Source: live UI; `tests/smoke/test_setup/test_06_user.py`
+
+- User view URL patterni `anor/mr/user_view?user_id=<id>`; heading
+  `Пользователь (просмотр)`.
+- Setup test view URLdagi `user_id`ni musbat integer sifatida tekshiradi va
+  `data_store.json.user_id`ga saqlaydi.
+- `user_id` userga bog'langan `user_person_id`dan alohida identifikator.
+
 ## run_user_attach_form — formalar ulash
 
 User view → **Формы** link:

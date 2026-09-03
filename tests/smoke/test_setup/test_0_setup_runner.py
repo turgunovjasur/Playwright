@@ -21,10 +21,12 @@ from tests.smoke.test_setup.test_15_currency import run_currency
 from tests.smoke.test_setup.test_16_payment_type import run_payment_type
 from tests.smoke.test_setup.test_17_sector import run_sector
 from tests.smoke.test_setup.test_18_product import run_product
-from tests.smoke.test_setup.test_19_natural_person_for_client_1 import run_natural_person_for_client_1
-from tests.smoke.test_setup.test_20_room_attachment import run_room_attachment
-from tests.smoke.test_setup.test_21_init_balance import run_init_balance
-from tests.smoke.test_setup.test_22_balance import run_balance
+from tests.smoke.test_setup.test_19_product_usa import run_product_usa
+from tests.smoke.test_setup.test_20_natural_person_for_client_1 import run_natural_person_for_client_1
+from tests.smoke.test_setup.test_21_room_attachment import run_room_attachment
+from tests.smoke.test_setup.test_22_warehouse import run_warehouse
+from tests.smoke.test_setup.test_23_init_balance import run_init_balance
+from tests.smoke.test_setup.test_24_balance import run_balance
 
 pytestmark = [
     pytest.mark.user_setup,
@@ -52,23 +54,23 @@ def test_02_filial(session_page, code, load_data, save_data):
 
 
 @allure.title("03 - Room")
-def test_03_room(session_page, code):
-    run_room(session_page, code)
+def test_03_room(session_page, code, save_data):
+    run_room(session_page, code, save_data)
 
 
 @allure.title("04 - Robot")
-def test_04_robot(session_page, code):
-    run_robot(session_page, code)
+def test_04_robot(session_page, code, save_data):
+    run_robot(session_page, code, save_data)
 
 
 @allure.title("05 - Natural Person")
-def test_05_natural_person(session_page, code):
-    run_natural_person(session_page, code)
+def test_05_natural_person(session_page, code, save_data):
+    run_natural_person(session_page, code, save_data)
 
 
 @allure.title("06 - User")
-def test_06_user(session_page, code):
-    run_user(session_page, code)
+def test_06_user(session_page, code, save_data):
+    run_user(session_page, code, save_data)
 
 
 @allure.title("07 - User Attach Form")
@@ -112,13 +114,13 @@ def test_14_price_type_usa(session_page, code, save_data):
 
 
 @allure.title("15 - Currency")
-def test_15_currency(session_page, logger):
-    run_currency(session_page, logger)
+def test_15_currency(session_page, logger, save_data):
+    run_currency(session_page, logger, save_data)
 
 
 @allure.title("16 - Payment Type")
-def test_16_payment_type(session_page):
-    run_payment_type(session_page)
+def test_16_payment_type(session_page, save_data):
+    run_payment_type(session_page, save_data)
 
 
 @allure.title("17 - Sector")
@@ -126,28 +128,38 @@ def test_17_sector(session_page, code):
     run_sector(session_page, code)
 
 
-@allure.title("18 - Product")
-def test_18_product(session_page, code):
-    run_product(session_page, code)
+@allure.title("18 - Product UZS")
+def test_18_product_uzs(session_page, code, save_data):
+    run_product(session_page, code, save_data)
 
 
-@allure.title("19 - Natural Person For Client 1")
-def test_19_natural_person_for_client_1(session_page, code):
-    run_natural_person_for_client_1(session_page, code)
+@allure.title("19 - Product USD")
+def test_19_product_usa(session_page, code):
+    run_product_usa(session_page, code)
 
 
-@allure.title("20 - Room Attachment")
-def test_20_room_attachment(session_page, code):
+@allure.title("20 - Natural Person For Client 1")
+def test_20_natural_person_for_client_1(session_page, code, save_data):
+    run_natural_person_for_client_1(session_page, code, save_data)
+
+
+@allure.title("21 - Room Attachment")
+def test_21_room_attachment(session_page, code):
     run_room_attachment(session_page, code)
 
 
-@allure.title("21 - Init Balance")
-def test_21_init_balance(session_page, code):
+@allure.title("22 - Warehouse")
+def test_22_warehouse(session_page, save_data):
+    run_warehouse(session_page, save_data)
+
+
+@allure.title("23 - Init Balance")
+def test_23_init_balance(session_page, code):
     run_init_balance(session_page, code)
 
 
-@allure.title("22 - Balance")
-def test_22_balance(session_page, code):
+@allure.title("24 - Balance")
+def test_24_balance(session_page, code):
     run_balance(session_page, code)
 
 # ----------------------------------------------------------------------------------------------------------------------

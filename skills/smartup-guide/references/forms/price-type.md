@@ -8,11 +8,44 @@ yaratiladi va `room-pw{code}` ga biriktiriladi:
 | `Price Type UZB-pw{code}` | `c_p_t_uzb_pw{code}` | `Узбекский сум` | `product-pw{code}` — 7000 UZS |
 | `Price Type USA-pw{code}` | `c_p_t_usa_pw{code}` | `Доллар США` | `product-usa-pw{code}` — 1 USD |
 
+## Mundarija
+
+- [Navigatsiya](#navigatsiya)
+- [A2 grid setting](#a2-grid-setting)
+- [Forma maydonlari](#forma-maydonlari)
+- [Label Helper Mapping](#label-helper-mapping)
+- [NPS Survey modali](#nps-survey-modali)
+- [Saqlash](#saqlash)
+- [Room bilan munosabat](#room-bilan-munosabat)
+- [Test](#test)
+- [USA price type downstream](#2026-07-30--usa-price-type-downstream-ishlatildi)
+
 ## Navigatsiya
 
 - Menyu: **Справочники → Цены**
 - Ro'yxat heading: `Цены`
 - Yaratish heading: `Цена (создание)`
+
+## A2 Grid Setting
+
+Tags: price-type, a2, grid-setting, column, search
+Status: live-ui-confirmed
+Verified: 2026-08-27
+Source: live UI; `https://kernel.greenwhite.uz/anor/mkr/price_type_list`;
+`utils/angular_base_page.py`
+
+- A2 list `smt-data-table` ishlatadi; actions menyusi
+  `smt-button-group-item[smtvalue="menu"]` ichidagi button bilan ochiladi.
+- Menu actionlari `menuitem`: `Сортировка`, `Настройка таблицы`,
+  `Настройки поиска`, `Скачать в Excel`.
+- `Настройка таблицы` route emas, `Настройки таблицы` dialogini ochadi.
+  Dialog sectionlari `Активные поля` va `Неактивные поля`; ID fieldining live
+  nomi `table.id`. Inactive field button bosilganda active listga o'tadi va
+  `Сохранить` bilan saqlanadi.
+- `Настройки поиска` alohida dialog; `table.id` checkboxi yoqilib
+  `Подтвердить` bilan saqlanadi.
+- Legacy `Дополнительные поля` / `Настройки поиска` Biruni formasi va uning
+  `.gs-main-list` / `.gs-extra-list` locatorlari A2 uchun ishlatilmaydi.
 
 ## Forma maydonlari
 
@@ -66,6 +99,19 @@ Natijada ikkala price type ham alohida qidirilib, gridda tekshiriladi.
 
 - `price_type_name_UZB` → `Price Type UZB-pw{code}`
 - `price_type_name_USA` → `Price Type USA-pw{code}`
+
+### View URLdan price type IDni olish
+
+Tags: price-type, view, id, data-store
+Status: live-ui-confirmed
+Verified: 2026-08-27
+Source: live UI; `tests/smoke/test_setup/test_13_price_type_uzb.py`;
+`tests/smoke/test_setup/test_14_price_type_usa.py`
+
+- Price type view headingi `Цена (просмотр)`, URL patterni
+  `anor/mkr/price_type_view?price_type_id=<id>`.
+- Setup testlar view ochilgach IDni musbat integer sifatida tekshiradi va
+  `price_type_id_uzb` yoki `price_type_id_usa` kaliti bilan saqlaydi.
 
 ## Room bilan munosabat
 

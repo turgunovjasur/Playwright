@@ -54,14 +54,6 @@ def flow_order_list(page, add=False, find_row=None, search=True, view=False, edi
 def flow_order_list_grid_setting(page, colum_name, search_name):
     base = BasePage(page)
     base.expect_page(heading="Заказы", url="order_list")
-    base.grid_controller(open_setting=True)
-    page.get_by_role("link", name="Настройка таблицы").click()
-
-    base.text("Настройка таблицы: Заказы", root="#kt_content")
-    page.locator("#deal_id").get_by_text(colum_name).click()
-    page.locator("label").filter(has_text=search_name).click()
-    base.text(colum_name, root="#deal_id")
-    base.click(name="Сохранить", exact=True)
-    base.expect_page(heading="Заказы", url="order_list")
+    base.grid_setting(menu_name="Настройка таблицы", field_name=colum_name, search_name=search_name)
 
 # ----------------------------------------------------------------------------------------------------------------------

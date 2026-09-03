@@ -163,9 +163,19 @@ Tags: runner, debug, modal, data-store
 - Group `run_*` funksiyalarida `login=True/login=False` mode parametri ishlatilmaydi. User group runnerlari login qilingan `group_user_page` uzatadi; fresh `page` bilan standalone pytest wrapper `run_*` chaqiruvidan oldin o'zi login qiladi. B-04 va Report kabi admin preconditionli caselar esa kerakli admin loginni `run_*` ichida parametrsiz bajaradi.
 - `BasePage.confirm_biruni(expected_text=None)` `#biruniConfirm` uchun text, opacity `1`, scoped `да`, hidden kutishni bitta joyda bajaradi.
 - `logger.fail(..., raise_error=True)` false-pass bo'lmasligi uchun kerakli joyda real `AssertionError` ko'taradi.
-- `save_data/load_data` corrupt JSON holatini yashirmaydi; required precondition uchun `require_data` fixture ishlatiladi.
 - CI/Telegram failure xabari faqat `TimeoutError` yoki locator call log bilan cheklanmasin; xabardan qaysi test, qaysi biznes step, sahifa/form holati, kutilgan action va tekshiriladigan keyingi joy aniq ko'rinishi kerak.
 - Save transition xatolarida list/view timeoutini root cause deb ko'rsatma; avval add/edit formdagi `Сохранить` actionidan keyingi Biruni/UI error, actual heading va expected transition yozilsin.
+
+### `load_data` strict data-store kontrakti
+Tags: fixture, data-store, load-data, dependency
+Status: code-confirmed
+Verified: 2026-08-28
+Source: `tests/smoke/conftest.py:248`
+- Qoida: `load_data("key")` missing yoki bo'sh keyda aniq dependency xatosi
+  ko'taradi; faqat optional key `allow_missing=True` bilan `None` qaytaradi.
+- Testda ishlatish: setup baseline qiymatlari parametrsiz strict o'qiladi;
+  birinchi run'da yaratiladigan `mobile_device_code` kabi optional qiymatlar
+  `allow_missing=True` bilan olinadi.
 
 ### Forms runner terminal va Allure hisoboti
 Tags: forms, report, terminal, allure, filial, menu, url, monitoring, screenshot

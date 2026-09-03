@@ -28,8 +28,10 @@ GROUP_0_RUNNER_PATH = "tests/smoke/test_groups/test_a_grup/test_0_group_runner.p
 GROUP_REPORT_RUNNER_PATH = (
     "tests/smoke/test_groups/test_report_grup/test_0_group_runner.py"
 )
+GROUP_VISIT_RUNNER_PATH = "tests/smoke/test_groups/test_visit_grup/test_0_visit_runner.py"
 GROUP_RUNNER_PATHS = (
     GROUP_0_RUNNER_PATH,
+    GROUP_VISIT_RUNNER_PATH,
     GROUP_REPORT_RUNNER_PATH,
 )
 FORMS_RUNNER_PATH = "tests/smoke/test_forms/test_0_forms_runner.py"
@@ -52,10 +54,25 @@ TARGETS = {
         ),
         "--new-code",
     ),
+    "setup-smoke": (
+        (
+            "tests/smoke/test_setup/test_0_setup_runner.py",
+            GROUP_0_RUNNER_PATH,
+            GROUP_VISIT_RUNNER_PATH,
+        ),
+        "--new-code",
+    ),
     "setup-report": (
         (
             "tests/smoke/test_setup/test_0_setup_runner.py",
             GROUP_REPORT_RUNNER_PATH,
+        ),
+        "--new-code",
+    ),
+    "setup-visit": (
+        (
+            "tests/smoke/test_setup/test_0_setup_runner.py",
+            GROUP_VISIT_RUNNER_PATH,
         ),
         "--new-code",
     ),
@@ -76,6 +93,7 @@ TARGETS = {
     "company": ("tests/smoke/test_setup/test_0_setup_runner.py::test_00_company", "--new-code"),
     "groups": (GROUP_RUNNER_PATHS, ""),
     "group-0": (GROUP_0_RUNNER_PATH, ""),
+    "group-visit": (GROUP_VISIT_RUNNER_PATH, ""),
     "group-report": (GROUP_REPORT_RUNNER_PATH, ""),
     "forms": (FORMS_RUNNER_PATH, ""),
 }
@@ -83,6 +101,7 @@ TARGETS = {
 GROUP_ONLY_CODE_TARGETS = {
     "groups",
     "group-0",
+    "group-visit",
 }
 
 
@@ -225,10 +244,9 @@ def parse_args():
         nargs="?",
         default="all",
         help=(
-            "Default: all. CI uchun: setup-group-0 yoki forms. Debug uchun: setup, "
-            "setup-group-0, "
-            "setup-report, setup-a2-admin, "
-            "company, groups, group-0, group-report, "
+            "Default: all. CI uchun: setup-smoke yoki forms. Debug uchun: setup, "
+            "setup-smoke, setup-group-0, setup-visit, setup-report, setup-a2-admin, "
+            "company, groups, group-0, group-visit, group-report, "
             "forms yoki pytest target path."
         ),
     )
@@ -327,7 +345,8 @@ def main():
             "NEW_CODE=1 group-only target bilan ishlamaydi: yangi code uchun "
             "setup user hali yaratilmagan. .env da NEW_CODE=0 qilib joriy "
             "setup baseline'ni ishlating yoki setup bilan bir sessiyada "
-            "ishlaydigan targetni tanlang (Group-0 uchun: setup-group-0).",
+            "ishlaydigan targetni tanlang (Group-0 uchun: setup-group-0; "
+            "Visit uchun: setup-visit).",
             file=sys.stderr,
         )
         return 2

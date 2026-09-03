@@ -1,5 +1,13 @@
 # Natural Person Add Form
 
+## Mundarija
+
+- [URL Va Navigation](#url-va-navigation)
+- [Test Arxitekturasi](#test-arxitekturasi)
+- [Field Bilimlari](#field-bilimlari)
+- [List Va View Tekshiruv](#list-va-view-tekshiruv)
+- [Debug Notes](#debug-notes)
+
 ## URL Va Navigation
 
 ### Natural person add
@@ -13,7 +21,7 @@ Tags: natural-person, setup, form, navigation
 
 ### Alohida natural person flow
 Tags: natural-person, legal-person, helper
-- Natural Person alohida entity test hisoblanadi; testcase logikasi `tests/smoke/test_setup/test_05_natural_person.py` ichidagi `run_natural_person` va `tests/smoke/test_setup/test_19_natural_person_for_client_1.py` ichidagi `run_natural_person_for_client_1` (`test_0_setup_runner` step 05 va 19) da turadi.
+- Natural Person alohida entity test hisoblanadi; testcase logikasi `tests/smoke/test_setup/test_05_natural_person.py` ichidagi `run_natural_person` va `tests/smoke/test_setup/test_20_natural_person_for_client_1.py` ichidagi `run_natural_person_for_client_1` (`test_0_setup_runner` step 05 va 20) da turadi.
 - Bir nechta test ishlatadigan UI oqimi `tests/smoke/flows/flow_natural_person.py` ga ajratilgan; test fayllari bir-biridan helper import qilmaydi.
 - Reusable creator: `create_natural_person(page, name, person_code, *, client=False)` — list va add formani ochib, maydonlarni to'ldiradi va saqlaydi.
 - View tekshiruvi: `check_natural_person_view(page, name)` — list rowni tanlab, viewda nom/statusni tekshiradi va listga qaytadi.
@@ -26,7 +34,7 @@ Tags: natural-person, legal-person, helper
     `base.expect_page(heading="Физические лица")` ko'rinishida ochiq yoziladi.
     `expect_page` loader overlay yo'qolishini ham kutgani uchun alohida
     `wait_for_loader()` kerak emas.
-  - ✅ BAJARILDI (2026-07-14): `create_natural_person` va view tekshiruvi test faylidan `flow_natural_person.py` ga ko'chirildi; joriy `test_19_natural_person_for_client_1.py` boshqa test modulidan import qilmaydi.
+  - ✅ BAJARILDI (2026-07-14): `create_natural_person` va view tekshiruvi test faylidan `flow_natural_person.py` ga ko'chirildi; joriy `test_20_natural_person_for_client_1.py` boshqa test modulidan import qilmaydi.
   - ⏳ IMKONIYAT (hali bajarilmagan): `run_natural_person` + `run_natural_person_for_client_1` bitta parametrli `run_natural_person(page, code, *, client=False)` ga birlashtirilishi mumkin (client uchun `Клиенты` list qadamini `if client:` bilan qo'shib). Ikkala pytest entry saqlanadi. `test_0_setup_runner.py` `run_*` ni to'g'ridan-to'g'ri chaqiradi (import + `test_06`/`test_18` call-site), shuning uchun birlashtirilsa runner ham yangilanadi.
 
 ## Field Bilimlari
@@ -67,6 +75,30 @@ Tags: natural-person, view, assert
 - Joriy view assert yaratilgan person name va `Активный` statusini tekshiradi.
 - `natural_client-pw{code}` case uchun person viewdan keyin `Клиенты` listida ham client nomi borligi tekshiriladi.
 
+### User person IDni view URLdan olish
+
+Tags: natural-person, user, view, id, data-store
+Status: code-confirmed
+Verified: 2026-08-27
+Source: user; `tests/smoke/test_setup/test_05_natural_person.py`
+
+- `natural_person-pw{code}` keyingi `run_user` testida userning
+  `Физическое лицо` maydoniga bog'lanadi.
+- Setup test view URLdagi `person_id`ni `data_store.json.user_person_id`
+  kaliti bilan saqlaydi; bu client person IDdan alohida.
+
+### Client person IDni view URLdan olish
+
+Tags: natural-person, client, view, id, data-store
+Status: live-ui-confirmed
+Verified: 2026-08-27
+Source: live UI; `tests/smoke/test_setup/test_20_natural_person_for_client_1.py`
+
+- Client view URL patterni `anor/mr/person/natural_person_view?person_id=<id>`;
+  summary `natural_client-pw{code} (<id>)` ko'rinishida IDni ko'rsatadi.
+- Client setup test view ochilgach `person_id`ni musbat integer sifatida
+  tekshiradi va `data_store.json.client_person_id`ga saqlaydi.
+
 ## Debug Notes
 
 ### 2026-06-02 list/view verification
@@ -88,4 +120,4 @@ Tags: natural-person, flow, duplicate-code, run-result
 - `create_natural_person` va `check_natural_person_view` `tests/smoke/flows/flow_natural_person.py` ga ajratilgandan keyin mavjud filialda noyob person name/code bilan create -> list search -> row assert -> view assert oqimi **1 passed in 22.38s** (`NEW_CODE=0`, headless).
 - `client=True` branch ham noyob person name/code bilan create -> natural person list/view -> `Клиенты` list assert oqimida **1 passed in 23.93s** (`NEW_CODE=0`, headless).
 - Refactordan oldingi `natural_person_pw{code}` formatini saqlangan eski `code` bilan standalone qayta ishlatish serverda `Найден дубликат кода` xatosini bergan. Bu locator/refactor xatosi emas.
-- Oraliq uzun `code_natural_person_pw{code}` / `code_natural_client_pw{code}` formatida aynan `test_05_natural_person.py` saqlangan code (`NEW_CODE=0`) va headless rejimda **1 passed in 28.06s**, joriy `test_19_natural_person_for_client_1.py` esa **1 passed in 24.03s**. Keyin loyiha qoidasi bo'yicha ular qisqa `c_n_p_pw{code}` / `c_n_c_pw{code}` formatiga o'tkazildi.
+- Oraliq uzun `code_natural_person_pw{code}` / `code_natural_client_pw{code}` formatida aynan `test_05_natural_person.py` saqlangan code (`NEW_CODE=0`) va headless rejimda **1 passed in 28.06s**, joriy `test_20_natural_person_for_client_1.py` esa **1 passed in 24.03s**. Keyin loyiha qoidasi bo'yicha ular qisqa `c_n_p_pw{code}` / `c_n_c_pw{code}` formatiga o'tkazildi.

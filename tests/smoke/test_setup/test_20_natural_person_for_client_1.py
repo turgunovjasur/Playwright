@@ -9,12 +9,13 @@ from tests.smoke.flows.flow_natural_person import (
     open_natural_person_view,
 )
 from utils.base_page import BasePage
+from utils.helper_utils import query_int_from_url
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Natural Person")]
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def run_natural_person_for_client_1(page, code):
+def run_natural_person_for_client_1(page, code, save_data):
     """Testcase: mijoz uchun jismoniy shaxs (natural client) yaratish.
 
     1. Физические лица ro'yxatini ochish.
@@ -23,8 +24,9 @@ def run_natural_person_for_client_1(page, code):
     4. Ro'yxatda nom va statusni tekshirish.
     5. View formasini ochish.
     6. View formasida nom va statusni tekshirish.
-    7. View formasini yopib, Физические лица ro'yxatiga qaytish.
-    8. Клиенты ro'yxatida mijoz ko'rinishini tekshirish.
+    7. View URLdan client person IDni olib, data_store ga saqlash.
+    8. View formasini yopib, Физические лица ro'yxatiga qaytish.
+    9. Клиенты ro'yxatida mijoz ko'rinishini tekshirish.
     """
     base = BasePage(page)
     person_code = f"c_n_c_pw{code}"
@@ -43,9 +45,12 @@ def run_natural_person_for_client_1(page, code):
     with allure.step("6 - View formasida nom va statusni tekshirish"):
         base.text(person_name, "Активный")
 
-    close_natural_person_view(page, step_name="7 - View formasini yopib, ro'yxatga qaytish")
+    with allure.step("7 - Client person IDni olish va saqlash"):
+        save_data("client_person_id", query_int_from_url(page.url, "person_id"))
 
-    with allure.step("8 - Mijozlar ro'yxatida ko'rinishini tekshirish"):
+    close_natural_person_view(page, step_name="8 - View formasini yopib, ro'yxatga qaytish")
+
+    with allure.step("9 - Mijozlar ro'yxatida ko'rinishini tekshirish"):
         base.navigate_to(tab="Справочники", name="Клиенты")
         base.expect_page(heading="Клиенты")
         base.grid_controller(search=person_name)
@@ -54,8 +59,8 @@ def run_natural_person_for_client_1(page, code):
 # ----------------------------------------------------------------------------------------------------------------------
 
 @allure.title("Mijoz uchun jismoniy shaxs yaratish")
-def test_natural_person_for_client_1(page, code):
+def test_natural_person_for_client_1(page, code, save_data):
     base = BasePage(page)
     authorization(page, who="admin")
     base.switch_filial(name=f"filial-pw{code}")
-    run_natural_person_for_client_1(page, code)
+    run_natural_person_for_client_1(page, code, save_data)

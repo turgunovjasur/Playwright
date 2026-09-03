@@ -82,6 +82,17 @@ Tags: order, setup
 - Default payment type: `Наличные деньги`
 - Default status: `Черновик`
 
+### Order currency va price type mosligi
+Tags: order, currency, price-type, mobile, validation
+Status: trace-confirmed
+Verified: 2026-08-28
+Source: `test-results/logs/tests_smoke_test_groups_test_visit_grup_test_02_mobile_visit_with_order.py__test_mobile_visit_with_order_20260828_091633.log`; successful dedicated leaf run
+- Qoida: order `currency_id` qiymati item `price_type_id` valyutasi bilan mos
+  bo'lishi shart. USD `currency_id` bilan UZS price type yuborilsa server
+  `A02-16-011` (`Валюты заказа и тип цены разные`) bilan rad etadi.
+- Testda ishlatish: `product-pw{code}` + `price_type_id_uzb` kombinatsiyasida
+  `currency_id_uzb` ishlatiladi.
+
 ### Contract Limit Order Case
 Tags: order, contract, limit, error
 - Qoida: 500000 contract bilan quantity `100` product order summasi `700 000` bo'ladi.
@@ -140,7 +151,8 @@ Tags: order, product, balance, booking, setup
 - Order cleanup boshida `base.navigate_to(tab="Продажа", name="Заказы")`dan keyin `base.expect_page(heading="Заказы", url="order_list")` bitta readiness check sifatida yetarli; uning ketidan faqat grid tayyorligini takror tekshirish maqsadida `base.text("Статус", root="b-grid")` yozilmaydi. `base.text` faqat `Статус`ning o'zi biznes assertion bo'lsa ishlatiladi.
 - Order list grid textlari `get_by_text(..., exact=True)` bilan topilmasligi mumkin; cleanupda client text body ichida bor-yo'qligini tekshir, keyin mavjud `flow_order_list(..., status="Отменен")` bilan birinchi active rowni cancel qil.
 - Agar cancellation mumkin bo'lmasa, order listdan productni band qilib turgan orderlarni o'chirish mumkin.
-- Faqat order listdan tozalash imkoni bo'lmasa: setupdagi `test_21_init_balance` orqali balans qo'shib kel.
+- Faqat order listdan tozalash imkoni bo'lmasa: setup runnerdagi
+  `test_23_init_balance` (`test_23_init_balance.py` moduli) orqali balans qo'shib kel.
 - Test/debug uchun initial balance flow qo'shish oxirgi variant; u mavjud ishlayotgan testlarga ulanmasligi kerak.
 
 ### Order ID

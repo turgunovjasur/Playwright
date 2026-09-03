@@ -240,15 +240,18 @@ ishlatiladi.
 | `--show-trace` / `SHOW_TRACE=1` | Testdan keyin oxirgi Playwright trace viewerini ochadi. `SHOW_TRACE=1` shell env yoki repo `.env` ichida berilishi mumkin. |
 | `AI_ANALYSIS=1` | Failed run uchun Gemini orqali qo'shimcha AI xulosa yozadi. Default: off. |
 | `--dry-run` | Testni ishga tushirmaydi, faqat pytest commandni ko'rsatadi. |
-| `all` | Default target. Setup + Group-0 + Report + Forms runner ishlaydi. |
+| `all` | Default target. Setup + Group-0 + Visit + Report + Forms runner ishlaydi. |
 | `setup` | Faqat setup runner ishlaydi. |
 | `setup-group-0` | Setup, keyin Group-0 runnerni bitta sessiyada ishlatadi. |
+| `setup-smoke` | CI Smoke targeti: Setup, Group-0 va Visit runnerlarni bitta sessiyada ishlatadi. |
+| `setup-visit` | Setup, keyin Visit runnerni bitta sessiyada ishlatadi. |
 | `setup-report` | Lokal target: Setup, keyin Report runner ishlaydi. |
 | `setup-a2-admin` | Lokal compatibility target: Setup, keyin standalone `test_a2_angular_forms.py` ishlaydi. |
 | `setup-forms` | Lokal compatibility target: Setup, keyin barcha form-opening testlar ishlaydi. |
 | `company` | Faqat yangi company yaratish testi ishlaydi. |
-| `groups` | Setupni ishlatmasdan Group-0 va Report runnerlarni ishlatadi. |
+| `groups` | Setupni ishlatmasdan Group-0, Visit va Report runnerlarni ishlatadi. |
 | `group-0` | Faqat Group-0 ishlaydi. |
+| `group-visit` | Faqat Visit group ishlaydi. |
 | `group-report` | Faqat Report group ishlaydi. |
 | `forms` | Setupni ishlatmasdan faqat Forms runner ishlaydi. |
 
@@ -294,7 +297,7 @@ Nima qiladi: faqat user setup zanjirini ishlatadi.
 python scripts/run_tests.py groups --url <server_url> --company-code <company_code> --company-password <company_password>
 ```
 
-Nima qiladi: saqlangan setup data bilan Group-0 va Report runnerlarini ishlatadi.
+Nima qiladi: saqlangan setup data bilan Group-0, Visit va Report runnerlarini ishlatadi.
 
 #### Setup va Group-0
 
@@ -304,6 +307,16 @@ python scripts/run_tests.py setup-group-0 --url <server_url> --company-code <com
 
 Nima qiladi: setup va Group-0ni bitta pytest sessiyasida yangi code bilan
 ishlatadi.
+
+#### CI Smoke: Setup, Group-0 va Visit
+
+```bash
+python scripts/run_tests.py setup-smoke --url <server_url> --company-code <company_code> --company-password <company_password>
+```
+
+Nima qiladi: setup, Group-0 va Visit runnerlarini bitta pytest sessiyasida
+yangi code bilan ishlatadi. Setup failed bo'lsa ikkala group skip qilinadi;
+Group-0 va Visit bir-birining natijasiga bog'liq emas.
 
 #### Faqat Group-0
 
@@ -390,23 +403,26 @@ Default target `all`, ya'ni full suite.
 
 | Target | Buyruq namunasi | Nima ishlaydi |
 |--------|------------------|---------------|
-| `all` | `python scripts/run_tests.py --url <url> --company-code <code> --company-password <pass>` | Setup + Group-0 + Report + Forms runner |
+| `all` | `python scripts/run_tests.py --url <url> --company-code <code> --company-password <pass>` | Setup + Group-0 + Visit + Report + Forms runner |
 | `setup` | `python scripts/run_tests.py setup --url <url> --company-code <code> --company-password <pass>` | Faqat user setup |
 | `setup-group-0` | `python scripts/run_tests.py setup-group-0 --url <url> --company-code <code> --company-password <pass>` | User setup + Group-0 |
+| `setup-smoke` | `python scripts/run_tests.py setup-smoke --url <url> --company-code <code> --company-password <pass>` | CI Smoke: User setup + Group-0 + Visit |
+| `setup-visit` | `python scripts/run_tests.py setup-visit --url <url> --company-code <code> --company-password <pass>` | User setup + Visit |
 | `setup-report` | `python scripts/run_tests.py setup-report --url <url> --company-code <code> --company-password <pass>` | User setup + Report group; lokal target |
 | `setup-a2-admin` | `python scripts/run_tests.py setup-a2-admin --url <url> --company-code <code> --company-password <pass>` | User setup + standalone A2Angular; lokal compatibility target |
 | `setup-forms` | `python scripts/run_tests.py setup-forms --url <url> --company-code <code> --company-password <pass>` | User setup + barcha form-opening testlar; lokal compatibility target |
 | `company` | `python scripts/run_tests.py company --url <url> --create-company --head-email <email> --head-password <pass>` | Faqat company yaratish testi |
-| `groups` | `python scripts/run_tests.py groups --url <url> --company-code <code> --company-password <pass>` | Setupdan tashqari Group-0 + Report |
+| `groups` | `python scripts/run_tests.py groups --url <url> --company-code <code> --company-password <pass>` | Setupdan tashqari Group-0 + Visit + Report |
 | `group-0` | `python scripts/run_tests.py group-0 --url <url> --company-code <code> --company-password <pass>` | Faqat Group-0 |
+| `group-visit` | `python scripts/run_tests.py group-visit --url <url> --company-code <code> --company-password <pass>` | Faqat Visit group |
 | `group-report` | `python scripts/run_tests.py group-report --url <url> --company-code <code> --company-password <pass>` | Faqat Report group |
 | `forms` | `python scripts/run_tests.py forms --url <url> --company-code <code> --company-password <pass>` | Faqat Forms runner |
 
-`--create-company` `all`, `setup`, `setup-group-0`, `setup-forms` va `company`
+`--create-company` `all`, `setup`, `setup-smoke`, `setup-group-0`, `setup-visit`, `setup-forms` va `company`
 targetlari bilan ishlatiladi. `groups`, `forms` va alohida group targetlari
 uchun avval mavjud company va setup data kerak.
 
-CI Smoke uchun `setup-group-0`, mustaqil Report job uchun `group-report`, Forms
+CI Smoke uchun `setup-smoke`, mustaqil Report job uchun `group-report`, Forms
 uchun `forms` targetini alohida `CREATE_COMPANY=0` run sifatida ishlatadi;
 serverga mos company code/password GitHub Secrets'dan olinadi. GitHub cron har
 soatda Online Smoke va Report'ni mustaqil boshlaydi; Online Forms Smoke

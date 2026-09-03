@@ -35,6 +35,7 @@ TARGET_LABELS = {
     "all": "All",
     "setup": "Setup",
     "setup-group-0": "Smoke",
+    "setup-smoke": "Smoke",
     "setup-report": "Setup + Report",
     "setup-a2-admin": "Setup + A2 Admin Forms",
     "setup-forms": "Setup + Forms",
@@ -47,6 +48,7 @@ TARGET_SUITE_LABELS = {
     "all": "All",
     "setup": "Setup",
     "setup-group-0": "Smoke · Setup + A group",
+    "setup-smoke": "Smoke · Setup + 0 group + Visit group",
     "setup-report": "Setup + Report group",
     "setup-a2-admin": "Setup + A2 Admin Forms",
     "setup-forms": "Setup + Forms",
@@ -57,6 +59,8 @@ TARGET_SUITE_LABELS = {
 }
 GROUP_ORDER = [
     "Setup",
+    "0 group",
+    "visit group",
     "A2 Admin Forms group",
     "Report group",
     "Forms group",
@@ -221,6 +225,7 @@ def sync_run_code_from_data_store(state):
         "all",
         "setup",
         "setup-group-0",
+        "setup-smoke",
         "setup-report",
         "setup-a2-admin",
         "setup-forms",

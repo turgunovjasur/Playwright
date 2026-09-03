@@ -9,12 +9,13 @@ from tests.smoke.flows.flow_natural_person import (
     open_natural_person_view,
 )
 from utils.base_page import BasePage
+from utils.helper_utils import query_int_from_url
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Natural Person")]
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def run_natural_person(page, code):
+def run_natural_person(page, code, save_data):
     """Testcase: xodim uchun jismoniy shaxs (natural person) yaratish.
 
     1. Физические лица ro'yxatini ochish.
@@ -23,7 +24,8 @@ def run_natural_person(page, code):
     4. Ro'yxatda yaratilgan shaxs nomi va "Активный" statusini tekshirish.
     5. View formasini ochish.
     6. View formasida nom va statusni tekshirish.
-    7. View formasini yopib, ro'yxatga qaytish.
+    7. View URLdan userga bog'lanadigan person IDni olib, data_store ga saqlash.
+    8. View formasini yopib, ro'yxatga qaytish.
 
     Setup zanjirida sahifa allaqachon filial-pw{code} da (run_room shu filialga
     o'tgan), shuning uchun bu yerda switch_filial qilinmaydi — standalone debug uchun
@@ -46,13 +48,16 @@ def run_natural_person(page, code):
     with allure.step("6 - View formasida nom va statusni tekshirish"):
         base.text(person_name, "Активный")
 
-    close_natural_person_view(page, step_name="7 - View formasini yopib, ro'yxatga qaytish")
+    with allure.step("7 - User person IDni olish va saqlash"):
+        save_data("user_person_id", query_int_from_url(page.url, "person_id"))
+
+    close_natural_person_view(page, step_name="8 - View formasini yopib, ro'yxatga qaytish")
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 @allure.title("Xodim uchun jismoniy shaxs yaratish")
-def test_natural_person(page, code):
+def test_natural_person(page, code, save_data):
     base = BasePage(page)
     authorization(page, who="admin")
     base.switch_filial(name=f"filial-pw{code}")
-    run_natural_person(page, code)
+    run_natural_person(page, code, save_data)

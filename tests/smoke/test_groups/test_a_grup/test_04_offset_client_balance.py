@@ -15,7 +15,7 @@ pytestmark = [
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def run_offset_client_balance(page, code, require_data):
+def run_offset_client_balance(page, code, load_data):
     """Testcase: client debt va prepaymentini o'zaro hisob-kitob qilish.
 
     1. Settlement listida teng debt va prepaymentni tekshirib, clientni tanlash.
@@ -25,7 +25,7 @@ def run_offset_client_balance(page, code, require_data):
     base = BasePage(page)
     client = f"natural_client-pw{code}"
     payment_amount = 7_000
-    baseline = require_data("group_0_offset_baseline")
+    baseline = load_data("group_0_offset_baseline")
     debt_before_offset = baseline["debt"] + payment_amount
     prepayment_before_offset = baseline["prepayment"] + payment_amount
     expected_order = baseline["order"]
@@ -93,6 +93,6 @@ def run_offset_client_balance(page, code, require_data):
 
 
 @allure.title("Client debt va prepaymentini o'zaro hisob-kitob qilish")
-def test_offset_client_balance(page, code, require_data):
+def test_offset_client_balance(page, code, load_data):
     authorization(page, who="user", code=code)
-    run_offset_client_balance(page, code, require_data)
+    run_offset_client_balance(page, code, load_data)
