@@ -12,6 +12,7 @@ import time
 import zipfile
 from dataclasses import dataclass, replace
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import requests
 
@@ -253,6 +254,52 @@ class BotConfig:
     workflow: str
     ref: str
     allowed_server_keys: set[str]
+    hourly_schedule: HourlyScheduleConfig
+
+
+@dataclass(frozen=True)
+class HourlyScheduleConfig:
+    enabled: bool
+    minute: int
+    timezone_name: str
+    server_key: str
+
+
+class HourlyScheduler:
+    def __init__(self, config, *, dispatch_slot, now_provider=None, wait=None, logger=None):
+        self.config = config
+        self.timezone = ZoneInfo(config.timezone_name)
+        self.dispatch_slot = dispatch_slot
+        self.now_provider = now_provider or datetime.now
+        self.wait = wait or time.sleep
+        self.logger = logger or print
+        self._last_slot = None
+
+    def tick(self):
+        if not self.config.enabled:
+            return "disabled"
+
+        now = self.now_provider(self.timezone)
+        if now.minute != self.config.minute:
+            return "waiting"
+
+        slot = now.strftime("%Y-%m-%dT%H")
+        if slot == self._last_slot:
+            return "already-checked"
+
+        self._last_slot = slot
+        return self.dispatch_slot(slot)
+
+    def run_forever(self):
+        while True:
+            try:
+                self.tick()
+            except Exception as exc:
+                self.logger(
+                    f"Hourly scheduler error: {exc.__class__.__name__}",
+                    file=sys.stderr,
+                )
+            self.wait(15)
 
 
 def env_required(name, *fallbacks):
@@ -266,6 +313,41 @@ def env_required(name, *fallbacks):
 
 def env_value(name, default):
     return os.getenv(name, default).strip() or default
+
+
+def load_hourly_schedule_config(allowed_server_keys):
+    enabled_value = env_value("HOURLY_SCHEDULE_ENABLED", "0").lower()
+    if enabled_value in {"1", "true", "yes", "on"}:
+        enabled = True
+    elif enabled_value in {"0", "false", "no", "off"}:
+        enabled = False
+    else:
+        raise ConfigError("HOURLY_SCHEDULE_ENABLED must be boolean")
+
+    minute_value = env_value("HOURLY_SCHEDULE_MINUTE", "17")
+    try:
+        minute = int(minute_value)
+    except ValueError as exc:
+        raise ConfigError("HOURLY_SCHEDULE_MINUTE must be an integer from 0 to 59") from exc
+    if not 0 <= minute <= 59:
+        raise ConfigError("HOURLY_SCHEDULE_MINUTE must be an integer from 0 to 59")
+
+    timezone_name = env_value("HOURLY_SCHEDULE_TIMEZONE", "Asia/Tashkent")
+    try:
+        ZoneInfo(timezone_name)
+    except ZoneInfoNotFoundError as exc:
+        raise ConfigError("HOURLY_SCHEDULE_TIMEZONE is invalid") from exc
+
+    server_key = env_value("HOURLY_SCHEDULE_SERVER", "smartup").lower()
+    if enabled and server_key not in allowed_server_keys:
+        raise ConfigError("HOURLY_SCHEDULE_SERVER is not in ALLOWED_SERVER_URLS")
+
+    return HourlyScheduleConfig(
+        enabled=enabled,
+        minute=minute,
+        timezone_name=timezone_name,
+        server_key=server_key,
+    )
 
 
 def split_csv(value):
@@ -302,6 +384,7 @@ def load_config():
         workflow=env_value("GITHUB_WORKFLOW_FILE", DEFAULT_WORKFLOW),
         ref=env_value("GITHUB_REF", DEFAULT_REF),
         allowed_server_keys=allowed_server_keys,
+        hourly_schedule=load_hourly_schedule_config(allowed_server_keys),
     )
 
 
@@ -1030,6 +1113,24 @@ def find_busy_run(github, active_store):
     return github.find_active_run(), None
 
 
+def dispatch_hourly_slot(github, active_store, dispatch_lock, config, slot):
+    with dispatch_lock:
+        busy_run, _local_active = find_busy_run(github, active_store)
+        if busy_run is not None:
+            print(f"Hourly scheduler slot={slot} skipped-active run_id={busy_run.run_id}")
+            return "skipped-active"
+
+        workflow_run = github.dispatch(
+            RunRequest(suite_key="all", server_key=config.server_key)
+        )
+
+    print(
+        f"Hourly scheduler slot={slot} dispatched run_id={workflow_run.run_id} "
+        f"url={workflow_run.html_url}"
+    )
+    return "dispatched"
+
+
 def transient_status_message_ids(active):
     # Only the throwaway "test jarayonda" reminder replies. The main progress
     # message (status_message_id) becomes the final report and must be kept.
@@ -1194,6 +1295,7 @@ def verify_run_password(
     chat_id,
     text,
     user_message_id,
+    dispatch_lock,
 ):
     """Parol kutilayotgan chatda kelgan matnni parol sifatida tekshiradi."""
     pending = pending_store.get(chat_id)
@@ -1222,7 +1324,7 @@ def verify_run_password(
 
     if password_matches(config.run_password, text):
         pending_store.clear(chat_id)
-        start_run(telegram, github, chat_id, pending.prompt_message_id, pending.request, active_store)
+        start_run(telegram, github, chat_id, pending.prompt_message_id, pending.request, active_store, dispatch_lock)
     else:
         telegram.edit_message(
             chat_id,
@@ -1241,6 +1343,7 @@ def handle_message(
     chat_id,
     text,
     message_id,
+    dispatch_lock,
 ):
     is_command = text.startswith("/")
 
@@ -1259,9 +1362,7 @@ def handle_message(
 
     # Parol kutilayotgan bo'lsa va bu buyruq bo'lmasa — matnni parol urinishi deb qaraymiz.
     if pending_store.has(chat_id) and not is_command:
-        verify_run_password(
-            telegram, github, config, active_store, pending_store, chat_id, text, message_id
-        )
+        verify_run_password(telegram, github, config, active_store, pending_store, chat_id, text, message_id, dispatch_lock)
         return
 
     # Buyruq kelsa, oldingi parol kutish holatini bekor qilamiz.
@@ -1397,31 +1498,33 @@ def start_run(
     message_id,
     request,
     active_store,
+    dispatch_lock,
 ):
-    try:
-        busy_run, _local_active = find_busy_run(github, active_store)
-    except Exception as exc:
-        print(f"GitHub active run check failed: {exc}", file=sys.stderr)
+    with dispatch_lock:
+        try:
+            busy_run, _local_active = find_busy_run(github, active_store)
+        except Exception as exc:
+            print(f"GitHub active run check failed: {exc}", file=sys.stderr)
+            telegram.edit_message(
+                chat_id,
+                message_id,
+                "Test holatini tekshirib bo'lmadi. /run bilan qayta urinib ko'ring.",
+            )
+            return
+        if busy_run is not None:
+            telegram.edit_message(chat_id, message_id, busy_run_text(busy_run))
+            return
+
         telegram.edit_message(
             chat_id,
             message_id,
-            "Test holatini tekshirib bo'lmadi. /run bilan qayta urinib ko'ring.",
+            f"{request.suite_label} testi boshlanyapti...",
         )
-        return
-    if busy_run is not None:
-        telegram.edit_message(chat_id, message_id, busy_run_text(busy_run))
-        return
-
-    telegram.edit_message(
-        chat_id,
-        message_id,
-        f"{request.suite_label} testi boshlanyapti...",
-    )
-    try:
-        workflow_run = github.dispatch(request, telegram_progress_message_id=message_id)
-    except Exception as exc:
-        telegram.edit_message(chat_id, message_id, f"Testni boshlashda xato: {exc}")
-        return
+        try:
+            workflow_run = github.dispatch(request, telegram_progress_message_id=message_id)
+        except Exception as exc:
+            telegram.edit_message(chat_id, message_id, f"Testni boshlashda xato: {exc}")
+            return
 
     telegram.edit_message(
         chat_id,
@@ -1513,10 +1616,26 @@ def main():
     active_store = ActiveRunStore()
     pending_store = PendingRunStore()
     pending_stop_store = PendingStopStore()
+    dispatch_lock = threading.Lock()
+
+    hourly_scheduler = HourlyScheduler(
+        config.hourly_schedule,
+        dispatch_slot=lambda slot: dispatch_hourly_slot(github, active_store, dispatch_lock, config.hourly_schedule, slot),
+    )
+    if config.hourly_schedule.enabled:
+        threading.Thread(target=hourly_scheduler.run_forever, daemon=True).start()
 
     offset = None
     print(f"Telegram CI bot started for {config.repository}/{config.workflow} on {config.ref}")
-    print("Bot manual trigger rejimida; soatlik schedule GitHub cron tomonidan boshqariladi.")
+    if config.hourly_schedule.enabled:
+        print(
+            "Hourly scheduler enabled: "
+            f"minute={config.hourly_schedule.minute:02d} "
+            f"timezone={config.hourly_schedule.timezone_name} "
+            f"suite=all server={config.hourly_schedule.server_key}"
+        )
+    else:
+        print("Hourly scheduler disabled; bot manual trigger rejimida.")
 
     while True:
         try:
@@ -1543,6 +1662,7 @@ def main():
                             chat_id,
                             text.strip(),
                             message_id if isinstance(message_id, int) else None,
+                            dispatch_lock,
                         )
                     continue
 

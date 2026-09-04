@@ -1,0 +1,8 @@
+**
+!scripts/
+!scripts/telegram_ci_bot.py
+!scripts/stop_ci_runs.py
+!deploy/
+!deploy/playwright-ci-bot/
+!deploy/playwright-ci-bot/Dockerfile
+!deploy/playwright-ci-bot/requirements.txt

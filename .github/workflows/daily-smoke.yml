@@ -1,8 +1,6 @@
 name: Hourly Smoke, Report and Forms Tests
 
 on:
-  schedule:
-    - cron: "17 * * * *"
   workflow_dispatch:
     inputs:
       suite:
@@ -11,6 +9,7 @@ on:
         default: smoke
         type: choice
         options:
+          - all
           - smoke
           - report
           - forms
@@ -35,7 +34,7 @@ concurrency:
 jobs:
   smoke:
     name: Smoke
-    if: ${{ github.event_name == 'schedule' || inputs.suite == 'smoke' }}
+    if: ${{ inputs.suite == 'smoke' || inputs.suite == 'all' }}
     uses: ./.github/workflows/run-smartup-suite.yml
     with:
       target: setup-smoke
@@ -46,7 +45,7 @@ jobs:
 
   report:
     name: Report
-    if: ${{ github.event_name == 'schedule' || inputs.suite == 'report' }}
+    if: ${{ inputs.suite == 'report' || inputs.suite == 'all' }}
     uses: ./.github/workflows/run-smartup-suite.yml
     with:
       target: group-report
@@ -58,7 +57,7 @@ jobs:
   forms:
     name: Forms
     needs: smoke
-    if: ${{ always() && (github.event_name == 'schedule' || inputs.suite == 'forms') }}
+    if: ${{ always() && (inputs.suite == 'forms' || inputs.suite == 'all') }}
     uses: ./.github/workflows/run-smartup-suite.yml
     with:
       target: forms

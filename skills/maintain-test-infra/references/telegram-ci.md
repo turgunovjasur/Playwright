@@ -6,30 +6,33 @@
 - [Progress va final xabar](#progress-va-final-xabar)
 - [Security](#security)
 - [Windows deploy](#windows-deploy)
+- [Hetzner Docker deploy](#hetzner-docker-deploy)
 - [Verification](#verification)
 
 ## Current architecture
 
 Status: code-confirmed
-Verified: 2026-08-18
+Verified: 2026-09-04
 Source: `scripts/telegram_ci_bot.py`; `.github/workflows/daily-smoke.yml`;
 `.github/workflows/run-smartup-suite.yml`; `scripts/telegram_progress.py`;
 `tests/smoke/progress.py`; `scripts/analyze_test_result.py`
 
-- GitHub Actions test execution va har soatlik schedulingning yagona
-  authoritysi; `daily-smoke.yml`dagi `cron: "17 * * * *"` har soatning
-  17-daqiqasida runni rejalashtiradi. Bu GitHub Actions yuklamasi yuqori
-  bo'ladigan soat boshidagi kechikish va dropped schedule ehtimolini kamaytiradi;
-  GitHub schedule aniq boshlanish vaqtini kafolatlamaydi.
-- Cron har soatda `Online Smoke` va `Online Report`ni bir-biridan mustaqil
-  reusable workflow job sifatida boshlaydi. Forms job `if: always()` bilan
-  Smoke tugagach, uning natijasidan qat'i nazar boshlanadi.
-- `Smoke` `scripts/run_tests.py setup-group-0`, `Report`
+- GitHub Actions test execution authoritysi bo'lib qoladi; har soatlik scheduling
+  authoritysi Hetznerdagi alohida `playwright-ci-bot` containeriga ko'chirilgan.
+  GitHub workflowda `schedule` event yo'q.
+- Server scheduler `Asia/Tashkent` vaqti bilan har `HH:17`da bitta
+  `workflow_dispatch` yuboradi: `suite=all`, `server=smartup`. Active workflow
+  mavjud bo'lsa slot skip qilinadi; o'tkazib yuborilgan slot catch-up qilinmaydi.
+- `all` dispatch `Online Smoke` va `Online Report`ni parallel reusable workflow
+  job sifatida boshlaydi. Forms job `if: always()` bilan Smoke tugagach, uning
+  natijasidan qat'i nazar boshlanadi.
+- `Smoke` `scripts/run_tests.py setup-smoke`, `Report`
   `scripts/run_tests.py group-report`, `Forms` esa `scripts/run_tests.py forms`
   targetini bajaradi. Har job o'z Telegram progress/final xabari,
   `test-results`, HTML Allure reporti va artifactiga ega.
-- Windows serverdagi bot faqat manual trigger qiladi; bot auto-run loopi va
-  `AUTO_RUN_*` konfiguratsiyasi olib tashlangan.
+- Telegram botning manual buyruqlari va hourly scheduler bir processda ishlaydi;
+  manual va scheduled dispatch bitta process-local lock bilan serialize qilinadi.
+  Scheduler exceptioni Telegram polling loopini to'xtatmaydi.
 - Telegram bot manual flowida avval suite (`Smoke` yoki `Forms`), keyin server (`Online` yoki
   `Xtrade`), so'ng run password authorizationi tanlanadi.
 - `/stop` repo bo'yicha `queued`, `waiting`, `pending`, `requested` va
@@ -51,13 +54,13 @@ Source: `scripts/telegram_ci_bot.py`; `.github/workflows/daily-smoke.yml`;
   hali ro'yxatda bo'lmasligi normal.
 - Workflow erkin URL qabul qilmaydi: `smartup` yoki `app3` keyidan URL hamda
   secret source ichkarida hosil qilinadi, boshqa key fail-closed rad etiladi.
-- Bot in-memory manual run bilan birga GitHub API orqali scheduled/manual active
+- Bot in-memory manual run bilan birga GitHub API orqali hourly/manual active
   workflow runlarni ham tekshiradi. Active run bo'lsa yangi manual dispatch
   queue'ga qo'shilmaydi va `Test jarayonda, yangi run boshlanmadi` mazmunidagi
   Telegram xabari bilan rad etiladi.
 - Bot workflow'ni `main` ref va `daily-smoke.yml` bilan dispatch qiladi;
   `smartup` va `app3` serverlari alohida secret source ishlatadi.
-- GitHub Actions UI manual dispatchi `Smoke`, `Report` yoki `Forms`ni tanlaydi;
+- GitHub Actions UI manual dispatchi `All`, `Smoke`, `Report` yoki `Forms`ni tanlaydi;
   Telegram bot menyusiga alohida Report tugmasi qo'shilmagan.
 - GitHub status polling vaqtinchalik API/network xatosini retry qiladi; ketma-ket
   5 xatodan keyin failure sifatida chiqaradi.
@@ -246,6 +249,31 @@ Source: GitHub Actions runs `30528649258`, `30878853396`; `scripts/analyze_test_
 - Windows PowerShell 5.1 launcher `.ps1` fayli ASCII bo'lsin.
 - Task Scheduler action Python executable, arguments bot script, working
   directory repo root bo'lsin; task bot userining User-level env'larini ko'rsin.
+
+## Hetzner Docker deploy
+
+- To‘liq server topologiyasi, project chegaralari va operator buyruqlari
+  `deploy/playwright-ci-bot/README.md`da hujjatlashtirilgan.
+- QA-Assistant va Namoz bot bilan bir VPSda Playwright CI bot alohida
+  `/opt/playwright-ci-bot` katalogi va `playwright-ci-bot` Compose projectida
+  ishlaydi. Boshqa projectlarning Compose, network, volume, database yoki
+  containerlariga tegmaydi.
+- Compose fayli `deploy/playwright-ci-bot/docker-compose.yml`; servis faqat
+  outbound Telegram/GitHub HTTPS ishlatadi, host port, database va persistent
+  volume ochmaydi.
+- Bot containeri `0.25 CPU`, `128 MB` RAM, read-only root filesystem,
+  `no-new-privileges`, barcha Linux capabilitylar olib tashlangan holat va
+  `3 x 5 MB` log rotation bilan ishlaydi.
+- Production secretlari `/opt/playwright-ci-bot/.env`da `0600` permission bilan
+  saqlanadi. `.env.example` faqat nomlar va xavfsiz defaultlarni beradi.
+- Cutoverdan oldin eski Windows polling processi to'xtatiladi. Bir Telegram bot
+  tokeni bilan bir vaqtda faqat bitta `getUpdates` poller ishlashi mumkin.
+- Operator buyruqlari repo rootidan explicit Compose fayli bilan bajariladi:
+  `docker compose -f deploy/playwright-ci-bot/docker-compose.yml -p playwright-ci-bot ps`,
+  `logs bot --tail 100`, `up -d --build`, `restart bot` va `stop`.
+- Deploy va rollback faqat `playwright-ci-bot` projectiga qo'llanadi;
+  `/opt/qa-assistant` hamda `/opt/namoz-vaqti` kataloglarida Playwright bot
+  buyruqlari bajarilmaydi.
 
 ## Verification
 
