@@ -1,7 +1,7 @@
 import allure
 
 from tests.smoke.flows.flow_authorization import authorization
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Warehouse")]
@@ -17,7 +17,7 @@ def run_warehouse(page, save_data):
     3. View URLdan warehouse IDni olib, data_store ga saqlash.
     4. View formasini yopib, omborlar ro'yxatiga qaytish.
     """
-    base = BasePage(page)
+    base = AutoBasePage(page)
 
     with allure.step("1 - Omborlar ro'yxatini ochish"):
         base.navigate_to(tab="Склад", name="Склады")

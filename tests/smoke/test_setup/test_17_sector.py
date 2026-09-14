@@ -1,7 +1,7 @@
 import allure
 
 from tests.smoke.flows.flow_authorization import authorization
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Sector")]
 
@@ -17,7 +17,7 @@ def run_sector(page, code):
     """
     sector_code = f"c_s_pw{code}"
     sector_name = f"sector-pw{code}"
-    base = BasePage(page)
+    base = AutoBasePage(page)
     with allure.step("1 - TMC ro'yxatini ochish"):
         base.navigate_to(tab="Справочники", name="ТМЦ")
         base.expect_page(heading="ТМЦ")

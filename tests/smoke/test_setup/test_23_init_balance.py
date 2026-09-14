@@ -2,7 +2,7 @@ import allure
 from playwright.sync_api import expect
 
 from tests.smoke.flows.flow_authorization import authorization
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Init Balance")]
 
@@ -20,7 +20,7 @@ def run_init_balance(page, code):
     7. USD qoldiq hujjatini saqlab, ro'yxatda tekshirish.
     8. USD qoldiq hujjatini o'tkazish.
     """
-    base = BasePage(page)
+    base = AutoBasePage(page)
     document_number = str(code)
     document_usa_number = f"1{code}"
     quantity = "100"

@@ -1,7 +1,7 @@
 import allure
 
 from tests.smoke.flows.flow_authorization import authorization
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("User")]
 
@@ -35,7 +35,7 @@ def run_user_attach_form(page, code):
     Setup zanjirida sahifa allaqachon filial-pw{code} da; standalone debug uchun filialga
     o'tish test_user_attach_form wrapper'ida bajariladi.
     """
-    base = BasePage(page)
+    base = AutoBasePage(page)
 
     with allure.step("1 - Foydalanuvchilar ro'yxatini ochish"):
         base.navigate_to(tab="Главное", name="Пользователи")
@@ -79,7 +79,7 @@ def run_user_attach_form(page, code):
 
 @allure.title("Foydalanuvchiga formalar ulash")
 def test_user_attach_form(page, code):
-    base = BasePage(page)
+    base = AutoBasePage(page)
     authorization(page, who="admin")
     base.switch_filial(name=f"filial-pw{code}")
     run_user_attach_form(page, code)

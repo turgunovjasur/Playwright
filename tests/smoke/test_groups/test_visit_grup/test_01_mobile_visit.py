@@ -9,7 +9,7 @@ from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.flows.flow_mobile_authorization import authorize_mobile
 from tests.smoke.flows.flow_navigate import navigate_to_a2
 from tests.smoke.flows.flow_visit_sync import sync_visit
-from utils.angular_base_page import AngularBasePage
+from utils.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
 
@@ -60,13 +60,13 @@ def web_verify_minimal_visit(page, visit, load_data, save_data):
         code = load_data("code")
         authorization(page, who="user", code=code)
 
-    base = AngularBasePage(page)
+    base = AutoBasePage(page)
     client_name = f"natural_client-pw{code}"
     user_person_name = f"natural_person-pw{code}"
     room_name = f"room-pw{code}"
 
     with allure.step("4 - Visit listda yaratilgan exact Visitni topish"):
-        navigate_to_a2(page, tab="Продажа", path="trade/tvt/visit_list")
+        navigate_to_a2(page, tab="Продажа", name="Визиты", path="trade/tvt/visit_list")
         base.expect_page(heading="Визиты", url="trade/tvt/visit_list")
         base.grid_setting(menu_name="Настройка таблицы", field_name="Примечание к визиту")
         visit_id_index = base.grid_setting(menu_name="Настройка таблицы", field_name="ИД")

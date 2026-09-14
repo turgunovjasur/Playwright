@@ -1,7 +1,7 @@
 import allure
 
 from tests.smoke.flows.flow_authorization import authorization
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("User")]
 ROLE_FORMS_LOADER_TIMEOUT = 600_000
@@ -19,7 +19,7 @@ def run_role_attach_form(page):
     6. "Доступные" ro'yxati bo'shligini tekshirish.
     7. Sahifani yopib, Роли ro'yxatiga qaytish.
     """
-    base = BasePage(page)
+    base = AutoBasePage(page)
     with allure.step("1 - Foydalanuvchilar ro'yxatini ochish"):
         base.navigate_to(tab="Главное", name="Пользователи")
         base.expect_page(heading="Пользователи")

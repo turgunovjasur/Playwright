@@ -159,7 +159,11 @@ class AngularBasePage:
         clear=True,
         press_tab=False,
     ):
-        """A2 ``smt-input`` ichidagi native input/textarea bilan ishlaydi."""
+        """A2 ``smt-input`` ichidagi native input/textarea bilan ishlaydi.
+
+        Biruni-number inputida avtomatik value asserti formatlashdagi
+        whitespace'ni hisobga olmaydi; explicit expect_value aynan tekshiriladi.
+        """
         root = self._content_root(root)
         sources = sum(
             source is not None for source in (locator, label, ng_model, placeholder)
@@ -201,6 +205,10 @@ class AngularBasePage:
         expected = expect_value
         if expected is _UNSET and value is not _UNSET:
             expected = str(value)
+            if input_el.locator(
+                "xpath=ancestor::smt-input[@smtbehavior='biruni-number']"
+            ).count():
+                expected = _whitespace_agnostic_pattern(expected, exact=True)
         if expected is not _UNSET:
             expect(input_el).to_have_value(expected, timeout=10_000)
 

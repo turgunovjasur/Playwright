@@ -1,7 +1,7 @@
 import allure
 
 from tests.smoke.flows.flow_authorization import authorization
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Balance")]
 
@@ -14,7 +14,7 @@ def run_balance(page, code):
     2. `product-pw{code}` qoldig'ini tekshirish.
     3. `product-usa-pw{code}` qoldig'ini tekshirish.
     """
-    base = BasePage(page)
+    base = AutoBasePage(page)
     with allure.step("1 - TMC qoldiqlar sahifasiga o'tish"):
         base.navigate_to(tab="Склад", name="Остатки ТМЦ")
         base.expect_page(heading="Остатки ТМЦ", url="balance_list")

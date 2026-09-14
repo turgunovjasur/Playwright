@@ -7,7 +7,7 @@ import pytest
 
 from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.test_groups.test_report_grup.report_helpers import generate_and_verify_download, open_report
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 
 pytestmark = [
     pytest.mark.smoke_group("Report", independent=True),
@@ -27,7 +27,7 @@ def run_report_saleswork_check(page):
     3. Template main formada tanlanganini tekshirish.
     4. Export download nomi va fayl bo'sh emasligini tekshirish.
     """
-    base = BasePage(page)
+    base = AutoBasePage(page)
     run_suffix = uuid4().hex[:8]
     template_name = f"SalesWork-pw{run_suffix}"
     month_start = datetime.now().replace(day=1)

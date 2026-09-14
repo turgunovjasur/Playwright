@@ -1473,6 +1473,9 @@ class BasePage:
 
         `index` bir nechta mos input orasidan N-chisini, `root` (Page, Locator yoki
         selector string) topishni cheklaydi.
+
+        b-number inputida avtomatik value asserti formatlashdagi whitespace'ni
+        hisobga olmaydi; explicit expect_value aynan tekshiriladi.
         """
         root = self._resolve_root(root)
 
@@ -1503,6 +1506,8 @@ class BasePage:
         expected = expect_value
         if expected is _UNSET and value is not _UNSET:
             expected = str(value)
+            if input_el.get_attribute("b-number") is not None:
+                expected = _whitespace_agnostic_pattern(expected, exact=True)
         if expected is not _UNSET:
             expect(input_el).to_have_value(expected)
 

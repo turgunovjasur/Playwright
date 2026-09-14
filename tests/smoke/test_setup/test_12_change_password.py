@@ -5,7 +5,7 @@ from tests.smoke.flows.flow_authorization import (
     login,
     user_email_for,
 )
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("User")]
 
@@ -22,7 +22,7 @@ def run_change_password(page, code):
     "Пароль (изменение)" — user qo'shilganda (birinchi login), user paroli o'zgartirilganda
     yoki profildan "Изменить пароль" orqali ochiladigan bir xil forma (URL biruni/md/change_password).
     """
-    base = BasePage(page)
+    base = AutoBasePage(page)
     with allure.step("1 - Foydalanuvchi sifatida kirish"):
         login(page, email=user_email_for(code), password=USER_PASS)
         base.expect_page(url="change_password")

@@ -1,11 +1,11 @@
 import allure
 
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 def flow_order_view(page, get_value=None):
-    base = BasePage(page)
+    base = AutoBasePage(page)
     base.expect_page(url="order_view")
     base.text("Заказ / Просмотр", root="#kt_content")
 

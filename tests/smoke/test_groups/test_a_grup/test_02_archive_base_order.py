@@ -3,7 +3,7 @@ import pytest
 from playwright.sync_api import expect
 
 from tests.smoke.flows.flow_authorization import authorization
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 
 pytestmark = [
     pytest.mark.smoke_group("0"),
@@ -24,7 +24,7 @@ def run_archive_base_order(page, code, load_data):
     3. Client settlement listini ochish.
     4. Debt detailda order ID, summa va archive statusini tekshirish.
     """
-    base = BasePage(page)
+    base = AutoBasePage(page)
     client = f"natural_client-pw{code}"
     order_amount = 7_000
     order_id = str(load_data("group_0_order_id"))

@@ -7,7 +7,7 @@ from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.flows.flow_mobile_authorization import authorize_mobile
 from tests.smoke.flows.flow_navigate import navigate_to_a2
 from tests.smoke.flows.flow_visit_sync import sync_visit
-from utils.angular_base_page import AngularBasePage
+from utils.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
 
@@ -75,7 +75,7 @@ def web_verify_order_visit(page, visit, load_data, save_data):
         code = load_data("code")
         authorization(page, who="user", code=code)
 
-    base = AngularBasePage(page)
+    base = AutoBasePage(page)
     client_name = f"natural_client-pw{code}"
     user_person_name = f"natural_person-pw{code}"
     room_name = f"room-pw{code}"
@@ -84,7 +84,7 @@ def web_verify_order_visit(page, visit, load_data, save_data):
     price_type_name = f"Price Type UZB-pw{code}"
 
     with allure.step("4 - Visit listda orderli Visitni unique note orqali topish"):
-        navigate_to_a2(page, tab="Продажа", path="trade/tvt/visit_list")
+        navigate_to_a2(page, tab="Продажа", name="Визиты", path="trade/tvt/visit_list")
         base.expect_page(heading="Визиты", url="trade/tvt/visit_list")
         base.grid_setting(menu_name="Настройка таблицы", field_name="Примечание к визиту")
         visit_id_index = base.grid_setting(menu_name="Настройка таблицы", field_name="ИД")
@@ -113,10 +113,10 @@ def web_verify_order_visit(page, visit, load_data, save_data):
         order_row = base.grid(product_name, price_type_name, room_name, client_name, "Новый")
         base.grid_cell(order_row, 0, expect_value=price_type_name)
         base.grid_cell(order_row, 1, expect_value=visit.quantity)
-        base.grid_cell(order_row, 2, expect_value=visit.price)
+        base.grid_cell(order_row, 2, expect_value=visit.price, remove_spaces=True)
         base.grid_cell(order_row, 3, expect_value="0")
         base.grid_cell(order_row, 4, expect_value="0")
-        base.grid_cell(order_row, 5, expect_value=visit.price)
+        base.grid_cell(order_row, 5, expect_value=visit.price, remove_spaces=True)
         base.grid_cell(order_row, 6, expect_value=room_name)
         base.grid_cell(order_row, 7, expect_value=client_name)
         base.grid_cell(order_row, 8, expect_value="Новый")
@@ -125,7 +125,15 @@ def web_verify_order_visit(page, visit, load_data, save_data):
         base.click(name="Действия", exact=True, root=order_row)
         base.expect_page(heading="Заказ / Просмотр", url="trade/tdeal/order/order_view")
         server_order_id = query_int_from_url(page.url, "deal_id")
-        base.text(f"ИД заказа: {server_order_id}", "Статус: Новый", f"Рабочая зона: {room_name}", f"Штат: {robot_name}", f"Торговый представитель: {user_person_name}", f"Клиент: {client_name}", "Тип оплаты: Наличные деньги", "Валюта: Узбекский сум", f"Сумма заказа: {visit.price}")
+        base.form_view(label="ИД заказа", expect_value=str(server_order_id))
+        base.form_view(label="Статус", expect_value="Новый")
+        base.form_view(label="Рабочая зона", expect_value=room_name)
+        base.form_view(label="Штат", expect_value=robot_name)
+        base.form_view(label="Торговый представитель", expect_value=user_person_name)
+        base.form_view(label="Клиент", expect_value=client_name)
+        base.form_view(label="Тип оплаты", expect_value="Наличные деньги")
+        base.form_view(label="Валюта", expect_value="Узбекский сум")
+        base.form_view(label="Сумма заказа", expect_value=visit.price, remove_spaces=True)
         save_data("mobile_order_id", server_order_id)
 
     return server_order_id

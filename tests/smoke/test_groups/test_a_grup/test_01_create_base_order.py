@@ -6,7 +6,7 @@ import pytest
 from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.flows.flow_order.flow_order_add import auto_filled_order_dates
 from tests.smoke.flows.flow_order.flow_order_list import flow_order_list
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 
 pytestmark = [
     pytest.mark.smoke_group("0"),
@@ -29,7 +29,7 @@ def run_create_base_order(page, code, save_data):
     6. Yaratilgan orderni listda tekshirib, view formasini ochish.
     7. Order IDni saqlab, asosiy order qiymatlarini view formasida tekshirish.
     """
-    base = BasePage(page)
+    base = AutoBasePage(page)
     client = f"natural_client-pw{code}"
     product = f"product-pw{code}"
     room = f"room-pw{code}"

@@ -1,7 +1,7 @@
 import allure
 
 from tests.smoke.flows.flow_authorization import authorization
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Filial")]
@@ -22,7 +22,7 @@ def run_filial(page, code, load_data, save_data):
     6. View formasini yopib, ro'yxatga qaytish.
     7. Filial ID, nomi, valyutasi va bog'langan legal person ma'lumotlarini data_store ga saqlash.
     """
-    base = BasePage(page)
+    base = AutoBasePage(page)
     filial_name = f"filial-pw{code}"
     legal_person_code = f"c_l_p_pw{code}"
     legal_person_name = load_data("legal_person_name")

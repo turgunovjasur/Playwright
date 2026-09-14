@@ -6,7 +6,7 @@ import pytest
 
 from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.test_groups.test_report_grup.report_helpers import generate_and_verify_download, open_report
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 
 pytestmark = [
     pytest.mark.smoke_group("Report", independent=True),
@@ -26,7 +26,7 @@ def run_report_spot_check(page):
     3. Har bir run uchun yangi template required maydon va fayl kontrakti bilan yaratish.
     4. Template tanlanganini va Spot2D ZIP downloadini tekshirish.
     """
-    base = BasePage(page)
+    base = AutoBasePage(page)
     run_suffix = uuid4().hex[:8]
     template_name = f"Spot2D-pw{run_suffix}"
 

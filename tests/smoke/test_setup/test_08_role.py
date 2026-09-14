@@ -1,7 +1,7 @@
 import allure
 from playwright.sync_api import expect
 from tests.smoke.flows.flow_authorization import authorization
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("User")]
 
@@ -16,7 +16,7 @@ def run_role(page):
     4. Barcha "нет" switchlarini ketma-ket yoqish.
     5. Saqlab, Роли ro'yxatiga qaytishni tekshirish.
     """
-    base = BasePage(page)
+    base = AutoBasePage(page)
     with allure.step("1 - Foydalanuvchilar ro'yxatini ochish"):
         base.navigate_to(tab="Главное", name="Пользователи")
         base.expect_page(heading="Пользователи")

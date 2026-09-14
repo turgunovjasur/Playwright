@@ -3,14 +3,14 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import allure
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 
 from tests.smoke.flows.flow_order.flow_order_list import flow_order_list
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 def auto_filled_order_dates(page):
-    base = BasePage(page)
+    base = AutoBasePage(page)
 
     today = datetime.now(
         ZoneInfo("Asia/Tashkent")
@@ -48,7 +48,7 @@ def flow_order_main_page(
     contract_balance_text=None,
     next_page=True,
 ):
-    base = BasePage(page)
+    base = AutoBasePage(page)
     base.expect_page(heading="Заказ (создание)", url="order+add")
 
     if check_form:
@@ -83,7 +83,7 @@ def flow_order_product_page(
     price_type=None,
     next_page=True,
 ):
-    base = BasePage(page)
+    base = AutoBasePage(page)
     base.text(re.compile(r"Заказ \((создание|изменение)\)"), root="#kt_content")
     product_grid = page.locator('b-pg-grid[name="goods_items"]')
 
@@ -113,7 +113,7 @@ def flow_order_product_page(
 # ----------------------------------------------------------------------------------------------------------------------
 
 def flow_order_final_page(page, check_form=False, payment_type=None, natural_client=None, room=None, robot=None, status=None, save=True):
-    base = BasePage(page)
+    base = AutoBasePage(page)
     base.text(re.compile(r"Заказ \((создание|изменение)\)"), root="#kt_content")
 
     if status and not check_form:

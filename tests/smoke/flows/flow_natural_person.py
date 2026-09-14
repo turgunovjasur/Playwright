@@ -1,12 +1,12 @@
 import allure
 from playwright.sync_api import Page
 
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 
 
 def open_natural_person_list(page: Page, *, step_name: str) -> None:
     """Jismoniy shaxslar ro'yxatini ochadi va sahifa holatini tekshiradi."""
-    base = BasePage(page)
+    base = AutoBasePage(page)
     with allure.step(step_name):
         base.navigate_to(tab="Справочники", name="Физические лица")
         base.expect_page(heading="Физические лица")
@@ -16,7 +16,7 @@ def open_natural_person_list(page: Page, *, step_name: str) -> None:
 
 def open_natural_person_create(page: Page, *, step_name: str) -> None:
     """Jismoniy shaxs yaratish formasini ochadi."""
-    base = BasePage(page)
+    base = AutoBasePage(page)
     with allure.step(step_name):
         base.click(name="Создать")
         base.expect_page(heading="Физическое лицо (создание)")
@@ -26,7 +26,7 @@ def open_natural_person_create(page: Page, *, step_name: str) -> None:
 
 def create_natural_person(page: Page, name: str, person_code: str, *, step_name: str, client: bool = False) -> None:
     """Ochiq create formani to'ldirib, jismoniy shaxsni saqlaydi."""
-    base = BasePage(page)
+    base = AutoBasePage(page)
     with allure.step(step_name):
         base.input(ng_model="d.first_name", value=name)
         base.input(label="Код", value=person_code)
@@ -42,7 +42,7 @@ def create_natural_person(page: Page, name: str, person_code: str, *, step_name:
 
 def open_natural_person_view(page: Page, name: str, *, step_name: str) -> None:
     """Tanlangan jismoniy shaxs view formasini ochadi."""
-    base = BasePage(page)
+    base = AutoBasePage(page)
     with allure.step(step_name):
         base.grid(name, click=True)
         base.click(name="Просмотр", exact=True)
@@ -53,7 +53,7 @@ def open_natural_person_view(page: Page, name: str, *, step_name: str) -> None:
 
 def close_natural_person_view(page: Page, *, step_name: str) -> None:
     """Jismoniy shaxs view formasini yopib, ro'yxatga qaytadi."""
-    base = BasePage(page)
+    base = AutoBasePage(page)
     with allure.step(step_name):
         base.click(name="Закрыть")
         base.expect_page(heading="Физические лица")

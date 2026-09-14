@@ -3,14 +3,14 @@ import re
 import allure
 
 from tests.smoke.flows import flow_modal
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 
 ORDER_VIEW_BUTTON_NAME = re.compile(r"^Просмотр(?:еть)?$")
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 def flow_order_list(page, add=False, find_row=None, search=True, view=False, edit=False, status=None):
-    base = BasePage(page)
+    base = AutoBasePage(page)
     base.expect_page(heading="Заказы", url="order_list")
     row = None
 
@@ -52,7 +52,7 @@ def flow_order_list(page, add=False, find_row=None, search=True, view=False, edi
                 base.expect_page(heading="Заказы", url="order_list")
 
 def flow_order_list_grid_setting(page, colum_name, search_name):
-    base = BasePage(page)
+    base = AutoBasePage(page)
     base.expect_page(heading="Заказы", url="order_list")
     base.grid_setting(menu_name="Настройка таблицы", field_name=colum_name, search_name=search_name)
 

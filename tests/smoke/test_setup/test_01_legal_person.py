@@ -2,7 +2,7 @@ import allure
 from faker import Faker
 
 from tests.smoke.flows.flow_authorization import authorization
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Legal Person")]
 
@@ -24,7 +24,7 @@ def run_legal_person(page, code, save_data):
     7. View formasini yopib, ro'yxatga qaytish.
     8. legal_person_code va legal_person_name ni data_store ga saqlash.
     """
-    base = BasePage(page)
+    base = AutoBasePage(page)
     legal_code = f"c_l_p_pw{code}"
     legal_name = f"{fake_ru.company()} legal_person-pw{code}"
 

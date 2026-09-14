@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 
 from playwright.sync_api import expect
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 
 USER_PASS = "123456789"
 
@@ -107,7 +107,7 @@ def head_password():
 
 
 def logout(page):
-    base = BasePage(page)
+    base = AutoBasePage(page)
     page.locator(".btn.btn-icon.w-auto").click()
     expect(page.locator("#kt_header").get_by_text("Admin")).to_be_visible()
     page.locator('a[ng-click="a.logout()"]').click()
@@ -116,7 +116,7 @@ def logout(page):
 # ----------------------------------------------------------------------------------------------------------------------
 
 def login(page, email=None, password=None):
-    base = BasePage(page)
+    base = AutoBasePage(page)
 
     email = email or admin_email()
     password = password or admin_password()
@@ -128,7 +128,7 @@ def login(page, email=None, password=None):
 # ----------------------------------------------------------------------------------------------------------------------
 
 def dashboard(page):
-    base = BasePage(page)
+    base = AutoBasePage(page)
     base.expect_page(heading="Trade", url="dashboard", timeout=120_000)
 
 # ----------------------------------------------------------------------------------------------------------------------

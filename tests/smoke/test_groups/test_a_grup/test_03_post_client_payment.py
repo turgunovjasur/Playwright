@@ -2,7 +2,7 @@ import allure
 import pytest
 
 from tests.smoke.flows.flow_authorization import authorization
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 
 pytestmark = [
     pytest.mark.smoke_group("0"),
@@ -24,7 +24,7 @@ def run_post_client_payment(page, code, load_data):
     4. Avtomatik offsetni yoqmasdan paymentni post qilish.
     5. Settlement rowda debt va prepayment alohida saqlanganini tekshirish.
     """
-    base = BasePage(page)
+    base = AutoBasePage(page)
     client = f"natural_client-pw{code}"
     payment_amount = 7_000
     baseline = load_data("group_0_offset_baseline")

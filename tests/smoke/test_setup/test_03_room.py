@@ -1,6 +1,6 @@
 import allure
 from tests.smoke.flows.flow_authorization import authorization
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Room")]
@@ -16,7 +16,7 @@ def run_room(page, code, save_data):
     4. View formasini ochib, room IDni data_store ga saqlash.
     5. View formasini yopib, ro'yxatga qaytish.
     """
-    base = BasePage(page)
+    base = AutoBasePage(page)
     room_name = f"room-pw{code}"
     room_code = f"c_rm_pw{code}"
 

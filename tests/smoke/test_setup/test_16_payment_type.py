@@ -1,7 +1,7 @@
 import allure
 
 from tests.smoke.flows.flow_authorization import authorization
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Payment Type")]
 
@@ -19,7 +19,7 @@ def run_payment_type(page, save_data):
     7. Grid setting orqali ИД ustuni va qidiruvini yoqish.
     8. Наличные деньги qatoridan payment type IDni olib, data_store ga saqlash.
     """
-    base = BasePage(page)
+    base = AutoBasePage(page)
     with allure.step("1 - Narxlar ro'yxatini ochish"):
         base.navigate_to(tab="Справочники", name="Цены")
         base.expect_page(heading="Цены")

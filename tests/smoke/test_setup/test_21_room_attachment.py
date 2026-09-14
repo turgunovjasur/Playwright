@@ -1,7 +1,7 @@
 import allure
 
 from tests.smoke.flows.flow_authorization import authorization
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Room")]
 
@@ -20,7 +20,7 @@ def run_room_attachment(page, code):
     8. Тип цены bo'limini ochish.
     9. "Акция" available bo'lmasa, Доступные ro'yxatini ochish.
     10. "Акция" katalogda ham bo'lmasa, Цены (прикрепление) sahifasini ochish.
-    11. Katalogdan "Акция"ni ulab, Тип цены bo'limiga qaytish.
+    11. Katalogdan "Акция"ni qidirib ulash va Тип цены bo'limiga qaytish.
     12. "Акция" narx turini roomga ulash va tekshirish — aksiya chegirmasi order'da
        ishlashi uchun zarur (room'ga ulanmasa, order'da aksiya chiqmaydi).
     13. Sahifani yopib, Рабочие зоны ro'yxatiga qaytishni tekshirish.
@@ -28,7 +28,7 @@ def run_room_attachment(page, code):
     Qayta-runda available ro'yxatlar bo'sh bo'lsa, tegishli qiymatlar
     "Прикрепленные" gridlarida mavjudligi tekshiriladi.
     """
-    base = BasePage(page)
+    base = AutoBasePage(page)
     room_name = f"room-pw{code}"
     client_name = f"natural_client-pw{code}"
 
@@ -134,6 +134,7 @@ def run_room_attachment(page, code):
                 base.expect_page(heading="Цены (прикрепление)")
 
             with allure.step("11 - 'Акция'ni katalogdan ulab, narx turlariga qaytish"):
+                base.grid_controller(search="Акция")
                 base.grid("Акция", click=True)
                 base.click(name="Прикрепить", exact=True)
                 base.confirm_biruni("Прикрепить Акция?")

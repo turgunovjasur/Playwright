@@ -2,7 +2,7 @@ import allure
 import pytest
 
 from tests.smoke.flows.flow_authorization import authorization
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 
 pytestmark = [
     pytest.mark.smoke_group("0"),
@@ -22,7 +22,7 @@ def run_offset_client_balance(page, code, load_data):
     2. Offset modalini ochib, default sana va optionlarni tekshirish.
     3. Offsetni tasdiqlab, clientning net debt/prepayment qoldig'ini tekshirish.
     """
-    base = BasePage(page)
+    base = AutoBasePage(page)
     client = f"natural_client-pw{code}"
     payment_amount = 7_000
     baseline = load_data("group_0_offset_baseline")

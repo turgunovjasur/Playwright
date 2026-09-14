@@ -1,6 +1,6 @@
 import allure
 
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 
 
 def create_product_with_price(
@@ -14,7 +14,7 @@ def create_product_with_price(
     price_label,
 ):
     """Bitta TMC yaratadi, view URLni qaytaradi va tegishli narxni belgilaydi."""
-    base = BasePage(page)
+    base = AutoBasePage(page)
 
     with allure.step(f"1 - {price_label} TMC ro'yxatini ochish"):
         base.navigate_to(tab="Справочники", name="ТМЦ")

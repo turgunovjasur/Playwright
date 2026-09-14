@@ -8,7 +8,7 @@ from tests.smoke.flows.flow_natural_person import (
     open_natural_person_list,
     open_natural_person_view,
 )
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Natural Person")]
@@ -31,7 +31,7 @@ def run_natural_person(page, code, save_data):
     o'tgan), shuning uchun bu yerda switch_filial qilinmaydi — standalone debug uchun
     filialga o'tish test_natural_person wrapper'ida bajariladi.
     """
-    base = BasePage(page)
+    base = AutoBasePage(page)
     person_code = f"c_n_p_pw{code}"
     person_name = f"natural_person-pw{code}"
 
@@ -57,7 +57,7 @@ def run_natural_person(page, code, save_data):
 
 @allure.title("Xodim uchun jismoniy shaxs yaratish")
 def test_natural_person(page, code, save_data):
-    base = BasePage(page)
+    base = AutoBasePage(page)
     authorization(page, who="admin")
     base.switch_filial(name=f"filial-pw{code}")
     run_natural_person(page, code, save_data)

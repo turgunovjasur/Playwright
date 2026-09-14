@@ -2,7 +2,7 @@ import allure
 
 from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.flows.flow_product import create_product_with_price
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Product")]
 
@@ -37,5 +37,5 @@ def run_product_usa(page, code):
 @allure.title("USD mahsulotini yaratish va narx belgilash")
 def test_product_usa(page, code):
     authorization(page, who="user", code=code)
-    BasePage(page).switch_filial(name=f"filial-pw{code}")
+    AutoBasePage(page).switch_filial(name=f"filial-pw{code}")
     run_product_usa(page, code)

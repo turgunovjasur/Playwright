@@ -1,7 +1,7 @@
 import allure
 
 from tests.smoke.flows.flow_authorization import authorization
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Currency")]
@@ -20,7 +20,7 @@ def run_currency(page, logger, save_data):
     7. Kurslar gridida sana va kursni tekshirish.
     8. Valyutalar ro'yxatidan UZS viewini ochib, currency IDni saqlash.
     """
-    base = BasePage(page)
+    base = AutoBasePage(page)
 
     with allure.step("1 - Valyutalar ro'yxatini ochish"):
         base.navigate_to(tab="Финансы", name="Валюты")
@@ -30,7 +30,7 @@ def run_currency(page, logger, save_data):
         base.grid("840", "USD", "Доллар США", click=True)
         base.click(name="Просмотреть")
         base.expect_page(heading="Валюта (просмотр)", url="currency_view?currency_id=")
-        base.click(name="Курсы", role="link")
+        base.click(name="Курсы", role="tab")
         base.text("Курсы")
 
     with allure.step("3 - USD currency IDni olish va saqlash"):

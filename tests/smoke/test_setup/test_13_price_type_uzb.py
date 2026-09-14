@@ -2,7 +2,7 @@ import allure
 
 from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.flows.flow_modal import fill_nps_survey
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Price Type")]
@@ -22,7 +22,7 @@ def run_price_type_uzb(page, code, logger, save_data):
     price_type_code = f"c_p_t_uzb_pw{code}"
     price_type_name = f"Price Type UZB-pw{code}"
     room_name = f"room-pw{code}"
-    base = BasePage(page)
+    base = AutoBasePage(page)
 
     with allure.step("1 - Optional NPS Survey modalini qayta ishlash"):
         fill_nps_survey(page, logger)

@@ -6,7 +6,7 @@ import pytest
 
 from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.test_groups.test_report_grup.report_helpers import generate_and_verify_download, open_report
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 
 pytestmark = [
     pytest.mark.smoke_group("Report", independent=True),
@@ -26,7 +26,7 @@ def run_report_cislink_check(page):
     3. Main formada template tanlab, period va `До` sanasini sozlash.
     4. CisLink reportini generate qilib non-empty ZIP downloadni tekshirish.
     """
-    base = BasePage(page)
+    base = AutoBasePage(page)
     run_suffix = uuid4().hex[:8]
     template_name = f"CisLink-pw{run_suffix}"
 

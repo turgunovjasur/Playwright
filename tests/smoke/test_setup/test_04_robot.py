@@ -1,7 +1,7 @@
 import allure
 
 from tests.smoke.flows.flow_authorization import authorization
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Robot")]
@@ -19,7 +19,7 @@ def run_robot(page, code, save_data):
     5. View formasini ochib, robot IDni data_store ga saqlash.
     6. View formasini yopib, ro'yxatga qaytish.
     """
-    base = BasePage(page)
+    base = AutoBasePage(page)
     robot_name = f"robot-pw{code}"
     robot_code = f"c_rb_pw{code}"
     room_name = f"room-pw{code}"
@@ -59,7 +59,7 @@ def run_robot(page, code, save_data):
 
 @allure.title("Xodim (robot) yaratish")
 def test_robot(page, code, save_data):
-    base = BasePage(page)
+    base = AutoBasePage(page)
     authorization(page, who="admin")
     base.switch_filial(name=f"filial-pw{code}")
     run_robot(page, code, save_data)

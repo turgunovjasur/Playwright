@@ -3,7 +3,7 @@ from playwright.sync_api import expect, TimeoutError as PlaywrightTimeoutError
 
 from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.flows.flow_license import skip_license_purchase_if_needed
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("License")]
 
@@ -28,7 +28,7 @@ def run_buy_license(page, logger):
     o'tuvchi birinchi qadam (chain shunga suyanadi). authorization esa test_buy_license
     wrapper'ida (standalone/debug uchun).
     """
-    base = BasePage(page)
+    base = AutoBasePage(page)
 
     if skip_license_purchase_if_needed(logger, "Litsenziya sotib olish"):
         return

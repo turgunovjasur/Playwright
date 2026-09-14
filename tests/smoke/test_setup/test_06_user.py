@@ -1,7 +1,7 @@
 import allure
 
 from tests.smoke.flows.flow_authorization import authorization, USER_PASS, user_email_for
-from utils.base_page import BasePage
+from utils.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("User")]
@@ -23,7 +23,7 @@ def run_user(page, code, save_data):
     shuning uchun bu yerda switch_filial qilinmaydi — standalone debug uchun filialga o'tish
     test_user wrapper'ida bajariladi.
     """
-    base = BasePage(page)
+    base = AutoBasePage(page)
     with allure.step("1 - Foydalanuvchilar ro'yxatiga o'tish"):
         base.navigate_to(tab="Главное", name="Пользователи")
         base.expect_page(heading="Пользователи")
@@ -60,7 +60,7 @@ def run_user(page, code, save_data):
 
 @allure.title("Foydalanuvchi yaratish")
 def test_user(page, code, save_data):
-    base = BasePage(page)
+    base = AutoBasePage(page)
     authorization(page, who="admin")
     base.switch_filial(name=f"filial-pw{code}")
     run_user(page, code, save_data)
