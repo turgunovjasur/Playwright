@@ -8,13 +8,14 @@ from tests.smoke.flows.flow_order.flow_order_add import (
 )
 from tests.smoke.flows.flow_order.flow_order_list import flow_order_list, flow_order_list_grid_setting
 from tests.smoke.flows.flow_order.flow_order_view import flow_order_view
+from utils.data_store import save_data
 from utils.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Life Cycle"), allure.story("Order")]
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def run_order_basic(page, code, save_data):
+def run_order_basic(page, code):
     base = AutoBasePage(page)
     authorization(page, who="user", code=code)
 
@@ -133,8 +134,8 @@ def run_order_add_column_order_id(page, code):
 # ----------------------------------------------------------------------------------------------------------------------
 
 @allure.title("Order Basic")
-def test_order_basic(page, code, save_data):
-    run_order_basic(page, code, save_data)
+def test_order_basic(page, code):
+    run_order_basic(page, code)
 
 
 @allure.title("Order Add Column -> Order Id")

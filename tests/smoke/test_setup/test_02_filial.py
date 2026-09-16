@@ -1,6 +1,7 @@
 import allure
 
 from tests.smoke.flows.flow_authorization import authorization
+from utils.data_store import load_data, save_data
 from utils.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
@@ -10,7 +11,7 @@ FILIAL_SAVE_LOADER_TIMEOUT = 60_000
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def run_filial(page, code, load_data, save_data):
+def run_filial(page, code):
     """Testcase: yangi filial (tashkilot / Организация) yaratish.
 
     1. Главное -> Организации ro'yxatini ochish.
@@ -73,6 +74,6 @@ def run_filial(page, code, load_data, save_data):
 
 
 @allure.title("Filial (tashkilot) yaratish")
-def test_filial(page, code, load_data, save_data):
+def test_filial(page, code):
     authorization(page, who="admin")
-    run_filial(page, code, load_data, save_data)
+    run_filial(page, code)

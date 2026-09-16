@@ -2,6 +2,7 @@ import allure
 import pytest
 
 from tests.smoke.flows.flow_authorization import authorization
+from utils.data_store import load_data
 from utils.auto_base_page import AutoBasePage
 
 pytestmark = [
@@ -15,7 +16,7 @@ pytestmark = [
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def run_post_client_payment(page, code, load_data):
+def run_post_client_payment(page, code):
     """Testcase: archive order qarziga teng client paymentni post qilish.
 
     1. Client payment listini ochish.
@@ -73,6 +74,6 @@ def run_post_client_payment(page, code, load_data):
 
 
 @allure.title("Client paymentni Провести qilish")
-def test_post_client_payment(page, code, load_data):
+def test_post_client_payment(page, code):
     authorization(page, who="user", code=code)
-    run_post_client_payment(page, code, load_data)
+    run_post_client_payment(page, code)

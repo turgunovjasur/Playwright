@@ -2,6 +2,7 @@ import allure
 
 from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.flows.flow_modal import fill_nps_survey
+from utils.data_store import save_data
 from utils.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
@@ -9,7 +10,7 @@ pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Price
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def run_price_type_usa(page, code, save_data):
+def run_price_type_usa(page, code):
     """Testcase: USA narx turini yaratib, ish zonasiga biriktirish.
 
     1. Справочники -> Цены ro'yxatini ochish.
@@ -57,8 +58,8 @@ def run_price_type_usa(page, code, save_data):
 # ----------------------------------------------------------------------------------------------------------------------
 
 @allure.title("Narx turi (USA) yaratish")
-def test_price_type_usa(page, code, logger, save_data):
+def test_price_type_usa(page, code, logger):
     authorization(page, who="user", code=code)
     with allure.step("Precondition - Optional NPS Survey modalini qayta ishlash"):
         fill_nps_survey(page, logger)
-    run_price_type_usa(page, code, save_data)
+    run_price_type_usa(page, code)

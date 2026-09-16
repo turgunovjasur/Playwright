@@ -1,6 +1,7 @@
 import allure
 
 from tests.smoke.flows.flow_authorization import authorization
+from utils.data_store import save_data
 from utils.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
@@ -8,7 +9,7 @@ pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Curre
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def run_currency(page, logger, save_data):
+def run_currency(page, logger):
     """USD kursini yangilash va USD/UZS currency IDlarini saqlash.
 
     1. Финансы -> Валюты ro'yxatini ochish.
@@ -71,6 +72,6 @@ def run_currency(page, logger, save_data):
 # ----------------------------------------------------------------------------------------------------------------------
 
 @allure.title("USD kursini yangilash va USD/UZS currency IDlarini saqlash")
-def test_currency(page, code, logger, save_data):
+def test_currency(page, code, logger):
     authorization(page, who="user", code=code)
-    run_currency(page, logger, save_data)
+    run_currency(page, logger)

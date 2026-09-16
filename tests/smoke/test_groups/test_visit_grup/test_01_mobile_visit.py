@@ -9,6 +9,7 @@ from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.flows.flow_mobile_authorization import authorize_mobile
 from tests.smoke.flows.flow_navigate import navigate_to_a2
 from tests.smoke.flows.flow_visit_sync import sync_visit
+from utils.data_store import load_data, save_data
 from utils.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
@@ -25,14 +26,14 @@ def _require_close_datetime(actual, expected, *, field, tolerance_seconds=5):
         raise AssertionError(f"{field} yuborilgan vaqtdan {difference}s farq qildi; ruxsat etilgan tolerance={tolerance_seconds}s")
 
 
-def api_create_minimal_visit(load_data, save_data):
+def api_create_minimal_visit():
     """Mobile API orqali ordersiz Visit yaratib ``MinimalVisit`` qaytaradi.
 
     1. Mobile API orqali login qilish va target filialni tekshirish.
     2. Sync endpoint orqali ordersiz minimal Visit yaratish.
     """
     with allure.step("1 - Mobile API orqali login qilish"):
-        mobile_authorization = authorize_mobile(load_data, save_data)
+        mobile_authorization = authorize_mobile()
 
     with allure.step("2 - API orqali ordersiz minimal Visit yaratish"):
         visit = build_minimal_visit(filial_id=load_data("filial_id"), room_id=load_data("room_id"), robot_id=load_data("robot_id"), client_person_id=load_data("client_person_id"))
@@ -48,7 +49,7 @@ def api_create_minimal_visit(load_data, save_data):
     return visit
 
 
-def web_verify_minimal_visit(page, visit, load_data, save_data):
+def web_verify_minimal_visit(page, visit):
     """Minimal Visitni Web list/viewda tekshirib server Visit IDni qaytaradi.
 
     3. Web user sifatida login qilish.
@@ -104,7 +105,7 @@ def web_verify_minimal_visit(page, visit, load_data, save_data):
     return server_visit_id
 
 
-def run_mobile_visit_check(page, load_data, save_data):
+def run_mobile_visit_check(page):
     """API yaratgan minimal Visitni Web orqali tekshiradi."""
-    visit = api_create_minimal_visit(load_data, save_data)
-    return web_verify_minimal_visit(page, visit, load_data, save_data)
+    visit = api_create_minimal_visit()
+    return web_verify_minimal_visit(page, visit)

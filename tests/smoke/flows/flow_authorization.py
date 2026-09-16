@@ -1,135 +1,34 @@
 import os
-import json
-from pathlib import Path
 
-from playwright.sync_api import expect
-from utils.auto_base_page import AutoBasePage
+from utils.base_page import BasePage
+from utils.data_store import load_data
 
-USER_PASS = "123456789"
-
-DATA_STORE_PATH = Path("test-results/data/data_store.json")
-
-
-def _normalize_company_code(value):
-    return value.strip().lstrip("@")
-
-
-def _create_company_enabled():
-    return os.getenv("CREATE_COMPANY", "").strip().lower() in {"1", "true", "yes", "on"}
-
-
-def _saved_company_code():
-    try:
-        if not DATA_STORE_PATH.exists():
-            return ""
-        data = json.loads(DATA_STORE_PATH.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return ""
-    if not isinstance(data, dict):
-        return ""
-    value = data.get("company_code")
-    return _normalize_company_code(str(value)) if value else ""
-
-
-def company_url():
-    value = os.getenv("COMPANY_URL", "").strip().rstrip("/")
-    if not value:
-        raise AssertionError("COMPANY_URL yoki --url majburiy.")
-    return value
-
-
-def company_password():
-    value = os.getenv("COMPANY_PASSWORD", "").strip()
-    if not value:
-        raise AssertionError("COMPANY_PASSWORD majburiy.")
-    return value
-
+# ----------------------------------------------------------------------------------------------------------------------
 
 def current_company_code():
-    if _create_company_enabled():
-        company_code = _saved_company_code()
-        if company_code:
-            return company_code
-        raise AssertionError(
-            "CREATE_COMPANY=1, lekin test_00_company saqlagan company_code topilmadi."
-        )
-
-    value = os.getenv("COMPANY_CODE", "").strip()
-    if value == "0":
-        company_code = _saved_company_code()
-        if company_code:
-            return company_code
-        raise AssertionError(
-            "COMPANY_CODE=0, lekin data_store.json ichida saqlangan company_code topilmadi."
-        )
-    if not value:
-        raise AssertionError("CREATE_COMPANY=0 uchun COMPANY_CODE majburiy.")
-    return _normalize_company_code(value)
-
-
-def company_suffix():
-    return f"@{current_company_code()}"
-
-
-def admin_email():
-    return f"admin{company_suffix()}"
-
-
-def admin_password():
-    return company_password()
-
-
-def user_email_for(code):
-    return f"user-pw{code}{company_suffix()}"
-
-
-def user_password():
-    value = os.getenv("USER_PASSWORD", "").strip()
-    if value:
-        return value
-    return USER_PASS
-
-def head_email():
-    value = os.getenv("HEAD_ADMIN_EMAIL", "").strip()
-    if not value:
-        raise AssertionError(
-            "head profil uchun HEAD_ADMIN_EMAIL kerak: .env yoki --head-email orqali bering."
-        )
+    value = os.environ["COMPANY_CODE"]
+    if value == "1":
+        return load_data("company_code")
     return value
-
-def head_password():
-    value = os.getenv("HEAD_ADMIN_PASSWORD", "").strip()
-    if not value:
-        raise AssertionError(
-            "head profil uchun HEAD_ADMIN_PASSWORD kerak: .env yoki --head-password orqali bering."
-        )
-    return value
-
-
-def logout(page):
-    base = AutoBasePage(page)
-    page.locator(".btn.btn-icon.w-auto").click()
-    expect(page.locator("#kt_header").get_by_text("Admin")).to_be_visible()
-    page.locator('a[ng-click="a.logout()"]').click()
-    base.confirm_biruni("Хотите выйти?")
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 def login(page, email=None, password=None):
-    base = AutoBasePage(page)
+    email = email or f"admin@{current_company_code()}"
+    password = password or os.environ["COMPANY_PASSWORD"]
+    company_url = os.environ["COMPANY_URL"]
 
-    email = email or admin_email()
-    password = password or admin_password()
-    page.goto(f"{company_url()}/login.html")
+    page.goto(f"{company_url}/login.html")
+
+    base = BasePage(page)
     base.input(placeholder="Логин@компания", value=email)
     base.input(placeholder="Пароль", value=password)
-    page.get_by_role("button", name="Войти").click()
+    base.click(name="Войти")
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 def dashboard(page):
-    base = AutoBasePage(page)
-    base.expect_page(heading="Trade", url="dashboard", timeout=120_000)
+    BasePage(page).expect_page(heading="Trade", url="dashboard", timeout=120_000)
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -139,25 +38,23 @@ def authorization(page, *, who, code=None):
     who:
         "admin" → admin@{current_company_code} + COMPANY_PASSWORD
         "head"  → HEAD_ADMIN_EMAIL + HEAD_ADMIN_PASSWORD (company yaratish uchun)
-        "user"  → user-pw{code}@{company} + USER_PASSWORD / USER_PASS
+        "user"  → user-pw{code}@{company} + USER_PASSWORD
 
     Credentiallar faqat who qiymatiga qarab tanlanadi.
     who="user" uchun code fixture qiymati majburiy; yangi/eski code tanlovini faqat NEW_CODE boshqaradi.
     """
     if who == "admin":
-        email, password = admin_email(), admin_password()
+        email = f"admin@{current_company_code()}"
+        password = os.environ["COMPANY_PASSWORD"]
     elif who == "head":
-        email, password = head_email(), head_password()
+        email = os.environ["HEAD_ADMIN_EMAIL"]
+        password = os.environ["HEAD_ADMIN_PASSWORD"]
     elif who == "user":
-        if not code:
-            raise AssertionError(
-                "authorization(who='user') uchun code fixture qiymatini code=code orqali bering."
-            )
-        email, password = user_email_for(str(code)), user_password()
+        email = f"user-pw{code}@{current_company_code()}"
+        password = os.environ["USER_PASSWORD"]
     else:
-        raise ValueError(
-            f"authorization: noma'lum who={who!r}. 'admin', 'user' yoki 'head' bo'lishi kerak."
-        )
+        raise ValueError(f"authorization: noma'lum who={who!r}. 'admin', 'user' yoki 'head' bo'lishi kerak.")
+
     login(page, email=email, password=password)
     dashboard(page)
 

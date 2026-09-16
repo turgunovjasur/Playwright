@@ -1,28 +1,19 @@
 from __future__ import annotations
 
 import argparse
-import json
 import os
-import shutil
 import subprocess
 import sys
 import time
 from pathlib import Path
 
-from allure_report_cli import (
-    AllureCliNotInstalled,
-    build_generate_command,
-    generate_report as generate_allure_report,
-)
+from dotenv import dotenv_values
+
+from report_lifecycle import generate_report, generate_test_summary, show_trace
+from smoke_environment import CREATED_COMPANY_PASSWORD, check_requiremants
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RESULTS_DIR = ROOT / "test-results" / "allure-results"
-REPORT_DIR = ROOT / "test-results" / "allure-report"
-ALLURE_CONFIG_PATH = ROOT / "allurerc.mjs"
-TRACE_DIR = ROOT / "test-results" / "traces"
-DATA_STORE_PATH = ROOT / "test-results" / "data" / "data_store.json"
-CREATED_COMPANY_PASSWORD = "greenwhite"
 
 GROUP_0_RUNNER_PATH = "tests/smoke/test_groups/test_a_grup/test_0_group_runner.py"
 GROUP_REPORT_RUNNER_PATH = (
@@ -105,12 +96,9 @@ GROUP_ONLY_CODE_TARGETS = {
 }
 
 
-def normalized_url(value):
-    return (value or "").strip().rstrip("/")
-
-
 def env_flag(env, name):
-    return str(env.get(name, "")).strip().lower() in {"1", "true", "yes", "on"}
+    """1/0 environment flagida faqat `1` bo'lsa `True` qaytaradi."""
+    return env.get(name, "0") == "1"
 
 
 def new_code_enabled(env, *, local_dotenv_exists, pytest_extra):
@@ -120,35 +108,12 @@ def new_code_enabled(env, *, local_dotenv_exists, pytest_extra):
     return env_flag(env, "NEW_CODE") or "--new-code" in pytest_extra
 
 
-def saved_company_code():
-    if not DATA_STORE_PATH.exists():
-        return ""
-    try:
-        data = json.loads(DATA_STORE_PATH.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return ""
-    if not isinstance(data, dict):
-        return ""
-    value = data.get("company_code")
-    return str(value or "").strip().lstrip("@")
-
-
 def load_local_dotenv(env):
     env_path = ROOT / ".env"
     if not env_path.exists():
         return False
-    with env_path.open("r", encoding="utf-8") as f:
-        for raw_line in f:
-            line = raw_line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            if line.startswith("export "):
-                line = line[len("export "):].strip()
-            key, value = line.split("=", 1)
-            key = key.strip()
-            value = value.strip().strip("\"'")
-            if key:
-                env[key] = value
+    values = dotenv_values(env_path, interpolate=False)
+    env.update({key: value for key, value in values.items() if value is not None})
     return True
 
 
@@ -173,68 +138,6 @@ def run(command, env, dry_run=False):
     return subprocess.call(command, cwd=ROOT, env=env)
 
 
-def generate_report(env, open_report, dry_run):
-    try:
-        generate_command = build_generate_command(
-            RESULTS_DIR,
-            REPORT_DIR,
-            ALLURE_CONFIG_PATH,
-        )
-        print(command_text(generate_command))
-        result = generate_allure_report(
-            RESULTS_DIR,
-            REPORT_DIR,
-            ALLURE_CONFIG_PATH,
-            env=env,
-            dry_run=dry_run,
-        )
-    except (AllureCliNotInstalled, OSError, ValueError) as error:
-        print(f"[ALLURE] Report generate failed: {error}")
-        return 2
-
-    if result.returncode != 0:
-        print(f"[ALLURE] Report generate failed: exit_code={result.returncode}")
-        return result.returncode
-
-    if open_report:
-        run([sys.executable, str(ROOT / "scripts" / "open_allure_report.py"), str(REPORT_DIR)], env, dry_run=dry_run)
-    return 0
-
-
-def show_trace(env, dry_run):
-    playwright = shutil.which("playwright")
-    if not playwright:
-        venv_playwright = Path(sys.executable).with_name("playwright")
-        if venv_playwright.is_file():
-            playwright = str(venv_playwright)
-    if not playwright or not TRACE_DIR.exists():
-        return
-
-    traces = sorted(TRACE_DIR.glob("*.zip"), key=lambda item: item.stat().st_mtime, reverse=True)
-    if traces:
-        run([playwright, "show-trace", str(traces[0])], env, dry_run=dry_run)
-
-
-def generate_test_summary(
-    env,
-    test_exit,
-    pytest_command,
-    started_at,
-    dry_run,
-):
-    command = [
-        sys.executable,
-        str(ROOT / "scripts" / "analyze_test_result.py"),
-        "--exit-code",
-        str(test_exit),
-        "--command",
-        command_text(pytest_command),
-        "--started-at",
-        str(started_at),
-    ]
-    run(command, env, dry_run=dry_run)
-
-
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Smartup smoke testlarini Mac, Linux va Windows terminalida ishga tushiradi."
@@ -251,20 +154,15 @@ def parse_args():
         ),
     )
     parser.add_argument("--url", help="Server URL; lokal .env bo'lsa COMPANY_URL ishlatiladi.")
-    parser.add_argument("--company-code", help="Mavjud company code. --create-company bo'lmasa majburiy.")
-    parser.add_argument("--company-password", help="Mavjud company admin paroli. --create-company bo'lmasa majburiy.")
-    parser.add_argument("--head-email", help="--create-company bilan head profil emaili.")
-    parser.add_argument("--head-password", help="--create-company bilan head profil paroli.")
-    parser.add_argument(
-        "--create-company",
-        action="store_true",
-        help="Suite boshida yangi company yaratadi va keyingi testlarda shu company_code ishlatiladi.",
-    )
+    parser.add_argument("--company-code", help="Majburiy: 1 — yangi company yaratish; boshqa kod — mavjud company.")
+    parser.add_argument("--company-password", help="Mavjud company admin paroli; company code 1 bo'lmasa majburiy.")
+    parser.add_argument("--head-email", help="--company-code 1 bilan head profil emaili.")
+    parser.add_argument("--head-password", help="--company-code 1 bilan head profil paroli.")
     parser.add_argument("--headless", action="store_true", help="Chromium headless rejimda ishlaydi.")
     parser.add_argument(
         "--disable-license-policy",
         action="store_true",
-        help="--create-company bilan company Security tabidagi 'Политика лицензирования'ni o'chiradi.",
+        help="--company-code 1 bilan company Security tabidagi 'Политика лицензирования'ni o'chiradi.",
     )
     parser.add_argument("--open-report", action="store_true", help="Allure reportni generate qilib ochadi.")
     parser.add_argument(
@@ -284,12 +182,6 @@ def main():
     env = os.environ.copy()
     local_dotenv_exists = load_local_dotenv(env)
 
-    ai_analysis_value = str(env.get("AI_ANALYSIS", "0") or "0").strip()
-    if ai_analysis_value not in {"0", "1"}:
-        print("AI_ANALYSIS faqat 1 yoki 0 bo'lishi mumkin", file=sys.stderr)
-        return 2
-    env["AI_ANALYSIS"] = ai_analysis_value
-
     unsupported_ai_flags = [
         item
         for item in pytest_extra
@@ -298,38 +190,33 @@ def main():
     ]
     if unsupported_ai_flags:
         print(
-            "AI flaglari CLI orqali boshqarilmaydi; AI_ANALYSIS=1 yoki "
-            "AI_ANALYSIS=0 ishlating",
+            "AI tahlili GEMINI_API_KEY bilan boshqariladi: key berilsa yoqiladi, "
+            "bo'sh bo'lsa o'chiriladi",
             file=sys.stderr,
         )
         return 2
 
+    environment_url = env.get("COMPANY_URL") or env.get("URL") or ""
     if local_dotenv_exists:
-        company_url_arg = normalized_url(env.get("COMPANY_URL"))
-        create_company = env_flag(env, "CREATE_COMPANY")
+        company_url_arg = environment_url
+        company_code = env.get("COMPANY_CODE", "")
         disable_license_policy = env_flag(env, "DISABLE_LICENSE_POLICY")
     else:
-        company_url_arg = normalized_url(args.url or env.get("COMPANY_URL"))
-        create_company = args.create_company or env_flag(env, "CREATE_COMPANY")
+        company_url_arg = args.url or environment_url
+        company_code = args.company_code or env.get("COMPANY_CODE") or ""
         disable_license_policy = args.disable_license_policy or env_flag(env, "DISABLE_LICENSE_POLICY")
 
-    if not company_url_arg:
-        print("COMPANY_URL yoki --url majburiy", file=sys.stderr)
-        return 2
+    create_company = company_code == "1"
+    env["COMPANY_CODE"] = company_code
+
     env["SMARTUP_RUNNER"] = "1"
     env["COMPANY_URL"] = company_url_arg
-    if args.clean_results or env_flag(env, "CLEAN_ALLURE_RESULTS"):
+    if args.clean_results:
         env["CLEAN_ALLURE_RESULTS"] = "1"
-    else:
-        env.pop("CLEAN_ALLURE_RESULTS", None)
-
-    if disable_license_policy and not create_company:
-        print("DISABLE_LICENSE_POLICY faqat CREATE_COMPANY=1 bilan ishlaydi", file=sys.stderr)
-        return 2
     group_only_targets = {*GROUP_ONLY_CODE_TARGETS, "group-report", "forms"}
     if create_company and args.target in group_only_targets:
         print(
-            "CREATE_COMPANY=1 group-only targetlar bilan ishlamaydi; all, setup yoki company ishlating",
+            "COMPANY_CODE=1 group-only targetlar bilan ishlamaydi; all, setup yoki company ishlating",
             file=sys.stderr,
         )
         return 2
@@ -351,69 +238,51 @@ def main():
         )
         return 2
     if create_company and args.target in {"setup-report", "setup-a2-admin"}:
-        print(f"{args.target} targeti faqat CREATE_COMPANY=0 bilan ishlaydi", file=sys.stderr)
+        print(f"{args.target} targeti faqat mavjud kompaniya kodi bilan ishlaydi", file=sys.stderr)
         return 2
     if args.target == "company" and not create_company:
-        print("company target faqat CREATE_COMPANY=1 bilan ishlaydi", file=sys.stderr)
+        print("company target faqat COMPANY_CODE=1 bilan ishlaydi", file=sys.stderr)
         return 2
 
     if create_company:
-        company_password = "" if local_dotenv_exists else (args.company_password or "").strip()
         head_email = (
-            str(env.get("HEAD_ADMIN_EMAIL", "") or "").strip()
+            env.get("HEAD_ADMIN_EMAIL", "")
             if local_dotenv_exists
-            else (args.head_email or env.get("HEAD_ADMIN_EMAIL") or "").strip()
+            else (args.head_email or env.get("HEAD_ADMIN_EMAIL") or "")
         )
         head_password = (
-            str(env.get("HEAD_ADMIN_PASSWORD", "") or "").strip()
+            env.get("HEAD_ADMIN_PASSWORD", "")
             if local_dotenv_exists
-            else (args.head_password or env.get("HEAD_ADMIN_PASSWORD") or "").strip()
+            else (args.head_password or env.get("HEAD_ADMIN_PASSWORD") or "")
         )
-        if not local_dotenv_exists and args.company_code:
-            print("--create-company bilan --company-code berilmaydi", file=sys.stderr)
-            return 2
-        if company_password:
-            print("--company-password --create-company bilan berilmaydi; yangi company admin paroli test ichidagi default qiymat", file=sys.stderr)
-            return 2
-        if not head_email:
-            print("CREATE_COMPANY=1 uchun HEAD_ADMIN_EMAIL majburiy", file=sys.stderr)
-            return 2
-        if not head_password:
-            print("CREATE_COMPANY=1 uchun HEAD_ADMIN_PASSWORD majburiy", file=sys.stderr)
-            return 2
-        env["CREATE_COMPANY"] = "1"
-        env["COMPANY_PASSWORD"] = CREATED_COMPANY_PASSWORD
         env["HEAD_ADMIN_EMAIL"] = head_email
         env["HEAD_ADMIN_PASSWORD"] = head_password
-        env.pop("COMPANY_CODE", None)
     else:
         if local_dotenv_exists:
-            company_code = str(env.get("COMPANY_CODE", "") or "").strip().lstrip("@")
-            company_password = str(env.get("COMPANY_PASSWORD", "") or "").strip()
+            company_password = env.get("COMPANY_PASSWORD", "")
         else:
-            company_code = (args.company_code or env.get("COMPANY_CODE") or "").strip().lstrip("@")
-            company_password = (args.company_password or env.get("COMPANY_PASSWORD") or "").strip()
-        if company_code == "0":
-            company_code = saved_company_code()
-            if not company_code:
-                print("COMPANY_CODE=0, lekin data_store.json ichida saqlangan company_code topilmadi", file=sys.stderr)
-                return 2
-        if not company_code:
-            print("CREATE_COMPANY=0 uchun COMPANY_CODE majburiy", file=sys.stderr)
-            return 2
-        if not company_password:
-            print("CREATE_COMPANY=0 uchun COMPANY_PASSWORD majburiy", file=sys.stderr)
-            return 2
-        env["COMPANY_CODE"] = company_code
+            company_password = args.company_password or env.get("COMPANY_PASSWORD") or ""
         env["COMPANY_PASSWORD"] = company_password
-        env.pop("HEAD_ADMIN_EMAIL", None)
-        env.pop("HEAD_ADMIN_PASSWORD", None)
-        env.pop("CREATE_COMPANY", None)
 
-    if disable_license_policy:
-        env["DISABLE_LICENSE_POLICY"] = "1"
-    else:
-        env.pop("DISABLE_LICENSE_POLICY", None)
+    if not local_dotenv_exists:
+        for enabled, name in (
+            (args.headless, "HEADLESS"),
+            ("--new-code" in pytest_extra, "NEW_CODE"),
+            (args.disable_license_policy, "DISABLE_LICENSE_POLICY"),
+        ):
+            if enabled:
+                env[name] = "1"
+    if args.open_report:
+        env["OPEN_REPORT"] = "1"
+    if args.show_trace:
+        env["SHOW_TRACE"] = "1"
+    try:
+        check_requiremants(env, cli_options={} if local_dotenv_exists else vars(args))
+    except ValueError as error:
+        print(str(error), file=sys.stderr)
+        return 2
+    if create_company:
+        env["COMPANY_PASSWORD"] = CREATED_COMPANY_PASSWORD
 
     targets, code_mode = TARGETS.get(args.target, (args.target, ""))
     if isinstance(targets, str):
@@ -422,22 +291,24 @@ def main():
 
     if code_mode:
         pytest_command.append(code_mode)
-    if args.headless or env.get("HEADLESS", "").lower() in {"1", "true", "yes", "on"}:
+    headless = env_flag(env, "HEADLESS")
+    if not local_dotenv_exists:
+        headless = headless or args.headless
+    if headless:
         pytest_command.append("--headless")
     pytest_command.extend(["--url", company_url_arg])
+    pytest_command.extend(["--company-code", company_code])
     if create_company:
-        pytest_command.append("--create-company")
         pytest_command.extend(["--head-email", env["HEAD_ADMIN_EMAIL"]])
         pytest_command.extend(["--head-password", env["HEAD_ADMIN_PASSWORD"]])
     else:
-        pytest_command.extend(["--company-code", env["COMPANY_CODE"]])
         pytest_command.extend(["--company-password", env["COMPANY_PASSWORD"]])
     if disable_license_policy:
         pytest_command.append("--disable-license-policy")
     pytest_command.extend(pytest_extra)
 
     if create_company:
-        print(f"Company setup: enabled by CREATE_COMPANY=1 ({company_url_arg})")
+        print(f"Company setup: enabled by COMPANY_CODE=1 ({company_url_arg})")
         if disable_license_policy:
             print("Company license policy: will be disabled")
     else:
@@ -447,21 +318,23 @@ def main():
     test_exit = run(pytest_command, env, dry_run=args.dry_run)
 
     generate_test_summary(
+        ROOT,
         env,
         test_exit=test_exit,
-        pytest_command=pytest_command,
+        command_text=command_text(pytest_command),
         started_at=run_started_at,
         dry_run=args.dry_run,
     )
 
     if not env_flag(env, "DEFER_ALLURE_REPORT"):
         generate_report(
+            ROOT,
             env,
             open_report=args.open_report or env_flag(env, "OPEN_REPORT"),
             dry_run=args.dry_run,
         )
     if args.show_trace or env_flag(env, "SHOW_TRACE"):
-        show_trace(env, dry_run=args.dry_run)
+        show_trace(ROOT, env, dry_run=args.dry_run)
 
     return test_exit
 

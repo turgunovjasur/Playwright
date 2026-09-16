@@ -2,15 +2,13 @@
 
 from dataclasses import dataclass, field
 import hashlib
+import os
 from time import sleep
 from typing import Callable
 from uuid import UUID, uuid4
 
-from tests.smoke.flows.flow_authorization import (
-    company_url,
-    user_email_for,
-    user_password,
-)
+from tests.smoke.flows.flow_authorization import current_company_code
+from utils.data_store import load_data, save_data
 from utils.base_api import APIConnectTimeout, APIError, BaseAPI
 
 
@@ -250,18 +248,21 @@ def _authorize_with_credentials(
     )
 
 
-def authorize_mobile(load_data, save_data):
+def authorize_mobile():
     """Mobile login va target filialni tekshirib authorization qaytaradi."""
+    user_password = os.environ["USER_PASSWORD"]
     code = load_data("code")
     device_code = load_data("mobile_device_code", allow_missing=True)
     if device_code is None:
         device_code = str(uuid4())
         save_data("mobile_device_code", device_code)
 
+    user_email = f"user-pw{code}@{current_company_code()}"
+    company_url = os.environ["COMPANY_URL"]
     authorization = _authorize_with_credentials(
-        server_url=company_url(),
-        login=user_email_for(str(code)),
-        password=user_password(),
+        server_url=company_url,
+        login=user_email,
+        password=user_password,
         device_code=device_code,
         target_filial_id=load_data("filial_id"),
     )

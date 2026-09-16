@@ -1,13 +1,14 @@
 import allure
 
 from tests.smoke.flows.flow_authorization import authorization
+from utils.data_store import save_data
 from utils.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Payment Type")]
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def run_payment_type(page, save_data):
+def run_payment_type(page):
     """Testcase: global katalogdagi to'lov turlarini company'ga ulash.
 
     1. Справочники -> Цены ro'yxatini ochish.
@@ -62,6 +63,6 @@ def run_payment_type(page, save_data):
 # ----------------------------------------------------------------------------------------------------------------------
 
 @allure.title("To'lov turlarini tizimga ulash")
-def test_payment_type(page, code, save_data):
+def test_payment_type(page, code):
     authorization(page, who="user", code=code)
-    run_payment_type(page, save_data)
+    run_payment_type(page)

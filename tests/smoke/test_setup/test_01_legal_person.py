@@ -2,6 +2,7 @@ import allure
 from faker import Faker
 
 from tests.smoke.flows.flow_authorization import authorization
+from utils.data_store import save_data
 from utils.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Legal Person")]
@@ -11,7 +12,7 @@ pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Legal
 fake_ru = Faker("ru_RU")
 
 
-def run_legal_person(page, code, save_data):
+def run_legal_person(page, code):
     """Testcase: yangi yuridik shaxs (legal person) yaratish.
 
     1. Joriy company admini bilan authorization qilib, session code ni saqlash.
@@ -67,5 +68,5 @@ def run_legal_person(page, code, save_data):
 
 
 @allure.title("Yuridik shaxs yaratish")
-def test_legal_person(page, code, save_data):
-    run_legal_person(page, code, save_data)
+def test_legal_person(page, code):
+    run_legal_person(page, code)

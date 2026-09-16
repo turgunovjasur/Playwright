@@ -7,18 +7,19 @@ from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.flows.flow_mobile_authorization import authorize_mobile
 from tests.smoke.flows.flow_navigate import navigate_to_a2
 from tests.smoke.flows.flow_visit_sync import sync_visit
+from utils.data_store import load_data, save_data
 from utils.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
 
-def api_create_order_visit(load_data, save_data):
+def api_create_order_visit():
     """Mobile API orqali orderli Visit yaratib ``OrderVisit`` qaytaradi.
 
     1. Mobile API orqali login qilish va target filialni tekshirish.
     2. Sync endpoint orqali orderli Visit yaratish.
     """
     with allure.step("1 - Mobile API orqali login qilish"):
-        mobile_authorization = authorize_mobile(load_data, save_data)
+        mobile_authorization = authorize_mobile()
 
     with allure.step("2 - API orqali orderli Visit yaratish"):
         client_person_id = load_data("client_person_id")
@@ -62,7 +63,7 @@ def api_create_order_visit(load_data, save_data):
     return visit
 
 
-def web_verify_order_visit(page, visit, load_data, save_data):
+def web_verify_order_visit(page, visit):
     """Orderli Visit va linked orderni Web'da tekshirib order IDni qaytaradi.
 
     3. Web user sifatida login qilish.
@@ -139,7 +140,7 @@ def web_verify_order_visit(page, visit, load_data, save_data):
     return server_order_id
 
 
-def run_mobile_order_visit_check(page, load_data, save_data):
+def run_mobile_order_visit_check(page):
     """API yaratgan orderli Visit va linked orderni Web orqali tekshiradi."""
-    visit = api_create_order_visit(load_data, save_data)
-    return web_verify_order_visit(page, visit, load_data, save_data)
+    visit = api_create_order_visit()
+    return web_verify_order_visit(page, visit)

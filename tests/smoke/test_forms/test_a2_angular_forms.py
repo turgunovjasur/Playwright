@@ -258,13 +258,14 @@ HEAD profil → operatsion filial (1 ta)
     User trace: Главное → Основное → Операционный дашборд
 """
 
+import os
 import time
 
 import allure
 import pytest
 from playwright.sync_api import Error as PlaywrightError
 
-from tests.smoke.flows.flow_authorization import authorization, company_url
+from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.test_forms.monitoring.monitor import FormMonitor
 from tests.smoke.test_forms.monitoring.navigation import first_operational_filial, run_form_cases
 from tests.smoke.test_forms.monitoring.suite_runner import OPERATIONAL_PLACEHOLDER, build_suite_inventory
@@ -501,8 +502,9 @@ def run_a2_angular_forms(page, *, progress_test_id, terminal_reporter=None, chec
             started_at = time.monotonic()
             try:
                 with allure.step(f"Suite precondition | {operation}"):
+                    company_url = os.environ["COMPANY_URL"]
                     page.goto(
-                        f"{company_url()}/a2/trade/intro/dashboard",
+                        f"{company_url}/a2/trade/intro/dashboard",
                         wait_until="domcontentloaded",
                         timeout=30_000,
                     )

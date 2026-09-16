@@ -6,6 +6,7 @@ import pytest
 from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.flows.flow_order.flow_order_add import auto_filled_order_dates
 from tests.smoke.flows.flow_order.flow_order_list import flow_order_list
+from utils.data_store import save_data
 from utils.auto_base_page import AutoBasePage
 
 pytestmark = [
@@ -18,7 +19,7 @@ pytestmark = [
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def run_create_base_order(page, code, save_data):
+def run_create_base_order(page, code):
     """Testcase: setup baseline asosida oddiy order yaratib, IDni saqlash.
 
     1. Clientning boshlang'ich settlement summalarini saqlash.
@@ -128,6 +129,6 @@ def run_create_base_order(page, code, save_data):
 
 
 @allure.title("Setup baseline asosida oddiy order yaratish va IDni saqlash")
-def test_create_base_order(page, code, save_data):
+def test_create_base_order(page, code):
     authorization(page, who="user", code=code)
-    run_create_base_order(page, code, save_data)
+    run_create_base_order(page, code)

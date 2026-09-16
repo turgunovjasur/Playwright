@@ -8,6 +8,7 @@ from tests.smoke.flows.flow_natural_person import (
     open_natural_person_list,
     open_natural_person_view,
 )
+from utils.data_store import save_data
 from utils.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
@@ -15,7 +16,7 @@ pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Natur
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def run_natural_person(page, code, save_data):
+def run_natural_person(page, code):
     """Testcase: xodim uchun jismoniy shaxs (natural person) yaratish.
 
     1. Физические лица ro'yxatini ochish.
@@ -56,8 +57,8 @@ def run_natural_person(page, code, save_data):
 # ----------------------------------------------------------------------------------------------------------------------
 
 @allure.title("Xodim uchun jismoniy shaxs yaratish")
-def test_natural_person(page, code, save_data):
+def test_natural_person(page, code):
     base = AutoBasePage(page)
     authorization(page, who="admin")
     base.switch_filial(name=f"filial-pw{code}")
-    run_natural_person(page, code, save_data)
+    run_natural_person(page, code)

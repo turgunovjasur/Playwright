@@ -28,14 +28,13 @@ jobs:
     env:
       TEST_SERVER_KEY: ${{ inputs.server_key }}
       TEST_TARGET: ${{ inputs.target }}
-      CREATE_COMPANY: "0"
       DISABLE_LICENSE_POLICY: "0"
-      AI_ANALYSIS: ${{ vars.AI_ANALYSIS || '0' }}
       TEST_TELEGRAM_PROGRESS_MESSAGE_ID: ${{ inputs.telegram_progress_message_id }}
       SMARTUP_COMPANY_CODE: ${{ secrets.SMARTUP_COMPANY_CODE }}
       SMARTUP_COMPANY_PASSWORD: ${{ secrets.SMARTUP_COMPANY_PASSWORD }}
       APP3_COMPANY_CODE: ${{ secrets.APP3_COMPANY_CODE }}
       APP3_COMPANY_PASSWORD: ${{ secrets.APP3_COMPANY_PASSWORD }}
+      USER_PASSWORD: ${{ secrets.USER_PASSWORD }}
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       ALLURE_HISTORY_PATH: test-results/allure-history/history.jsonl
 

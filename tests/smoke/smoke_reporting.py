@@ -4,8 +4,6 @@ import json
 import os
 import re
 import shutil
-import subprocess
-import sys
 from collections.abc import Mapping
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -13,25 +11,23 @@ from urllib.parse import urlsplit
 import allure
 import pytest
 
-from scripts.allure_report_cli import (
-    AllureCliNotInstalled,
-    build_generate_command,
+from scripts.report_lifecycle import (
+    ALLURE_RESULTS_DIR,
+    TRACE_DIR,
     generate_report,
+    generate_test_summary,
+    show_trace,
 )
 from tests.smoke.progress import emit_progress_event
 from tests.smoke.screenshot_masking import masked_page_screenshot
-from tests.smoke.smoke_config import env_flag, is_headless
+from tests.smoke.smoke_config import env_flag
 from utils.logger import write_failure_log
 
 
-TRACE_DIR = "test-results/traces"
-ALLURE_RESULTS_DIR = "test-results/allure-results"
-ALLURE_REPORT_DIR = "test-results/allure-report"
-ALLURE_CONFIG_PATH = "allurerc.mjs"
-ALLURE_SERVER_LOG = "test-results/logs/allure-report-server.log"
-
 _PROGRESS_STARTED_ATTR = "_smartup_progress_started"
 _PROGRESS_FINISHED_ATTR = "_smartup_progress_finished"
+_PROGRESS_TOTALS_ATTR = "_smartup_progress_totals"
+_FINAL_RESULT_ATTR = "_smartup_final_result"
 _AUTH_LISTENER_ATTR = "_smartup_auth_diagnostics_installed"
 _AUTH_RESPONSE_ATTR = "_smartup_first_unauthorized_response"
 _LICENSE_401_MESSAGE = "Нет лицензии для входа в систему!"
@@ -272,21 +268,16 @@ def _form_progress_display(context):
     return f"{number:03d} | {path or 'Noma’lum forma'}"
 
 
-def _form_progress_total(item):
-    """Joriy pytest collectiondagi parametrized Forms itemlar sonini qaytaradi."""
-    session = getattr(item, "session", None)
-    items = getattr(session, "items", ())
-    return sum(_form_case_from_item(candidate) is not None for candidate in items)
-
-
-def _progress_test_total(item):
-    """Joriy collectiondagi Telegram progress testlari sonini qaytaradi."""
-    session = getattr(item, "session", None)
-    items = getattr(session, "items", ())
-    return sum(
-        is_user_setup(candidate) or bool(smoke_group_name(candidate))
-        for candidate in items
-    )
+def prepare_progress_totals(session):
+    """Collection tugagach test va Forms sonlarini sessionda saqlaydi."""
+    test_total = 0
+    form_total = 0
+    for item in session.items:
+        if is_user_setup(item) or smoke_group_name(item):
+            test_total += 1
+        if _form_case_from_item(item) is not None:
+            form_total += 1
+    setattr(session, _PROGRESS_TOTALS_ATTR, {"test_total": test_total, "form_total": form_total})
 
 
 def _progress_metadata(item):
@@ -308,8 +299,10 @@ def _progress_metadata(item):
         "runner": Path(str(item.path)).name,
         "test_id": item.name,
         "title": allure_title,
-        "test_total": _progress_test_total(item),
     }
+    totals = getattr(getattr(item, "session", None), _PROGRESS_TOTALS_ATTR, None)
+    if totals is not None:
+        metadata["test_total"] = totals["test_total"]
     form_context = _form_progress_context(item)
     if form_context is not None:
         display = _form_progress_display(form_context)
@@ -317,40 +310,96 @@ def _progress_metadata(item):
             title=display,
             display=display,
             form=form_context,
-            form_total=_form_progress_total(item),
         )
+        if totals is not None:
+            metadata["form_total"] = totals["form_total"]
     return metadata
+
+
+def reporting_warning(nodeid, action, error):
+    """Diagnostika xatosini ko'rsatadi; asl test natijasiga tegmaydi."""
+    message = f"[REPORTING] {nodeid}: {action} bajarilmadi ({type(error).__name__}). Test natijasi saqlandi."
+    try:
+        print(message)
+    except OSError:
+        pass
+
+
+def _emit_item_progress(item, event, **details):
+    """Progress yozishdagi xato pytest hookini to'xtatmasligini ta'minlaydi."""
+    try:
+        metadata = _progress_metadata(item)
+        if not metadata:
+            return False
+        emit_progress_event(event=event, **details, **metadata)
+        return True
+    except Exception as error:
+        reporting_warning(item.nodeid, "Progress yozish", error)
+        return False
 
 
 def start_progress(item):
     """Test uchun `started` progress eventini faqat bir marta chiqaradi."""
-    metadata = _progress_metadata(item)
-    if not metadata or getattr(item, _PROGRESS_STARTED_ATTR, False):
+    if getattr(item, _PROGRESS_STARTED_ATTR, False):
         return
-    setattr(item, _PROGRESS_STARTED_ATTR, True)
-    emit_progress_event(event="started", **metadata)
+    if _emit_item_progress(item, "started"):
+        setattr(item, _PROGRESS_STARTED_ATTR, True)
 
 
 def finish_progress(item, event, *, error_type=None, message=None):
     """Test yakuniy progress eventini faqat bir marta chiqaradi."""
-    metadata = _progress_metadata(item)
-    if not metadata or getattr(item, _PROGRESS_FINISHED_ATTR, False):
+    if getattr(item, _PROGRESS_FINISHED_ATTR, False):
         return
-    setattr(item, _PROGRESS_FINISHED_ATTR, True)
-    emit_progress_event(
-        event=event,
-        error_type=error_type,
-        message=message,
-        **metadata,
-    )
+    if _emit_item_progress(item, event, error_type=error_type, message=message):
+        setattr(item, _PROGRESS_FINISHED_ATTR, True)
 
 
 def report_deselected(items):
     """Collectiondan ataylab chiqarilgan testlarni nomi bilan progressga yozadi."""
     for item in items:
-        metadata = _progress_metadata(item)
-        if metadata:
-            emit_progress_event(event="deselected", **metadata)
+        _emit_item_progress(item, "deselected")
+
+
+def record_test_report(item, report, call, data_path):
+    """Faza natijasini saqlaydi; teardown oxirida bitta yakuniy progress chiqaradi.
+
+    Failed skipped'dan ustun. Bir nechta faza yiqilsa birinchi xato asosiy
+    sabab bo'lib qoladi; har fazaning xatosi pytest/Allure reportida saqlanadi.
+    """
+    result = getattr(item, _FINAL_RESULT_ATTR, {"event": "passed"})
+    if report.failed:
+        failure = {
+            "event": "failed",
+            "error_type": call.excinfo.typename if call.excinfo else "Failed",
+            "message": str(call.excinfo.value).strip() if call.excinfo else report_message(report),
+        }
+        auth_diagnostic = None
+        try:
+            auth_diagnostic = auth_diagnostic_for_item(item)
+            if auth_diagnostic:
+                failure["error_type"] = auth_diagnostic["error_type"]
+                failure["message"] = auth_diagnostic["summary"]
+                report.user_properties.append(("auth_diagnostic", auth_diagnostic["summary"]))
+        except Exception as error:
+            reporting_warning(item.nodeid, "Authorization diagnostikasi", error)
+        if result["event"] != "failed":
+            result = failure
+        # Natijani optional artefaktlardan oldin saqlaymiz.
+        setattr(item, _FINAL_RESULT_ATTR, result)
+        try:
+            attach_failure_artifacts(item, data_path, auth_diagnostic=auth_diagnostic)
+        except Exception as error:
+            reporting_warning(item.nodeid, "Failure artefaktlarini yig'ish", error)
+    elif report.skipped and result["event"] == "passed":
+        result = {"event": "skipped", "error_type": "Skipped", "message": report_message(report)}
+    setattr(item, _FINAL_RESULT_ATTR, result)
+
+    if report.when == "teardown":
+        try:
+            reset_auth_diagnostics(item)
+        except Exception as error:
+            reporting_warning(item.nodeid, "Authorization diagnostikasini tozalash", error)
+        finish_progress(item, **result)
 
 
 def report_message(report):
@@ -378,7 +427,7 @@ def _clean_current_allure_results(results_dir):
             item.unlink(missing_ok=True)
 
 
-def prepare_allure_results(config, run_info, root_dir):
+def prepare_allure_results(run_info, root_dir):
     """Run boshida Allure environment va executor metadata fayllarini tayyorlaydi."""
     root_dir = Path(root_dir)
     results_dir = root_dir / ALLURE_RESULTS_DIR
@@ -391,7 +440,7 @@ def prepare_allure_results(config, run_info, root_dir):
     with environment_path.open("w", encoding="utf-8") as environment_file:
         environment_file.write("Browser=Chromium\n")
         environment_file.write(
-            f"Browser.Headless={is_headless(config)}\n"
+            f"Browser.Headless={env_flag('HEADLESS')}\n"
         )
         environment_file.write(f"Server={run_info['company_url']}\n")
         run_mode = "Create company" if run_info["create_company"] else "Existing company"
@@ -489,7 +538,6 @@ def trace_reference_for_item(item):
 def attach_failure_artifacts(item, data_path, auth_diagnostic=None):
     """Failed testning browser holati va strukturali diagnostikasini Allurega qo'shadi."""
     page = page_from_item(item)
-    auth_diagnostic = auth_diagnostic or auth_diagnostic_for_item(item)
     if auth_diagnostic:
         allure.attach(
             json.dumps(auth_diagnostic, ensure_ascii=False, indent=2),
@@ -511,7 +559,7 @@ def attach_failure_artifacts(item, data_path, auth_diagnostic=None):
                 attachment_type=allure.attachment_type.TEXT,
             )
             allure.attach(
-                page.title(),
+                state["document_title"],
                 name="05 - Page Title",
                 attachment_type=allure.attachment_type.TEXT,
             )
@@ -565,127 +613,20 @@ def log_failed_report(report):
     )
     if auth_diagnostic:
         longrepr_text += f"\n\n[AUTH DIAGNOSTIKA]\n{auth_diagnostic}"
-    log_path = write_failure_log(report.nodeid, report.when, longrepr_text)
-    print(f"\n[LOG] Xato logi saqlandi: {log_path}")
+    try:
+        log_path = write_failure_log(report.nodeid, report.when, longrepr_text)
+        print(f"\n[LOG] Xato logi saqlandi: {log_path}")
+    except Exception as error:
+        reporting_warning(report.nodeid, "Xato logini saqlash", error)
 
 
-def _generate_test_summary(root_dir, exitstatus):
-    """Direct pytest run uchun Allure generatsiyasidan oldin summary yaratadi."""
-    command = [
-        sys.executable,
-        str(root_dir / "scripts" / "analyze_test_result.py"),
-        "--exit-code",
-        str(exitstatus),
-        "--command",
-        "direct pytest run",
-        "--started-at",
-        "0",
-    ]
-    subprocess.call(command, cwd=root_dir)
-
-
-def finish_session(root_dir, exitstatus):
-    """Direct pytest run tugaganda so'ralgan trace viewer yoki Allure reportni ochadi."""
+def finish_session(root_dir, exitstatus, *, started_at):
+    """Direct pytest uchun summary yaratadi va so'ralgan viewerlarni fonda ochadi."""
     if env_flag("SMARTUP_RUNNER"):
         return
 
-    root_dir = Path(root_dir)
-    _generate_test_summary(root_dir, exitstatus)
+    generate_test_summary(root_dir, os.environ, test_exit=exitstatus, command_text="direct pytest run", started_at=started_at)
     if env_flag("SHOW_TRACE"):
-        _open_latest_trace(root_dir)
-
+        show_trace(root_dir, os.environ, background=True)
     if env_flag("OPEN_REPORT"):
-        _generate_and_open_allure_report(root_dir)
-
-
-def _open_latest_trace(root_dir):
-    """Eng oxirgi Playwright trace faylini CLI viewerda ochadi."""
-    playwright_bin = shutil.which("playwright")
-    if not playwright_bin:
-        virtualenv_playwright = Path(sys.executable).with_name("playwright")
-        if virtualenv_playwright.is_file():
-            playwright_bin = str(virtualenv_playwright)
-
-    trace_dir = root_dir / TRACE_DIR
-    traces = (
-        sorted(
-            trace_dir.glob("*.zip"),
-            key=lambda item: item.stat().st_mtime,
-            reverse=True,
-        )
-        if trace_dir.exists()
-        else []
-    )
-    if not playwright_bin:
-        print("\n[TRACE] SHOW_TRACE=1, lekin playwright CLI topilmadi")
-    elif not traces:
-        print("\n[TRACE] SHOW_TRACE=1, lekin trace fayli topilmadi")
-    else:
-        print(f"\n[TRACE] Trace ochilmoqda: {traces[0]}")
-        subprocess.Popen(
-            [playwright_bin, "show-trace", str(traces[0])],
-            cwd=root_dir,
-        )
-
-
-def _generate_and_open_allure_report(root_dir):
-    """Shared Allure 3 helper bilan report yaratib, keyin lokal serverni ochadi."""
-    results_dir = root_dir / ALLURE_RESULTS_DIR
-    report_dir = root_dir / ALLURE_REPORT_DIR
-    config_path = root_dir / ALLURE_CONFIG_PATH
-    open_command = [
-        sys.executable,
-        str(root_dir / "scripts" / "open_allure_report.py"),
-        str(report_dir),
-    ]
-
-    print("\n[ALLURE] Report generate qilinmoqda...")
-    try:
-        command = build_generate_command(
-            results_dir,
-            report_dir,
-            config_path,
-            project_root=root_dir,
-        )
-        print(" ".join(command))
-        result = generate_report(
-            results_dir,
-            report_dir,
-            config_path,
-            project_root=root_dir,
-            env=os.environ,
-        )
-    except (AllureCliNotInstalled, OSError, ValueError) as error:
-        print(f"[ALLURE] Report generate failed: {error}")
-        return
-    if result.returncode != 0:
-        print(f"[ALLURE] Report generate failed: exit_code={result.returncode}")
-        return
-
-    print("[ALLURE] Report ochilmoqda...")
-    server_log_path = root_dir / ALLURE_SERVER_LOG
-    server_log_path.parent.mkdir(parents=True, exist_ok=True)
-    detach_options = (
-        {"start_new_session": True}
-        if os.name == "posix"
-        else {
-            "creationflags": (
-                subprocess.CREATE_NEW_PROCESS_GROUP
-                | subprocess.DETACHED_PROCESS
-            )
-        }
-    )
-    try:
-        with server_log_path.open("a", encoding="utf-8") as server_log:
-            subprocess.Popen(
-                open_command,
-                cwd=root_dir,
-                stdout=server_log,
-                stderr=subprocess.STDOUT,
-                close_fds=True,
-                **detach_options,
-            )
-    except OSError as exc:
-        print(f"[ALLURE] Lokal serverni ishga tushirib bo'lmadi: {exc}")
-        return
-    print(f"[ALLURE] Server log: {server_log_path}")
+        generate_report(root_dir, os.environ, open_report=True, background=True)

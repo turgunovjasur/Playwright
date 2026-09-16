@@ -76,8 +76,8 @@ OPERATIONAL_DIRECT_FORMS = [
     },
     {
         "menu_column": "Продажа",
-        "menu_item": "Лиды",
-        "path": "anor/mdeal/order/lead_list",
+        "menu_item": "Заявки на заказ",
+        "path": "anor/mdeal/order/order_request_list",
     },
     {
         "menu_column": "Отчеты по продажам",
@@ -208,6 +208,12 @@ OPERATIONAL_PAGE_LINK_FORMS = [
         "menu_item": "Взаиморасчеты с клиентами",
         "page_links": ["Взаиморасчеты", "Парные счета", "Взаиморасчеты"],
         "path": "anor/mku/offset/offset_list",
+    },
+    {
+        "menu_column": "Продажа",
+        "menu_item": "Заявки на заказ",
+        "page_links": ["Заказ (создание)"],
+        "path": "anor/mdeal/order/order+add",
     },
     {
         "menu_column": "Отчеты по продажам",

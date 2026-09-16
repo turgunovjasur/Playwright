@@ -2,6 +2,7 @@ import allure
 
 from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.flows.flow_license import license_policy_disabled
+from utils.data_store import save_data
 from utils.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Company")]
@@ -11,7 +12,7 @@ COMPANY_SAVE_TIMEOUT = 600_000
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def run_company(page, code, save_data):
+def run_company(page, code):
     """Testcase: company yaratish yoki mavjud company sozlamalarini yangilash.
 
     1. Head profilga kirish.
@@ -111,5 +112,5 @@ def run_company(page, code, save_data):
 
 
 @allure.title("Company yaratish")
-def test_company(page, code, save_data):
-    run_company(page, code, save_data)
+def test_company(page, code):
+    run_company(page, code)

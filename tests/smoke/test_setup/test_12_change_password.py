@@ -1,9 +1,10 @@
+import os
+
 import allure
 from tests.smoke.flows.flow_authorization import (
-    USER_PASS,
     dashboard,
     login,
-    user_email_for,
+    current_company_code,
 )
 from utils.auto_base_page import AutoBasePage
 
@@ -22,22 +23,24 @@ def run_change_password(page, code):
     "Пароль (изменение)" — user qo'shilganda (birinchi login), user paroli o'zgartirilganda
     yoki profildan "Изменить пароль" orqali ochiladigan bir xil forma (URL biruni/md/change_password).
     """
+    user_password = os.environ["USER_PASSWORD"]
     base = AutoBasePage(page)
     with allure.step("1 - Foydalanuvchi sifatida kirish"):
-        login(page, email=user_email_for(code), password=USER_PASS)
+        user_email = f"user-pw{code}@{current_company_code()}"
+        login(page, email=user_email, password=user_password)
         base.expect_page(url="change_password")
         base.text(root=".alert-icon")
 
     with allure.step("2 - Yangi parol kiritish va tasdiqlash"):
-        base.input(label="Текущий пароль", value=USER_PASS)
-        base.input(label="Новый пароль", value=USER_PASS, press_tab=True)
-        base.input(label="Подтверждение пароля", value=USER_PASS)
+        base.input(label="Текущий пароль", value=user_password)
+        base.input(label="Новый пароль", value=user_password, press_tab=True)
+        base.input(label="Подтверждение пароля", value=user_password)
 
         base.click(name="Подтвердить")
         base.confirm_biruni()
 
     with allure.step("3 - Parol tasdiqlangandan keyin majburiy qayta login"):
-        login(page, email=user_email_for(code), password=USER_PASS)
+        login(page, email=user_email, password=user_password)
         dashboard(page)
 
 # ----------------------------------------------------------------------------------------------------------------------

@@ -2,6 +2,7 @@ import allure
 import pytest
 
 from tests.smoke.flows.flow_authorization import authorization
+from utils.data_store import load_data
 from utils.auto_base_page import AutoBasePage
 
 pytestmark = [
@@ -15,7 +16,7 @@ pytestmark = [
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def run_offset_client_balance(page, code, load_data):
+def run_offset_client_balance(page, code):
     """Testcase: client debt va prepaymentini o'zaro hisob-kitob qilish.
 
     1. Settlement listida teng debt va prepaymentni tekshirib, clientni tanlash.
@@ -93,6 +94,6 @@ def run_offset_client_balance(page, code, load_data):
 
 
 @allure.title("Client debt va prepaymentini o'zaro hisob-kitob qilish")
-def test_offset_client_balance(page, code, load_data):
+def test_offset_client_balance(page, code):
     authorization(page, who="user", code=code)
-    run_offset_client_balance(page, code, load_data)
+    run_offset_client_balance(page, code)

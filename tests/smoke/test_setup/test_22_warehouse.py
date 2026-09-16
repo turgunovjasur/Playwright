@@ -1,6 +1,7 @@
 import allure
 
 from tests.smoke.flows.flow_authorization import authorization
+from utils.data_store import save_data
 from utils.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
@@ -9,7 +10,7 @@ pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Wareh
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def run_warehouse(page, save_data):
+def run_warehouse(page):
     """Asosiy ombor view formasidan warehouse IDni olish va saqlash.
 
     1. Склад -> Склады ro'yxatini ochish.
@@ -41,6 +42,6 @@ def run_warehouse(page, save_data):
 
 
 @allure.title("Asosiy ombor ID sini olish")
-def test_warehouse(page, code, save_data):
+def test_warehouse(page, code):
     authorization(page, who="user", code=code)
-    run_warehouse(page, save_data)
+    run_warehouse(page)

@@ -1,4 +1,3 @@
-import logging
 import re
 
 from playwright.sync_api import expect
@@ -7,8 +6,6 @@ from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from utils.date_utils import format_date, resolve_date
 from utils.helper_utils import first_non_admin_filial, label_pattern
 
-
-logger = logging.getLogger(__name__)
 
 _UNSET = object()
 
@@ -23,8 +20,28 @@ def _whitespace_agnostic_pattern(value, *, exact=False):
 
 
 class BasePage:
+    """Legacy DOM implementatsiyasi; public API AngularBasePage bilan teng.
+
+    Parametrlar, assertion va return kontraktlari ikkala class'da saqlanadi.
+    Explicit locator/root/model qiymatlari tegishli UI uchun beriladi.
+    """
+
     def __init__(self, page):
         self.page = page
+
+    def _validate_options(self, method, **options):
+        """Public helper flag/index/timeout kontrakti; ikkala page'da bir xil."""
+        for name, value in options.items():
+            if value is _UNSET:
+                continue
+            if name == "index":
+                if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                    raise ValueError(f"{method}(): index manfiy bo'lmagan int bo'lishi kerak")
+            elif name in {"timeout", "delay"}:
+                if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
+                    raise ValueError(f"{method}(): {name} manfiy bo'lmagan son bo'lishi kerak")
+            elif not isinstance(value, bool):
+                raise TypeError(f"{method}(): {name} bool bo'lishi kerak")
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -77,16 +94,27 @@ class BasePage:
         Styled radio inputlar ko'rinadigan label/span ostida qolishi mumkin;
         radio tanlash uchun ``radio(label, click=True)`` ishlatiladi.
         """
+        self._validate_options(
+            'click',
+            exact=exact,
+            index=index,
+            timeout=timeout,
+        )
         root = self._resolve_root(root)
         target = root.get_by_role(role, name=name, exact=exact).nth(index)
         expect(target).to_be_visible(timeout=timeout)
-        target.click()
+        target.click(timeout=timeout)
         return target
 
     # ------------------------------------------------------------------------------------------------------------------
 
     def choice(self, label, option, *, index=0, root=None, timeout=10_000):
         """Label bilan bog'langan segmented button optionni tanlaydi."""
+        self._validate_options(
+            'choice',
+            index=index,
+            timeout=timeout,
+        )
         root = self._resolve_root(root)
         label_item = root.get_by_text(self._label_pattern(label)).filter(visible=True).nth(index)
         expect(label_item).to_be_visible(timeout=timeout)
@@ -96,7 +124,7 @@ class BasePage:
         expect(container).to_be_visible(timeout=timeout)
         button = container.get_by_role("button", name=option, exact=True).first
         expect(button).to_be_visible(timeout=timeout)
-        button.click()
+        button.click(timeout=timeout)
         return button
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -109,6 +137,10 @@ class BasePage:
         bo'lsa elementlar DOMdan ham olib tashlanadi; aks holda faqat yashiriladi.
         Nechta elementga amal qilinganini qaytaradi.
         """
+        self._validate_options(
+            'hide_ui',
+            remove=remove,
+        )
         target = self.page.locator(locator) if isinstance(locator, str) else locator
         return target.evaluate_all(
             """(elements, remove) => {
@@ -166,7 +198,17 @@ class BasePage:
 
         `root` (Page, Locator yoki selector string) va `index` topishni cheklaydi.
         """
+        self._validate_options(
+            'checkbox',
+            checked=checked,
+            expect_checked=expect_checked,
+            return_value=return_value,
+            index=index,
+        )
         root = self._resolve_root(root)
+
+        if sum(source is not None for source in (locator, label, ng_model)) != 1:
+            raise ValueError("checkbox(): label, ng_model yoki locator dan aynan bittasini bering")
 
         # --- topish: bitta strategiya ---
         if label is not None:
@@ -174,7 +216,7 @@ class BasePage:
         elif ng_model is not None:
             cb = root.locator(f'input[ng-model="{ng_model}"]').nth(index)
         elif locator is not None:
-            cb = root.locator(locator).first if isinstance(locator, str) else locator
+            cb = root.locator(locator).nth(index) if isinstance(locator, str) else locator
         else:
             raise ValueError(
                 "checkbox(): label, ng_model yoki locator dan bittasini bering"
@@ -185,7 +227,7 @@ class BasePage:
 
         want = checked if checked is not _UNSET else expect_checked
         if want is not _UNSET:
-            expect(cb).to_be_checked() if want else expect(cb).not_to_be_checked()
+            expect(cb).to_be_checked(timeout=10_000) if want else expect(cb).not_to_be_checked(timeout=10_000)
         if return_value:
             return cb.is_checked()
         return cb
@@ -207,8 +249,13 @@ class BasePage:
         ``click=True`` bo'lsa styled inputning o'zini emas, ko'rinadigan parent
         labelni bosadi. Masalan: ``radio("Цена продажи", click=True)``.
         """
-        if not isinstance(click, bool):
-            raise TypeError("radio(): click bool bo'lishi kerak")
+        self._validate_options(
+            'radio',
+            click=click,
+            expect_checked=expect_checked,
+            return_value=return_value,
+            index=index,
+        )
 
         root = self._resolve_root(root)
         radio_el = self._field_locator_by_label(label, index=index, root=root, target="radio")
@@ -216,12 +263,12 @@ class BasePage:
         if click:
             label_el = radio_el.locator("xpath=ancestor::label[1]")
             if label_el.count() > 0 and label_el.first.is_visible():
-                label_el.first.click()
+                label_el.first.click(timeout=10_000)
             else:
-                radio_el.click()
+                radio_el.click(timeout=10_000)
 
         if expect_checked is not _UNSET:
-            expect(radio_el).to_be_checked() if expect_checked else expect(radio_el).not_to_be_checked()
+            expect(radio_el).to_be_checked(timeout=10_000) if expect_checked else expect(radio_el).not_to_be_checked(timeout=10_000)
         if return_value:
             return radio_el.is_checked()
         return radio_el
@@ -287,6 +334,7 @@ class BasePage:
             else:
                 expect(cb).to_be_visible()
                 cb.click()
+        expect(cb).to_be_checked(timeout=10_000) if checked else expect(cb).not_to_be_checked(timeout=10_000)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -296,25 +344,33 @@ class BasePage:
         Sahifa settled bo'lsa True qaytaradi; loader timeout ichida
         yo'qolmasa xato ko'taradi.
         """
-        overlay = self.page.locator(".block-ui-overlay")
+        self._validate_options(
+            'wait_for_loader',
+            timeout=timeout,
+        )
+        overlay = self.page.locator(".block-ui-overlay:visible")
         try:
-            overlay.wait_for(state="visible", timeout=2_000)
-        except Exception:
-            # Loader qisqa detection oralig'ida chiqmasa, jarayon tugagan yoki juda tez o'tgan.
-            return True
-
-        try:
-            overlay.wait_for(state="hidden", timeout=timeout)
-        except Exception as exc:
-            logger.warning("Loader %s ms ichida yo'qolmadi: %s", timeout, exc)
-            raise
+            expect(overlay.first).to_be_visible(timeout=2_000)
+        except (AssertionError, PlaywrightTimeoutError):
+            pass
+        expect(overlay).to_have_count(0, timeout=timeout)
         return True
 
     # ------------------------------------------------------------------------------------------------------------------
 
     def navigate_to(self, tab="Главное", name="Организации", timeout=30_000):
-        self.page.locator("a.menu-link.menu-toggle", has_text=tab).click()
-        self.page.locator("a.menu-link.menu-link-title").get_by_text(name, exact=True).click()
+        self._validate_options(
+            'navigate_to',
+            timeout=timeout,
+        )
+        tab_link = self.page.locator("a.menu-link.menu-toggle").filter(
+            has_text=_whitespace_agnostic_pattern(tab, exact=True), visible=True
+        )
+        expect(tab_link).to_have_count(1, timeout=timeout)
+        tab_link.click(timeout=timeout)
+        item = self.page.locator("a.menu-link.menu-link-title").get_by_text(name, exact=True).filter(visible=True)
+        expect(item).to_have_count(1, timeout=timeout)
+        item.click(timeout=timeout)
 
         try:
             self.wait_for_loader(timeout=timeout)
@@ -347,6 +403,11 @@ class BasePage:
         bosiladi. Forma heading va URL tekshiruvi chaqiruvchi kodda alohida
         ``expect_page(...)`` bilan qilinadi.
         """
+        self._validate_options(
+            'navigate_to_form',
+            add_icon=add_icon,
+            timeout=timeout,
+        )
         links = [] if page_links is None else [page_links] if isinstance(page_links, str) else list(page_links)
 
         tab = (
@@ -366,7 +427,7 @@ class BasePage:
             .locator(".menu-submenu")
         )
         if flyout.filter(visible=True).count() == 0:
-            tab.click()
+            tab.click(timeout=timeout)
         flyout = flyout.filter(visible=True)
         expect(flyout).to_have_count(1, timeout=timeout)
         expect(flyout).to_be_visible(timeout=timeout)
@@ -435,9 +496,9 @@ class BasePage:
                     f"navigate_to_form: menu_item='{menu_item}' ikonka-link URLida "
                     f"'+add' yo'q; href={add_href or '—'}"
                 )
-            add_link.click()
+            add_link.click(timeout=timeout)
         else:
-            item.click()
+            item.click(timeout=timeout)
 
         for page_link in links:
             link = (
@@ -452,7 +513,7 @@ class BasePage:
                 raise AssertionError(
                     f"navigate_to_form: '{menu_item}' formasida page_link='{page_link}' topilmadi"
                 ) from exc
-            link.click()
+            link.click(timeout=timeout)
 
         return add_link if add_icon else item
 
@@ -464,6 +525,11 @@ class BasePage:
         ``root`` berilsa, heading faqat shu CSS selector yoki Locator ichidan qidiriladi.
         Loader bloklanishi esa sahifa bo'yicha global tekshiriladi.
         """
+        self._validate_options(
+            'expect_page',
+            timeout=timeout,
+            check_unblocked=check_unblocked,
+        )
         if heading is None and url is None:
             raise ValueError("expect_page: kamida 'heading' yoki 'url' berilishi kerak")
 
@@ -490,21 +556,17 @@ class BasePage:
                     f"root={root or 'page'}, url={self.page.url}"
                 ) from exc
 
-            if check_unblocked:
-                try:
-                    expect(self.page.locator(".block-ui-overlay:visible")).to_have_count(0, timeout=timeout)
-                except (AssertionError, PlaywrightTimeoutError) as exc:
-                    shown = getattr(heading, "pattern", heading)
-                    raise AssertionError(
-                        f"expect_page: heading '{shown}' ko'rindi, lekin Smartup loader overlay bilan "
-                        f"bloklangan; url={self.page.url}"
-                    ) from exc
+        if check_unblocked:
+            expect(self.page.locator(".block-ui-overlay:visible")).to_have_count(0, timeout=timeout)
 
     # ------------------------------------------------------------------------------------------------------------------
 
     def switch_filial(self, name=None, timeout=30_000, *, first_filial=False):
-        if not isinstance(first_filial, bool):
-            raise TypeError("switch_filial(first_filial=...): bool bo'lishi kerak")
+        self._validate_options(
+            'switch_filial',
+            timeout=timeout,
+            first_filial=first_filial,
+        )
         if first_filial and name is not None:
             raise ValueError("switch_filial(): name va first_filial=True birga berilmaydi")
         if not first_filial and name is None:
@@ -556,18 +618,20 @@ class BasePage:
 
     def confirm_biruni(self, expected_text=None, button_name="да"):
         """Biruni confirm modalini barqaror tasdiqlaydi."""
+        matcher = button_name if isinstance(button_name, re.Pattern) else re.compile(
+            rf"^\s*{re.escape(str(button_name))}\s*$", re.IGNORECASE
+        )
         button = self.page.get_by_role(
             "button",
-            name=button_name,
-            exact=True,
+            name=matcher,
         )
         confirm = self._visible_modal_candidates().filter(has=button).first
-        expect(confirm).to_be_visible()
+        expect(confirm).to_be_visible(timeout=10_000)
         if expected_text:
-            expect(confirm).to_contain_text(expected_text)
-        expect(confirm).to_have_css("opacity", "1")
-        confirm.get_by_role("button", name=button_name, exact=True).click()
-        confirm.wait_for(state="hidden")
+            expect(confirm).to_contain_text(expected_text, timeout=10_000)
+        expect(confirm).to_have_css("opacity", "1", timeout=10_000)
+        confirm.get_by_role("button", name=matcher).first.click(timeout=10_000)
+        confirm.wait_for(state="hidden", timeout=10_000)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -575,10 +639,10 @@ class BasePage:
         """Ko'rinadigan Biruni error alertini tekshiradi va yopadi."""
         error_text = re.compile(r"ошибка|error|URL\s*:|Uri\s*:", re.IGNORECASE)
         alert = self._visible_modal_candidates().filter(has_text=error_text).first
-        expect(alert).to_be_visible()
+        expect(alert).to_be_visible(timeout=10_000)
         for value in expected_text:
             if value:
-                expect(alert).to_contain_text(value)
+                expect(alert).to_contain_text(value, timeout=10_000)
 
         close_button = alert.locator("button.close").filter(visible=True).first
         if close_button.count() == 0:
@@ -586,9 +650,9 @@ class BasePage:
                 "button",
                 name=re.compile(r"закрыть|close|×", re.IGNORECASE),
             ).filter(visible=True).first
-        expect(close_button).to_be_visible()
-        close_button.click()
-        expect(alert).to_be_hidden()
+        expect(close_button).to_be_visible(timeout=10_000)
+        close_button.click(timeout=10_000)
+        expect(alert).to_be_hidden(timeout=10_000)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -616,14 +680,16 @@ class BasePage:
             whitespace'ni avtomatik e'tiborsiz qoldiradi
 
         Grid checkbox'lari `opacity:0`; belgilash `_toggle_checkbox` orqali bajariladi."""
+        self._validate_options(
+            'grid',
+            click=click,
+            return_bool=return_bool,
+            remove_spaces=remove_spaces,
+        )
         if checkbox not in (None, "row", "all"):
             raise ValueError('grid(checkbox=...): "row" yoki "all" bo\'lishi kerak')
         if state not in (None, "empty"):
             raise ValueError('grid(state=...): faqat "empty" qo\'llanadi')
-        if not isinstance(return_bool, bool):
-            raise TypeError("grid(return_bool=...): bool bo'lishi kerak")
-        if not isinstance(remove_spaces, bool):
-            raise TypeError("grid(remove_spaces=...): bool bo'lishi kerak")
         if state is not None and (text is not None or contains or click or checkbox is not None):
             raise ValueError("grid(state=...) qator/click/checkbox amallari bilan birga ishlatilmaydi")
         if return_bool and (contains or click or checkbox is not None):
@@ -639,40 +705,41 @@ class BasePage:
         if text is None and state is None and checkbox is None:
             raise ValueError("grid(): text, state yoki checkbox dan bittasini bering")
 
+        if root is None or root == "b-grid" or root is self.page:
+            grid = self.page.locator("b-grid").filter(visible=True).first
+        else:
+            grid = self._resolve_root(root)
+
         if state == "empty":
-            grid = self._resolve_root(root).filter(visible=True).first
             no_data = grid.get_by_text("нет данных", exact=True)
             if return_bool:
                 return no_data.is_visible()
-            expect(no_data).to_be_visible()
+            expect(no_data).to_be_visible(timeout=10_000)
             return grid
 
         if checkbox == "all":
-            grid = self._resolve_root(root).filter(visible=True).first
             cb = grid.locator("input[bcheckall]").first
             if cb.count() == 0:
                 cb = grid.locator("input[type='checkbox']").first
-            expect(cb).to_be_attached()
+            expect(cb).to_be_attached(timeout=10_000)
             self._toggle_checkbox(cb, True)
             return cb
 
         row_text = _whitespace_agnostic_pattern(text) if remove_spaces else text
 
         if return_bool:
-            grid = self._resolve_root(root).filter(visible=True).first
             row = grid.locator(".tbl-row").filter(has_text=row_text).first
             return row.is_visible()
 
-        grid = self._resolve_root(root)
         row = grid.locator(".tbl-row").filter(has_text=row_text).first
-        expect(row).to_be_visible()
+        expect(row).to_be_visible(timeout=10_000)
         for value in contains:
             expected = _whitespace_agnostic_pattern(value) if remove_spaces else value
-            expect(row).to_contain_text(expected)
+            expect(row).to_contain_text(expected, timeout=10_000)
         if checkbox == "row":
             self._toggle_checkbox(row.locator("input[type='checkbox']").first, True)
         if click:
-            row.click()
+            row.click(timeout=10_000)
         return row
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -684,19 +751,19 @@ class BasePage:
         matnni qaytaradi. ``remove_spaces=True`` bo'lsa oddiy va NBSP
         whitespace'lar assert hamda return qiymatida e'tiborsiz qoldiriladi.
         """
-        if not isinstance(index, int) or index < 0:
-            raise ValueError("grid_cell(index=...): manfiy bo'lmagan int berilishi kerak")
-        if not isinstance(return_value, bool):
-            raise TypeError("grid_cell(return_value=...): bool bo'lishi kerak")
-        if not isinstance(remove_spaces, bool):
-            raise TypeError("grid_cell(remove_spaces=...): bool bo'lishi kerak")
+        self._validate_options(
+            'grid_cell',
+            index=index,
+            return_value=return_value,
+            remove_spaces=remove_spaces,
+        )
 
         cell = row.locator(".tbl-cell").nth(index)
-        expect(cell).to_be_visible()
+        expect(cell).to_be_visible(timeout=10_000)
 
         if expect_value is not _UNSET:
             expected = _whitespace_agnostic_pattern(expect_value) if remove_spaces else str(expect_value)
-            expect(cell).to_contain_text(expected)
+            expect(cell).to_contain_text(expected, timeout=10_000)
 
         if return_value:
             value = cell.inner_text().strip()
@@ -723,35 +790,44 @@ class BasePage:
           - open_filter=True: filtr oynasini ochadi (fa-filter)
           - open_setting=True: setting/ustunlar menyusini ochadi (fa-bars)
         """
-        gc = self.page.locator(root).filter(visible=True).first
+        self._validate_options(
+            'grid_controller',
+            reload=reload,
+            open_filter=open_filter,
+            open_setting=open_setting,
+        )
+        gc = self._resolve_root("b-grid-controller" if root is None else root)
+        if isinstance(root, str) or root is None:
+            gc = gc.filter(visible=True).first
 
         if search is not None:
             field = gc.locator('input[ng-model="o.searchValue"]').first
-            expect(field).to_be_visible()
-            field.fill(search)
-            field.press("Enter")
-            self.wait_for_loader()
+            expect(field).to_be_visible(timeout=30_000)
+            field.fill(str(search), timeout=30_000)
+            field.press("Enter", timeout=30_000)
+            self.wait_for_loader(timeout=30_000)
             return
         if expand is not None:
+            expand = str(expand)
             if expand not in {"50", "100", "500", "1000"}:
                 raise ValueError('grid_controller(expand=...): "50", "100", "500" yoki "1000" bo\'lishi kerak')
             button = gc.locator("button:has(i.fa-arrow-down)").first
-            expect(button).to_be_visible()
-            button.click()
+            expect(button).to_be_visible(timeout=30_000)
+            button.click(timeout=30_000)
             option = gc.get_by_role("link", name=expand, exact=True).first
-            expect(option).to_be_visible()
-            option.click()
-            self.wait_for_loader()
+            expect(option).to_be_visible(timeout=30_000)
+            option.click(timeout=30_000)
+            self.wait_for_loader(timeout=30_000)
             return
         if reload:
-            gc.locator('button[ng-click="reload()"]').first.click()
-            self.wait_for_loader()
+            gc.locator('button[ng-click="reload()"]').first.click(timeout=30_000)
+            self.wait_for_loader(timeout=30_000)
             return
         if open_filter:
-            gc.locator('button[ng-click="openFilter()"]').first.click()
+            gc.locator('button[ng-click="openFilter()"]').first.click(timeout=30_000)
             return
         if open_setting:
-            gc.locator("button.dropdown-toggle:has(span.fa-bars)").first.click()
+            gc.locator("button.dropdown-toggle:has(span.fa-bars)").first.click(timeout=30_000)
             return
 
         raise ValueError(
@@ -767,6 +843,10 @@ class BasePage:
         indeksini qaytaradi. Ustun/search oldindan yoqilgan bo'lsa qayta
         o'zgartirilmaydi.
         """
+        self._validate_options(
+            'grid_setting',
+            timeout=timeout,
+        )
         for argument_name, value in (("menu_name", menu_name), ("field_name", field_name)):
             if not isinstance(value, str) or not value.strip():
                 raise ValueError(f"grid_setting(): {argument_name} bo'sh bo'lmagan string bo'lishi kerak")
@@ -779,7 +859,7 @@ class BasePage:
         additional_heading = self.page.get_by_role("heading", name="Дополнительные поля", exact=True).first
         expect(menu.or_(additional_heading).first).to_be_visible(timeout=timeout)
         if menu.is_visible():
-            menu.click()
+            menu.click(timeout=timeout)
         expect(additional_heading).to_be_visible(timeout=timeout)
         selected_fields = additional_heading.locator(
             "xpath=preceding-sibling::div[1]//ul[contains(@class, 'gs-main-list')]"
@@ -791,7 +871,7 @@ class BasePage:
         if selected_field.count() == 0:
             field = additional_fields.get_by_text(field_name, exact=True).first
             expect(field).to_be_visible(timeout=timeout)
-            field.click()
+            field.click(timeout=timeout)
         expect(selected_fields.get_by_text(field_name, exact=True)).to_be_visible(timeout=timeout)
 
         if search_name is not None:
@@ -804,7 +884,7 @@ class BasePage:
             )
             self.checkbox(label=search_name, checked=True, root=search_card)
 
-        self.page.get_by_role("button", name="Сохранить", exact=True).click()
+        self.page.get_by_role("button", name="Сохранить", exact=True).click(timeout=timeout)
         self.page.wait_for_url(list_url, timeout=timeout)
         self.wait_for_loader(timeout=timeout)
 
@@ -823,11 +903,17 @@ class BasePage:
 
         ``values`` berilmasa, faqat root locator UI'da ko'rinishini tekshiradi.
         """
-        content = self.page.locator(root) if isinstance(root, str) else root
+        self._validate_options(
+            'text',
+            timeout=timeout,
+        )
+        content = self._resolve_root("b-page" if root is None else root)
+        if content is self.page:
+            content = self.page.locator("body")
         expect(content).to_be_visible(timeout=timeout)
         for value in values:
             if value:
-                expect(content).to_contain_text(value)
+                expect(content).to_contain_text(value, timeout=timeout)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -850,40 +936,23 @@ class BasePage:
         ``remove_spaces=True`` assert va return qiymatida barcha whitespace'ni
         olib tashlaydi (masalan UI'dagi ``7 000`` ni ``7000`` sifatida tekshiradi).
         """
+        self._validate_options(
+            'form_view',
+            return_value=return_value,
+            remove_spaces=remove_spaces,
+            index=index,
+            timeout=timeout,
+        )
         root = self._resolve_root(root)
-        labels = root.locator("label").filter(has_text=self._label_pattern(label))
-
-        matches = []
-        for label_index in range(labels.count()):
-            label_item = labels.nth(label_index)
-            try:
-                expect(label_item).to_be_visible(timeout=1_000)
-            except (AssertionError, PlaywrightTimeoutError):
-                continue
-
-            value = label_item.locator(
-                "xpath=following-sibling::*[contains(concat(' ', normalize-space(@class), ' '), ' form-view ')][1]"
-            )
-            if value.count() > 0:
-                matches.append(value.first)
-
-        if index >= len(matches):
-            translated_labels = root.locator("t").filter(has_text=self._label_pattern(label))
-            for label_index in range(translated_labels.count()):
-                label_item = translated_labels.nth(label_index)
-                try:
-                    expect(label_item).to_be_visible(timeout=1_000)
-                except (AssertionError, PlaywrightTimeoutError):
-                    continue
-
-                value = label_item.locator("xpath=../../span").first
-                if value.count() > 0:
-                    matches.append(value)
-
-        if index >= len(matches):
-            raise AssertionError(f"Form view field not found by label: {label} (index={index})")
-
-        value = matches[index]
+        pattern = self._label_pattern(label)
+        labels = root.locator("label").filter(has_text=pattern)
+        translated_labels = root.locator("t").filter(has_text=pattern)
+        # Locatorlar lazy: label/value kech render bo'lsa ham expect retry qiladi.
+        labelled_values = labels.locator(
+            "xpath=following-sibling::*[contains(concat(' ', normalize-space(@class), ' '), ' form-view ')][1]"
+        )
+        translated_values = translated_labels.locator("xpath=(../../span)[1]")
+        value = labelled_values.or_(translated_values).filter(visible=True).nth(index)
         expect(value).to_be_visible(timeout=timeout)
         if expect_value is not _UNSET:
             if remove_spaces:
@@ -921,20 +990,24 @@ class BasePage:
         avvaldan mavjudligi tekshiriladi va kalendar ochilmaydi. Aks holda sana
         typing bilan emas, datepickerning o'zidagi kun tugmasi bilan tanlanadi.
         """
-        if not isinstance(auto_fill, bool):
-            raise TypeError("date_picker(): auto_fill bool bo'lishi kerak")
+        self._validate_options(
+            'date_picker',
+            auto_fill=auto_fill,
+            index=index,
+            timeout=timeout,
+        )
 
         target_date = resolve_date(date)
         target_value = target_date.strftime("%d.%m.%Y")
         root = self._resolve_root(root)
-        input_el = self._field_locator_by_label(label, index=index, root=root, target="input")
+        input_el = self._field_locator_by_label(label, index=index, root=root, target="input", timeout=timeout)
         expect(input_el).to_be_visible(timeout=timeout)
 
         if auto_fill:
             expect(input_el).to_have_value(target_value, timeout=timeout)
             return input_el
 
-        input_el.click()
+        input_el.click(timeout=timeout)
 
         picker = self.page.locator(".bootstrap-datetimepicker-widget:visible").last
         expect(picker).to_be_visible(timeout=timeout)
@@ -944,7 +1017,7 @@ class BasePage:
             if day.count() > 0:
                 if "disabled" in (day.get_attribute("class") or ""):
                     raise AssertionError(f"date_picker(): '{target_value}' sanasi tanlash uchun yopiq")
-                day.click()
+                day.click(timeout=timeout)
                 expect(input_el).to_have_value(target_value, timeout=timeout)
                 return input_el
 
@@ -960,7 +1033,7 @@ class BasePage:
             navigation = picker.locator(f'th.{direction}').first
             if "disabled" in (navigation.get_attribute("class") or ""):
                 raise AssertionError(f"date_picker(): '{target_value}' sanasiga o'tib bo'lmaydi")
-            navigation.click()
+            navigation.click(timeout=timeout)
 
         raise AssertionError(f"date_picker(): '{target_value}' sanasi 20 yil oralig'ida topilmadi")
 
@@ -1003,6 +1076,15 @@ class BasePage:
 
         close=True: oxirida Escape bilan dropdown yopiladi (keyingi b-input uchun zarur).
         """
+        self._validate_options(
+            'multiselect',
+            return_value=return_value,
+            clear=clear,
+            index=index,
+            close=close,
+            exact=exact,
+            timeout=timeout,
+        )
         root = self._resolve_root(root)
         if label is not None and name is not None:
             raise ValueError("multiselect(): label yoki name dan faqat bittasini bering")
@@ -1010,13 +1092,13 @@ class BasePage:
             # `_field_locator_by_label(target="b-input")` ko'rinmas labellarni o'tkazib
             # yuboradi (masalan "Рабочие зоны" yashirin span'i), shuning uchun to'g'ri
             # b-input ga tushadi; qaytadigan locator b-input elementining o'zi.
-            b_input = self._field_locator_by_label(label, index=index, root=root, target="b-input")
+            b_input = self._field_locator_by_label(label, index=index, root=root, target="b-input", timeout=timeout)
         elif name is not None:
             b_input = root.locator(f'b-input[name="{name}"]').nth(index)
         else:
             raise ValueError("multiselect(): label yoki name berilishi kerak")
 
-        expect(b_input).to_be_visible()
+        expect(b_input).to_be_visible(timeout=timeout)
         search = b_input.locator('input[placeholder="Поиск..."]').first
         multiple = b_input.locator(".multiple").first
         chips = multiple.locator("a.btn")
@@ -1034,15 +1116,15 @@ class BasePage:
         if clear:
             clear_button = b_input.locator(".edit").first
             if clear_button.count() > 0 and clear_button.is_visible():
-                clear_button.click()
-            expect(chips).to_have_count(0)
+                clear_button.click(timeout=timeout)
+            expect(chips).to_have_count(0, timeout=timeout)
 
         selected_values = values_list(value)
         for option_text in selected_values:
-            search.click()
+            search.click(timeout=timeout)
             option = b_input.locator(".hint:visible").get_by_text(option_text, exact=exact).first
             expect(option).to_be_visible(timeout=timeout)
-            option.click()
+            option.click(timeout=timeout)
 
         expected_values = (
             selected_values
@@ -1054,9 +1136,9 @@ class BasePage:
             expect(selected).to_be_visible(timeout=timeout)
 
         if close and value is not _UNSET:
-            search.press("Escape")
+            search.press("Escape", timeout=timeout)
         if return_value:
-            return [text.strip() for text in chips.all_inner_texts() if text.strip()]
+            return [" ".join(text.split()) for text in chips.all_inner_texts() if text.strip()]
         return b_input
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -1085,7 +1167,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def _field_container_by_label(self, label, needs_search=False, index=0, root=None, target=None):
+    def _field_container_by_label(self, label, needs_search=False, index=0, root=None, target=None, timeout=10_000):
         root = self._resolve_root(root)
         target = target or ("b-input" if needs_search else "input")
         label_locator = root.locator(
@@ -1107,7 +1189,7 @@ class BasePage:
         for label_index in range(label_locator.count()):
             label_item = label_locator.nth(label_index)
             try:
-                expect(label_item).to_be_visible(timeout=1_000)
+                expect(label_item).to_be_visible(timeout=min(timeout, 1_000))
             except (AssertionError, PlaywrightTimeoutError):
                 continue
 
@@ -1127,7 +1209,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def _field_locator_by_grid_header(self, label, *, index=0, root=None, target="input"):
+    def _field_locator_by_grid_header(self, label, *, index=0, root=None, target="input", timeout=10_000):
         """b-pg-grid ichida column header matni bo'yicha shu column inputini topadi.
 
         Smartup editable gridlarida `Кол-во`, `Цена`, `Название` kabi matnlar
@@ -1141,7 +1223,7 @@ class BasePage:
 
         headers = grid.locator(".tbl-header-cell")
         try:
-            expect(headers.first).to_be_visible(timeout=10_000)
+            expect(headers.first).to_be_visible(timeout=timeout)
         except (AssertionError, PlaywrightTimeoutError) as exc:
             raise AssertionError(f"Grid headers not visible for label: {label}") from exc
 
@@ -1161,7 +1243,7 @@ class BasePage:
             raise AssertionError(f"Grid header not found by label: {label}")
 
         header = matching_headers[index]
-        expect(header).to_be_visible(timeout=1_000)
+        expect(header).to_be_visible(timeout=min(timeout, 1_000))
         header_box = header.bounding_box()
         if header_box is None:
             raise AssertionError(f"Grid header has no bounding box: {label}")
@@ -1178,7 +1260,7 @@ class BasePage:
             candidates = grid.locator("input:visible, textarea:visible, b-input:visible")
 
         try:
-            expect(candidates.first).to_be_visible(timeout=10_000)
+            expect(candidates.first).to_be_visible(timeout=timeout)
         except (AssertionError, PlaywrightTimeoutError) as exc:
             raise AssertionError(
                 f"Grid field candidates not visible for label: {label} (target={target})"
@@ -1200,7 +1282,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def _field_locator_by_label(self, label, *, index=0, root=None, target="input"):
+    def _field_locator_by_label(self, label, *, index=0, root=None, target="input", timeout=10_000):
         root = self._resolve_root(root)
         label_locator = root.locator(
             "label, t, span, .control-label, .col-form-label, .form-label"
@@ -1228,7 +1310,7 @@ class BasePage:
         for label_index in range(label_locator.count()):
             label_item = label_locator.nth(label_index)
             try:
-                expect(label_item).to_be_visible(timeout=1_000)
+                expect(label_item).to_be_visible(timeout=min(timeout, 1_000))
             except (AssertionError, PlaywrightTimeoutError):
                 continue
 
@@ -1248,14 +1330,14 @@ class BasePage:
                 field = label_item.locator(f"xpath={target_xpath}")
 
             if field.count() == 0:
-                container = self._field_container_by_label(label, index=match_index, root=root, target=target)
+                container = self._field_container_by_label(label, index=match_index, root=root, target=target, timeout=timeout)
                 field = self._field_target(container, target)
             if field.count() == 0:
                 continue
 
             if target not in {"switch", "radio"}:
                 try:
-                    expect(field.first).to_be_visible(timeout=500)
+                    expect(field.first).to_be_visible(timeout=min(timeout, 500))
                 except (AssertionError, PlaywrightTimeoutError):
                     continue
 
@@ -1264,7 +1346,7 @@ class BasePage:
             match_index += 1
 
         try:
-            return self._field_locator_by_grid_header(label, index=index, root=root, target=target)
+            return self._field_locator_by_grid_header(label, index=index, root=root, target=target, timeout=timeout)
         except AssertionError:
             pass
 
@@ -1296,39 +1378,55 @@ class BasePage:
         birinchi optionni tanlaydi. Non-empty ``search_text`` berilsa qidiradi
         va qaytgan birinchi optionni tanlaydi. Faqat ``value`` berilganda esa
         shu qiymatga mos option tanlanadi.
+
+        exact option matni va string assertioniga taalluqli; regex o'zicha ishlaydi.
+        clear=True tanlovsiz ham maydonni tozalaydi. Default native input
+        Locator, return_value=True esa uning string qiymatini qaytaradi.
         """
+        self._validate_options(
+            'b_input',
+            return_value=return_value,
+            clear=clear,
+            exact=exact,
+            server_search=server_search,
+            select_first=select_first,
+            delay=delay,
+            index=index,
+            timeout=timeout,
+        )
         root = self._resolve_root(root)
         if label is not None and ng_model is not None:
             raise ValueError("b_input(): label yoki ng_model dan faqat bittasini bering")
         if label is not None:
-            b_input = self._field_locator_by_label(label, index=index, root=root, target="b-input")
+            b_input = self._field_locator_by_label(label, index=index, root=root, target="b-input", timeout=timeout)
         elif ng_model is not None:
             b_input = root.locator(f'b-input:has(input[ng-model="{ng_model}"])').nth(index)
         else:
             raise ValueError("b_input(): label yoki ng_model berilishi kerak")
 
         search = b_input.locator("input[placeholder]").first
-        expect(search).to_be_visible()
+        expect(search).to_be_visible(timeout=timeout)
+
+        if clear:
+            edit = b_input.locator(".edit")
+            if edit.count() > 0 and edit.first.is_visible():
+                edit.first.click(timeout=timeout)
+            search.fill("", timeout=timeout)
+            expect(search).to_have_value("", timeout=timeout)
 
         has_search_query = search_text not in (None, "")
         if value is not _UNSET or has_search_query or select_first:
             option_text = str(value) if value is not _UNSET else None
-            search.click()
+            search.click(timeout=timeout)
 
-            if clear:
-                edit = b_input.locator(".edit")
-                if edit.count() > 0 and edit.first.is_visible():
-                    edit.first.click()
-                search.click()
-
-            query = None if select_first else option_text if search_text is None else search_text
+            query = None if select_first else option_text if search_text is None else str(search_text)
             if query:
                 if server_search:
-                    search.press("ControlOrMeta+A")
-                    search.press("Backspace")
-                    search.press_sequentially(query, delay=delay)
+                    search.press("ControlOrMeta+A", timeout=timeout)
+                    search.press("Backspace", timeout=timeout)
+                    search.press_sequentially(query, delay=delay, timeout=timeout)
                 else:
-                    search.fill(query)
+                    search.fill(query, timeout=timeout)
 
             # b-input natijalari asinxron yuklanadi. ``count()`` bilan darhol
             # fallback qilish dropdown javobi kelishidan oldin noto'g'ri
@@ -1336,17 +1434,44 @@ class BasePage:
             # ko'ringuncha auto-retry qiladi; has_text esa qo'shimcha ustun
             # matnlari (ombor, narx turi va hokazo) bo'lsa ham mos tushadi.
             options = b_input.locator(".hint-item:visible")
-            option = options.first if select_first or has_search_query else options.filter(has_text=option_text).first
+            if select_first or has_search_query:
+                option = options.first
+            else:
+                option_matcher = (
+                    re.compile(rf"^\s*{re.escape(option_text)}\s*$")
+                    if exact else re.compile(re.escape(option_text))
+                )
+                option = options.filter(has_text=option_matcher).or_(
+                    options.filter(has=self.page.get_by_text(option_matcher))
+                )
+                if exact:
+                    # Product nomi metadata bilan bitta elementda turishi mumkin.
+                    # Butun row emas, alohida text node ham exact mos keladi.
+                    parts = option_text.split("'")
+                    text_literal = (
+                        "concat(" + ", \"'\", ".join(f"'{part}'" for part in parts) + ")"
+                        if len(parts) > 1 else f"'{option_text}'"
+                    )
+                    option = option.or_(options.filter(has=self.page.locator(
+                        f"xpath=.//*[text()[normalize-space(.)={text_literal}]]"
+                    )))
+                option = option.first
             expect(option).to_be_visible(timeout=timeout)
-            option.click()
+            option.click(timeout=timeout)
+
+        if clear and value is _UNSET and not has_search_query and not select_first:
+            search.press("Escape", timeout=timeout)
 
         expected = expect_value
         if expected is _UNSET and value is not _UNSET and not select_first and not has_search_query:
             expected = str(value)
         if expected is not _UNSET:
             if isinstance(expected, str):
-                expected = re.compile(re.escape(expected))
-            expect(search).to_have_value(expected)
+                expected = (
+                    re.compile(rf"^\s*{re.escape(expected)}\s*$")
+                    if exact else re.compile(re.escape(expected))
+                )
+            expect(search).to_have_value(expected, timeout=timeout)
 
         if return_value:
             return search.input_value()
@@ -1375,6 +1500,13 @@ class BasePage:
         tanlangan matnni tekshiradi; ``return_value=True`` shu matnni qaytaradi.
         Search yoqilgan ui-selectlar uchun ``search_text`` berish mumkin.
         """
+        self._validate_options(
+            'ui_select',
+            return_value=return_value,
+            exact=exact,
+            index=index,
+            timeout=timeout,
+        )
         root = self._resolve_root(root)
         if label is not None and ng_model is not None:
             raise ValueError("ui_select(): label yoki ng_model dan faqat bittasini bering")
@@ -1384,6 +1516,7 @@ class BasePage:
                 index=index,
                 root=root,
                 target="ui-select",
+                timeout=timeout,
             )
         elif ng_model is not None:
             ui_select = root.locator(
@@ -1399,12 +1532,12 @@ class BasePage:
 
         if value is not _UNSET:
             option_text = str(value)
-            toggle.click()
+            toggle.click(timeout=timeout)
 
             if search_text is not None:
                 search = ui_select.locator(".ui-select-search:visible").first
                 expect(search).to_be_visible(timeout=timeout)
-                search.fill(str(search_text))
+                search.fill(str(search_text), timeout=timeout)
 
             option_matcher = (
                 re.compile(rf"^\s*{re.escape(option_text)}\s*$")
@@ -1415,7 +1548,7 @@ class BasePage:
                 ".ui-select-choices-row-inner:visible"
             ).filter(has_text=option_matcher).first
             expect(option).to_be_visible(timeout=timeout)
-            option.click()
+            option.click(timeout=timeout)
 
         expected = expect_value
         if expected is _UNSET and value is not _UNSET:
@@ -1477,7 +1610,21 @@ class BasePage:
         b-number inputida avtomatik value asserti formatlashdagi whitespace'ni
         hisobga olmaydi; explicit expect_value aynan tekshiriladi.
         """
+        self._validate_options(
+            'input',
+            return_value=return_value,
+            index=index,
+            clear=clear,
+            press_tab=press_tab,
+        )
         root = self._resolve_root(root)
+        sources = sum(
+            source is not None for source in (locator, label, ng_model, placeholder)
+        )
+        if sources != 1:
+            raise ValueError(
+                "input(): locator, label, ng_model yoki placeholder dan aynan bittasini bering"
+            )
 
         if label is not None:
             input_el = self._field_locator_by_label(label, index=index, root=root, target="input")
@@ -1492,16 +1639,16 @@ class BasePage:
         else:
             raise ValueError("input(): label, ng_model, placeholder yoki locator dan bittasini bering")
 
-        expect(input_el).to_be_visible()
+        expect(input_el).to_be_visible(timeout=10_000)
 
         if value is not _UNSET:
-            input_el.click()
+            input_el.click(timeout=10_000)
             if clear:
-                input_el.press("ControlOrMeta+A")
-                input_el.press("Backspace")
-            input_el.fill(str(value))
+                input_el.press("ControlOrMeta+A", timeout=10_000)
+                input_el.press("Backspace", timeout=10_000)
+            input_el.fill(str(value), timeout=10_000)
             if press_tab:
-                input_el.press("Tab")
+                input_el.press("Tab", timeout=10_000)
 
         expected = expect_value
         if expected is _UNSET and value is not _UNSET:
@@ -1509,7 +1656,7 @@ class BasePage:
             if input_el.get_attribute("b-number") is not None:
                 expected = _whitespace_agnostic_pattern(expected, exact=True)
         if expected is not _UNSET:
-            expect(input_el).to_have_value(expected)
+            expect(input_el).to_have_value(expected, timeout=10_000)
 
         if return_value:
             return input_el.input_value()

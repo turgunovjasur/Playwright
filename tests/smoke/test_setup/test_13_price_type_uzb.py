@@ -2,6 +2,7 @@ import allure
 
 from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.flows.flow_modal import fill_nps_survey
+from utils.data_store import save_data
 from utils.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
@@ -9,7 +10,7 @@ pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Price
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def run_price_type_uzb(page, code, logger, save_data):
+def run_price_type_uzb(page, code, logger):
     """Testcase: UZB narx turini yaratib, ish zonasiga biriktirish.
 
     1. Optional NPS Survey modalini qayta ishlash.
@@ -61,6 +62,6 @@ def run_price_type_uzb(page, code, logger, save_data):
 # ----------------------------------------------------------------------------------------------------------------------
 
 @allure.title("Narx turi (UZB) yaratish")
-def test_price_type_uzb(page, code, logger, save_data):
+def test_price_type_uzb(page, code, logger):
     authorization(page, who="user", code=code)
-    run_price_type_uzb(page, code, logger, save_data)
+    run_price_type_uzb(page, code, logger)

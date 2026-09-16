@@ -61,10 +61,6 @@ def parse_args():
     return parser.parse_args()
 
 
-def env_flag(name):
-    return str(os.getenv(name, "0") or "0").strip() == "1"
-
-
 def _read_json(path):
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -1591,17 +1587,13 @@ def main():
     )
     print(f"System summary yozildi: {args.system_output_md}")
 
-    if not env_flag("AI_ANALYSIS"):
-        print("AI tahlili o'chirilgan: AI_ANALYSIS=0")
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    if not api_key:
+        print("AI tahlili o'chirilgan: GEMINI_API_KEY berilmagan")
         return 0
 
     if deterministic.get("result") != "FAILED":
         print("AI tahlili skipped: natija FAILED emas")
-        return 0
-
-    api_key = os.getenv("GEMINI_API_KEY", "").strip()
-    if not api_key:
-        print("AI summary skipped: GEMINI_API_KEY set qilinmagan", file=sys.stderr)
         return 0
 
     prompt = build_prompt(command, deterministic, logs)

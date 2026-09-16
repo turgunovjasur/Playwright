@@ -6,12 +6,9 @@ from urllib.parse import urlparse
 import allure
 import pytest
 
-from tests.smoke.flows.flow_authorization import company_url
-
-
 def license_policy_disabled():
     """Companyda litsenziya siyosati o'chirilganini qaytaradi."""
-    create_company = os.getenv("CREATE_COMPANY", "").strip().lower() in {"1", "true", "yes", "on"}
+    create_company = os.getenv("COMPANY_CODE", "").strip() == "1"
     disable_policy = os.getenv("DISABLE_LICENSE_POLICY", "").strip().lower() in {"1", "true", "yes", "on"}
     return create_company and disable_policy
 
@@ -28,7 +25,8 @@ def attach_license_policy_skip_note(logger, step_name):
 
 def license_purchase_server_unsupported():
     """License purchase ishlamaydigan smartup.online serverini aniqlaydi."""
-    hostname = (urlparse(company_url()).hostname or "").lower()
+    company_url = os.environ["COMPANY_URL"]
+    hostname = (urlparse(company_url).hostname or "").lower()
     return hostname == "smartup.online" or hostname.endswith(".smartup.online")
 
 

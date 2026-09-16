@@ -14,8 +14,9 @@ class AutoBasePage:
     """Har bir public metod chaqiruvida joriy sahifaga mos helperni tanlaydi.
 
     URL path'ida ``/a2/`` bo'lsa AngularBasePage, aks holda BasePage ishlaydi.
-    Locator, parametr va return qiymatlar tanlangan helperga tegishli;
-    UI farqlari avtomatik almashtirilmaydi va xatoda boshqa helper sinalmaydi.
+    Public metodlarning parametrlari va return kontrakti ikkala helperda bir xil.
+    Locator va UI amallari tanlangan helperda bajariladi; xatoda boshqa helper
+    sinalmaydi. Explicit CSS selector va model nomlari avtomatik tarjima qilinmaydi.
 
     Forma ochadigan amaldan keyin ``expect_page(url=..., heading=...)``
     chaqirilsin: u destination URLni kutib, keyin helperni tanlaydi.
@@ -59,6 +60,9 @@ class AutoBasePage:
         root=None,
     ):
         """Kutilgan URLga o'tishni kutib, destination helper bilan tekshiradi."""
+        self._legacy._validate_options(
+            "expect_page", timeout=timeout, check_unblocked=check_unblocked
+        )
         if heading is None and url is None:
             raise ValueError("expect_page: kamida 'heading' yoki 'url' berilishi kerak")
 

@@ -1,5 +1,6 @@
 import allure
 from tests.smoke.flows.flow_authorization import authorization
+from utils.data_store import save_data
 from utils.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
@@ -7,7 +8,7 @@ pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Room"
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def run_room(page, code, save_data):
+def run_room(page, code):
     """Testcase: yangi ish zonasi (room) yaratish.
 
     1. filial-pw{code} ga o'tib, Справочники -> Рабочие зоны ro'yxatini ochish.
@@ -52,6 +53,6 @@ def run_room(page, code, save_data):
 # ----------------------------------------------------------------------------------------------------------------------
 
 @allure.title("Ish zonasi yaratish")
-def test_room(page, code, save_data):
+def test_room(page, code):
     authorization(page, who="admin")
-    run_room(page, code, save_data)
+    run_room(page, code)

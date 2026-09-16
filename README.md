@@ -117,7 +117,20 @@ python -m playwright install chromium
 
 ### <a id="test-credentiallari"></a>6. Test credentiallarini tayyorlash
 
-`.env` ishlatilmaydi. Har bir run uchun server URL kerak: `--url <server_url>`.
+Lokal `.env` bo'lsa, sozlamalar undan olinadi. Aks holda CLI yoki environment
+qiymatlari ishlatiladi. Server URL har doim kerak: `COMPANY_URL` yoki `--url <server_url>`.
+`URL` environment nomi ham alias sifatida qabul qilinadi; `COMPANY_URL` ustun.
+
+User yaratish, uning parolini tasdiqlash va web/mobile user loginlari bitta
+`USER_PASSWORD` qiymatidan foydalanadi. Uni lokal `.env` yoki shell environmentda
+bering. `check_requiremants()` barcha runlar boshida, jumladan Forms/Report
+uchun ham, bu parolni va ish rejimiga mos credentiallarni tekshiradi.
+Mavjud setup userini ishlatganda uning haqiqiy parolini bering.
+
+Tekshiruv qiymatlarni o'zgartirmaydi; xatolarni birga ko'rsatadi. Server URL
+bo'sh joysiz va oxirida `/`siz yoziladi. Ixtiyoriy boolean flaglar faqat
+`1` yoki `0` qabul qiladi; berilmasa o'chirilgan hisoblanadi. Testlar tekshirilgan
+credentiallarni `os.environ`dan bevosita oladi.
 
 Mavjud company bilan ishlaganda:
 
@@ -130,7 +143,7 @@ Bu login pagega `admin@<company_code>` va `<company_password>` bilan kiradi.
 Yangi company yaratganda:
 
 ```bash
---create-company --head-email <head_email> --head-password <head_password>
+--company-code 1 --head-email <head_email> --head-password <head_password>
 ```
 
 Bu avval head profilga kiradi, keyin company code ni `autotest<test_code>` ko'rinishida test ichida yaratadi. Yangi company admin paroli test ichidagi default qiymat.
@@ -168,22 +181,30 @@ sifatida ko'rsatadi, avvalgi natijani esa retry ichida saqlaydi.
 Yangi company yaratish kerak bo'lsa shu command ishlatiladi:
 
 ```bash
-python scripts/run_tests.py --url <server_url> --create-company --head-email <head_email> --head-password <head_password> --open-report
+python scripts/run_tests.py --url <server_url> --company-code 1 --head-email <head_email> --head-password <head_password> --open-report
 ```
 
 Test tugagach tizim xulosasi har doim yoziladi: `test-results/system-summary.md` va
 `test-results/system-summary.json`. Bu AI emas; Allure JSON va tracebackdan
 failed test, ichki Allure step, kod joyi va error turini chiqaradi.
+Runner va direct pytest analizatorga run boshlanish vaqtini uzatadi; summary
+natijalarni shu vaqt bo'yicha filtrlaydi. Allure report uchun oldingi raw
+natijalarni saqlash tartibi davom etadi.
+
+Testning yakuniy progress holati cleanup tugagach chiqariladi: istalgan faza
+yiqilsa `FAILED`, xato bo'lmay skip bo'lsa `SKIPPED`, qolgan holatda `PASSED`.
+Trace saqlashdagi xato contextni yopishni to'xtatmaydi. Qo'shimcha diagnostika
+yoki log yozilmasa, `[REPORTING]` xabari chiqadi va asl test natijasi saqlanadi.
 
 AI xulosa kerak bo'lsa Gemini API keyni environment variable qilib bering. Key repo yoki commandga yozilmaydi:
 
 ```bash
 export GEMINI_API_KEY="<gemini_api_key>"
-export AI_ANALYSIS=1
 python scripts/run_tests.py --url <server_url> --company-code <company_code> --company-password <company_password> --open-report
 ```
 
-AI default holatda off. `AI_ANALYSIS=1` bo'lsa failed run uchun qo'shimcha
+`GEMINI_API_KEY` berilsa failed run uchun AI tahlil yoqiladi, bo'sh bo'lsa
+o'chiriladi. AI tahlil yoqilganida qo'shimcha
 `test-results/ai-summary.md` va `test-results/ai-summary.json` yoziladi.
 Deterministic System Summary har doim tashqi Markdown/JSON artefakt bo'lib
 qoladi va Allure test totaliga alohida pseudo-test qo'shmaydi. Optional AI
@@ -228,9 +249,8 @@ ishlatiladi.
 | Buyruq/flag | Nima qiladi |
 |-------------|-------------|
 | `--url <server_url>` | Test ishlaydigan Smartup server URL. Har doim kerak. |
-| `--company-code <code>` | Mavjud company code. Test loginni `admin@<code>` qilib yasaydi. |
+| `--company-code <code>` | `1` — yangi kompaniya yaratadi; boshqa kod — mavjud kompaniya. |
 | `--company-password <password>` | Mavjud company admin paroli. |
-| `--create-company` | Test boshida yangi company yaratadi. |
 | `--head-email <email>` | Yangi company yaratish uchun head profil login emaili. |
 | `--head-password <password>` | Yangi company yaratish uchun head profil paroli. |
 | `--disable-license-policy` | Yangi companyda license policy ni off qiladi. |
@@ -238,7 +258,7 @@ ishlatiladi.
 | `--new-report` / `--clean-results` / `CLEAN_ALLURE_RESULTS=1` | Oldingi raw natijalarni o'chirib, yangi toza Allure report zanjirini boshlaydi. `--clean-results` eski alias; default lokal run oldingi natijalarni saqlaydi. |
 | `--headless` | Browserni ko'rsatmasdan ishlatadi. |
 | `--show-trace` / `SHOW_TRACE=1` | Testdan keyin oxirgi Playwright trace viewerini ochadi. `SHOW_TRACE=1` shell env yoki repo `.env` ichida berilishi mumkin. |
-| `AI_ANALYSIS=1` | Failed run uchun Gemini orqali qo'shimcha AI xulosa yozadi. Default: off. |
+| `GEMINI_API_KEY` | Key berilsa failed run uchun Gemini AI xulosa yozadi; bo'sh bo'lsa o'chiriladi. |
 | `--dry-run` | Testni ishga tushirmaydi, faqat pytest commandni ko'rsatadi. |
 | `all` | Default target. Setup + Group-0 + Visit + Report + Forms runner ishlaydi. |
 | `setup` | Faqat setup runner ishlaydi. |
@@ -270,7 +290,7 @@ runnerlarini ishlatadi.
 #### Yangi company yaratib full smoke
 
 ```bash
-python scripts/run_tests.py --url <server_url> --create-company --head-email <head_email> --head-password <head_password>
+python scripts/run_tests.py --url <server_url> --company-code 1 --head-email <head_email> --head-password <head_password>
 ```
 
 Nima qiladi: head profilga kiradi, `autotest<test_code>` code bilan yangi company yaratadi, admin loginni `admin@autotest<test_code>` qilib ishlatadi, keyin full smoke testlarni shu companyda davom ettiradi.
@@ -278,7 +298,7 @@ Nima qiladi: head profilga kiradi, `autotest<test_code>` code bilan yangi compan
 #### Faqat yangi company yaratish
 
 ```bash
-python scripts/run_tests.py company --url <server_url> --create-company --head-email <head_email> --head-password <head_password>
+python scripts/run_tests.py company --url <server_url> --company-code 1 --head-email <head_email> --head-password <head_password>
 ```
 
 Nima qiladi: faqat `00 - Company` testini ishlatadi va company code ni `test-results/data/data_store.json` ga saqlaydi.
@@ -348,11 +368,10 @@ Nima qiladi: test tugagandan keyin Allure reportni generate qilib ochadi.
 
 ```bash
 export GEMINI_API_KEY="<gemini_api_key>"
-export AI_ANALYSIS=1
 python scripts/run_tests.py --url <server_url> --company-code <company_code> --company-password <company_password> --open-report
 ```
 
-Nima qiladi: tizim xulosasi har doim yoziladi. `AI_ANALYSIS=1` bo'lsa failed
+Nima qiladi: tizim xulosasi har doim yoziladi. `GEMINI_API_KEY` berilsa failed
 run uchun Gemini qo'shimcha qisqa AI xulosa yozadi va
 `test-results/ai-summary.md/json` saqlanadi. AI pass/fail, failed step yoki kod
 joyini hal qilmaydi; bu faktlarni tizim o'zi chiqaradi.
@@ -376,7 +395,7 @@ Nima qiladi: testdan keyin oxirgi Playwright trace viewerini ochadi.
 #### Commandni faqat ko'rish
 
 ```bash
-python scripts/run_tests.py --url <server_url> --create-company --head-email <head_email> --head-password <head_password> --dry-run
+python scripts/run_tests.py --url <server_url> --company-code 1 --head-email <head_email> --head-password <head_password> --dry-run
 ```
 
 Nima qiladi: pytest commandni chiqaradi, lekin testlarni ishga tushirmaydi.
@@ -384,7 +403,7 @@ Nima qiladi: pytest commandni chiqaradi, lekin testlarni ishga tushirmaydi.
 #### Yangi company yaratib license policy ni o'chirish
 
 ```bash
-python scripts/run_tests.py --url <server_url> --create-company --head-email <head_email> --head-password <head_password> --disable-license-policy
+python scripts/run_tests.py --url <server_url> --company-code 1 --head-email <head_email> --head-password <head_password> --disable-license-policy
 ```
 
 Nima qiladi: yangi company yaratadi, company Security tabida `Политика лицензирования` ni off qiladi, license sotib olish va ulash qadamlari skip bo'ladi.
@@ -411,20 +430,22 @@ Default target `all`, ya'ni full suite.
 | `setup-report` | `python scripts/run_tests.py setup-report --url <url> --company-code <code> --company-password <pass>` | User setup + Report group; lokal target |
 | `setup-a2-admin` | `python scripts/run_tests.py setup-a2-admin --url <url> --company-code <code> --company-password <pass>` | User setup + standalone A2Angular; lokal compatibility target |
 | `setup-forms` | `python scripts/run_tests.py setup-forms --url <url> --company-code <code> --company-password <pass>` | User setup + barcha form-opening testlar; lokal compatibility target |
-| `company` | `python scripts/run_tests.py company --url <url> --create-company --head-email <email> --head-password <pass>` | Faqat company yaratish testi |
+| `company` | `python scripts/run_tests.py company --url <url> --company-code 1 --head-email <email> --head-password <pass>` | Faqat company yaratish testi |
 | `groups` | `python scripts/run_tests.py groups --url <url> --company-code <code> --company-password <pass>` | Setupdan tashqari Group-0 + Visit + Report |
 | `group-0` | `python scripts/run_tests.py group-0 --url <url> --company-code <code> --company-password <pass>` | Faqat Group-0 |
 | `group-visit` | `python scripts/run_tests.py group-visit --url <url> --company-code <code> --company-password <pass>` | Faqat Visit group |
 | `group-report` | `python scripts/run_tests.py group-report --url <url> --company-code <code> --company-password <pass>` | Faqat Report group |
 | `forms` | `python scripts/run_tests.py forms --url <url> --company-code <code> --company-password <pass>` | Faqat Forms runner |
 
-`--create-company` `all`, `setup`, `setup-smoke`, `setup-group-0`, `setup-visit`, `setup-forms` va `company`
+`--company-code 1` `all`, `setup`, `setup-smoke`, `setup-group-0`, `setup-visit`, `setup-forms` va `company`
 targetlari bilan ishlatiladi. `groups`, `forms` va alohida group targetlari
 uchun avval mavjud company va setup data kerak.
 
 CI Smoke uchun `setup-smoke`, mustaqil Report job uchun `group-report`, Forms
-uchun `forms` targetini alohida `CREATE_COMPANY=0` run sifatida ishlatadi;
-serverga mos company code/password GitHub Secrets'dan olinadi. GitHub cron har
+uchun `forms` targetini alohida mavjud kompaniya kodi berilgan run sifatida ishlatadi;
+serverga mos company code/password GitHub Secrets'dan olinadi. User yaratish va
+login uchun repository Secrets'da `USER_PASSWORD` ham sozlangan bo'lishi kerak;
+workflow uni test processiga environment orqali uzatadi. GitHub cron har
 soatda Online Smoke va Report'ni mustaqil boshlaydi; Online Forms Smoke
 tugagach, uning natijasidan qat'i nazar ishlaydi. Telegram bot manual menyusi
 Smoke va Forms targetlarini taklif qiladi; Reportni GitHub Actions UI'dan
@@ -432,11 +453,15 @@ alohida manual dispatch qilish mumkin.
 
 Code tanlovi `.env` dagi yagona `NEW_CODE` flagi bilan boshqariladi: `NEW_CODE=1` yangi 6 xonali code yaratadi, `NEW_CODE=0` esa `test-results/data/data_store.json` dagi mavjud code ni ishlatadi.
 
-Company tanlovi alohida boshqariladi: existing rejimda `COMPANY_CODE=0`
-berilsa `test-results/data/data_store.json` dagi oxirgi saqlangan
-`company_code` ishlatiladi. Bu alohida tugagan `CREATE_COMPANY=1` setup
-sessiyasidan keyin group runnerlarni o'sha company va `NEW_CODE=0` bilan
-davom ettirish uchun ishlatiladi.
+Company tanlovi faqat `COMPANY_CODE` bilan boshqariladi:
+
+- `1` — kompaniya yaratish testi ishlaydi; yaratilgan `company_code` JSONga
+  saqlanadi va qolgan testlarda ishlatiladi.
+- Mavjud kompaniya kodi — yaratish testi tashlab ketiladi va qolgan testlar
+  shu kompaniyada ishlaydi.
+
+`0` orqali eski kompaniyani JSONdan tanlash rejimi yo'q. Alohida group run
+uchun yaratilgan kompaniyaning haqiqiy kodini va `NEW_CODE=0` bering.
 
 ### <a id="pytest-orqali-debug"></a>Pytest Orqali Debug
 
@@ -457,13 +482,13 @@ Yangi company bilan:
   tests/smoke/test_setup/test_0_setup_runner.py \
   tests/smoke/test_groups/test_a_grup/test_0_group_runner.py \
   tests/smoke/test_groups/test_report_grup/test_0_group_runner.py \
-  --new-code --url <server_url> --create-company --head-email <head_email> --head-password <head_password> -v
+  --new-code --url <server_url> --company-code 1 --head-email <head_email> --head-password <head_password> -v
 ```
 
 ---
 
 > **Muhim:** User setup testlari bir-biriga bog'liq — har biri oldingi test yaratgan ma'lumotdan foydalanadi.
-> Full smoke setup runner, keyin Group-0 va Report runner fayllarini shu tartibda bitta pytest sessiyasida collect qiladi. Oddiy `pytest` yoki directory collection duplicate flowlarni yurgizmasligi uchun runner bo'lmagan smoke testlar deselect qilinadi. Leaf testni debug qilish uchun uning fayl yo'lini pytestga aniq bering.
+> Full smoke uchun `python scripts/run_tests.py all` ishlating: runner Setup → Group-0 → Visit → Report → Forms fayllarini shu tartibda pytestga beradi. Suite uchun `run_tests.py` targetidan, yakka testni debug qilish uchun pytestga aniq fayl yoki `fayl::test_nomi` berishdan foydalaning. Oddiy `pytest` yoki papka runida runner va alohida testlar endi avtomatik ajratilmaydi; ikkalasi ham collect qilinishi mumkin. `COMPANY_CODE != 1` bo'lsa company yaratish testi ro'yxatdan chiqariladi.
 
 ---
 
@@ -481,7 +506,7 @@ Group runnerlar — har bir case alohida pytest/Allure test. User grouplarida gr
 
 | # | Test nomi              | Nima tekshiriladi                                     |
 |---|------------------------|-------------------------------------------------------|
-| 00 | Company               | `--create-company` bilan company yaratish va code saqlash |
+| 00 | Company               | `--company-code 1` bilan company yaratish va code saqlash |
 | 01 | Legal Person          | Admin login, yuridik shaxs yaratish va qidirish       |
 | 02 | Filial                | Organizatsiya yaratish, valyuta va yuridik shaxs bog'lash |
 | 03 | Room                  | Ish zonasi yaratish                                   |
@@ -536,7 +561,7 @@ test-results/
 ├── logs/                    # Muvaffaqiyatsiz testlar uchun log fayllar
 │   └── *.log
 ├── system-summary.md/json   # Har doim yoziladigan tizim xulosasi
-└── ai-summary.md/json       # Faqat failed run + AI_ANALYSIS=1 uchun AI xulosa
+└── ai-summary.md/json       # Faqat failed run + GEMINI_API_KEY berilganda AI xulosa
 ```
 
 Allure 2'dagi `allure-report/history → allure-results/history` papka copy

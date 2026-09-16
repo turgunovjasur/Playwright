@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
+import os
 import time
 from urllib.parse import urlsplit
 
 from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
-
-from tests.smoke.flows.flow_authorization import company_url
-
 
 DEFAULT_URL_TIMEOUT = 15_000
 EXPECTED_URL_NOT_REACHED = "EXPECTED_URL_NOT_REACHED"
@@ -60,7 +58,7 @@ def _wait_for_expected_path(page, expected_path, *, timeout):
 def build_direct_form_url(current_url, expected_path, *, shell):
     """Joriy authenticated shell kontekstidan direct forma URLini quradi."""
     expected = normalize_expected_path(expected_path)
-    base_url = company_url()
+    base_url = os.environ["COMPANY_URL"]
     if str(shell or "").strip().lower() == "a2":
         return f"{base_url}/a2/{expected}"
 

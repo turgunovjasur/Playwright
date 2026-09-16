@@ -3,6 +3,7 @@ import pytest
 from playwright.sync_api import expect
 
 from tests.smoke.flows.flow_authorization import authorization
+from utils.data_store import load_data
 from utils.auto_base_page import AutoBasePage
 
 pytestmark = [
@@ -16,7 +17,7 @@ pytestmark = [
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def run_archive_base_order(page, code, load_data):
+def run_archive_base_order(page, code):
     """Testcase: 0-01 yaratgan aniq orderni archive qilib, qarz detailda tekshirish.
 
     1. Saqlangan order IDni olib, order listini ochish.
@@ -74,6 +75,6 @@ def run_archive_base_order(page, code, load_data):
 
 
 @allure.title("Exact orderni Архивga o'tkazish va debt detailda tekshirish")
-def test_archive_base_order(page, code, load_data):
+def test_archive_base_order(page, code):
     authorization(page, who="user", code=code)
-    run_archive_base_order(page, code, load_data)
+    run_archive_base_order(page, code)

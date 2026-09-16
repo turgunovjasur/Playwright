@@ -18,10 +18,10 @@ pytestmark = [
 
 
 @allure.title("Mobile API orqali minimal vizit yaratish va webdan tekshirish")
-def test_visit_01_mobile_visit(group_session_page, load_data, save_data):
-    run_mobile_visit_check(group_session_page, load_data, save_data)
+def test_visit_01_mobile_visit(group_session_page):
+    run_mobile_visit_check(group_session_page)
 
 
 @allure.title("Mobile API orderli vizitini yaratish va webdan tekshirish")
-def test_visit_02_mobile_visit_with_order(group_session_page, load_data, save_data):
-    run_mobile_order_visit_check(group_session_page, load_data, save_data)
+def test_visit_02_mobile_visit_with_order(group_session_page):
+    run_mobile_order_visit_check(group_session_page)
