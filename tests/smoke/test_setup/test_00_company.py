@@ -1,9 +1,9 @@
 import allure
 
 from tests.smoke.flows.flow_authorization import authorization
-from tests.smoke.flows.flow_license import license_policy_disabled
+from tests.smoke.test_setup.flow_setup.flow_license import license_policy_disabled
 from utils.data_store import save_data
-from utils.auto_base_page import AutoBasePage
+from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Company")]
 

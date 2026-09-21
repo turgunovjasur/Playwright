@@ -1,15 +1,15 @@
 import allure
 from tests.smoke.flows.flow_authorization import authorization
-from tests.smoke.flows.flow_order.flow_order_add import (
+from tests.smoke.test_life_cycle.flow_order.flow_order_add import (
     auto_filled_order_dates,
     flow_order_main_page,
     flow_order_product_page,
     flow_order_final_page,
 )
-from tests.smoke.flows.flow_order.flow_order_list import flow_order_list, flow_order_list_grid_setting
-from tests.smoke.flows.flow_order.flow_order_view import flow_order_view
+from tests.smoke.test_life_cycle.flow_order.flow_order_list import flow_order_list, flow_order_list_grid_setting
+from tests.smoke.test_life_cycle.flow_order.flow_order_view import flow_order_view
 from utils.data_store import save_data
-from utils.auto_base_page import AutoBasePage
+from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Life Cycle"), allure.story("Order")]
 

@@ -6,8 +6,9 @@ from urllib.parse import urlsplit
 
 from playwright.sync_api import expect
 
-from utils.angular_base_page import AngularBasePage
-from utils.base_page import BasePage
+from utils.base_pages.angular_base_page import AngularBasePage
+from utils.base_pages.base_page import BasePage
+from utils.base_pages.page_diagnostics import expectation_gate, report_page_expectation
 
 
 class AutoBasePage:
@@ -51,6 +52,7 @@ class AutoBasePage:
 
         return dispatch
 
+    @report_page_expectation
     def expect_page(
         self,
         heading=None,
@@ -68,6 +70,7 @@ class AutoBasePage:
 
         if url is not None:
             pattern = url if isinstance(url, re.Pattern) else re.compile(re.escape(url))
+            expectation_gate(self.page, "url")
             expect(self.page).to_have_url(pattern, timeout=timeout)
 
         return self._current_base().expect_page(

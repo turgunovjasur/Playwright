@@ -41,7 +41,7 @@ python scripts/run_tests.py --url <server_url> --company-code <company_code> --c
 
 Yangi company yaratish:
 ```bash
-python scripts/run_tests.py --url <server_url> --create-company --head-email <head_email> --head-password <head_password>
+python scripts/run_tests.py --url <server_url> --company-code 1 --head-email <head_email> --head-password <head_password>
 ```
 
 Debug uchun setup yoki group:
@@ -71,7 +71,7 @@ Repo rootda `.env` mavjud bo'lsa direct pytest/PyCharm run konfiguratsiyasi unda
 
 ### Code-dependent group-only run uchun majburiy preflight
 
-- `group-0` va `groups` targetlari setup yaratmaydi; Group-0 testlari oldin
+- `group-0`, `group-visit` va `groups` targetlari setup yaratmaydi; user testlari oldin
   muvaffaqiyatli tugagan setup baseline'dagi `code`ni qayta ishlatadi.
 - Repo rootda `.env` bo'lsa `NEW_CODE` ham CLI'dan ustun. `NEW_CODE=1` bilan
   code-dependent group-only targetni ishlatma: fixture yangi random code yaratadi, lekin shu
@@ -93,14 +93,15 @@ Repo rootda `.env` mavjud bo'lsa direct pytest/PyCharm run konfiguratsiyasi unda
 
 ## Ish tartibi
 
-1. `$ARGUMENTS` bo'sh bo'lsa — to'liq `python scripts/run_tests.py --url <server_url> --company-code <code> --company-password <password>` yoki `--create-company --head-email <email> --head-password <password>` bilan ishga tushir
+1. Faqat user runni aniq so'ragan va torroq target bermagan bo'lsa — to'liq `python scripts/run_tests.py --url <server_url> --company-code <code> --company-password <password>` yoki `--company-code 1 --head-email <email> --head-password <password>` bilan ishga tushir
 2. `$ARGUMENTS` fayl nomi bo'lsa — faqat shu faylni ishga tushir
 3. `$ARGUMENTS` test nomi bo'lsa — faqat shu testni ishga tushir
 4. Natijalarni tahlil qil:
    - **PASSED** testlar sonini ko'rsat
    - **FAILED** testlar bo'lsa — xato xabarini o'qib sababini tushuntir
-   - `--maxfail=3` limit urilsa ogohlantir
-5. Muvaffaqiyatsiz testlar bo'lsa: `test-results/logs/` papkasidagi log fayllarni o'qi va foydalanuvchiga ko'rsat
+   - User musbat `--maxfail` bergan bo'lsa limit urilganini ayt; repo defaulti `--maxfail=0`
+5. Muvaffaqiyatsiz testlar bo'lsa tegishli logni o'qi; userga secret/PII
+   olib tashlangan qisqa dalil va artifact yo'lini ko'rsat.
 
 ## Muhim
 
@@ -109,9 +110,12 @@ Repo rootda `.env` mavjud bo'lsa direct pytest/PyCharm run konfiguratsiyasi unda
 - `.env`dagi `NEW_CODE=1` group-only debug run uchun yaroqsiz; yangi code bilan
   setup ham shu sessiyada ishlashi kerak.
 - Mavjud company bilan run qilish uchun `--company-code` va `--company-password` majburiy.
-- Yangi company yaratish uchun `--create-company`, `--head-email` va `--head-password` majburiy.
-- `--create-company` bilan `--company-code` va `--company-password` berilmaydi; company code test ichida `autotest<code>` ko'rinishida yaratiladi.
-- Company setupda Security tabdagi `Политика лицензирования`ni off qilish kerak bo'lsa `--create-company --head-email <email> --head-password <password> --disable-license-policy` ishlatiladi.
+- Yangi company yaratish uchun `--company-code 1`, `--head-email` va `--head-password` majburiy.
+- Create rejimida `--company-password` berilmaydi; company code test ichida
+  `autotest<code>` ko'rinishida yaratiladi. `COMPANY_CODE=0` yaroqsiz; existing
+  rejimda haqiqiy company kodi beriladi. `USER_PASSWORD` har ikki rejimda
+  environmentda bo'lishi shart.
+- Company setupda Security tabdagi `Политика лицензирования`ni off qilish kerak bo'lsa `--company-code 1 --head-email <email> --head-password <password> --disable-license-policy` ishlatiladi.
 - `--disable-license-policy` ishlatilsa `Buy License` va `Attach License` qadamlari o'tkazib yuboriladi.
 - `pytest.ini` dagi `testpaths = tests` va `addopts` avtomatik qo'llanadi
 - Trace fayllari `test-results/traces/` ga, Allure natijalar `test-results/allure-results/` ga yoziladi

@@ -27,7 +27,7 @@ Verified: 2026-08-27
 Source: live UI; `tests/smoke/test_setup/test_22_warehouse.py`;
 `tests/smoke/test_setup/test_0_setup_runner.py`
 
-- `run_warehouse(page, save_data)` omborlar ro'yxatini ochadi, `Основной склад`
+- `run_warehouse(page)` omborlar ro'yxatini ochadi, `Основной склад`
   view formasiga o'tadi va view URLdagi `warehouse_id`ni musbat integer sifatida
   tekshirib `data_store.json.warehouse_id`ga saqlaydi.
 - Setup runnerda bu mustaqil **22 - Warehouse** pytest case hisoblanadi.

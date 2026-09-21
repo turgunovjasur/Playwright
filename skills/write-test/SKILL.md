@@ -37,15 +37,16 @@ test execution va run summary `run-smoke` ownerligida qoladi.
 - Leaf test odatda reusable `run_<name>(page, code, ...)` va standalone
   `test_<name>(page, code, ...)` funksiyalaridan iborat.
 - Testcase-specific biznes qadamlar `run_*` ichida qoladi; bir nechta testda
-  takrorlanadigan UI choreography `tests/smoke/flows/`ga ajratiladi.
+  takrorlanadigan UI choreography `new-flow`dagi domain papkasiga ajratiladi.
 - Yangi yoki refactor qilingan har bir group testcase boshqa group testcase
   yaratgan data/state'ga bog'lanmaydi; uning yagona umumiy dependency'si
   tasdiqlangan `user_setup` baseline bo'lishi mumkin.
 - Flow testcase'ni yashirmaydi: faqat ko'p test uchun majburiy yoki aynan bir
   xil takrorlanadigan UI choreography flowga chiqariladi. Scenario tayyorlash,
   biznes validation va expected resultlar `run_*` ichida qoladi.
-- Legacy AngularJS/Biruni formada `BasePage`, A2 Angular formada
-  `AngularBasePage` ishlat; ikki DOM kontraktini aralashtirma.
+- Migratsiyaga mos testlarda `AutoBasePage` joriy URLga qarab mos
+  `BasePage`/`AngularBasePage`ni tanlaydi; explicit DOM primitive'lari alohida
+  qoladi. [Page-object kontrakti](../smartup-guide/references/ui-patterns.md#page-object-tanlash)ga amal qil.
 - Mavjud page-object helperi bo'lsa raw locator/local wrapper yozma.
 - Har testda `pytestmark`, `@allure.title`, raqamlangan docstring qadamlar va
   mos `allure.step`lar bo'lsin.
@@ -53,7 +54,8 @@ test execution va run summary `run-smoke` ownerligida qoladi.
   chegarasida bo'lsin: transition actioni va undan keyingi
   `base.expect_page(heading=...)` bir step ichida turadi; bitta step ichida
   ketma-ket ikki yangi sahifa ochilmaydi.
-- Fixture'ni import qilma. `save_data` setup baseline'ni group testlarga
+- Fixture'ni import qilma. `save_data`/`load_data` fixture emas, ular
+  `utils.data_store`dan import qilinadi. `save_data` setup baseline'ni group testlarga
   uzatish yoki tashqi artefakt uchun ishlatiladi; group testcase sibling
   consumer uchun data saqlamaydi.
 - URL/credential hardcode qilma. Lokal `.env` mavjud bo'lsa u yutadi; aks

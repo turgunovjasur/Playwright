@@ -1,7 +1,6 @@
 """Smoke test progressi, xato diagnostikasi va Allure report boshqaruvi."""
 
 import json
-import os
 import re
 import shutil
 from collections.abc import Mapping
@@ -11,22 +10,17 @@ from urllib.parse import urlsplit
 import allure
 import pytest
 
-from scripts.report_lifecycle import (
-    ALLURE_RESULTS_DIR,
-    TRACE_DIR,
-    generate_report,
-    generate_test_summary,
-    show_trace,
-)
+from scripts.report_lifecycle import ALLURE_RESULTS_DIR, TRACE_DIR
 from tests.smoke.progress import emit_progress_event
-from tests.smoke.screenshot_masking import masked_page_screenshot
 from tests.smoke.smoke_config import env_flag
-from utils.logger import write_failure_log
+from tests.smoke.web_context_reporting import record_report as record_web_context_report
+from utils.report_safety import safe_payload, safe_url
+from utils.screenshot_masking import masked_page_screenshot
 
 
 _PROGRESS_STARTED_ATTR = "_smartup_progress_started"
 _PROGRESS_FINISHED_ATTR = "_smartup_progress_finished"
-_PROGRESS_TOTALS_ATTR = "_smartup_progress_totals"
+PROGRESS_TOTALS_ATTR = "_smartup_progress_totals"
 _FINAL_RESULT_ATTR = "_smartup_final_result"
 _AUTH_LISTENER_ATTR = "_smartup_auth_diagnostics_installed"
 _AUTH_RESPONSE_ATTR = "_smartup_first_unauthorized_response"
@@ -217,7 +211,7 @@ def is_user_setup(item):
     return item.get_closest_marker("user_setup") is not None
 
 
-def _form_case_from_item(item):
+def form_case_from_item(item):
     """Parametrized Forms itemidagi structured case metadata'ni qaytaradi."""
     callspec = getattr(item, "callspec", None)
     params = getattr(callspec, "params", None)
@@ -229,7 +223,7 @@ def _form_case_from_item(item):
 
 def _form_progress_context(item):
     """Telegram progress uchun user-readable forma kontekstini normalize qiladi."""
-    form_case = _form_case_from_item(item)
+    form_case = form_case_from_item(item)
     if form_case is None:
         return None
 
@@ -268,18 +262,6 @@ def _form_progress_display(context):
     return f"{number:03d} | {path or 'Noma’lum forma'}"
 
 
-def prepare_progress_totals(session):
-    """Collection tugagach test va Forms sonlarini sessionda saqlaydi."""
-    test_total = 0
-    form_total = 0
-    for item in session.items:
-        if is_user_setup(item) or smoke_group_name(item):
-            test_total += 1
-        if _form_case_from_item(item) is not None:
-            form_total += 1
-    setattr(session, _PROGRESS_TOTALS_ATTR, {"test_total": test_total, "form_total": form_total})
-
-
 def _progress_metadata(item):
     """Progress event uchun test groupi, runneri va ko'rinadigan nomini yig'adi."""
     if is_user_setup(item):
@@ -300,7 +282,7 @@ def _progress_metadata(item):
         "test_id": item.name,
         "title": allure_title,
     }
-    totals = getattr(getattr(item, "session", None), _PROGRESS_TOTALS_ATTR, None)
+    totals = getattr(getattr(item, "session", None), PROGRESS_TOTALS_ATTR, None)
     if totals is not None:
         metadata["test_total"] = totals["test_total"]
     form_context = _form_progress_context(item)
@@ -325,7 +307,7 @@ def reporting_warning(nodeid, action, error):
         pass
 
 
-def _emit_item_progress(item, event, **details):
+def emit_item_progress(item, event, **details):
     """Progress yozishdagi xato pytest hookini to'xtatmasligini ta'minlaydi."""
     try:
         metadata = _progress_metadata(item)
@@ -342,7 +324,7 @@ def start_progress(item):
     """Test uchun `started` progress eventini faqat bir marta chiqaradi."""
     if getattr(item, _PROGRESS_STARTED_ATTR, False):
         return
-    if _emit_item_progress(item, "started"):
+    if emit_item_progress(item, "started"):
         setattr(item, _PROGRESS_STARTED_ATTR, True)
 
 
@@ -350,14 +332,8 @@ def finish_progress(item, event, *, error_type=None, message=None):
     """Test yakuniy progress eventini faqat bir marta chiqaradi."""
     if getattr(item, _PROGRESS_FINISHED_ATTR, False):
         return
-    if _emit_item_progress(item, event, error_type=error_type, message=message):
+    if emit_item_progress(item, event, error_type=error_type, message=message):
         setattr(item, _PROGRESS_FINISHED_ATTR, True)
-
-
-def report_deselected(items):
-    """Collectiondan ataylab chiqarilgan testlarni nomi bilan progressga yozadi."""
-    for item in items:
-        _emit_item_progress(item, "deselected")
 
 
 def record_test_report(item, report, call, data_path):
@@ -366,7 +342,33 @@ def record_test_report(item, report, call, data_path):
     Failed skipped'dan ustun. Bir nechta faza yiqilsa birinchi xato asosiy
     sabab bo'lib qoladi; har fazaning xatosi pytest/Allure reportida saqlanadi.
     """
+    try:
+        record_web_context_report(item, report, page_from_item(item))
+    except Exception as error:
+        reporting_warning(item.nodeid, "Webda tekshirish kontekstini yozish", error)
     result = getattr(item, _FINAL_RESULT_ATTR, {"event": "passed"})
+    if report.failed or report.skipped:
+        try:
+            allure.attach(
+                json.dumps({
+                    "nodeid": item.nodeid,
+                    "phase": report.when,
+                    "started_at": int(call.start * 1000),
+                    "finished_at": int(call.stop * 1000),
+                    "blocked_by": getattr(item, "_smartup_blocked_by", ""),
+                    "skip_kind": (
+                        "dependency" if getattr(item, "_smartup_blocked_by", "") else
+                        "intentional" if report.skipped and (
+                            item.get_closest_marker("skip") or item.get_closest_marker("skipif")
+                        ) else
+                        "other" if report.skipped else ""
+                    ),
+                }, ensure_ascii=False),
+                name="test-outcome-context",
+                attachment_type=allure.attachment_type.JSON,
+            )
+        except Exception as error:
+            reporting_warning(item.nodeid, "Test fazasi diagnostikasi", error)
     if report.failed:
         failure = {
             "event": "failed",
@@ -458,12 +460,14 @@ def prepare_allure_results(run_info, root_dir):
         json.dump(executor_data, executor_file, indent=2)
 
 
-def _visible_texts(page, selector, *, limit=20):
+def _visible_texts(page, selector, *, limit=20, errors=None, field="matn"):
     """Ko'rinadigan diagnostika matnlarini takrorsiz va cheklangan holda oladi."""
     try:
         raw_texts = page.locator(selector).all_inner_texts()
     except Exception:
-        return []
+        if errors is not None:
+            errors.append(field)
+        return None
 
     texts = []
     for raw_text in raw_texts:
@@ -477,36 +481,55 @@ def _visible_texts(page, selector, *, limit=20):
 
 def browser_state(page):
     """Failure paytidagi browser holatini machine-readable payloadga aylantiradi."""
+    errors = []
     try:
-        current_url = safe_page_url(page.url)
+        current_url = safe_url(page.url)
     except Exception:
-        current_url = ""
+        current_url = None
+        errors.append("current_url")
     try:
         document_title = str(page.title() or "")
     except Exception:
-        document_title = ""
+        document_title = None
+        errors.append("document_title")
     try:
         visible_loader_count = page.locator(
             ".block-ui-overlay:visible, .smt-skeleton:visible"
         ).count()
     except Exception:
-        visible_loader_count = 0
+        visible_loader_count = None
+        errors.append("visible_loader_count")
 
-    return {
+    try:
+        content = page.evaluate("""() => ({
+            ready_state: document.readyState,
+            body_text_length: (document.body?.innerText || '').trim().length,
+            main_count: document.querySelectorAll('main').length
+        })""")
+    except Exception:
+        content = {}
+        errors.append("content")
+
+    state = {
         "current_url": current_url,
         "document_title": document_title,
         "visible_headings": _visible_texts(
             page,
             "h1:visible, h2:visible, h3:visible, h4:visible, "
             "h5:visible, h6:visible, [role='heading']:visible",
+            errors=errors, field="visible_headings",
         ),
         "visible_alerts": _visible_texts(
             page,
             "#biruniAlert:visible, #biruniAlertExtended:visible, "
             "[role='alert']:visible",
+            errors=errors, field="visible_alerts",
         ),
         "visible_loader_count": visible_loader_count,
+        "content": content,
+        "observation_errors": errors,
     }
+    return safe_payload(state)
 
 
 def trace_reference_for_item(item):
@@ -554,12 +577,12 @@ def attach_failure_artifacts(item, data_path, auth_diagnostic=None):
                 attachment_type=allure.attachment_type.JSON,
             )
             allure.attach(
-                state["current_url"],
+                state["current_url"] or "O'qib bo'lmadi",
                 name="04 - Current URL",
                 attachment_type=allure.attachment_type.TEXT,
             )
             allure.attach(
-                state["document_title"],
+                state["document_title"] or "O'qib bo'lmadi",
                 name="05 - Page Title",
                 attachment_type=allure.attachment_type.TEXT,
             )
@@ -596,37 +619,3 @@ def attach_failure_artifacts(item, data_path, auth_diagnostic=None):
             name="06 - Data Store",
             attachment_type=allure.attachment_type.JSON,
         )
-
-
-def log_failed_report(report):
-    """Failed pytest fazasini `test-results/logs` ichidagi matn logiga yozadi."""
-    if not report.failed:
-        return
-    longrepr_text = str(report.longrepr) if report.longrepr else "Xabar yo'q"
-    auth_diagnostic = next(
-        (
-            value
-            for key, value in getattr(report, "user_properties", [])
-            if key == "auth_diagnostic"
-        ),
-        "",
-    )
-    if auth_diagnostic:
-        longrepr_text += f"\n\n[AUTH DIAGNOSTIKA]\n{auth_diagnostic}"
-    try:
-        log_path = write_failure_log(report.nodeid, report.when, longrepr_text)
-        print(f"\n[LOG] Xato logi saqlandi: {log_path}")
-    except Exception as error:
-        reporting_warning(report.nodeid, "Xato logini saqlash", error)
-
-
-def finish_session(root_dir, exitstatus, *, started_at):
-    """Direct pytest uchun summary yaratadi va so'ralgan viewerlarni fonda ochadi."""
-    if env_flag("SMARTUP_RUNNER"):
-        return
-
-    generate_test_summary(root_dir, os.environ, test_exit=exitstatus, command_text="direct pytest run", started_at=started_at)
-    if env_flag("SHOW_TRACE"):
-        show_trace(root_dir, os.environ, background=True)
-    if env_flag("OPEN_REPORT"):
-        generate_report(root_dir, os.environ, open_report=True, background=True)

@@ -2,13 +2,13 @@
 
 import allure
 
-from tests.smoke.clients.visit_sync import build_order_visit
+from tests.smoke.test_groups.test_visit_grup.flow_visit.visit_sync import build_order_visit
 from tests.smoke.flows.flow_authorization import authorization
-from tests.smoke.flows.flow_mobile_authorization import authorize_mobile
-from tests.smoke.flows.flow_navigate import navigate_to_a2
-from tests.smoke.flows.flow_visit_sync import sync_visit
+from tests.smoke.test_groups.test_visit_grup.flow_visit.flow_mobile_authorization import authorize_mobile
+from tests.smoke.test_groups.test_visit_grup.flow_visit.flow_navigate import navigate_to_a2
+from tests.smoke.test_groups.test_visit_grup.flow_visit.flow_visit_sync import sync_visit
 from utils.data_store import load_data, save_data
-from utils.auto_base_page import AutoBasePage
+from utils.base_pages.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
 

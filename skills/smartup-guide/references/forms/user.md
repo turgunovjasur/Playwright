@@ -38,7 +38,7 @@ Filialga o'tish va login `test_*` wrapper'da: setup zanjirida sahifa allaqachon 
 | Maydon | Locator | Qiymat |
 |---|---|---|
 | Login | `BasePage.input(label="Логин", value=...)` | `user-pw{code}` |
-| Parol | `BasePage.input(label="Пароль", value=...)` | `USER_PASS` (hardcode, qoidalarda literal yozilmaydi) |
+| Parol | `BasePage.input(label="Пароль", value=...)` | `USER_PASSWORD` environment qiymati; literal yozilmaydi |
 | Физическое лицо | `BasePage.b_input("Физическое лицо", value=...)` | `natural_person-pw{code}` |
 | Штат | `BasePage.b_input("Штат", value=...)` | `robot-pw{code}` |
 
@@ -99,7 +99,7 @@ Bu attach pattern faqat shu testga xos, shuning uchun
 Tags: user, grid, locator, setup, mcp
 Status: code-confirmed
 Verified: 2026-07-31
-Source: `tests/smoke/test_setup/test_07_user_attach_form.py:11`; `utils/base_page.py:64`
+Source: `tests/smoke/test_setup/test_07_user_attach_form.py:11`; `utils/base_pages/base_page.py::BasePage.click`
 - screenshot: `references/forms/screenshots/user/user__attach-forms-available-mcp-20260710__desktop-1440x1000.png`
 - sahifa: `Пользователь (просмотр) → Формы → Доступные` (`natural_person-pw{code}` user view).
 - MCP kuzatuv: sahifada bir nechta `b-grid-controller` DOMda qoladi; hidden tab controllerlari visible controllerdan oldin kelishi mumkin. `BasePage.grid_controller()` default selector bilan hidden controllerga tushmasligi uchun visible controllerni ishlatishi kerak.

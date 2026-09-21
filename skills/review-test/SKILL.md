@@ -32,6 +32,8 @@ Bir turga tegishli qoidani boshqa turga xato sifatida qo'llama.
 ### 3. Fixture ishlatilishi
 - [ ] `session_page` session-scoped testlarda, `page` izolyatsiyali testlarda
 - [ ] `code` fixture to'g'ri ishlatilgan (import qilinmagan, parametr sifatida kelgan)
+- [ ] `save_data`/`load_data` `utils.data_store`dan import qilingan; pytest
+  fixture parametri sifatida so'ralmagan
 - [ ] `save_data` faqat downstream consumer bo'lsa ishlatilgan; kerak bo'lmagan
   test majburan data-store'ga yozmaydi
 - [ ] Downstream qiymat default fail-fast `load_data` orqali olinadi; optional
@@ -39,9 +41,9 @@ Bir turga tegishli qoidani boshqa turga xato sifatida qo'llama.
 - [ ] `logger` xato loglash uchun to'g'ri ishlatilgan
 
 ### 4. BasePage-first (majburiy)
-- [ ] Legacy AngularJS/Biruni formada `utils.base_page.BasePage`, yangi A2 Angular
-  formada `utils.angular_base_page.AngularBasePage` ishlatilgan; ikki DOM
-  kontraktining helperlari aralashtirilmagan
+- [ ] `AutoBasePage` yoki sahifaga mos explicit `BasePage`/`AngularBasePage`
+  ishlatilgan; importlar `utils.base_pages`dan. URL bo'yicha dispatchni
+  selector fallbacki bilan aralashtirish deb hisoblama
 - [ ] UI primitive uchun mos page-object metodi avval ishlatilgan:
   `expect_page`, `grid`, `grid_cell`, `grid_controller`, `text`, `form_view`,
   `input`, `select`/`b_input`, `switch`/`checkbox`, `confirm_biruni`,
@@ -91,9 +93,10 @@ Oxirida umumiy baho: `Yaxshi / O'rta / Qayta ko'rib chiqish kerak`
 - Muammo sifatida faqat ko'rilgan kod, test natijasi yoki tegishli Smartup dossierida tasdiqlangan holatni yoz; boshqa testdan olingan taxminni fakt sifatida kiritma.
 
 ### Legacy va A2 Angular page-object chegarasi
-- Hozirgi `BasePage` legacy formalar uchun aktual saqlanadi; A2 formalar
-  `AngularBasePage` bilan yoziladi. Yangi Angular selectorni legacy metodga
-  fallback sifatida qo'shib, bitta helper ichida ikki DOMni aralashtirma.
+- `BasePage` legacy, `AngularBasePage` A2 DOM primitive'larini saqlaydi.
+  `AutoBasePage` joriy URL bo'yicha ulardan birini tanlaydi; xatoda boshqa DOM
+  helperiga fallback qilmaydi. To'liq
+  [kontrakt](../smartup-guide/references/ui-patterns.md#page-object-tanlash)ni tekshir.
 
 ### Forms runner hisoboti
 - Menu orqali forma ochadigan batch testlarda Allure va terminal hisobotining

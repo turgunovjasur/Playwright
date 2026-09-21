@@ -2,8 +2,8 @@ import allure
 from playwright.sync_api import expect, TimeoutError as PlaywrightTimeoutError
 
 from tests.smoke.flows.flow_authorization import authorization
-from tests.smoke.flows.flow_license import skip_license_purchase_if_needed
-from utils.auto_base_page import AutoBasePage
+from tests.smoke.test_setup.flow_setup.flow_license import skip_license_purchase_if_needed
+from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("License")]
 

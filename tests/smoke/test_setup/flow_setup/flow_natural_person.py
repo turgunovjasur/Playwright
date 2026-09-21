@@ -1,7 +1,7 @@
 import allure
 from playwright.sync_api import Page
 
-from utils.auto_base_page import AutoBasePage
+from utils.base_pages.auto_base_page import AutoBasePage
 
 
 def open_natural_person_list(page: Page, *, step_name: str) -> None:

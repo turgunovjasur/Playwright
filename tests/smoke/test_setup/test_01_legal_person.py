@@ -3,7 +3,7 @@ from faker import Faker
 
 from tests.smoke.flows.flow_authorization import authorization
 from utils.data_store import save_data
-from utils.auto_base_page import AutoBasePage
+from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Legal Person")]
 

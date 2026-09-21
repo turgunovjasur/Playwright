@@ -2,7 +2,7 @@ import allure
 from playwright.sync_api import expect
 
 from tests.smoke.flows.flow_authorization import authorization
-from utils.auto_base_page import AutoBasePage
+from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Init Balance")]
 

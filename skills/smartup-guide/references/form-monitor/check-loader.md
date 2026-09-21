@@ -2,7 +2,7 @@
 
 Status: code-confirmed
 Verified: 2026-08-11
-Source: user; `tests/smoke/test_forms/monitoring/checks/loader.py`; `tests/smoke/test_forms/monitoring/monitor.py`; `tests/smoke/test_forms/monitoring/checks/core.py`; `tests/smoke/test_forms/monitoring/navigation.py`; `tests/smoke/test_forms/monitoring/reporting.py`; `utils/angular_base_page.py`
+Source: user; `tests/smoke/test_forms/monitoring/checks/loader.py`; `tests/smoke/test_forms/monitoring/monitor.py`; `tests/smoke/test_forms/monitoring/checks/core.py`; `tests/smoke/test_forms/monitoring/navigation.py`; `tests/smoke/test_forms/monitoring/reporting.py`; `utils/base_pages/angular_base_page.py`
 Contract approval: approved by user
 Implementation: implemented
 

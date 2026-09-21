@@ -1,6 +1,6 @@
 import allure
 
-from utils.auto_base_page import AutoBasePage
+from utils.base_pages.auto_base_page import AutoBasePage
 
 
 def create_product_with_price(

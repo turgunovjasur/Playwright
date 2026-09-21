@@ -5,6 +5,9 @@ from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 from utils.date_utils import format_date, resolve_date
 from utils.helper_utils import first_non_admin_filial, label_pattern
+from utils.base_pages.page_diagnostics import expectation_gate, report_page_expectation
+from utils.base_pages.page_reporting import report_web_action
+from utils.report_context import record_filial
 
 
 _UNSET = object()
@@ -358,6 +361,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def navigate_to(self, tab="Главное", name="Организации", timeout=30_000):
         self._validate_options(
             'navigate_to',
@@ -382,6 +386,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def navigate_to_form(
         self,
         *,
@@ -519,6 +524,8 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
+    @report_page_expectation
     def expect_page(self, heading=None, url=None, timeout=30_000, check_unblocked=True, root=None):
         """Sahifaning URL va heading holatini tekshiradi.
 
@@ -535,6 +542,7 @@ class BasePage:
 
         if url is not None:
             pattern = url if isinstance(url, re.Pattern) else re.compile(re.escape(url))
+            expectation_gate(self.page, "url")
             try:
                 expect(self.page).to_have_url(pattern, timeout=timeout)
             except (AssertionError, PlaywrightTimeoutError) as exc:
@@ -544,6 +552,7 @@ class BasePage:
                 ) from exc
 
         if heading is not None:
+            expectation_gate(self.page, "heading")
             scope = self.page if root is None else self.page.locator(root) if isinstance(root, str) else root
             target = scope.get_by_role("heading").filter(has_text=heading).first
             try:
@@ -557,6 +566,7 @@ class BasePage:
                 ) from exc
 
         if check_unblocked:
+            expectation_gate(self.page, "loader")
             expect(self.page.locator(".block-ui-overlay:visible")).to_have_count(0, timeout=timeout)
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -602,6 +612,7 @@ class BasePage:
 
         current_filial = trigger.locator(".project-filial p").nth(1)
         expect(current_filial).to_have_text(target_name, timeout=timeout)
+        record_filial(self.page, target_name)
         return option
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -656,6 +667,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def grid(
         self,
         text=None,
@@ -917,6 +929,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def form_view(
         self,
         label,

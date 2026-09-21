@@ -3,7 +3,7 @@
 Tags: order, order-list, grid, row-action, locator, screenshot
 Status: trace-confirmed
 Verified: 2026-07-21
-Source: `tests/smoke/flows/flow_order/flow_order_list.py`; `references/forms/screenshots/order-list/order-list__row-actions-open__desktop-2880x1566__20260720.json`
+Source: `tests/smoke/test_life_cycle/flow_order/flow_order_list.py`; `references/forms/screenshots/order-list/order-list__row-actions-open__desktop-2880x1566__20260720.json`
 
 ## Mundarija
 
@@ -19,7 +19,7 @@ Source: `tests/smoke/flows/flow_order/flow_order_list.py`; `references/forms/scr
 - Navigation: `Продажа > Заказы`
 - URL pattern: `*/trade/tdeal/order/order_list`
 - Main grid: `b-grid`
-- Main flow: `tests/smoke/flows/flow_order/flow_order_list.py`
+- Main flow: `tests/smoke/test_life_cycle/flow_order/flow_order_list.py`
 - Related docs: `../orders.md`, `../ui-patterns.md`, `order-add.md`
 
 ## Screenshot Paths

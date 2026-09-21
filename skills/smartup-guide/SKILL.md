@@ -28,7 +28,9 @@ Bu skill Smartup bo'yicha bilimlarni tez topish uchun index vazifasini bajaradi.
    `references/legacy-form-navigation.md`ni o'qi.
 4. Forma rasmi kerak bo'lsa, avval shu skill ichidagi `references/forms/screenshots/<form-slug>/` papkasidan ol; `test-results` vaqtinchalik output bo'lgani uchun doimiy bilim manbasi sifatida ishlatilmasin.
 5. Keyin kerak bo'lsa quyidagi domain reference fayllardan faqat keraklisini o'qi.
-6. Agar kerakli bilim topilmasa, UI/test/trace orqali aniqlab, tegishli form dossier yoki reference faylga qisqa va tagli qilib qo'sh.
+6. Agar kerakli bilim topilmasa, ruxsat etilgan UI/kod/trace dalilidan aniqlab,
+   natijani ayt. Dossier/reference'ga yozish faqat `learn`dagi write-back
+   tasdig'i mavjud bo'lsa bajariladi; savolga javob berish avtomatik yozish emas.
 
 ## Ishonchlilik Modeli
 
@@ -208,7 +210,9 @@ tuzatmasdan ishni yakunlama.
 
 ## Asosiy Eslatma
 
-- Smartup bo'yicha yangi biznes qoida, UI xatti-harakati, xato sababi yoki locator topilsa, shu skillning mos reference fayliga yoz.
+- Smartup bo'yicha yangi biznes qoida, UI xatti-harakati, xato sababi yoki
+  locator topilsa, `learn` orqali mos owner va write-back tasdig'ini tekshir.
+  Tasdiq bo'lsa mos reference'ga yoz; avval berilgan aniq ruxsatni qayta so'rama.
 - Legacy formaning navbar/menu/page-link/dropdown yo'li va filial ko'rinishi
   global navigatsiya bilimidir: uni `references/legacy-form-navigation.md`ga
   yoz, forma A2 bo'lmasa `a2-migrated-forms.md`ga qo'shma.

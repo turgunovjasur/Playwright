@@ -26,8 +26,8 @@ uni ham webdan tekshirish.
 - `test-results/data/data_store.json` — setup yaratgan joriy test ma'lumotlari.
 - `tests/smoke/test_setup/test_0_setup_runner.py` — setup zanjiri.
 - `tests/smoke/conftest.py` — strict `load_data` va `save_data` fixturelari.
-- `tests/smoke/flows/flow_navigate.py` — A2 forma navigatsiyasi.
-- `utils/angular_base_page.py` — A2 sahifa helperlari.
+- `tests/smoke/test_groups/test_visit_grup/flow_visit/flow_navigate.py` — visit forma navigatsiyasi.
+- `utils/base_pages/angular_base_page.py` — A2 sahifa helperlari.
 
 ## Tasdiqlangan ID mapping
 
@@ -118,7 +118,7 @@ Muhim chegaralar:
 
 ### Bajarilgan
 
-- [x] Mobile API kodi `tests/smoke/clients/mobile_client.py`ga joylashtirildi.
+- [x] Mobile API kodi `tests/smoke/test_groups/test_visit_grup/flow_visit/` ichidagi `base_api.py`, `flow_mobile_authorization.py` va `visit_sync.py` modullarida joylashgan.
 - [x] Server URL mavjud config/environmentdan olinadi; hardcode qilinmaydi.
 - [x] Login mavjud `code` va company konfiguratsiyasidan hosil qilinadi.
 - [x] Parol mavjud environment/config helperidan olinadi; faylga yozilmaydi.

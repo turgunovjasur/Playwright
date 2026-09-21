@@ -1,5 +1,6 @@
 """Pytest smoke hooklari va umumiy fixture'lar uchun yagona kirish nuqtasi."""
 
+import os
 import random
 import time
 from pathlib import Path
@@ -7,45 +8,77 @@ from pathlib import Path
 import pytest
 from playwright.sync_api import expect, sync_playwright
 
+from scripts.report_lifecycle import generate_report, generate_test_summary, show_trace
 from tests.smoke import smoke_config, smoke_reporting
 from tests.smoke.smoke_browser import browser_context, browser_page
 from tests.smoke.flows.flow_authorization import authorization
 from utils.data_store import data_file, load_data_file
-from utils.logger import get_logger
+from utils.logger import get_logger, write_failure_log
+from utils.report_context import begin_test, end_test
 
 
 ROOT_DIR = smoke_config.ROOT_DIR
 TRACE_DIR = smoke_reporting.TRACE_DIR
 
 _USER_SETUP_FAILED = False
-_FAILED_SMOKE_GROUPS = set()
+_FAILED_SMOKE_GROUPS = {}
 
 
 # Lokal run profili pytest hooklari ishlashidan oldin yuklanishi kerak.
 smoke_config.load_local_dotenv()
 
 
-# Pytest konfiguratsiyasi
+# 1. Run konfiguratsiyasi va boshlang'ich holat
 # ----------------------------------------------------------------------------------------------------------------------
 
 def pytest_addoption(parser):
     """Smartup smoke uchun CLI optionlarini pytestga ro'yxatdan o'tkazadi."""
-    smoke_config.add_pytest_options(parser)
-
-
-def pytest_collection_modifyitems(config, items):
-    """Company yaratish testini joriy company rejimiga qarab ro'yxatdan chiqaradi."""
-    smoke_config.modify_collected_items(config, items)
-
-
-def pytest_deselected(items):
-    """Collectiondan chiqarilgan test nomlarini progress consumeriga uzatadi."""
-    smoke_reporting.report_deselected(items)
-
-
-def pytest_collection_finish(session):
-    """Filtrlardan keyin progress uchun yakuniy test sonlarini bir marta hisoblaydi."""
-    smoke_reporting.prepare_progress_totals(session)
+    smoke = parser.getgroup("smartup smoke")
+    smoke.addoption(
+        "--headless",
+        action="store_true",
+        default=False,
+        help="Chromium ni headless rejimda ishga tushiradi",
+    )
+    smoke.addoption(
+        "--new-code",
+        action="store_true",
+        default=False,
+        help=(
+            "Yangi 6 xonali code yaratadi; berilmasa data_store.json dagi "
+            "mavjud code ishlatiladi"
+        ),
+    )
+    smoke.addoption("--url", default="", help="Majburiy server URL")
+    smoke.addoption(
+        "--company-code",
+        default="",
+        help="Majburiy: 1 — yangi company yaratish; boshqa kod — mavjud company.",
+    )
+    smoke.addoption(
+        "--company-password",
+        default="",
+        help="Mavjud company admin paroli; company code 1 bo'lmasa majburiy.",
+    )
+    smoke.addoption(
+        "--head-email",
+        default="",
+        help="--company-code 1 bilan head profil emaili.",
+    )
+    smoke.addoption(
+        "--head-password",
+        default="",
+        help="--company-code 1 bilan head profil paroli.",
+    )
+    smoke.addoption(
+        "--disable-license-policy",
+        action="store_true",
+        default=False,
+        help=(
+            "--company-code 1 bilan yangi companyda Политика лицензирования "
+            "ni o'chiradi."
+        ),
+    )
 
 
 def pytest_configure(config):
@@ -59,7 +92,51 @@ def pytest_configure(config):
     smoke_reporting.prepare_allure_results(run_info, ROOT_DIR)
 
 
-# Browser va page fixture'lari
+# 2. Testlarni tanlash va collection progressi
+# ----------------------------------------------------------------------------------------------------------------------
+
+def pytest_collection_modifyitems(config, items):
+    """Company yaratish testini joriy company rejimiga qarab ro'yxatdan chiqaradi."""
+    if os.environ["COMPANY_CODE"] != "1":
+        company_items = [
+            item
+            for item in items
+            if (
+                Path(str(item.path)).name == "test_0_setup_runner.py"
+                and item.name == "test_00_company"
+            ) or (
+                Path(str(item.path)).name == "test_00_company.py"
+                and item.name == "test_company"
+            )
+        ]
+        if company_items:
+            items[:] = [item for item in items if item not in company_items]
+            config.hook.pytest_deselected(items=company_items)
+
+
+def pytest_deselected(items):
+    """Collectiondan chiqarilgan test nomlarini progress consumeriga uzatadi."""
+    for item in items:
+        smoke_reporting.emit_item_progress(item, "deselected")
+
+
+def pytest_collection_finish(session):
+    """Filtrlardan keyin progress uchun yakuniy test sonlarini bir marta hisoblaydi."""
+    test_total = 0
+    form_total = 0
+    for item in session.items:
+        if smoke_reporting.is_user_setup(item) or smoke_reporting.smoke_group_name(item):
+            test_total += 1
+        if smoke_reporting.form_case_from_item(item) is not None:
+            form_total += 1
+    setattr(
+        session,
+        smoke_reporting.PROGRESS_TOTALS_ATTR,
+        {"test_total": test_total, "form_total": form_total},
+    )
+
+
+# 3. Browser, context va page fixture'lari
 # ----------------------------------------------------------------------------------------------------------------------
 
 @pytest.fixture(scope="session")
@@ -144,7 +221,7 @@ def page(session_browser, request):
             yield isolated_page
 
 
-# Test data va logger fixture'lari
+# 4. Test data va logger fixture'lari
 # ----------------------------------------------------------------------------------------------------------------------
 
 @pytest.fixture(scope="session")
@@ -173,14 +250,25 @@ def logger(request):
         test_logger.close()
 
 
-# Test lifecycle va dependency hooklari
+# 5. Har bir testning lifecycle'i va dependency tekshiruvi
 # ----------------------------------------------------------------------------------------------------------------------
+
+@pytest.hookimpl(hookwrapper=True, tryfirst=True)
+def pytest_runtest_protocol(item, nextitem):
+    """Skip/setup failure ham kiradigan testcase chegarasida kontekstni ajratadi."""
+    token = begin_test(item.nodeid)
+    try:
+        yield
+    finally:
+        end_test(token)
+
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_runtest_setup(item):
     """Setup/group dependency qoidalarini tekshiradi va progressni boshlaydi."""
     if smoke_reporting.is_user_setup(item):
         if _USER_SETUP_FAILED:
+            item._smartup_blocked_by = _USER_SETUP_FAILED
             pytest.skip(
                 "Oldingi user_setup testi failed bo'lgani uchun qolgan "
                 "user_setup testlari skip qilindi"
@@ -196,6 +284,7 @@ def pytest_runtest_setup(item):
         _USER_SETUP_FAILED
         and not smoke_reporting.smoke_group_setup_independent(item)
     ):
+        item._smartup_blocked_by = _USER_SETUP_FAILED
         pytest.skip(
             "User setup failed bo'lgani uchun setupga bog'liq group test skip qilindi"
         )
@@ -204,6 +293,7 @@ def pytest_runtest_setup(item):
         group_name in _FAILED_SMOKE_GROUPS
         and not smoke_reporting.smoke_group_independent(item)
     ):
+        item._smartup_blocked_by = _FAILED_SMOKE_GROUPS[group_name]
         pytest.skip(
             f"{group_name} group ichidagi oldingi test failed bo'lgani "
             "uchun skip qilindi"
@@ -211,6 +301,9 @@ def pytest_runtest_setup(item):
 
     smoke_reporting.start_progress(item)
 
+
+# 6. Test natijalari va xato diagnostikasi
+# ----------------------------------------------------------------------------------------------------------------------
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
@@ -220,22 +313,42 @@ def pytest_runtest_makereport(item, call):
     report = outcome.get_result()
     if report.failed:
         if smoke_reporting.is_user_setup(item):
-            _USER_SETUP_FAILED = True
+            _USER_SETUP_FAILED = _USER_SETUP_FAILED or item.nodeid
 
         group_name = smoke_reporting.smoke_group_name(item)
         if (
             group_name
             and not smoke_reporting.smoke_group_independent(item)
         ):
-            _FAILED_SMOKE_GROUPS.add(group_name)
+            _FAILED_SMOKE_GROUPS.setdefault(group_name, item.nodeid)
 
     smoke_reporting.record_test_report(item, report, call, data_file())
 
 
 def pytest_runtest_logreport(report):
     """Failed pytest fazasi uchun diskka diagnostika logini yozadi."""
-    smoke_reporting.log_failed_report(report)
+    if not report.failed:
+        return
+    longrepr_text = str(report.longrepr) if report.longrepr else "Xabar yo'q"
+    auth_diagnostic = next(
+        (
+            value
+            for key, value in getattr(report, "user_properties", [])
+            if key == "auth_diagnostic"
+        ),
+        "",
+    )
+    if auth_diagnostic:
+        longrepr_text += f"\n\n[AUTH DIAGNOSTIKA]\n{auth_diagnostic}"
+    try:
+        log_path = write_failure_log(report.nodeid, report.when, longrepr_text)
+        print(f"\n[LOG] Xato logi saqlandi: {log_path}")
+    except Exception as error:
+        smoke_reporting.reporting_warning(report.nodeid, "Xato logini saqlash", error)
 
+
+# 7. Yakuniy hisobot va session yakunlash
+# ----------------------------------------------------------------------------------------------------------------------
 
 def pytest_terminal_summary(terminalreporter):
     """Forms runnerning strukturali natijalarini capture yopilgach chiqaradi."""
@@ -248,5 +361,18 @@ def pytest_terminal_summary(terminalreporter):
 
 @pytest.hookimpl(trylast=True)
 def pytest_sessionfinish(session, exitstatus):
-    """Direct pytest run tugaganda so'ralgan trace yoki Allure reportni ochadi."""
-    smoke_reporting.finish_session(ROOT_DIR, exitstatus, started_at=session.config._smartup_started_at)
+    """Direct pytest summarysini yaratadi va so'ralgan trace/Allure reportni ochadi."""
+    if smoke_config.env_flag("SMARTUP_RUNNER"):
+        return
+
+    generate_test_summary(
+        ROOT_DIR,
+        os.environ,
+        test_exit=exitstatus,
+        command_text="direct pytest run",
+        started_at=session.config._smartup_started_at,
+    )
+    if smoke_config.env_flag("SHOW_TRACE"):
+        show_trace(ROOT_DIR, os.environ, background=True)
+    if smoke_config.env_flag("OPEN_REPORT"):
+        generate_report(ROOT_DIR, os.environ, open_report=True, background=True)

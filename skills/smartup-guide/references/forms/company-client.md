@@ -86,7 +86,7 @@ Source: `tests/smoke/test_forms/test_a2_angular_forms.py`; 2026-07-29 live run
 Tags: oauth2, client-secret, screenshot, allure, security, forms-runner
 Status: code-confirmed
 Verified: 2026-08-04
-Source: `tests/smoke/screenshot_masking.py`;
+Source: `utils/screenshot_masking.py`;
 `tests/smoke/smoke_reporting.py`;
 `tests/smoke/test_forms/monitoring/monitor.py`;
 `tests/smoke/test_forms/test_a2_angular_forms.py`

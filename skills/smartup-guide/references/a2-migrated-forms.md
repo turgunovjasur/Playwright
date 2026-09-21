@@ -4,29 +4,31 @@
 
 - [Arxitektura](#arxitektura)
 - [Yangi Angular component kontrakti](#yangi-angular-component-kontrakti-companyda-live-tasdiqlangan-2026-07-23)
-- [Menyu filialga bog'liqligi](#menyu-филиалга-bogliq-eng-muhim-kuzatuv-2026-07-07)
+- [Menyu filialga bog'liqligi](#menyu-filialга-bogliq-eng-muhim-kuzatuv-2026-07-07)
 - [Real-user navigatsiya](#real-user-navigatsiya-menyu-orqali--2-etap-testlar-uchun)
+- [Forma yo'llari va backlog](#forma-yollari-va-backlog)
 - [Filial switcher DOM](#filial-switcher-dom)
 - [Test](#test)
-- [Diagnostika natijasi](#diagnostika-natijasi-2026-07-07-app3greenwhiteuzxtrade--2-passed-0-muammo)
+- [Tarixiy diagnostika](#tarixiy-diagnostika)
 
-Tags: a2, migrated-forms, filial, menu, navigation, error, url, new_forms
+Tags: a2, migrated-forms, filial, menu, navigation, error, url
 
-Smartup yangi formalari (yangi Angular/modern app) eski AngularJS Biruni app ustiga qo'shilgan. Ular
-`new_forms.md` (repo root) da ro'yxatlangan va URL'да **`a2`** prefiksi bilan ajraladi.
+Smartup yangi formalari (yangi Angular/modern app) eski AngularJS Biruni app ustiga qo'shilgan.
+Ular URL'da **`a2`** prefiksi bilan ajraladi; filial va navigatsiya yo'llari
+[Forma yo'llari va backlog](#forma-yollari-va-backlog) bo'limida saqlanadi.
 
 ## Arxitektura
 
 - **Page-object chegarasi:** legacy AngularJS/Biruni formalar
-  `utils/base_page.py::BasePage` bilan, yangi A2 Angular formalar
-  `utils/angular_base_page.py::AngularBasePage` bilan yoziladi. Legacy class
+  `utils/base_pages/base_page.py::BasePage` bilan, yangi A2 Angular formalar
+  `utils/base_pages/angular_base_page.py::AngularBasePage` bilan yoziladi. Legacy class
   mavjud eski formalar tugamaguncha aktual saqlanadi; ikki DOM selectorlari bitta
   helperga fallback qilib aralashtirilmaydi.
 - **Alohida app.** Eski menyudan a2 forma bosilganda `{base}/a2/{path}` ga **to'liq sahifa** navigatsiya bo'ladi
-  (SPA hash-route emas). `base` = `company_url()`:
+  (SPA hash-route emas). `base` = `os.environ["COMPANY_URL"].rstrip("/")`:
   - smartup.online: `https://smartup.online/a2/{path}`
   - app3: `https://app3.greenwhite.uz/xtrade/a2/{path}`
-  - `{path}` = `new_forms.md` dagi yo'l, masalan `biruni/md/company_list`, `anor/rep/mbi/mkw/purchase`.
+  - `{path}` = forma route'i, masalan `biruni/md/company_list`, `anor/rep/mbi/mkw/purchase`.
 - **Sog'lom forma signali:** `document.title` forma nomiga aylanadi (masalan "Компании", "Логистика").
   Content async yuklanadi — dashboard/list/catalog formalar title resolve bo'lgach ham 1-1.5s kontent yuklaydi.
 - **Dashboard readiness:** nested `[aria-busy=true]` sahifa to'liq render
@@ -79,9 +81,9 @@ Smartup yangi formalari (yangi Angular/modern app) eski AngularJS Biruni app ust
 - **ASOSIY QOIDA: eski angular menyu orqali ochiladigan a2 formalar — BARCHASI ADMIN formalar.** Alohida "head"
   profil / alohida head test KERAK EMAS; hammasi bitta admin testda
   (`test_a2_angular_forms.py`) yig'iladi.
-- **Forma joyi (filial + aniq user track) — AVTORITET manba: `new_forms.md` (repo root).** U formalarni
-  operatsion/Администрирование filial bo'yicha guruhlab, har biriga real user track (LEAF / LIST-ACTION / SIBLING)
-  beradi. Qisqacha (2026-07-08 live tasdiqlangan):
+- **Forma joyi (filial + aniq user track)** shu reference'ning
+  [Forma yo'llari va backlog](#forma-yollari-va-backlog) bo'limida saqlanadi.
+  Ochish usullari: LEAF / LIST-ACTION / SIBLING. Qisqacha (2026-07-08 live tasdiqlangan):
   - "Администрирование" da: `kauth/company_client_list` (+undan `+add`/`+edit` list-action).
   - Operatsion filialda LEAF: Визиты/Логистика, dashboardlar, `anor/rep/mkr/pnl` («Отчет о прибылях и убытках»),
     barcha `anor|trade/rep/mbi/*` report designerlar, `plg/plugin_catalog`, `external_settings`.
@@ -89,7 +91,7 @@ Smartup yangi formalari (yangi Angular/modern app) eski AngularJS Biruni app ust
     (Инвентаризации→Инвентаризация КМ).
 - **Hali live tasdiqlanmagan admin formalar** (`md/*`, `ms/announcement_list`, `kauth/client_list`,
   `kauth/security_settings`, `billing/operational_dashboard` va ularning list-action ko'rinishlari) — bular ham ADMIN
-  formalar, angular menyudan ochiladi; user track hujjat asosida `new_forms.md` da, testga qo'shilганда tasdiqlanadi.
+  formalar; hujjatdagi user tracklar quyidagi backlogda, testga qo'shilganda tasdiqlanadi.
   Ba'zilari faqat head KOMPANIYASIда bor bo'lishi mumkin (boshqa kompaniyada "нет доступа") — bu profil emas, kompaniya
   masalasi; forma baribir admin menyusidan ochiladi.
   - Track hali aniqlanmagan (URL only): `mfa/purchase`, `ker/setting`, `ker/head_template_list+attach`, `company_audit_info_audit`.
@@ -114,15 +116,123 @@ Smartup yangi formalari (yangi Angular/modern app) eski AngularJS Biruni app ust
   menyusi bilan tiklanadi (2026-07-08 MCP tasdiqlangan: go_back'dan keyin tablar/leaflar qayta ishlaydi).
 - Explicit menu-track testning yangi oqimida `page.go_back()` ishlatilmaydi:
   forma ochilgach joriy sahifadagi navbar orqali keyingi forma ochiladi.
-- **Flow helper:** `navigate_to_a2(page, tab, path)` (flows/flow_navigate.py) — tab bosadi, leaf ko'rinishini kutadi,
-  bosadi, URL `/a2/{path}` ga o'tguncha va `document.title` "Smartup Online" (shell) dan forma nomiga aylanguncha kutadi.
-  Sub-kategoriya (`h3.menu-heading`) ni ochish SHART EMAS — tab bosilganda flyout barcha leaflarni ko'rsatadi.
+- Visit consumerlari uchun helper:
+  `tests/smoke/test_groups/test_visit_grup/flow_visit/flow_navigate.py::navigate_to_a2(page, tab, path, *, name)`.
+  U `AutoBasePage.navigate_to(tab=..., name=...)` bilan navigatsiya qiladi,
+  route va shell title'dan chiqishni kutadi. Bu A2Angular runner helperi emas.
+  Legacy flyoutda `h3.menu-heading` alohida ochilmaydi.
 - **Ochilgani signali:** `expect(page).not_to_have_title("Smartup Online")` — dashboardlar ham (async) title'ni
   forma nomiga o'zgartiradi. `heading`/`mainLen` ga tayanma (dashboardlarda async, false-negative).
 - **Menyu leaflari filial menusidan keladi** — barcha a2 leafni bitta o'qishда olish uchun angular session
   modelini (read-only) ishlat: `a.session.si.projects[0].filials[].menus[].menus[].forms[]`, `is_migrated==='Y'`
   bo'lganlari. Har `form`: `{form(path), name, is_migrated}`. Bu real menyu leaflarining AVTORITET manbai
   (URL'да ochiladigan, lekin menyuда YO'Q formalardan farqli).
+
+## Forma yo'llari va backlog
+
+### Kodda mavjud navigatsiya yo'llari
+Tags: a2, inventory, filial, navigation
+Status: code-confirmed
+Verified: 2026-09-18
+Source: `tests/smoke/test_forms/test_a2_angular_forms.py` (`ADMIN_A2_FORMS`, `OPERATIONAL_A2_FORMS`, `PAGE_LINK_A2_FORMS`)
+
+Bu jadval koddagi yo'llarni ko'rsatadi; yangi live tekshiruv natijasi emas.
+LEAF — navbar → menyu ustuni → forma. SIBLING — eski parent forma → page-link;
+bu route angular menyu modelida alohida leaf sifatida ko'rinmasligi mumkin.
+LIST-ACTION — list ichidagi yaratish yoki qator actioni; u menyu leafi emas.
+
+Operatsion filial (`filial-pw{code}` yoki boshqa operatsion filial), LEAF:
+
+| Path | Navbar → ustun → forma |
+|---|---|
+| `trade/txs/external_settings` | Главное → Дополнительное → Настройки интеграции со сторонним ПО |
+| `trade/tvt/visit_list` | Продажа → Визиты → Визиты |
+| `trade/tvt/user_locations` | Продажа → Визиты → Отслеживание пользователей |
+| `trade/tph/user_tracking` | Продажа → Визиты → Отслеживание мобильных представителей |
+| `trade/tdeal/commercial_dashboard` | Продажа → Отчеты по продажам → Коммерческий дашборд |
+| `trade/rep/mbi/tvt/visit` | Продажа → Отчеты по визитам → Конструктор отчётов по визитам |
+| `trade/tdeal/logistics_list` | Склад → Справочники → Логистика |
+| `anor/rep/mbi/mkw/movement` | Склад → Отчеты → Конструктор отчетов по внутр. перемещениям |
+| `anor/rep/mbi/mkw/purchase_request` | Склад → Отчеты → Конструктор отчетов по запросам на закуп |
+| `anor/rep/mbi/mkw/purchase` | Склад → Отчеты → Конструктор отчетов по закупкам |
+| `anor/rep/mbi/mkw/input` | Склад → Отчеты → Конструктор отчетов по поступлениям |
+| `anor/rep/mbi/mkw/writeoff` | Склад → Отчеты → Конструктор отчетов по списанию |
+| `anor/rep/mbi/mfm/movement_request` | Склад → Отчеты → Конструктор отчетов по запросам на межорг. перемещения |
+| `anor/rep/mbi/mfm/movement` | Склад → Отчеты → Конструктор отчетов по межорг. перемещениям |
+| `anor/rep/mbi/mkcs/operation` | Финансы → Отчеты → Конструктор отчетов по финансам |
+| `anor/rep/mkr/pnl` | Финансы → Отчеты → Отчет о прибылях и убытках |
+| `anor/rep/mku/balance_sheet` | Финансы → Отчеты → Бухгалтерский баланс |
+| `trade/rep/mbi/tmcg/shelf_share` | Торговый маркетинг → Отчеты → Конструктор отчётов по доле на полке |
+| `anor/rep/mbi/mqpf/request` | Оборудование → Дополнительное → Конструктор отчетов по заявкам на оборудование |
+| `biruni/plg/plugin_catalog` | Плагин → Plugin Marketplace (ustunsiz) |
+
+Operatsion filial, SIBLING:
+
+| Path | Parent forma → page-link |
+|---|---|
+| `anor/rep/mbi/mcg/action` | Справочники → Маркетинг → Акции (`anor/mcg/action_list`) → Конструктор отчетов по акциям |
+| `anor/mkw/marking_stocktaking/marking_stocktaking_list` | Склад → Документы → Инвентаризации (`anor/mkw/stocktaking/stocktaking_list`) → Инвентаризация КМ |
+
+Marking yo'li inventarda bor, ammo aktiv coverage emas; dostup va vaqtinchalik
+skip holati [forma dossierida](forms/marking-stocktaking-list.md) saqlanadi.
+
+`Администрирование` filiali, LEAF:
+`biruni/kauth/company_client_list` — Главное → Дополнительное → Клиенты OAuth2 сервера для компании.
+Undan `company_client+add` (Создать) va `company_client+edit` (qator → Изменить)
+LIST-ACTION bilan ochilishi avval kuzatilgan; joriy test inventarida ikkalasi
+`QOLGAN`. Eski live kuzatuv joriy test coverage'i degani emas.
+
+### Hali menu-track bilan qamralmagan inventar
+Tags: a2, backlog, navigation
+Status: code-confirmed
+Verified: 2026-09-18
+Source: `tests/smoke/test_forms/test_a2_angular_forms.py` module docstringi
+
+Status faqat quyidagi yozuvlar test backlogida mavjudligini tasdiqlaydi.
+Hujjatdan olingan menyu yo'llari live tasdiqlanmagan; implementatsiyadan oldin
+tegishli kompaniya, project va filialda tekshiriladi. Ularni current UI fakti
+yoki test o'tganligi dalili sifatida ishlatma.
+
+`Администрирование` filialiga tegishli deb ko'rsatilgan LEAF nomzodlari:
+
+| Path | Hujjatdagi user track |
+|---|---|
+| `biruni/kauth/client_list` | Главное → Дополнительное → Клиенты API/OAuth2 сервера |
+| `biruni/kauth/security_settings` | Главное → Дополнительное → Настройки безопасности |
+| `biruni/md/audit_setting` | Главное → Дополнительное → Настройки истории изменений |
+| `biruni/md/company_list` | Главное → Дополнительное → Компании |
+| `biruni/md/contact_info_setting` | Главное → Дополнительное → Контактная информация |
+| `biruni/md/feedback_list` | Главное → Дополнительное → Фидбеки |
+| `biruni/md/log_list` | Главное → Дополнительное → Логи |
+| `biruni/md/query_executor` | Главное → Дополнительное → Запросы к базе данных |
+| `biruni/md/request_limit_template_list` | Главное → Дополнительное → Шаблоны лимитов |
+| `biruni/ms/announcement_list` | Главное → Админ → Объявления |
+
+Shu listlardan ochiladigan LIST-ACTION nomzodlari:
+
+| Path | Hujjatdagi list → action |
+|---|---|
+| `biruni/kauth/client+add` | Клиенты API/OAuth2 сервера → Создать |
+| `biruni/kauth/client+edit` | Клиенты API/OAuth2 сервера → qator → Изменить |
+| `biruni/md/company_add` | Компании → Создать |
+| `biruni/md/company_edit` | Компании → qator → Изменить |
+| `biruni/md/company_view` | Компании → qator → Просмотр |
+| `biruni/md/request_limit_template+add` | Шаблоны лимитов → Создать |
+| `biruni/md/request_limit_template+edit` | Шаблоны лимитов → qator → Изменить |
+| `biruni/md/request_limit_template_view` | Шаблоны лимитов → qator → Просмотр |
+| `biruni/md/request_limit_template_audit_details` | Шаблоны лимитов → История изменений → detail |
+| `biruni/ms/announcement+add` | Объявления → Создать |
+| `biruni/ms/announcement+copy` | Объявления → qator → Копировать |
+| `biruni/ms/announcement+edit` | Объявления → qator → Изменить |
+
+Operatsion filial LEAF nomzodi: `billing/blda/operational_dashboard` —
+Главное → Основное → Операционный дашборд.
+
+To'liq menu-track hali yo'q: `anor/rep/mbi/mfa/purchase`,
+`biruni/ker/setting+add`, `biruni/ker/setting+edit`,
+`biruni/ker/head_template_list+attach`, `biruni/md/company_audit_info_audit`,
+`biruni/md/company_audit_info_audit_details`. Eski URL diagnostikasi ularning
+menyudagi yo'lini tasdiqlamaydi; tarixiy kontekst [history.md](history.md)da.
 
 ## Filial switcher DOM
 
@@ -148,136 +258,34 @@ Smartup yangi formalari (yangi Angular/modern app) eski AngularJS Biruni app ust
 
 Tags: a2, forms-runner, menu-track, navigation, code
 Status: code-confirmed
-Verified: 2026-08-06
-Source: `tests/smoke/test_forms/test_a2_angular_forms.py`; `scripts/run_tests.py`
+Verified: 2026-09-18
+Source: `tests/smoke/test_forms/test_a2_angular_forms.py`; `tests/smoke/test_forms/monitoring/navigation.py`; `tests/smoke/test_forms/monitoring/suite_runner.py`
 
-- Joriy entrypoint `test_a2_angular_forms.py::test_a2_angular_forms`;
-  uning Allure title'i `A2Angular`. Bu oddiy navbar suite emas va umumiy Forms
-  runnerga kiritilmaydi: turli
-  navbar'lardagi faqat A2 Angular'ga migratsiya qilingan formalarni o'z leaf
-  inventarida saqlaydigan maxsus cross-navbar test. U bitta `FormMonitor`
-  bilan `navbar_tab → menu_column → menu_item` guruhlarini ketma-ket bajaradi.
-- Har bir qamralgan A2 forma real navbar → menu column → menu item yoki
-  page-link yo'li orqali ochiladi; title va URL alohida tekshiriladi.
-- 54 formalik inventar joriy test docstringida backlog/provenance sifatida
-  saqlangan; current coverage faqat `✅ YOZILGAN` menu-tracklar bilan
-  belgilanadi. Oldingi URL-only harness konteksti
-  [history.md](history.md)da turadi.
-
-- **Joriy menu-track test (`test_a2_angular_forms.py`) — real menyu orqali:**
-  Har a2 formani ESKI menyudan `navigate_to_a2(page, tab, path)` bilan ochadi (real user yo'li), xatoda to'xtamaydi,
-  filial bo'yicha guruhlangan hisobot beradi. **Barcha angular-menyu a2 formalar ADMIN** — alohida head test YO'Q;
-  hali live tasdiqlanmagan admin formalar (`md/*`, `announcement`, `client_list`, `security_settings`,
-  `operational_dashboard`, ...) shu SHU faylga qo'shib boriladi.
-  - Har bir qamralgan forma yozuvida `new_forms.md` bilan bir xil to'liq user
-    track saqlanadi. Track Allure step nomi bo'ladi va yakuniy `HISOBOT`da har
-    forma ostida `Track:` qatori sifatida chiqadi. `LEAF`, `SIBLING`,
-    `company_client+add` va `company_client+edit` tracklari majburiy.
-  - **Menyudan ochiladigan admin formalar (red_test, 2026-07-08 live tasdiqlangan):**
-    - birinchi "Администрирование" bo'lmagan operatsion filialda 20 ta: `external_settings`, `visit_list`, `user_locations`, `user_tracking`,
-      `commercial_dashboard`, `rep/mbi/tvt/visit`, `logistics_list`, `mkw/{movement,purchase_request,purchase,input,writeoff}`,
-      `mfm/{movement,movement_request}`, `mkcs/operation`, `anor/rep/mkr/pnl` (leaf matni "Отчет о прибылях и убытках", Финансы),
-      `anor/rep/mku/balance_sheet`, `tmcg/shelf_share`, `mqpf/request`, `plugin_catalog`.
-    - Finance A2 pathlari: `anor/rep/mbi/mkcs/operation`,
-      `anor/rep/mkr/pnl`, `anor/rep/mku/balance_sheet`.
-    - "Администрирование" filialida: `biruni/kauth/company_client_list` + undan `+add` (list → «Создать») va
-      `+edit` (qator bosilsa «Изменить» tugmasi chiqadi → ochiladi). Ochilish signali: main'da «Сохранить» tugmasi.
-      `+add`/`+edit` menyu leafi EMAS — list ichidan tugma bilan ochiladi (dblclick shart emas, bir marta qator bosiladi).
-  - **"Sibling" orqali ochiladigan a2 (menyu leafi EMAS, eski forma ICHIDAN — MUHIM):** ba'zi a2 konstruktorlar
-    alohida menyu leafiga ega emas va **angular menyu modelida ham ko'rinmaydi** — eski forma menyudan ochilib, uning
-    subheader'idagi sub-link (`a[ng-click*="openSibling"]`) bosiladi → `/a2/{path}` ga o'tadi. Shuning uchun forma
-    "menyuda yo'q" degan xulosani FAQAT menyu modelini skanlab chiqarma — eski/qardosh formani OCHIB, subheader
-    sub-linklarini ham tekshir. Tasdiqlangan (2026-07-08):
-    - `anor/rep/mbi/mcg/action` = Справочники → «Акции» (eski `anor/mcg/action_list`) → sub-link «Конструктор отчетов по акциям».
-    - `anor/mkw/marking_stocktaking/marking_stocktaking_list` = Склад → Документы → «Инвентаризации» (eski
-      `anor/mkw/stocktaking/stocktaking_list`) → sub-link «Инвентаризация КМ».
-    Action konstruktori testda `PAGE_LINK_A2_FORMS` orqali ochiladi. Marking
-    stocktaking formasining joriy coverage holati
-    [form dossierida](forms/marking-stocktaking-list.md) saqlanadi.
-  - **new_forms.md da bor, red_test menyusida hali topilmadi** (URL test qamraydi):
-    `anor/rep/mbi/mfa/purchase` (user bermagan — keyin). Boshqa company/serverda bo'lishi mumkin.
-  - Hali URL-only (real user yo'li aniqlanmagan): `ker/setting+add/+edit`, `ker/head_template_list+attach`,
-    `company_audit_info_audit(+details)` — kompaniya «История изменений» tugmasidan ochilishi mumkin (tekshirilmagan).
-  - **Standalone run:** `test_a2_angular_forms.py` uchun `code` fixture kerak emas; `.env` faqat login/server
-    credentiallariga (`COMPANY_URL`, `COMPANY_CODE`, `COMPANY_PASSWORD`) ta'sir qiladi.
-  - Setup bilan bir sessiyada collect qilinganda test fresh `page` contextida
-    ishlaydi, ammo u Setupning faol `session_browser` runtimeini qayta ishlatadi;
-    alohida `sync_playwright()` ochilmaydi.
-
-### Explicit menu-track test (2026-07-27)
-
-- `test_a2_angular_forms.py` module docstringi kelajak backlogi sifatida
-  `A2_FORMS`dagi barcha 53 formani profile → filial bo'yicha saqlaydi. Har
-  yozuvda status (`✅ YOZILGAN`/`⬜ QOLGAN`), mode, path, title, parent (kerak
-  bo'lsa) va mavjud user trace bor. Yangi menu-track qo'shilganda shu yozuvning
-  statusi va yuqoridagi jami hisoblari ham yangilansin.
-- `tests/smoke/test_forms/test_a2_angular_forms.py` aktiv route
-  definitionlarini yagona `FormCase` rejasiga aylantirib, markaziy monitor
-  orqali ketma-ket loopda bajaradi. Plan qurish va title fallback boshqa
-  runnerlarda takrorlanmaydi.
-- Parametrlar real UI ma'nosida: `navbar_tab` — yuqori navbar,
-  `menu_column` — mega-menu ustuni, `menu_item` — ustundagi forma,
-  `page_links` — parent forma ochilgach bosiladigan yuqori linklar.
-- Lokal `_check_form(...)` faqat click navigatsiyasini bajaradi. Legacy
-  dashboarddan birinchi forma `BasePage.navigate_to_form(...)` bilan ochiladi;
-  undan keyingi A2 menu qadamlari `AngularBasePage.navigate_to(...)` bilan
-  bajariladi. Har bir A2 formadan keyin title va URL alohida
-  `AngularBasePage.expect_page(title=..., url=...)` bilan tekshiriladi.
-- Allure ierarxiyasi: filial parent step → raqamlangan forma step → `Yo'l: ...`
-  navigatsiya stepi + kutilgan title va URL qiymatlari aniq yozilgan tekshiruv
-  stepi. Generic `Tekshiruv: title va URL` ishlatilmaydi; reportda nima
-  tekshirilgani stepni ochmasdan ko'rinishi kerak. Navigatsiya yoki
-  `expect_page()` yiqilsa aynan tegishli forma qizil ko'rinadi.
-- A2 filial switchi ham A2 sahifada
-  `AngularBasePage.switch_filial(name=operational_filial)` bilan qilinadi;
-  legacy `BasePage.switch_filial()` A2 shell selectorlariga mos emas.
-- 2026-07-27 live natija: **20/20 passed**. Keyin PnL foydalanuvchi
-  tasdiqlagan exact `menu_item="PnL"` bilan qayta qo'shildi, ammo foydalanuvchi
-  ko'rsatmasiga ko'ra bu o'zgarishdan keyin test run qilinmadi.
-- Keyin `biruni/kauth/company_client_list` ham foydalanuvchi tasdiqlagan real
-  track bilan qayta qo'shildi; bu o'zgarishdan keyin ham test run qilinmadi.
-- Kelishilgan execution tartibi:
-  1. login'dan keyin `dashboard()` heading va URLni tasdiqlaydi;
-  2. `switch_filial(name="Администрирование")`;
-  3. ochilgan filial ro'yxatidan birinchi `Администрирование` bo'lmagan nom
-     `operational_filial`ga saqlanadi;
-  4. texnik A2 dashboard shell ochilib, A2 filial konteksti
-     `Администрирование` bilan sinxronlanadi;
-  5. real A2 menu track orqali `company_client_list` bir marta ochilib,
-     markaziy URL/title/readiness tekshiruvi bilan tasdiqlanadi;
-  6. ortga qaytmasdan shu sahifadan
-     `switch_filial(name=operational_filial)` qilinadi;
-  7. operatsion filialdagi direct menu formalar, keyin `page_links` orqali
-     ochiladigan formalar ketma-ket tekshiriladi.
-- Joriy refaktorda 22 forma bor: 1 ta admin list, 19 ta operatsion direct va
-  2 ta `page_links` formasi. 2026-07-27 live run:
-  **22/22 passed, 123.45s**.
-- Standalone A2Angular bitta page'da legacy `#/` → A2 → legacy `#/` → A2 o'tishlarini
-  bajarganda legacy va A2 shell filial kontekstlari ajralib qolishi mumkin.
-  `BasePage.switch_filial("Администрирование")` A2 shellning oldingi
-  operatsion filialini almashtirmaydi. Admin-only A2 route ochilgach
-  `AngularBasePage.switch_filial("Администрирование")` qilinadi; bu switch
-  `/a2/trade/intro/dashboard`ga redirect qilgani uchun target forma A2
-  menyusidan qayta ochilib, shundan keyin title/readiness tekshiriladi.
-  Tarixiy verifikatsiya — 2026-07-29dagi Forms-02 headless run:
-  **22/22 passed, 137.19s**.
-- Tarixiy strukturali reporting verifikatsiyasi: o'sha paytdagi Forms-02 target headless run
-  **22/22 passed, 136.83s**. Terminal summary har qatorda filial, tab, menu,
-  forma va full URLni chiqardi; generatsiya qilingan Allure JSONda har forma
-  uchun kontekstli step, kutilgan URL va haqiqiy URL steplari `passed`.
-- Reporting-only o'zgarishda forma UI/state o'zgarmagani uchun yangi screenshot
-  olinmadi; mavjud A2 forma screenshotlari aktual.
-- Live title farqlari: PnL formasi title'i aynan `PnL`; shelf-share title'i
-  aynan `Конструктор отчётов по доле на полке`; mkw/mfm report konstruktorlari
-  `Конструктор отчетов по ...` ko'rinishida.
-- Hozircha keyinga qoldirilgan 2 forma:
-  `biruni/kauth/company_client+add`, `biruni/kauth/company_client+edit`.
-- Real menu farqlari:
-  - shelf-share: `Торговый маркетинг → Отчеты → Конструктор отчётов по доле на полке`;
-  - Plugin Marketplace ustunsiz kichik flyout: `Плагин → Plugin Marketplace`,
-    shuning uchun `menu_column=None`;
-  - action va marking stocktaking konstruktorlari `page_links` orqali parent
-    formadan ochiladi.
+- Entrypoint `test_a2_angular_forms.py::test_a2_angular_forms`, Allure title
+  `A2Angular`. Bu alohida cross-navbar test; oddiy Forms runneriga kirmaydi.
+- Module docstringidagi 54 formalik inventar backlog/provenance; faol coverage
+  `ADMIN_A2_FORMS`, `OPERATIONAL_A2_FORMS`, `PAGE_LINK_A2_FORMS` va skip
+  registrydan tuzilgan `FormCase` rejasiga qarab aniqlanadi.
+- Precondition: admin login → legacy `Администрирование` filialiga o'tish →
+  birinchi operatsion filialni aniqlash → `COMPANY_URL` ostidagi texnik
+  `/a2/trade/intro/dashboard` shellini ochish. Biznes formalari real menu va
+  page-link orqali `run_form_cases()` bilan tekshiriladi.
+- `FormMonitor` URL, loader, application error, content va title checklarini
+  boshqaradi. `expect_page(title=...)` chaqiruvi yo'q; title check kontrakti
+  [check-title.md](form-monitor/check-title.md)da. Lokal `_check_form` yoki
+  Visitning `navigate_to_a2` flowi bu runnerning entrypointi emas.
+- Allure guruhlari `navbar_tab → menu_column → menu_item`; filial, expected
+  URL va actual URL monitoring kontekstida saqlanadi. `menu_column=None`
+  ustunsiz menyu uchun, `page_links` parent formadan keyingi linklar uchun.
+- Precondition xatosi monitor orqali qayd etiladi; yakuniy `finish()` barcha
+  yig'ilgan natijalarni report qiladi. Marking skip holati
+  [dossierda](forms/marking-stocktaking-list.md), company client add/edit esa
+  [backlogda](#forma-yollari-va-backlog).
+- Test `code` fixturega bog'liq emas; fresh `page` contexti session-scoped
+  browser runtimeini qayta ishlatadi. Setup bilan bir sessiyada ikkinchi
+  `sync_playwright()` yaratilmaydi.
+- 2026-07 dagi 20/22/24 formalik run hisoblari joriy coverage emas;
+  [history.md](history.md#skills-auditida-ajratilgan-eski-kontraktlar)da tarixiy dalil sifatida saqlanadi.
 
 ### Legacy dropdown linklarini filial deb qabul qilish regressiyasi (2026-07-27)
 Tags: a2, filial, project, menu, ci, locator, regression
@@ -305,7 +313,7 @@ Tags: a2, project, filial-switch, locator, sfa, trade
 Status: live-ui-confirmed
 Verified: 2026-08-03
 Source: user; `test-results/allure-results/0e25c8ce-df57-4b59-8cae-60045db94448-attachment.png`;
-`utils/angular_base_page.py`
+`utils/base_pages/angular_base_page.py`
 - Qayerda: `smartup.online` A2 headeridagi project/filial triggerida.
 - Qoida: serverdagi avvalgi `TRADE` project nomi `SFA`ga o'zgargan. 2026-07-27
   dalillaridagi `TRADE` nomi tarixiy holat, joriy triggerda `SFA` ko'rinadi.
@@ -313,15 +321,8 @@ Source: user; `test-results/allure-results/0e25c8ce-df57-4b59-8cae-60045db94448-
   uchun eskirgan. Joriy project sifatida `SFA` ishlatiladi yoki locator project
   nomiga bog'lanmaydigan qilib yoziladi.
 
-## Diagnostika natijasi (2026-07-07, app3.greenwhite.uz/xtrade — 2 passed, 0 muammo)
+## Tarixiy diagnostika
 
-- **ADMIN profil (admin@red_test):** 30/30 muvaffaqiyatli (28 direct OCHILDI + 1 via_list edit OCHILDI + 1 skip[ker/setting+edit]).
-- **HEAD profil (admin@head):** 23/23 muvaffaqiyatli (14 direct OCHILDI + 8 via_list edit OCHILDI, jumladan
-  Компании, Логи, Настройки безопасности, Объявления, Операционный дашборд + ularning +edit/+view formalari).
-- **Hech bir a2 forma buzuq emas.** +edit/+view/+copy/_details formalar mos `_list` birinchi qatoridan
-  (double-click) ochiladi — hammasi OCHILDI.
-- **TUZATISH (2026-07-08 user qoidasi):** "head-only" deb belgilangan formalar aslida ham ADMIN formalar — angular
-  menyu orqali ochiladi. Yuqoridagi URL-diagnostikada admin@head da ochilishi shundan: forma faqat head KOMPANIYASIда
-  mavjud bo'lgan (profil emas, kompaniya masalasi). Menyu-based testда bularning hammasi admin sifatida qamraladi.
-- "Ochilgan" signali — `document.title` forma nomiga (yoki `+edit` da path'ga) aylanishi + `main` da kontent.
-  `mainLen` ni yakka ochilish mezoni sifatida ishlatma — async/datasiz formalarda false-negative beradi.
+Eski URL-only diagnostika va run natijalari
+[history.md](history.md#skills-auditida-ajratilgan-eski-kontraktlar)ga ko'chirilgan.
+Ular joriy serverdagi dostup yoki barcha formalar sog'lomligini tasdiqlamaydi.

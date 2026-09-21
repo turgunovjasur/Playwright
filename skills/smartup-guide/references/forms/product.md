@@ -105,7 +105,7 @@ Live UI probe (2026-07-13) narx grid headerlari: `Название`, `Тип ц�
 ## Test
 
 - `tests/smoke/test_setup/test_18_product.py` ichidagi
-  `run_product(page, code, save_data)` UZS productni,
+  `run_product(page, code, *, save_product_id=False)` UZS productni,
   `tests/smoke/test_setup/test_19_product_usa.py` ichidagi
   `run_product_usa(page, code)` esa USD productni yaratib tegishli narxini
   belgilaydi; `run_*` auth qilmaydi.

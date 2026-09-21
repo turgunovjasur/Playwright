@@ -1,8 +1,8 @@
 import allure
 
 from tests.smoke.flows.flow_authorization import authorization
-from tests.smoke.flows.flow_product import create_product_with_price
-from utils.auto_base_page import AutoBasePage
+from tests.smoke.test_setup.flow_setup.flow_product import create_product_with_price
+from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Product")]
 

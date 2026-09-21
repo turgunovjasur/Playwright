@@ -3,7 +3,7 @@ import pytest
 
 from tests.smoke.flows.flow_authorization import authorization
 from utils.data_store import load_data
-from utils.auto_base_page import AutoBasePage
+from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [
     pytest.mark.smoke_group("0"),

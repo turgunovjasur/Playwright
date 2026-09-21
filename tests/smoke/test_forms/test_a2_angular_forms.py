@@ -8,7 +8,8 @@ Allure, terminal progress va yakuniy JSON aynan shu monitor natijasidan quriladi
 A2 FORMALAR INVENTARI — kelajakdagi menu-track testlar uchun
 ==============================================================
 
-Manba: ``test_a2_new_forms.py::A2_FORMS`` va ``new_forms.md``.
+Tarixiy inventar manbasi: ``test_a2_new_forms.py::A2_FORMS``.
+Canonical navigatsiya: ``skills/smartup-guide/references/a2-migrated-forms.md``.
 Jami: 54 | ✅ YOZILGAN: 22 | ⏸ VAQTINCHA SKIP: 1 | ⬜ QOLGAN: 31.
 
 Status shu faylga nisbatan:
@@ -269,8 +270,8 @@ from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.test_forms.monitoring.monitor import FormMonitor
 from tests.smoke.test_forms.monitoring.navigation import first_operational_filial, run_form_cases
 from tests.smoke.test_forms.monitoring.suite_runner import OPERATIONAL_PLACEHOLDER, build_suite_inventory
-from utils.angular_base_page import AngularBasePage
-from utils.base_page import BasePage
+from utils.base_pages.angular_base_page import AngularBasePage
+from utils.base_pages.base_page import BasePage
 
 
 pytestmark = [

@@ -145,7 +145,7 @@ Source: `tests/smoke/test_forms/monitoring/monitor.py`,
 `tests/smoke/test_forms/monitoring/diagnostics/core.py`,
 `tests/smoke/test_forms/monitoring/diagnostics/failed_requests.py`,
 `tests/smoke/test_forms/inventory/skipped_forms.py`,
-`tests/smoke/screenshot_masking.py`
+`utils/screenshot_masking.py`
 
 - Forms-01 (`Главное`), Forms-02 (`Продажа`), Forms-03 (`Склад`), Forms-04
   (`Финансы`), Forms-05 (`Справочники`) va standalone `A2Angular` bir xil
@@ -356,7 +356,7 @@ Source: `tests/smoke/test_forms/test_0_forms_runner.py`,
 
 Status: code-confirmed
 Verified: 2026-08-24
-Source: `tests/smoke/test_groups/test_report_grup/report_helpers.py`
+Source: `tests/smoke/test_groups/test_report_grup/flow_report/report_helpers.py`
 
 - Hash-route integration reporti `page.goto(..., wait_until="commit")` bilan
   ochiladi; global browser `load` eventi biznes readiness signali emas.
@@ -444,7 +444,7 @@ Source: user; `scripts/run_tests.py`; `tests/smoke/smoke_reporting.py`;
 - Default holatda reporting kodini syntax parse, linter, read-only artifact
   inspection va `git diff --check` bilan tekshir; unit test fayllarini yaratma
   yoki o'zgartirma.
-- `tests/unit/test_telegram_reporting.py` faqat user aynan unit test yozish yoki
+- Unit testlar faqat user aynan unit test yozish yoki
   o'zgartirishni so'rasa tahrirlanadi; `pytest` esa user aynan `run qil` deganda
   ishga tushiriladi. Bu reference'dagi command/tavsiya o'zicha authority emas.
 - Report server uchun production browser/processni o'zboshimchalik bilan ochma;

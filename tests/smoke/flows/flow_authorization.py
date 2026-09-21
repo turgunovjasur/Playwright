@@ -1,7 +1,10 @@
 import os
+import re
 
-from utils.base_page import BasePage
+from utils.base_pages.base_page import BasePage
+from utils.base_pages.page_reporting import capture_filial
 from utils.data_store import load_data
+from utils.report_context import confirm_login, start_login
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -13,10 +16,14 @@ def current_company_code():
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def login(page, email=None, password=None):
+def login(page, email=None, password=None, *, profile=None):
     email = email or f"admin@{current_company_code()}"
     password = password or os.environ["COMPANY_PASSWORD"]
     company_url = os.environ["COMPANY_URL"]
+    account, _, company = email.rpartition("@")
+    profile = profile or ("admin" if account == "admin" else "user" if account.startswith("user-pw") else "custom")
+    match = re.fullmatch(r"user-pw(\d+)", account)
+    start_login(page, server=company_url, company=company if profile != "head" else "", profile=profile, login=email, password=password, code=match.group(1) if match else None)
 
     page.goto(f"{company_url}/login.html")
 
@@ -29,6 +36,8 @@ def login(page, email=None, password=None):
 
 def dashboard(page):
     BasePage(page).expect_page(heading="Trade", url="dashboard", timeout=120_000)
+    confirm_login(page)
+    capture_filial(page)
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -55,7 +64,7 @@ def authorization(page, *, who, code=None):
     else:
         raise ValueError(f"authorization: noma'lum who={who!r}. 'admin', 'user' yoki 'head' bo'lishi kerak.")
 
-    login(page, email=email, password=password)
+    login(page, email=email, password=password, profile=who)
     dashboard(page)
 
 # ----------------------------------------------------------------------------------------------------------------------

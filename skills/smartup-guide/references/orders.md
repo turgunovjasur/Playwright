@@ -28,7 +28,7 @@ Tags: order, navigation
 
 ### Mavjud Order Flowlar
 Tags: order, flow
-- Qayerda: `tests/smoke/flows/flow_order/`.
+- Qayerda: `tests/smoke/test_life_cycle/flow_order/`.
 - Flowlar:
   - `flow_order_list(page, add=True/find_row/view/edit/status)`
   - `flow_order_main_page(...)`

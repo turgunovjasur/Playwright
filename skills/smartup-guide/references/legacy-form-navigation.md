@@ -12,8 +12,8 @@
 - [Склад mega-menu inventari](#склад-mega-menu-inventari-2026-08-11-live)
 - [Финансы mega-menu inventari](#финансы-mega-menu-inventari-2026-08-11-live)
 - [Главное mega-menu inventari](#главное-mega-menu-inventari-2026-08-11-live)
-- [Alert bleed-through gipotezasi yopildi](#alert-bleed-through--trigger-add-bilan-ketdi-2026-08-05)
-- [Legacy formalarda heading har doim topiladi](#legacy-formalarda-heading-har-doim-topiladi-2026-08-05)
+- [Alert bleed-through gipotezasi yopildi](#alert-bleed-through--mexanizm-tasdiqlandi-trigger-hozir-yoq-2026-08-05)
+- [Legacy title check](#legacy-title-check-visible-headingni-exact-talab-qiladi-2026-08-06)
 - [Group-0 moliyaviy sahifalari](#group-0-moliyaviy-sahifalari-2026-07-31-live)
 
 Tags: legacy, forms, navigation, menu, navbar, page-link, dropdown, filial, administration

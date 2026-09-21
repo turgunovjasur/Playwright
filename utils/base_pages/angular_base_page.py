@@ -5,6 +5,9 @@ from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 from utils.date_utils import format_date, resolve_date
 from utils.helper_utils import first_non_admin_filial, label_pattern
+from utils.base_pages.page_diagnostics import expectation_gate, report_page_expectation
+from utils.base_pages.page_reporting import report_web_action
+from utils.report_context import record_filial
 
 
 _UNSET = object()
@@ -22,7 +25,7 @@ class AngularBasePage:
     """Smartup A2 yangi Angular formalarining umumiy UI primitivlari.
 
     Bu class ``smt-*`` komponentlari, CDK overlay va A2 shell uchun yozilgan.
-    Eski AngularJS/Biruni formalarida ``utils.base_page.BasePage`` ishlatiladi.
+    Eski AngularJS/Biruni formalarida ``utils.base_pages.base_page.BasePage`` ishlatiladi.
     Public parametrlar, assertion va return kontraktlari BasePage bilan teng;
     locator va komponent bilan ishlash implementatsiyasi A2 uchun alohida.
     """
@@ -689,6 +692,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def form_view(
         self,
         label,
@@ -992,6 +996,8 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
+    @report_page_expectation
     def expect_page(
         self,
         heading=None,
@@ -1011,10 +1017,12 @@ class AngularBasePage:
 
         if url is not None:
             pattern = url if isinstance(url, re.Pattern) else re.compile(re.escape(url))
+            expectation_gate(self.page, "url")
             expect(self.page).to_have_url(pattern, timeout=timeout)
 
         scope = self._content_root(root)
         if heading is not None:
+            expectation_gate(self.page, "heading")
             role_heading = scope.get_by_role("heading").filter(has_text=heading).first
             text_heading = scope.get_by_text(
                 heading, exact=not isinstance(heading, re.Pattern)
@@ -1023,10 +1031,12 @@ class AngularBasePage:
             expect(target).to_be_visible(timeout=timeout)
 
         if check_unblocked:
+            expectation_gate(self.page, "loader")
             self._wait_for_loader(timeout=timeout, root=self.page)
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def grid(
         self,
         text=None,
@@ -1284,6 +1294,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def navigate_to(
         self,
         tab="Главное",
@@ -1313,6 +1324,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def navigate_to_form(
         self,
         *,
@@ -1430,6 +1442,7 @@ class AngularBasePage:
         option.click(timeout=timeout)
         expect(trigger).to_contain_text(target_name, timeout=timeout)
         self.wait_for_loader(timeout=timeout)
+        record_filial(self.page, target_name)
         return option
 
     # ------------------------------------------------------------------------------------------------------------------

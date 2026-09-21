@@ -10,7 +10,7 @@
 - [Step 1](#step-1--main-page)
 - [Step 2](#step-2--product-page)
 - [Step 3](#step-3--final-page)
-- [Flow/helper/test fayllari](#ishlatiladigan-flowhelpertest-fayllari)
+- [Flow/helper/test fayllari](#ishlatiladigan-flow-va-test-fayllari)
 - [Known issues](#known-issues--debug-notes)
 
 ## URL / Navigation
@@ -97,7 +97,7 @@
   `delivery_date` + limit dan hisoblanadi.
 
 ## Ishlatiladigan flow va test fayllari
-- Flowlar: `tests/smoke/flows/flow_order/flow_order_add.py` (main/product/final), `flow_order_list.py` (list/add/find_row/view/edit/status).
+- Flowlar: `tests/smoke/test_life_cycle/flow_order/flow_order_add.py` (main/product/final), `flow_order_list.py` (list/add/find_row/view/edit/status).
 - Avvalgi Group A/B order testlari 2026-07-31 kuni o'chirilgan; yangi testlar qaytadan yoziladi.
 - Group-0 base order:
   - `tests/smoke/test_groups/test_a_grup/test_01_create_base_order.py`

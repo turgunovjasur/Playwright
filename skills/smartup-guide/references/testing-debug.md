@@ -27,14 +27,18 @@ Tags: timeout, playwright, base-page, conftest, debug
 - `BasePage.expect_page(url=...)` URL mosligini kutadi, lekin hozirgi implementatsiyada loader `check_unblocked` tekshiruvi faqat `heading` branchida ishlaydi; URL-only chaqiruv loader kutishi deb qabul qilinmaydi. Umumiy menu flowida loaderni `BasePage.navigate_to()`, standalone URL tekshiruvida esa alohida `BasePage.wait_for_loader()` kutadi. Forms monitoring oqimi bundan mustasno: unda URLdan keyingi yagona loader authority `check_loader`.
 - `requests`/`urllib` HTTP timeoutlari sekundlarda va UI kutishlaridan boshqa mas'uliyatga ega; ular ham tegishli request funksiyasi yonida turadi.
 
-### Integration report direct route `load` timeouti
-Tags: report, navigation, playwright, timeout, load, open-report
-Status: trace-confirmed
-Verified: 2026-08-24
-Source: `tests/smoke/test_groups/test_report_grup/report_helpers.py:15`; `test-results/traces/tests_smoke_test_groups_test_report_grup_test_06_integration_two.py__test_report_integration_two.zip`
-- `open_report(..., timeout=...)`dagi timeout hozir faqat keyingi `expect_page()`ga uzatiladi; ichki `page.goto()` esa contextdagi `20_000 ms` navigation timeout bilan default `load` eventini kutadi.
-- Trace'da `goto` timeout paytida target URL, `Интеграция с системой монолит` headingi va report radio control'lari allaqachon render bo'lgan. Shuning uchun bu failure forma ochilmagani yoki radio locator xatosi emas, readiness signal noto'g'ri tanlangan navigation-helper xatosidir.
-- Testda ishlatish: Step 1 shu stack bilan yiqilsa keyingi settings/radio qadamlari bajarilmagan deb yoz; `open_report` timeoutini oshirishning o'zi `goto` timeoutini o'zgartirmaydi.
+### Integration report navigatsiyasi
+Tags: report, navigation, playwright, timeout, open-report
+Status: code-confirmed
+Verified: 2026-09-18
+Source: `tests/smoke/test_groups/test_report_grup/flow_report/report_helpers.py::open_report`
+- `open_report(base, route, heading=None, timeout=30_000)` joriy URLga qarab
+  legacy session hash yoki A2 path yasaydi. Legacy shellda authenticated
+  session tokeni bo'lmasa aniq xato beradi.
+- `page.goto(..., wait_until="commit", timeout=timeout)`dan keyin
+  `base.expect_page(heading=heading, url=..., timeout=timeout)` ishlaydi.
+  Timeout ikkala bosqichga ham uzatiladi; eski default `load` kutish xatosi
+  [history.md](history.md#skills-auditida-ajratilgan-eski-kontraktlar)da.
 
 ### Bitta pytest sessiyasida yagona Sync Playwright runtime
 Tags: playwright, fixture, session-browser, asyncio, ci
@@ -112,7 +116,8 @@ Tags: debug, input, date, amount, mask
 ### Setup Va Group Model
 Tags: setup, group, dependency
 - `tests/smoke/test_setup/test_0_setup_runner.py` ichidagi mavjud testlar user setup testlari; runner setup testlari bilan bir papkada turadi.
-- `scripts/run_tests.py all` setup, Group-0 va Report group runner fayllarini bitta pytest sessiyasida collect qiladigan full smoke entrypoint hisoblanadi.
+- `scripts/run_tests.py all` Setup → Group-0 → Visit → Report → Forms
+  runnerlarini bitta pytest sessiyasida collect qiladi.
 - Setup testlari ketma-ket va bir-biriga bog'liq.
 - Smoke runner bo'yicha har bir test vazifasi va entity naming xaritasi `references/smoke-runner.md` ichida saqlanadi.
 - Group testlar user setup natijalariga bog'liq, lekin boshqa grouplarga bog'liq emas.
@@ -120,7 +125,9 @@ Tags: setup, group, dependency
 - Bir group failed bo'lishi boshqa grouplarga ta'sir qilmasin.
 - Group testlar boshqa groupning `data_store` keylari, UI state yoki yaratilgan biznes recordlariga suyanmasin; faqat user_setup va o'z group prefixidagi data ishlatilsin.
 - Yangi group runner qo'shilsa, full run uchun `scripts/run_tests.py` dagi `GROUP_RUNNER_PATHS` va `tests/smoke/conftest.py` default runner tanloviga ulanadi.
-- Full run mexanizmida user_setup failed bo'lsa barcha group testlar skip qilinadi; user_setup passed bo'lsa group failed statuslari group marker/prefix bo'yicha alohida yuritiladi.
+- `user_setup` failed bo'lsa faqat setupga bog'liq grouplar skip qilinadi;
+  `setup_independent=True` runnerlar davom etadi. `independent=True` esa
+  bir group ichidagi failure cascade'ini o'chiradi; bu ikki flag alohida.
 - Implementatsiya: `pytest.mark.user_setup` setup chain uchun, `pytest.mark.smoke_group("A")` kabi markerlar group chain uchun ishlatiladi.
 - Grouplar orasida browser/page state leak bo'lmasligi uchun har group runner module-scoped `group_session_page` bilan alohida context/page oladi.
 - User group ichidagi testlar `group_user_page` fixture bilan bitta module-scoped page ishlatadi; login group boshida bir marta qilinadi, group tugaganda fixture oynani yopadi.
@@ -128,18 +135,18 @@ Tags: setup, group, dependency
 
 ### Company Mode Va Birinchi Authorization
 Tags: setup, company, authorization, env, data-store, collection
-- `.env`dagi `CREATE_COMPANY=1` bo'lsa `test_00_company` collectionda qoladi;
-  `0` bo'lsa deselect qilinadi va Allure'da skipped test sifatida ko'rinmaydi.
+- `.env`dagi `COMPANY_CODE=1` bo'lsa `test_00_company` collectionda qoladi;
+  haqiqiy mavjud company kodi berilsa deselect qilinadi va Allure'da skipped
+  test sifatida ko'rinmaydi. `COMPANY_CODE=0` configuration error.
 - Create rejimida `HEAD_ADMIN_EMAIL` va `HEAD_ADMIN_PASSWORD` majburiy;
   `DISABLE_LICENSE_POLICY` faqat shu rejimda ishlaydi.
 - Alohida Authorization pytest item yo'q. `test_01_legal_person` boshida
   `authorization(who="admin")` bajariladi va session `code` data storega yoziladi.
 - Create rejimida admin suffix faqat `test_00_company` saqlagan
   `data_store.json.company_code`dan olinadi; existing rejimida oddiy
-  `COMPANY_CODE` ishlatiladi, `COMPANY_CODE=0` esa saqlangan
-  `data_store.json.company_code`ni qayta ishlatish sentinelidir. Admin
-  credentiali har ikki holatda
-  `admin@<current_company_code>` + `COMPANY_PASSWORD`.
+  `COMPANY_CODE` ishlatiladi. Keyingi alohida run uchun yaratilgan haqiqiy
+  company kodi va paroli existing konfiguratsiyaga beriladi. Admin login
+  `admin@<current_company_code>`; `USER_PASSWORD` alohida environment qiymati.
 
 ### Report Group
 Tags: report, group, integration, download
@@ -171,6 +178,7 @@ Tags: fixture, data-store, load-data, dependency
 Status: code-confirmed
 Verified: 2026-08-28
 Source: `tests/smoke/conftest.py:248`
+- `save_data` va `load_data` fixture emas; `utils.data_store`dan import qilinadi.
 - Qoida: `load_data("key")` missing yoki bo'sh keyda aniq dependency xatosi
   ko'taradi; faqat optional key `allow_missing=True` bilan `None` qaytaradi.
 - Testda ishlatish: setup baseline qiymatlari parametrsiz strict o'qiladi;

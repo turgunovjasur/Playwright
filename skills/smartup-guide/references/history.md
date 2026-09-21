@@ -7,6 +7,7 @@ fayldagi ma'lumotni current truth sifatida ishlatmasin.
 ## Mundarija
 
 - [Entry formati](#entry-formati)
+- [Skills auditida ajratilgan eski kontraktlar](#skills-auditida-ajratilgan-eski-kontraktlar)
 - [Superseded runner scope](#superseded-runner-scope)
 - [Removed Forms Monitor checklari](#removed-forms-monitor-checklari)
 - [Superseded Forms Monitor title modeli](#superseded-forms-monitor-title-modeli)
@@ -492,3 +493,66 @@ Replaced by: `skills/smartup-guide/references/ui-patterns.md#list-va-grid-settin
   settingda ham mavjud deb qabul qilinar edi.
 - Current behavior: search fieldlar formaga bog'liq; Visit listda `ИД` table
   fieldi mavjud, ammo `Настройки поиска` dialogida `ИД` yo'q.
+
+
+## Skills auditida ajratilgan eski kontraktlar
+
+### Company mode, flow yo'llari va runner defaultlari
+Status: superseded
+Observed: 2026-08
+Superseded: 2026-09-18
+Source: audit oldidan current skill reference'lari; joriy `scripts/smoke_environment.py`, `scripts/run_tests.py`, `pytest.ini`
+Replaced by: `skills/project-guide/references/project-context.md`; `skills/smartup-guide/references/smoke-runner.md`
+- Old behavior: `CREATE_COMPANY=1` / `--create-company` create rejimini
+  tanlagan; `COMPANY_CODE=0` saqlangan company kodiga sentinel sifatida yozilgan.
+  Joriy validator `COMPANY_CODE=0`ni rad etadi; create mode `COMPANY_CODE=1`.
+- Old guidance: page-objectlar `utils/*.py`, domain flowlar
+  `tests/smoke/flows/` ichida edi. Joriy joylashuv `utils/base_pages/` va
+  consumer domaini yonidagi flow papkalari.
+- Old guidance: GitHub cron va `setup-group-0` CI Smoke targeti, pytest
+  `--maxfail=3`. Joriy konfiguratsiyada bot scheduling, `setup-smoke` va
+  `--maxfail=0` ishlatiladi. Audit sanasi deploy/migratsiya sanasi emas.
+
+### Integration report default load timeouti
+Status: superseded
+Observed: 2026-08-24
+Superseded: 2026-09-18
+Source: avvalgi `testing-debug.md` trace-confirmed entrysi
+Replaced by: `tests/smoke/test_groups/test_report_grup/flow_report/report_helpers.py::open_report`
+- Eski helper `page.goto()`da default `load`ni 20 sekund kutgan; caller
+  timeouti faqat keyingi `expect_page()`ga uzatilgan. Trace'da forma allaqachon
+  render bo'lgan, ammo navigation timeout bo'lgan. Joriy helper `commit`ni
+  kutadi va ikkala bosqichga explicit timeout uzatadi.
+
+### A2 URL-only va eski menu-track natijalari
+Status: superseded
+Observed: 2026-07-07..2026-07-29
+Superseded: 2026-09-18
+Source: avvalgi `a2-migrated-forms.md` run qaydlari; historical A2 URL-only harness
+Replaced by: `skills/smartup-guide/references/a2-migrated-forms.md#test`
+- 2026-07-07 URL diagnostikasi: admin kompaniyada 30 yozuv (28 direct,
+  1 via-list, 1 skip), head kompaniyada 23 yozuv (14 direct, 8 via-list,
+  1 skip); umumiy 2 pytest item passed deb qayd etilgan.
+- Eski qayddagi “barcha A2 formalar sog'lom” xulosasi faqat o'sha muhit va
+  vaqtdagi diagnostikaga tegishli; joriy dostup/coverage dalili emas.
+- 2026-07-08 menyu auditi 24 route/actionni qayd etgan. Keyingi inventory
+  va add/edit coverage o'zgargani sabab bu son hozirgi case soni emas.
+- 2026-07-27 menu-track runlarida dastlab 20/20, keyin 22/22 (123.45s)
+  passed qayd etilgan. 2026-07-29 Forms-02 runlari 22/22 (137.19s va
+  reporting verificationda 136.83s) passed bo'lgan.
+- Eski `_check_form`, `navigate_to_a2` va `expect_page(title=...)` tavsiflari
+  joriy A2Angular orchestrationi emas: hozir `FormMonitor` va `run_form_cases`
+  ishlatiladi; title alohida checkda tekshiriladi.
+- 2026-07 live title kuzatuvi: PnL title'i `PnL`, shelf-share title'i
+  `Конструктор отчётов по доле на полке`. Menyu matni va document title bir
+  xil bo'lishi shart emas; joriy qoida title check reference'ida.
+
+### Natural person view helperi
+Status: superseded
+Observed: 2026-07
+Superseded: 2026-09-18
+Source: avvalgi natural-person dossier; joriy `tests/smoke/test_setup/flow_setup/flow_natural_person.py`
+Replaced by: `skills/smartup-guide/references/forms/natural-person.md#test-arxitekturasi`
+- Eski `check_natural_person_view` helperi va create ichida list/add ochilishi
+  haqidagi tavsif joriy kodga mos emas. Hozir list/create/view/close alohida
+  `step_name` qabul qiladigan flowlar; biznes assertionlar testcase ichida.

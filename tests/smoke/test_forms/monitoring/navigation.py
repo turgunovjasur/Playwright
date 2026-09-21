@@ -10,8 +10,8 @@ from tests.smoke.test_forms.monitoring.reporting import (
     write_terminal_report as _write_terminal_report,
 )
 from tests.smoke.test_forms.monitoring.checks import canonical_form_path
-from utils.angular_base_page import AngularBasePage
-from utils.base_page import BasePage
+from utils.base_pages.angular_base_page import AngularBasePage
+from utils.base_pages.base_page import BasePage
 from utils.helper_utils import first_non_admin_filial
 
 

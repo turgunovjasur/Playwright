@@ -1,4 +1,4 @@
-"""Smoke run sozlamalari va company yaratish testini tanlash qoidasi."""
+"""Smoke run environmenti va browser sozlamalari."""
 
 import os
 from pathlib import Path
@@ -39,75 +39,6 @@ def option_or_env(config, option_name, *env_names):
         if value:
             return value
     return ""
-
-
-def add_pytest_options(parser):
-    """Smartup smoke run uchun qo'shimcha pytest CLI optionlarini ro'yxatdan o'tkazadi."""
-    smoke = parser.getgroup("smartup smoke")
-    smoke.addoption(
-        "--headless",
-        action="store_true",
-        default=False,
-        help="Chromium ni headless rejimda ishga tushiradi",
-    )
-    smoke.addoption(
-        "--new-code",
-        action="store_true",
-        default=False,
-        help=(
-            "Yangi 6 xonali code yaratadi; berilmasa data_store.json dagi "
-            "mavjud code ishlatiladi"
-        ),
-    )
-    smoke.addoption("--url", default="", help="Majburiy server URL")
-    smoke.addoption(
-        "--company-code",
-        default="",
-        help="Majburiy: 1 — yangi company yaratish; boshqa kod — mavjud company.",
-    )
-    smoke.addoption(
-        "--company-password",
-        default="",
-        help="Mavjud company admin paroli; company code 1 bo'lmasa majburiy.",
-    )
-    smoke.addoption(
-        "--head-email",
-        default="",
-        help="--company-code 1 bilan head profil emaili.",
-    )
-    smoke.addoption(
-        "--head-password",
-        default="",
-        help="--company-code 1 bilan head profil paroli.",
-    )
-    smoke.addoption(
-        "--disable-license-policy",
-        action="store_true",
-        default=False,
-        help=(
-            "--company-code 1 bilan yangi companyda Политика лицензирования "
-            "ni o'chiradi."
-        ),
-    )
-
-
-def modify_collected_items(config, items):
-    """Mavjud company bilan run qilinganda company yaratish testini chiqaradi."""
-    if os.environ["COMPANY_CODE"] != "1":
-        company_items = [
-            item
-            for item in items
-            if (
-                Path(str(item.path)).name == "test_0_setup_runner.py"
-                and item.name == "test_00_company"
-            ) or (
-                Path(str(item.path)).name == "test_00_company.py"
-                and item.name == "test_company"
-            )
-        ]
-        if company_items:
-            items[:] = [item for item in items if item not in company_items]
-            config.hook.pytest_deselected(items=company_items)
 
 
 def configure_environment(config):

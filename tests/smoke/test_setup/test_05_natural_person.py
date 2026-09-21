@@ -1,7 +1,7 @@
 import allure
 
 from tests.smoke.flows.flow_authorization import authorization
-from tests.smoke.flows.flow_natural_person import (
+from tests.smoke.test_setup.flow_setup.flow_natural_person import (
     close_natural_person_view,
     create_natural_person,
     open_natural_person_create,
@@ -9,7 +9,7 @@ from tests.smoke.flows.flow_natural_person import (
     open_natural_person_view,
 )
 from utils.data_store import save_data
-from utils.auto_base_page import AutoBasePage
+from utils.base_pages.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Natural Person")]

@@ -3,7 +3,7 @@
 Reference for the Integration department. This document describes **how the Smartup SFA (trade)
 mobile app authenticates and what it gets back**, up to and including the `token` that every
 subsequent call (including `sync:sync`, see
-[`tvt_save_person_visit.md`](./tvt_save_person_visit.md)) requires.
+[`tvt_save_person_visit.md`](tvt_save_person_visit.md)) requires.
 
 Everything below is derived from the app source:
 
@@ -459,7 +459,7 @@ curl -s -X POST "$SERVER/b/biruni/mt/sync:sync" \
 ```
 
 `visit_entry.json` is the envelope described in
-[`tvt_save_person_visit.md`](./tvt_save_person_visit.md) section 1.2.
+[`tvt_save_person_visit.md`](tvt_save_person_visit.md) section 1.2.
 
 ---
 

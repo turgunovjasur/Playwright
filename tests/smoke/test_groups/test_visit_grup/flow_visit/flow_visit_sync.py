@@ -2,12 +2,12 @@
 
 import json
 
-from tests.smoke.clients.visit_sync import (
+from tests.smoke.test_groups.test_visit_grup.flow_visit.visit_sync import (
     MinimalVisit,
     OrderVisit,
     parse_visit_sync_response,
 )
-from tests.smoke.flows.flow_mobile_authorization import request_mobile_business
+from tests.smoke.test_groups.test_visit_grup.flow_visit.flow_mobile_authorization import request_mobile_business
 
 
 VISIT_SYNC_PATH = "/b/biruni/mt/sync:sync"

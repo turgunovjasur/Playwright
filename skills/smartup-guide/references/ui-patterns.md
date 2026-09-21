@@ -3,6 +3,7 @@
 ## Mundarija
 
 - [Locator tanlash](#locator-tanlash)
+- [Page-object tanlash](#page-object-tanlash)
 - [Heading va sahifa tekshirish](#heading--sahifa-tekshirish--expect_page-helper)
 - [Form field discovery](#form-field-discovery)
 - [b-input](#b-input)
@@ -22,11 +23,29 @@
 
 Tags: locator, b-input, grid, modal, biruni, screenshot, list
 
+### Page-object tanlash
+Tags: page-object, auto-base-page, legacy, a2, dispatch
+Status: code-confirmed
+Verified: 2026-09-18
+Source: `utils/base_pages/auto_base_page.py`; `utils/base_pages/base_page.py`; `utils/base_pages/angular_base_page.py`
+- `AutoBasePage` har bir public metod chaqiruvida joriy URL pathida `/a2/`
+  bo'lsa `AngularBasePage`, aks holda `BasePage`ni tanlaydi. Explicit
+  page-objectlar ham shell turi oldindan ma'lum joylarda ishlatiladi.
+- DOM selectorlari tegishli concrete classda qoladi; xatoda ikkinchi classni
+  sinash yoki legacy/A2 selectorlarini union qilish yo'q.
+- Sahifa ochadigan actiondan keyin `base.expect_page(url=..., heading=...)`
+  ishlatiladi. `AutoBasePage.expect_page` avval destination URLni kutadi,
+  so'ng target sahifa helperini tanlaydi. `title=` uning parametri emas.
+- Explicit CSS, `ng_model` va `root` locatorlari avtomatik tarjima qilinmaydi;
+  ular target sahifaning DOMiga mos bo'lishi kerak.
+
 ### Locator Tanlash
 Tags: locator, angular
 - Qoida: Angular `ng-model` locatorlardan iloji boricha qoch.
 - Qoida: Yangi testlarda raw CSS/XPath/`ng-model` locator yozma; avval `page.get_by_role(...)`, `page.get_by_text(...)` yoki label/textga tayangan helper ishlat.
-- Kontekst: hozircha Angular migratsiyaga o'tgan UI faqat `company` formasi; qolgan formalar eski Biruni/AngularJS tuzilmasida va ularda mavjud `ng-model`/`b-input` helperlari ishlatiladi.
+- Forma legacy yoki A2 ekanini joriy route/kod va tegishli dossierdan aniqlang;
+  A2 faqat Company bilan cheklanmaydi. Migratsiya inventari
+  [a2-migrated-forms.md](a2-migrated-forms.md)da.
 - Afzal locatorlar:
   - `BasePage.input(label="Код", value=...)` (universal: `label=`/`ng_model=`/`placeholder=`/`locator=`)
   - `BasePage.b_input(label, value=...)`
@@ -56,7 +75,7 @@ Tags: mcp, playwright, locator, snapshot, workflow
 Tags: filial, navigation, legacy, a2, report
 Status: code-confirmed
 Verified: 2026-08-20
-Source: user; `utils/base_page.py`; `utils/angular_base_page.py`; `utils/helper_utils.py`
+Source: user; `utils/base_pages/base_page.py`; `utils/base_pages/angular_base_page.py`; `utils/helper_utils.py`
 - Qoida: `BasePage.switch_filial(first_filial=True)` va
   `AngularBasePage.switch_filial(first_filial=True)` filial ro'yxatidagi
   `Администрирование` bo'lmagan birinchi ko'rinadigan filialni tanlaydi. Bu
@@ -67,7 +86,7 @@ Source: user; `utils/base_page.py`; `utils/angular_base_page.py`; `utils/helper_
 Tags: locator, heading, get_by_role, navigation, url
 Status: trace-confirmed
 Verified: 2026-08-20
-Source: `test-results/traces/tests_smoke_test_groups_test_report_grup_test_0_group_runner.zip`; `utils/base_page.py`; `utils/angular_base_page.py`
+Source: `test-results/traces/tests_smoke_test_groups_test_report_grup_test_0_group_runner.zip`; `utils/base_pages/base_page.py`; `utils/base_pages/angular_base_page.py`
 - **DOM fakti** (2026-06-29 live tekshirilgan): sahifa sarlavhasi yagona `<h6 class="text-dark font-weight-bolder ...">` (Angular `ng-binding`). `<h1>` mavjud, lekin **bo'sh** — sarlavha uchun `h1` ISHLATMA, `get_by_role("heading")` ishlat.
 - Report trace'da heading `innerText`i ko'rinadigan nom bilan bir xil bo'lsa ham raw `textContent` boshida va oxirida newline/whitespace saqlashi tasdiqlangan. Playwright'da `filter(has_text=regex)` ham, `get_by_role(name=regex)` ham anchored regexning tashqi whitespace'ini avtomatik olib tashlamaydi. Exact dynamic heading uchun regex `^\s*...\s*$` ko'rinishida yoziladi; shared `expect_page` string contracti o'zgartirilmaydi.
 - Oddiy list/create sahifada `role=heading` aniq **1 ta**. Sahifa o'zgarsa shu elementning matni **almashadi** (yangi heading element qo'shilmaydi). `navigate_to` transition o'rtasida heading matni qisqa vaqt **bo'sh `''`** bo'ladi — shuning uchun tekshiruv doim **auto-retry qiluvchi `expect(...)`** bilan bo'lsin, bir martalik `inner_text()` emas.
@@ -101,7 +120,7 @@ Tags: b-input, locator
 #### `select_first` va `search_text` kontrakti
 Status: code-confirmed
 Verified: 2026-08-20
-Source: user; `utils/base_page.py`; `utils/angular_base_page.py`
+Source: user; `utils/base_pages/base_page.py`; `utils/base_pages/angular_base_page.py`
 - `select_first=True` qidiruv maydoniga hech narsa yozmasdan ochilgan optionlar ichidan birinchi ko'rinadiganini tanlaydi; `search_text` birga berilgan bo'lsa ham qidiruv qilmaydi.
 - Non-empty `search_text=query` optionlarni query bilan qidiradi va natija bitta yoki ko'p bo'lishidan qat'i nazar birinchi ko'rinadigan optionni tanlaydi; buning uchun `select_first=True` qo'shilmaydi.
 - Faqat `value=option_text` berilsa option matn bo'yicha tanlanadi. `value=option_text, search_text=""` esa qidiruvga yozmasdan ochiq ro'yxatdan aynan shu optionni tanlaydi.
@@ -177,7 +196,7 @@ Tags: modal, biruni, a2, cdk, locator, page-object
 Status: live-ui-confirmed
 Verified: 2026-08-25
 Source: live UI `*/trade/rep/integration/integration_two`;
-`utils/base_page.py`; `utils/angular_base_page.py`
+`utils/base_pages/base_page.py`; `utils/base_pages/angular_base_page.py`
 - Legacy Biruni modal primitive'lari `BasePage`, A2/CDK modal primitive'lari
   `AngularBasePage` ichida alohida qoladi; ikki DOM kontrakti bitta generic
   utils helperga yoki bitta selector ro'yxatiga aralashtirilmaydi.
@@ -200,7 +219,7 @@ Source: live UI `*/trade/rep/integration/integration_two`;
 Tags: modal, status, helper, return-value, known-issue
 Status: code-confirmed
 Verified: 2026-08-14
-Source: `tests/smoke/flows/flow_modal.py::dialog_status`
+Source: `tests/smoke/test_life_cycle/flow_order/flow_status_dialog.py::dialog_status`
 
 - Docstring “modal topilsa `True`, topilmasa `False`” deydi, ammo joriy kod
   modalni topib yopganda `False`, topilmaganda `True` qaytaradi.
@@ -315,7 +334,7 @@ Status: live-ui-confirmed
 Verified: 2026-08-06
 Source: 2026-08-05dagi tarixiy Forms-03 Allure artifact; real Chrome audit — A2 dashboard va Plugin Marketplace;
 `tests/smoke/test_forms/monitoring/checks/loader.py`; `tests/smoke/test_forms/monitoring/monitor.py`;
-`tests/smoke/test_forms/monitoring/navigation.py`; `utils/angular_base_page.py`
+`tests/smoke/test_forms/monitoring/navigation.py`; `utils/base_pages/angular_base_page.py`
 - `check_loader` URL gate'dan darhol keyin ko'rinadigan
   `.block-ui-overlay` yoki `.smt-skeleton` yo'qolishini default `60_000 ms`
   kutadi. Ular timeout oxirida qolib ketsa forma
@@ -392,7 +411,7 @@ Tags: a2, grid, setting, column, search, angular-base-page
 Status: live-ui-confirmed
 Verified: 2026-08-27
 Source: live UI; `https://kernel.greenwhite.uz/anor/mkr/price_type_list`;
-`utils/angular_base_page.py`
+`utils/base_pages/angular_base_page.py`
 
 - A2 `smt-data-table` actions menyusi `smtvalue="menu"` buttoni orqali ochiladi;
   actionlar CDK overlaydagi `menuitem` elementlar.
@@ -443,9 +462,11 @@ Tags: screenshot, debug, url
 
 ### Umumiy Forma Helper'lari (DRY)
 Tags: locator, form, helper, setup
-- Qayerda: `utils/base_page.py`.
-- Kontekst: `company` formasi Angular `smt-control` strukturada; boshqa setup/report/biznes formalar eski Biruni/AngularJS holida. Umumiy UI primitive'lar `BasePage` ichida turadi.
-- Joylashuv: navigatsiya/page state va label/ng-model asosidagi universal helperlar (`navigate_to`, `expect_page`, `switch_filial`, `input`, `b_input`, `ui_select`, `checkbox`, `radio`, `text`, `form_view`, `close_biruni_alert`) `utils/base_page.py` ichida tursin; ular biznes flow emas, umumiy UI primitive.
+- Qayerda: `utils/base_pages/base_page.py`.
+- Kontekst: legacy va A2 formalar birga mavjud. Umumiy public API mos
+  concrete page-objectda bajariladi; tanlash qoidasi yuqoridagi
+  [Page-object tanlash](#page-object-tanlash) bo'limida.
+- Joylashuv: navigatsiya/page state va label/ng-model asosidagi universal helperlar (`navigate_to`, `expect_page`, `switch_filial`, `input`, `b_input`, `ui_select`, `checkbox`, `radio`, `text`, `form_view`, `close_biruni_alert`) `utils/base_pages/base_page.py` ichida tursin; ular biznes flow emas, umumiy UI primitive.
 - Chegara: faqat bitta testga kerak bo'lgan biznes/helper logika `BasePage` ga chiqmaydi; o'sha test faylida `_...` local helper bo'lib qoladi.
 - Qoida: `navigate_to`, `expect_page`, `switch_filial` uchun alohida wrapper import qilinmaydi; avval `base = BasePage(page)` qilinadi, keyin `base.navigate_to(...)`, `base.expect_page(...)`, `base.switch_filial(...)` ishlatiladi. `flow_navigate.py` faqat maxsus `navigate_to_a2` kabi alohida flowlar uchun qoladi.
 - Qoida: ng-model asosidagi forma amallari uchun yangi helper yozilmasin — text input/textarea uchun `base.input(ng_model="d.x", value=...)`, b-input uchun `base.b_input(ng_model="d.x", value=...)` (label ishonchsiz bo'lganda), checkbox/switch uchun `base.checkbox(...)`, sahifa/view matn tekshiruvi uchun `base.text(...)` ishlatiladi. `text` default `root="b-page"` ishlatadi; kerak bo'lsa `root` sifatida selector yoki modal locator (`.modal.show`) beriladi — alohida `_modal_*` variant kerak emas.
@@ -477,7 +498,7 @@ Tags: locator, form, helper, setup
 Tags: locator, helper, button, tab
 Status: code-confirmed
 Verified: 2026-07-31
-Source: user; `utils/base_page.py:64`; `tests/unit/test_base_page_click.py:61`
+Source: user; `utils/base_pages/base_page.py::BasePage.click`
 - Qayerda: legacy AngularJS/Biruni sahifalaridagi semantic role/name bilan topiladigan elementlar.
 - Qoida: raw `page.get_by_role(role, name=...).click()` o'rniga
   `base.click(name=name, role=role)` ishlatiladi. Ko'p uchraydigan tugmalar
@@ -492,7 +513,7 @@ Source: user; `utils/base_page.py:64`; `tests/unit/test_base_page_click.py:61`
 Tags: save, transition, helper, loader
 Status: code-confirmed
 Verified: 2026-07-31
-Source: user; `utils/base_page.py`; `tests/smoke/test_setup/test_13_price_type_uzb.py`
+Source: user; `utils/base_pages/base_page.py`; `tests/smoke/test_setup/test_13_price_type_uzb.py`
 - Qayerda: legacy AngularJS/Biruni add/edit formadan list yoki viewga saqlab
   o'tish.
 - Qoida: birlashtirilgan save+heading helperi ishlatilmaydi. Test
@@ -522,11 +543,12 @@ Tags: order, locator, error
 - Bu primitive faqat navigatsiya qiladi. Forma ochilganini tasdiqlash chaqiruvchi
   testda alohida bajariladi; URL/title tekshiruvi `navigate_to_form()` ichiga
   yashirilmaydi.
-- `BasePage.navigate_to_form()` faqat legacy dashboarddan birinchi A2 formaga
-  o'tish uchun. Joriy sahifa A2 bo'lsa keyingi menu navigatsiya
+- `BasePage.navigate_to_form()` legacy shelldagi menu/page-link navigatsiyasi
+  uchun; target legacy yoki A2 bo'lishi mumkin. Joriy sahifa A2 bo'lsa keyingi menu navigatsiya
   `AngularBasePage.navigate_to(tab=..., name=...)`, filial almashtirish
   `AngularBasePage.switch_filial(...)`, forma tasdig'i esa
-  `AngularBasePage.expect_page(title=..., url=...)` bilan bajariladi.
+  `AngularBasePage.expect_page(heading=..., url=...)` bilan bajariladi.
+  Forms monitor esa URL/title checklarini o'zi boshqaradi.
 - A2 listlarda ko'rinadigan forma nomi semantik `role=heading` bo'lmasligi
   mumkin. `company_client_list`da `BasePage.expect_page(heading=...)` false
   failure bergan, holbuki URL, `document.title` va `smt-data-table` to'g'ri
@@ -545,7 +567,7 @@ Tags: order, locator, error
   - Source:
     `test-results/logs/tests_smoke_test_forms_test_0_forms_runner.py__test_forms_03_prodaja_20260804_151214.log`;
     Allure `010-Заказы-NOT_OPENED-URL_MISMATCH-evidence` screenshoti;
-    `utils/base_page.py`
+    `utils/base_pages/base_page.py`
 - Parent forma ichidagi bir yoki bir nechta yuqori linklar `page_links`ga
   bosilish tartibida beriladi.
 - Foydalanuvchi bergan visual namunalar:

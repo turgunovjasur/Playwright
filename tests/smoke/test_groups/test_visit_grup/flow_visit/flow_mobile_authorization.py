@@ -9,7 +9,8 @@ from uuid import UUID, uuid4
 
 from tests.smoke.flows.flow_authorization import current_company_code
 from utils.data_store import load_data, save_data
-from utils.base_api import APIConnectTimeout, APIError, BaseAPI
+from utils.report_context import record_api_context
+from tests.smoke.test_groups.test_visit_grup.flow_visit.base_api import APIConnectTimeout, APIError, BaseAPI
 
 
 PROJECT_CODE = "trade"
@@ -259,6 +260,7 @@ def authorize_mobile():
 
     user_email = f"user-pw{code}@{current_company_code()}"
     company_url = os.environ["COMPANY_URL"]
+    record_api_context(server=company_url, company=current_company_code(), login=user_email, password=user_password, code=code, authorization="Kirishga urinish")
     authorization = _authorize_with_credentials(
         server_url=company_url,
         login=user_email,
@@ -270,6 +272,7 @@ def authorize_mobile():
         raise AssertionError(
             "Mobile session target filial nomi data_store bilan mos emas"
         )
+    record_api_context(server=company_url, company=current_company_code(), login=user_email, password=user_password, code=code, filial=authorization.session.filial_name)
     return authorization
 
 

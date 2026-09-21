@@ -66,7 +66,10 @@ Tags: legal-person, owner, director, natural-person, relation
 - `Собственник` b-input ustunlari `Код` / `Название`; u alohida legal person bo'lishi kerak.
 - `Руководитель` b-input ustunlari `Ф.И.О.` / `Код`; u alohida natural person bo'lishi kerak.
 - Director quick-add `Физическое лицо (создание)` sahifasiga o'tadi; owner quick-add esa yana `Юридическое лицо (создание)` ochadi. Barqaror test uchun avval owner legal person va director natural person alohida yaratiladi, keyin asosiy legal person add formida code orqali tanlanadi.
-- Director natural person yaratish logikasi Legal Person ichida yozilmaydi; `tests/smoke/test_setup/test_05_natural_person.py` ichidagi `natural_person_values` va `create_natural_person_record` import qilib ishlatiladi.
+- Joriy minimal Legal Person testi director yaratmaydi. Directorli scenario
+  kerak bo'lsa UI flow `tests/smoke/test_setup/flow_setup/flow_natural_person.py`dan
+  olinadi; boshqa leaf testdan olib tashlangan `natural_person_values` yoki
+  `create_natural_person_record` helperlarini import qilma.
 
 ### Region
 Tags: legal-person, region, b-tree

@@ -12,8 +12,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from utils.angular_base_page import AngularBasePage
-from utils.base_page import BasePage
+from utils.base_pages.angular_base_page import AngularBasePage
+from utils.base_pages.base_page import BasePage
 
 
 def public_methods(cls):

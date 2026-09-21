@@ -3,6 +3,8 @@
 import json
 from pathlib import Path
 
+from utils.report_context import record_data
+
 
 DATA_DIR = Path("test-results/data")
 
@@ -73,6 +75,7 @@ def save_data(key, value, file_name="data_store"):
     data = load_data_file(file_name)
     data[key] = value
     write_data_file(data, file_name)
+    record_data(key, value, file_name=file_name, saved=True)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -92,4 +95,5 @@ def load_data(key, file_name="data_store", *, allow_missing=False):
         raise AssertionError(
             f"{file_name}.json ichida majburiy key topilmadi: {key}"
         )
+    record_data(key, value, file_name=file_name)
     return value

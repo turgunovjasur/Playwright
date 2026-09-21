@@ -27,8 +27,8 @@ formasi.
 ## Flow And Tests
 
 - Table helper:
-  `utils/base_page.py::BasePage.grid_setting`; Order consumer wrapperi
-  `tests/smoke/flows/flow_order/flow_order_list.py::flow_order_list_grid_setting`.
+  `utils/base_pages/base_page.py::BasePage.grid_setting`; Order consumer wrapperi
+  `tests/smoke/test_life_cycle/flow_order/flow_order_list.py::flow_order_list_grid_setting`.
 - Existing lifecycle coverage:
   `tests/smoke/test_life_cycle/test_order.py::run_order_add_column_order_id`.
 - Widget settings uchun alohida avtomatlashtirilgan test 2026-07-31 holatida
@@ -40,7 +40,7 @@ formasi.
 Tags: order, list, view-setting, grid, column
 Status: live-ui-confirmed
 Verified: 2026-07-31
-Source: live UI; `tests/smoke/flows/flow_order/flow_order_list.py`
+Source: live UI; `tests/smoke/test_life_cycle/flow_order/flow_order_list.py`
 - Qayerda: `Настройка таблицы: Заказы`.
 - Qoida: default selected fieldlar room, client, staff, order/delivery date,
   currency, amount va status. Qo'shimcha fieldlardan order ID, source,
@@ -76,7 +76,7 @@ Source: live UI
 Tags: order, grid-setting, helper, locator, base-page
 Status: code-confirmed
 Verified: 2026-08-27
-Source: `utils/base_page.py`; `utils/angular_base_page.py`; `tests/smoke/flows/flow_order/flow_order_list.py`
+Source: `utils/base_pages/base_page.py`; `utils/base_pages/angular_base_page.py`; `tests/smoke/test_life_cycle/flow_order/flow_order_list.py`
 
 - `BasePage.grid_setting(menu_name, field_name, search_name=None)` form-specific
   `#deal_id` locatorisiz `Дополнительные поля`dan ustun qo'shadi va ixtiyoriy

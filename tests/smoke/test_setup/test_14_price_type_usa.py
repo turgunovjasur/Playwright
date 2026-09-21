@@ -1,9 +1,9 @@
 import allure
 
 from tests.smoke.flows.flow_authorization import authorization
-from tests.smoke.flows.flow_modal import fill_nps_survey
+from tests.smoke.test_setup.flow_setup.flow_nps_survey import fill_nps_survey
 from utils.data_store import save_data
-from utils.auto_base_page import AutoBasePage
+from utils.base_pages.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Price Type")]

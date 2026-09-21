@@ -40,7 +40,7 @@ Ro'yxatda ko'rinishi kerak:
   ustun va searchni yoqib, `ИД` ustun indeksini qaytaradi.
 - `Наличные деньги` qatoridagi musbat ID `data_store.json.payment_type_id`ga
   saqlanadi.
-- Standalone pytest wrapper `authorization(page, who="user", code=code)` bilan user sifatida login qiladi; `run_payment_type(page, save_data)` esa allaqachon login qilingan page qabul qiladi.
+- Standalone pytest wrapper `authorization(page, who="user", code=code)` bilan user sifatida login qiladi; `run_payment_type(page)` esa allaqachon login qilingan page qabul qiladi.
 
 ### Grid-setting link accessible nomiga icon glyph ham kiradi
 
@@ -82,4 +82,4 @@ Source: live UI — `https://smartup.online/#/<session>/biruni/md/biruni/grid_se
 
 ## Test
 
-- `tests/smoke/test_setup/test_16_payment_type.py` → `run_payment_type(page, save_data)`
+- `tests/smoke/test_setup/test_16_payment_type.py` → `run_payment_type(page)`

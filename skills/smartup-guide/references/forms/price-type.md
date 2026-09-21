@@ -32,7 +32,7 @@ Tags: price-type, a2, grid-setting, column, search
 Status: live-ui-confirmed
 Verified: 2026-08-27
 Source: live UI; `https://kernel.greenwhite.uz/anor/mkr/price_type_list`;
-`utils/angular_base_page.py`
+`utils/base_pages/angular_base_page.py`
 
 - A2 list `smt-data-table` ishlatadi; actions menyusi
   `smt-button-group-item[smtvalue="menu"]` ichidagi button bilan ochiladi.
@@ -81,7 +81,7 @@ Bu test `fill_nps_survey(page, logger)` bilan boshlanadi — step 0. Agar NPS mo
 Tags: nps, modal, timeout, exception, flaky
 Status: code-confirmed
 Verified: 2026-08-14
-Source: `tests/smoke/flows/flow_modal.py::fill_nps_survey`
+Source: `tests/smoke/test_setup/flow_setup/flow_nps_survey.py::fill_nps_survey`
 
 - Helper modalni `20_000 ms` kutadi va butun flow'ni `except Exception` bilan
   yutadi. Modal chiqib, rating yoki submit bosqichi xato qilsa ham log uni
@@ -124,10 +124,10 @@ Room prikreplenie "Тип цены" tabida esa `Акция` narx turi ulanadi �
 ## Test
 
 - `tests/smoke/test_setup/test_13_price_type_uzb.py` →
-  `run_price_type_uzb(page, code, logger, save_data)`; setup zanjiridagi optional
+  `run_price_type_uzb(page, code, logger)`; setup zanjiridagi optional
   NPS Survey modalini shu run birinchi qadamda qayta ishlaydi.
 - `tests/smoke/test_setup/test_14_price_type_usa.py` →
-  `run_price_type_usa(page, code, save_data)`.
+  `run_price_type_usa(page, code)`.
 - Setup 15-qadam `run_currency` bilan bugungi USD kursini 10000 qilib saqlaydi.
 - UZB, USA va Currency setup runnerda uchta alohida pytest case sifatida collect qilinadi.
 

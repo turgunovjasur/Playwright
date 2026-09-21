@@ -24,40 +24,40 @@ Source: `tests/smoke/test_setup/test_0_setup_runner.py`; `tests/smoke/test_setup
 - `test_0_setup_runner.py` ikkala `run_*` funksiyani shu setup modullaridan import
   qiladi; UZS va USD productlar alohida 18/19-qadam bo'lgani uchun runnerda
   init balance `test_23_init_balance`, balance `test_24_balance` deb nomlangan.
-- Ikkala modulning Allure feature qiymati `Setup`; hozirgi setup runner create
-  rejimida 25, existing rejimida 24 test collect qiladi.
+- Ikkala modulning Allure feature qiymati `Setup`; joriy case soni runnerdagi
+  `test_*` wrapperlar va collection guardlariga bog'liq. Eski 25/24 sonlarini
+  joriy coverage deb ishlatma.
 
 ### Runner Qoidasi
 Tags: smoke, setup, dependency, data-store
 Status: code-confirmed
-Verified: 2026-08-14
+Verified: 2026-09-18
 Source: `scripts/run_tests.py`; `tests/smoke/test_setup/test_0_setup_runner.py`;
 `tests/smoke/test_forms/test_0_forms_runner.py`;
 `tests/smoke/test_forms/test_04_finansy_forms.py`;
 `tests/smoke/test_forms/test_05_spravochniki_forms.py`; `tests/smoke/conftest.py`;
 `.github/workflows/daily-smoke.yml`; `.github/workflows/run-smartup-suite.yml`;
 `scripts/telegram_ci_bot.py`
-- GitHub Actions cron har soatda uchta job ishlatadi: `setup-group-0` targetli
-  Online Smoke va `group-report` targetli Online Report bir-biridan mustaqil
-  boshlanadi; Online Forms esa Smoke tugagach, uning natijasidan qat'i nazar
-  `forms` targetida ishlaydi. Har job alohida Telegram progress/final xabar,
-  Allure report va result artifact yaratadi.
-- `setup-forms` existing-company rejimida 22 ta Setup case va Forms runnerdagi
+- CI scheduling va dispatchning canonical owneri
+  [telegram-ci.md](../../maintain-test-infra/references/telegram-ci.md#current-architecture).
+  Workflowda cron yo'q; `suite=all` dispatchi `setup-smoke`, `group-report`
+  va Smoke tugagach `forms` targetlarini bajaradi.
+- `setup-forms` existing-company rejimida Setup case'lari va Forms runnerdagi
   `Главное`, `Продажа`, `Склад`, `Финансы`, `Справочники` inventorylarining har
   bir formasini alohida parametrized pytest item sifatida tanlaydi;
   `test_00_company` skip emas, collectiondan deselect qilinadi.
 - Telegram bot faqat manual trigger qiladi. `/run`dan keyin `Smoke` yoki
   `Forms`, keyin `Online` (`smartup.online`) yoki `Xtrade`
-  (`app3.greenwhite.uz/xtrade`) tanlanadi; botning alohida auto-runi yo'q.
-- CI ikkala serverda ham `CREATE_COMPANY=0` va `DISABLE_LICENSE_POLICY=0`
+  (`app3.greenwhite.uz/xtrade`) tanlanadi. Shu botda alohida hourly scheduler ham bor.
+- CI ikkala serverda ham haqiqiy `COMPANY_CODE` va `DISABLE_LICENSE_POLICY=0`
   existing-company rejimida ishlaydi; serverga mos company credentiallari
   GitHub Secrets'dan olinadi.
-- GitHub Actions manual dispatch `suite=smoke|report|forms` inputi orqali faqat
+- GitHub Actions manual dispatch `suite=all|smoke|report|forms` inputi orqali
   tanlangan targetni ishlatadi. Telegram bot menyusi Smoke va Forms bilan
   cheklangan. Bot GitHub'dagi scheduled yoki manual active runni ko'rsa yangi
   triggerni queue'ga qo'ymaydi va busy xabar bilan rad etadi.
 - Full run `scripts/run_tests.py` orqali `test_0_setup_runner.py`, keyin Group-0,
-  Report runnerlari va `test_forms/test_0_forms_runner.py`ni shu tartibda bitta
+  Visit, Report runnerlari va `test_forms/test_0_forms_runner.py`ni shu tartibda bitta
   pytest sessiyasida collect qiladi.
 - `setup-forms` setupdan keyin Forms runnerni, `forms` esa setupni
   ishlatmasdan faqat Forms runnerni collect qiladi. Forms runner Smartup navbar
@@ -73,9 +73,9 @@ Source: `scripts/run_tests.py`; `tests/smoke/test_setup/test_0_setup_runner.py`;
   formalarini markaziy inventorydan parametr qiladi.
 - `setup-group-0` target setup va Group-0 runnerni bitta pytest sessiyasida
   yangi code bilan collect qiladi. `groups` target setupni ishlatmasdan faqat
-  Group-0 va Report runner fayllarini collect qiladi; alohida `group-0` va
-  `group-report` targetlari saqlanadi.
-- Group-only code targetlari (`group-0`, `groups`)da `.env NEW_CODE=1`
+  Group-0, Visit va Report runner fayllarini collect qiladi; alohida
+  `group-0`, `group-visit` va `group-report` targetlari saqlanadi.
+- Group-only code targetlari (`group-0`, `group-visit`, `groups`)da `.env NEW_CODE=1`
   taqiqlanadi: yangi random code
   uchun setup user/entitylar yaratilmagan bo'ladi. Joriy baseline'ni qayta
   ishlatishda `.env NEW_CODE=0`, yangi Group-0 verificationida esa
@@ -83,42 +83,41 @@ Source: `scripts/run_tests.py`; `tests/smoke/test_setup/test_0_setup_runner.py`;
 - `group-report` code-independent: u `code` fixture yoki
   `data_store.json.code`ni talab qilmaydi; yangi template va download nomlari
   run-local UUID suffix bilan ajratiladi.
-- `CREATE_COMPANY=1` bilan setup alohida pytest sessiyasida tugagach, group
+- `COMPANY_CODE=1` bilan setup alohida pytest sessiyasida tugagach, group
   runnerni existing rejimda davom ettirish uchun `.env`da
-  `CREATE_COMPANY=0`, `DISABLE_LICENSE_POLICY=0`, `COMPANY_CODE=0` va
-  `NEW_CODE=0` beriladi. `COMPANY_CODE=0` sentinel qiymati
-  `data_store.json.company_code`ni, `NEW_CODE=0` esa alohida
-  `data_store.json.code`ni o'qiydi. Group yangi browser ochib
+  haqiqiy yaratilgan company kodi, uning `COMPANY_PASSWORD` qiymati,
+  `DISABLE_LICENSE_POLICY=0` va `NEW_CODE=0` beriladi. `COMPANY_CODE=0`
+  qo'llanmaydi; `NEW_CODE=0` esa `data_store.json.code`ni o'qiydi. Group yangi context ochib
   `user-pw{code}@{saved_company_code}` bilan login qiladi.
-- `scripts/run_tests.py groups` wrapperi `CREATE_COMPANY=1` group-only
-  kombinatsiyasini startupda ataylab bloklaydi; yuqoridagi existing/sentinel
+- `scripts/run_tests.py groups` wrapperi `COMPANY_CODE=1` group-only
+  kombinatsiyasini startupda ataylab bloklaydi; yuqoridagi existing
   rejimi direct pytest/PyCharm va wrapperning ikkalasida ishlaydi.
 - Har bir setup va group case runner faylida alohida `test_*` pytest item; outer `test_all_runner.py` va `run_*_group_chain` ishlatilmaydi.
 - `tests/smoke/test_setup/test_0_setup_runner.py` ichidagi testlar bitta `session_page` bilan ketma-ket ishlaydi; UI state va login holati testlar orasida saqlanadi.
 - Lokal `.env` mavjud bo'lsa `COMPANY_URL`, mode va credentiallar uchun yagona
   source shu fayl; `.env` yo'q muhitda tegishli CLI flaglar ishlaydi.
-- `CREATE_COMPANY=0`: `COMPANY_CODE` va `COMPANY_PASSWORD` majburiy,
+- Existing rejim: haqiqiy `COMPANY_CODE` va `COMPANY_PASSWORD` majburiy,
   `test_00_company` collectiondan deselect qilinadi.
-- `CREATE_COMPANY=1`: `HEAD_ADMIN_EMAIL` va `HEAD_ADMIN_PASSWORD` majburiy,
+- `COMPANY_CODE=1`: `HEAD_ADMIN_EMAIL` va `HEAD_ADMIN_PASSWORD` majburiy,
   `test_00_company` collectionda qoladi; company code test tomonidan
   `autotest{code}` ko'rinishida yaratiladi.
-- Test user paroli kod ichida hardcode; head/company admin paroli bilan aralashtirilmaydi.
-- `00 - Company` suitega URLga qarab emas, `CREATE_COMPANY` orqali qo'shiladi.
-  Flag o'chiq bo'lsa item skip qilinmaydi, deselect qilinadi va Allure'da ko'rinmaydi.
+- `USER_PASSWORD` har ikki rejimda environmentdan olinadi va majburiy;
+  head/company admin paroli bilan aralashtirilmaydi.
+- `00 - Company` faqat `COMPANY_CODE=1` bo'lsa qo'shiladi. Mavjud companyda
+  item skip qilinmaydi, deselect qilinadi va Allure'da ko'rinmaydi.
 
 - Company testi run bo'lsa, `data_store.json`ga saqlangan `company_code`
   `test_01_legal_person` va keyingi loginlarda ishlatiladi. Existing rejimida
-  oddiy `COMPANY_CODE=<code>` bevosita ishlatiladi; `COMPANY_CODE=0` bo'lsa
-  saqlangan `data_store.json.company_code` olinadi.
+  haqiqiy `COMPANY_CODE=<company_code>` bevosita ishlatiladi; `0` yaroqsiz.
 - License policy yoqiq qolsa, yangi company license flowdan oldin head viewdagi
   `Активация для лицензии` bajarilishi shart; faqat
   `Политика лицензирования` yoqiq bo'lishi yetarli emas. Aks holda
   `Buy License` `license_list` URLiga o'tadi, ammo
   `Ошибка | Компания не активирована` bilan to'xtaydi.
-- `DISABLE_LICENSE_POLICY=1` faqat `CREATE_COMPANY=1` bilan ishlaydi; boshqa
+- `DISABLE_LICENSE_POLICY=1` faqat `COMPANY_CODE=1` bilan ishlaydi; boshqa
   kombinatsiya startup configuration error. Yoqilsa yangi companyda policy off
   qilinadi va `Buy License` / `Attach License` qadamlari o'tkazib yuboriladi.
-- `--create-company` full runnerda user grouplari ham yaratilgan `company_code`ni ishlatadi; setup zanjirida user/role/password/license kabi user login precondition qadamlari o'chirilgan bo'lsa `user-pw{code}@<company_code>` yaratilmaydi va group login `login.html`da qolib ketadi.
+- `--company-code 1` full runnerda user grouplari ham yaratilgan `company_code`ni ishlatadi; setup zanjirida user/role/password/license kabi user login precondition qadamlari o'chirilgan bo'lsa `user-pw{code}@<company_code>` yaratilmaydi va group login `login.html`da qolib ketadi.
 - Har bir group boshida user bir marta login qiladi; group ichidagi test/flowlar shu oynada davom etadi va group tugaganda yoki failed/skip bo'lganda fixture oynani yopadi.
 - Har group runner module-scoped `group_session_page` bilan boshqa grouplardan alohida context/page oladi; user grouplari `group_user_page` orqali group boshida bir marta login qiladi.
 - Barcha fixturelar bitta session-scoped Sync Playwright browser runtimeidan
@@ -140,8 +139,8 @@ Status: code-confirmed
 Verified: 2026-08-14
 Source: `pytest.ini`; `tests/smoke/conftest.py`
 
-- `pytest.ini` global `--maxfail=3` ishlatadi. Uchta failure yig'ilsa pytest
-  keyingi, o'zaro mustaqil group/runnerlarni ham collect qilingan bo'lsa-da
+- `pytest.ini` default `--maxfail=0` ishlatadi. User musbat `--maxfail=N`
+  bersa, N ta failure'dan keyin pytest keyingi mustaqil runnerlarni ham
   bajarmasdan to'xtashi mumkin.
 - Shu sabab run summaryda “keyingi group mustaqil” degan qoida u albatta
   ishladi degani emas; maxfail urilganini alohida ko'rsat.
@@ -157,7 +156,7 @@ Tags: smoke, telegram, failure, playwright, locator, summary
 Tags: smoke, setup, runner, allure, collection
 - `allure.step` faqat bitta pytest test ichidagi nested step yaratadi; Allure'da alohida test case chiqishi uchun har setup/group bosqichi pytest tomonidan alohida `test_*` item sifatida collect qilinishi shart.
 - Amaldagi model: `test_0_setup_runner.py` ichida optional `test_00_company`,
-  `test_01_legal_person` ... `test_24_balance` wrapperlari `session_page` bilan
+  `test_01_legal_person` ... `test_29_action_cyclic_bonus` wrapperlari `session_page` bilan
   collect qilinadi. Moduldagi `pytest.mark.user_setup` barcha wrapperlarga tatbiq qilinadi.
 - Mavjud `pytest_runtest_makereport`/`pytest_runtest_setup` mexanizmi alohida
   setup itemlar bilan mos: bir setup item fail bo'lsa `_USER_SETUP_FAILED=True`
@@ -170,12 +169,12 @@ Tags: smoke, setup, runner, allure, collection
 
 - Setup zanjiri buzilsa keyingi testlar ham precondition yo'qligi sabab yiqilishi mumkin; yakka testdan oldin to'liq runner yoki mos precondition ma'lumotlari kerak.
 - Directory/default collection duplicate business flow yurmasligi uchun faqat mos runner fayllarini qoldiradi; leaf testni debug qilish uchun uning fayl yo'li pytestga aniq beriladi.
-- Cross-platform asosiy run: `python scripts/run_tests.py --url {server_url} --company-code {code} --company-password {password}` yoki `python scripts/run_tests.py --url {server_url} --create-company --head-email {email} --head-password {password}`; Mac/Linux wrapper: `./run_tests.sh ...`.
-- Runner targetlari: `all`, `setup`, `setup-group-0`, `setup-visit`,
+- Cross-platform asosiy run: `python scripts/run_tests.py --url {server_url} --company-code {code} --company-password {password}` yoki `python scripts/run_tests.py --url {server_url} --company-code 1 --head-email {email} --head-password {password}`; Mac/Linux wrapper: `./run_tests.sh ...`.
+- Runner targetlari: `all`, `setup`, `setup-smoke`, `setup-group-0`, `setup-visit`,
   `setup-report`, `setup-a2-admin`, `setup-forms`, `company`, `groups`,
   `group-0`, `group-visit`, `group-report`, `forms`; foydalanuvchi odatda
   bo'laklarga bo'lib run qilmaydi, normal lokal run `all`; CI Smoke targeti
-  `setup-group-0`, CI Report targeti `group-report`, CI Forms targeti `forms`.
+  `setup-smoke`, CI Report targeti `group-report`, CI Forms targeti `forms`.
 
 ### Visit group runner
 Tags: smoke, visit, mobile, runner, setup
@@ -230,15 +229,15 @@ Tags: smoke, entity, naming
 ### 00 Company
 Tags: company, setup, head, data-store
 - Fayl: `tests/smoke/test_setup/test_00_company.py`.
-- Ishga tushirish: faqat `CREATE_COMPANY=1` bo'lganda suitega qo'shiladi.
-- Guard: `CREATE_COMPANY=0` bo'lsa deselect qilinadi; Allure'da skipped bo'lib ko'rinmaydi.
+- Ishga tushirish: faqat `COMPANY_CODE=1` bo'lganda suitega qo'shiladi.
+- Guard: mavjud company kodi berilsa deselect qilinadi; Allure'da skipped bo'lib ko'rinmaydi.
 - Login: majburiy `HEAD_ADMIN_EMAIL` / `HEAD_ADMIN_PASSWORD`.
 - Navigation: `Главное` -> `Компании`.
 - Nima qiladi: `Код сервера` sifatida `autotest{code}` kiritadi, visible required maydonlarni minimal to'ldiradi, Products card ichida `trade` va child productlarni yoqadi, saqlaydi va listda code bo'yicha tekshiradi.
 - License activation: `DISABLE_LICENSE_POLICY=0` bo'lsa yangi company uchun
   license sotib olishdan oldin `Активация для лицензии` majburiy. Bu bajarilmasa
   `test_10_buy_license`da `Ошибка | Компания не активирована` chiqadi.
-- License policy: `CREATE_COMPANY=1` va `DISABLE_LICENSE_POLICY=1` bo'lsa
+- License policy: `COMPANY_CODE=1` va `DISABLE_LICENSE_POLICY=1` bo'lsa
   company viewdagi `Безопасность` tabda policy off qilinadi va setupdagi license
   xaridi/ulash qadamlari o'tkazib yuboriladi.
 - Nima saqlaydi: `company_code`.
@@ -291,7 +290,7 @@ Tags: natural-person, employee
 - Data store: view URLdagi `person_id` `user_person_id` kaliti bilan saqlanadi;
   bu keyingi testda userga bog'lanadigan person IDsi.
 - Arxitektura: reusable create/view oqimlari
-  `tests/smoke/flows/flow_natural_person.py`da turadi.
+  `tests/smoke/test_setup/flow_setup/flow_natural_person.py`da turadi.
 
 ### 06 User
 Tags: user, robot, natural-person

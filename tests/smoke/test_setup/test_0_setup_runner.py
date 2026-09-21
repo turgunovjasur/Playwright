@@ -2,6 +2,11 @@ import allure
 import pytest
 
 from tests.smoke.flows.flow_authorization import authorization
+from tests.smoke.test_action.test_01_quantity_discount import run_quantity_discount
+from tests.smoke.test_action.test_02_quantity_bonus import run_quantity_bonus
+from tests.smoke.test_action.test_03_amount_discount import run_amount_discount
+from tests.smoke.test_action.test_04_amount_bonus import run_amount_bonus
+from tests.smoke.test_action.test_05_cyclic_bonus import run_cyclic_bonus
 from tests.smoke.test_setup.test_00_company import run_company
 from tests.smoke.test_setup.test_01_legal_person import run_legal_person
 from tests.smoke.test_setup.test_02_filial import run_filial
@@ -161,5 +166,30 @@ def test_23_init_balance(session_page, code):
 @allure.title("24 - Balance")
 def test_24_balance(session_page, code):
     run_balance(session_page, code)
+
+
+@allure.title("25 - Aksiya 01: 10 dona mahsulotga 10% chegirma aksiyasi")
+def test_25_action_quantity_discount(session_page, code):
+    run_quantity_discount(session_page, code)
+
+
+@allure.title("26 - Aksiya 02: 10 dona mahsulotga 1 dona bonus aksiyasi")
+def test_26_action_quantity_bonus(session_page, code):
+    run_quantity_bonus(session_page, code)
+
+
+@allure.title("27 - Aksiya 03: 100 000 summaga 5% chegirma aksiyasi")
+def test_27_action_amount_discount(session_page, code):
+    run_amount_discount(session_page, code)
+
+
+@allure.title("28 - Aksiya 04: 100 000 summaga 1 dona bonus aksiyasi")
+def test_28_action_amount_bonus(session_page, code):
+    run_amount_bonus(session_page, code)
+
+
+@allure.title("29 - Aksiya 05: Har 10 dona mahsulotga 1 dona siklik bonus aksiyasi")
+def test_29_action_cyclic_bonus(session_page, code):
+    run_cyclic_bonus(session_page, code)
 
 # ----------------------------------------------------------------------------------------------------------------------

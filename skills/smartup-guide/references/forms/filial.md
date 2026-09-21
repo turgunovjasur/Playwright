@@ -87,7 +87,7 @@ Source: archived Filial add screenshot/JSON evidence
 - Setup leaf: `tests/smoke/test_setup/test_02_filial.py::run_filial`.
 - Setup runner item:
   `tests/smoke/test_setup/test_0_setup_runner.py::test_02_filial`.
-- Page object: `utils/base_page.py::BasePage`.
+- Page object: `utils/base_pages/base_page.py::BasePage`.
 - `AngularBasePage.button()` API nomi `AngularBasePage.click()`ga almashtirilgan;
   `BasePage` va `AngularBasePage` button click metodi bir xil nomlangan.
 

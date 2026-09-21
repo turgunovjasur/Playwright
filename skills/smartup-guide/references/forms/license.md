@@ -17,7 +17,7 @@ Source: user; `test-results/allure-results/d9911418-1c48-4e7f-ab31-e5b6ec17f96a-
 - `smartup.online` hostida faqat Buy pytest skip qilinadi; Attach server sabab
   skip qilinmaydi va ishlashda davom etadi. `app3.../xtrade` hostida Buy uchun
   unconditional skip yo'q.
-- `CREATE_COMPANY=1` + `DISABLE_LICENSE_POLICY=1` bo'lsa ikkala flow policy
+- `COMPANY_CODE=1` + `DISABLE_LICENSE_POLICY=1` bo'lsa ikkala flow policy
   sabab real UI'ga kirmasdan no-op bo'ladi.
 
 ## Screenshot Paths
@@ -51,8 +51,8 @@ Source: `tests/smoke/test_setup/test_10_buy_license.py`;
 - Buy: `tests/smoke/test_setup/test_10_buy_license.py::run_buy_license`.
 - Attach: `tests/smoke/test_setup/test_11_attach_license.py::run_attach_license`.
 - Runner items: `test_10_buy_license`, `test_11_attach_license`.
-- Shared server/policy guard: `tests/smoke/flows/flow_license.py`.
-- UI primitives: `utils/base_page.py::BasePage`.
+- Shared server/policy guard: `tests/smoke/test_setup/flow_setup/flow_license.py`.
+- UI primitives: `utils/base_pages/base_page.py::BasePage`.
 
 ## Business Rules
 

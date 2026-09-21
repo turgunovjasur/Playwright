@@ -114,7 +114,7 @@ export default defineConfig({
         reportLanguage: "en",
         theme: "light",
         groupBy: ["epic", "feature", "story"],
-        filter: (testResult) => testResult.fullName !== "system.test.summary",
+        filter: (testResult) => !["system.test.summary", "ai.test.summary"].includes(testResult.fullName),
         defaultSection: "report",
         charts: minimalCharts,
         stepTreeExpansion: "expand_failed_only",

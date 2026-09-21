@@ -14,7 +14,7 @@ Alohida dossierlar: [cislink.md](cislink.md), [integration-three.md](integration
 ### Umumiy navigatsiya va filial
 Status: code-confirmed
 Verified: 2026-08-24
-Source: `tests/smoke/test_groups/test_report_grup/report_helpers.py`; `test_01_cislink.py` ... `test_06_integration_two.py`
+Source: `tests/smoke/test_groups/test_report_grup/flow_report/report_helpers.py`; `test_01_cislink.py` ... `test_06_integration_two.py`
 - Integration reportlar menyuda yo'q; `open_report()` joriy URLdan session tokenini olib direct route ochadi va heading/URLni tekshiradi.
 - Report-01–05 admin loginidan keyin `base.switch_filial(first_filial=True)` bilan birinchi `Администрирование` bo'lmagan filialga o'tadi.
 - Report-06 Integration Two faqat `Администрирование` filialida tekshiriladi.
@@ -26,7 +26,7 @@ Source: `tests/smoke/test_groups/test_report_grup/report_helpers.py`; `test_01_c
 ### Download tekshiruvi
 Status: code-confirmed
 Verified: 2026-08-24
-Source: `tests/smoke/test_groups/test_report_grup/report_helpers.py`
+Source: `tests/smoke/test_groups/test_report_grup/flow_report/report_helpers.py`
 - `generate_and_verify_download()` accessible button nomi bilan actionni bosadi, download failure yo'qligini, filename prefiksini va non-zero fayl hajmini tekshiradi.
 - Filename aniq prefiksi noma'lum outputlarda helper kutilgan suffixni (`.xlsx`/`.xml`) tekshiradi; timeoutda URL, Biruni alert va full-page screenshot Allurega biriktiriladi.
 - Downloadlar `test-results/downloads/` ostiga saqlanadi.

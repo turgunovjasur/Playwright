@@ -4,10 +4,10 @@ import allure
 import pytest
 
 from tests.smoke.flows.flow_authorization import authorization
-from tests.smoke.flows.flow_order.flow_order_add import auto_filled_order_dates
-from tests.smoke.flows.flow_order.flow_order_list import flow_order_list
+from tests.smoke.test_life_cycle.flow_order.flow_order_add import auto_filled_order_dates
+from tests.smoke.test_life_cycle.flow_order.flow_order_list import flow_order_list
 from utils.data_store import save_data
-from utils.auto_base_page import AutoBasePage
+from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [
     pytest.mark.smoke_group("0"),

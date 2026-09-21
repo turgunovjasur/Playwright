@@ -15,12 +15,14 @@ vaqtinchalik session qiymatini yozma.
 
 - Foydalanuvchining fakt, qoida, tuzatish yoki e'tiroz aytishi write-back
   ruxsati emas.
-- Yozishdan oldin agent saqlamoqchi bo'lgan faktni va tanlangan canonical
-  ownerni foydalanuvchiga aytib, aniq tasdiq so'raydi.
+- Joriy scope uchun write-back ruxsati hali berilmagan bo'lsa, agent
+  saqlamoqchi bo'lgan faktni va canonical ownerni aytib, aniq tasdiq so'raydi.
 - Faqat foydalanuvchi shu write-backni tasdiqlagandan keyin quyidagi algoritm
   bajariladi. Tasdiq bo'lmasa skill yoki knowledge-base fayli o'zgartirilmaydi.
 - Foydalanuvchining joriy aniq `skillga yoz`, `qoidaga qo'sh` yoki unga teng
   buyrug'i aynan aytilgan scope uchun tasdiq hisoblanadi.
+- `Skilllarni analiz qilib tuzat` kabi aniq topshiriq shu auditdagi
+  dalilga asoslangan tuzatishlar uchun ham tasdiqdir; har fayl uchun qayta so'rama.
 
 ## Algoritm
 

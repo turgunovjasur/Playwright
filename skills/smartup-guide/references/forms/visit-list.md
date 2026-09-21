@@ -20,7 +20,7 @@ Source: live UI `*/a2/trade/tvt/visit_list`
 - Navigation: `Продажа > Визиты > Визиты`
 - A2 URL pattern: `*/a2/trade/tvt/visit_list`
 - Title: `Визиты`
-- Page object: `utils/angular_base_page.py::AngularBasePage`
+- Page object: `utils/base_pages/angular_base_page.py::AngularBasePage`
 
 ## Screenshot Paths
 
@@ -107,12 +107,12 @@ Source: live UI; `tests/smoke/test_groups/test_visit_grup/test_02_mobile_order_v
 
 ## Flow And Tests
 
-- A2 navigation: `tests/smoke/flows/flow_navigate.py::navigate_to_a2`.
-- API primitive'lari: `utils/base_api.py::BaseAPI`.
+- A2 navigation: `tests/smoke/test_groups/test_visit_grup/flow_visit/flow_navigate.py::navigate_to_a2`.
+- API primitive'lari: `tests/smoke/test_groups/test_visit_grup/flow_visit/base_api.py::BaseAPI`.
 - Takroriy mobile login va filial session flowi:
-  `tests/smoke/flows/flow_mobile_authorization.py::authorize_mobile`.
+  `tests/smoke/test_groups/test_visit_grup/flow_visit/flow_mobile_authorization.py::authorize_mobile`.
 - Takroriy Visit sync flowi:
-  `tests/smoke/flows/flow_visit_sync.py::sync_visit`.
+  `tests/smoke/test_groups/test_visit_grup/flow_visit/flow_visit_sync.py::sync_visit`.
 - Form-opening inventory:
   `tests/smoke/test_forms/inventory/prodaja.py` va
   `tests/smoke/test_forms/test_a2_angular_forms.py`.

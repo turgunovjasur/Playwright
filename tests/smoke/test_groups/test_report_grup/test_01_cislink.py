@@ -5,8 +5,8 @@ import allure
 import pytest
 
 from tests.smoke.flows.flow_authorization import authorization
-from tests.smoke.test_groups.test_report_grup.report_helpers import generate_and_verify_download, open_report
-from utils.auto_base_page import AutoBasePage
+from tests.smoke.test_groups.test_report_grup.flow_report.report_helpers import generate_and_verify_download, open_report
+from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [
     pytest.mark.smoke_group("Report", independent=True),
@@ -55,6 +55,8 @@ def run_report_cislink_check(page):
         base.b_input(label="Тип цены", select_first=True)
         base.click(name="Сохранить", exact=True)
         base.expect_page(heading="Шаблоны CisLink(7008)", url="cislink_template_list")
+
+        base.grid_controller(search=template_name)
         base.grid(template_name, "Активный")
         base.click(name="Закрыть", exact=True)
         base.expect_page(heading=re.compile(r"^\s*CisLink\(7008\)\s*$"), url=re.compile(r"/trade/rep/integration/cislink$"))

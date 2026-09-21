@@ -7,7 +7,7 @@ from threading import Lock
 import time
 from zoneinfo import ZoneInfo
 
-from utils.base_api import APIError
+from tests.smoke.test_groups.test_visit_grup.flow_visit.base_api import APIError
 
 
 VISIT_ENTRY_CODE = "tvt_save_person_visit"

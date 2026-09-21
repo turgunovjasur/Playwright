@@ -279,8 +279,7 @@ Source: GitHub Actions runs `30528649258`, `30878853396`; `scripts/analyze_test_
 
 - Default: workflow YAML, Python syntax, message template va command syntaxni
   read-only/statik tekshirish; unit test fayliga tegmaslik.
-- Faqat user unit testni alohida so'rasa uni yozish/o'zgartirish mumkin. Faqat
-  user aynan `run qil` desa
-  `python -m pytest tests/unit/test_telegram_reporting.py -q`ni ishga tushirish
-  mumkin; bu yerda command borligi ruxsat hisoblanmaydi.
+- Faqat user unit testni alohida so'rasa uni yozish/o'zgartirish mumkin.
+  Test run ham aniq so'ralganda avval mavjud test yo'lini tekshir; olib
+  tashlangan unit-test fayliga tayyor run buyrug'i bermaslik kerak.
 - Real workflow dispatch yoki Telegram message faqat user explicit so'raganda.

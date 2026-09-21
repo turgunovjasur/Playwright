@@ -2,8 +2,8 @@ import re
 
 import allure
 
-from tests.smoke.flows import flow_modal
-from utils.auto_base_page import AutoBasePage
+from tests.smoke.test_life_cycle.flow_order.flow_status_dialog import dialog_status
+from utils.base_pages.auto_base_page import AutoBasePage
 
 ORDER_VIEW_BUTTON_NAME = re.compile(r"^Просмотр(?:еть)?$")
 
@@ -39,7 +39,7 @@ def flow_order_list(page, add=False, find_row=None, search=True, view=False, edi
         with allure.step("Order List: 'Изменить статус' button click"):
             row.get_by_role("button", name="Изменить статус", exact=True).click()
 
-            flow_modal.dialog_status(page)
+            dialog_status(page)
 
             page.get_by_role("link", name=status).click()
             # Smartup confirm matni: "Изменить статус на {status}?" (ilgari "Изменить на ...").

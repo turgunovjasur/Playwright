@@ -6,7 +6,7 @@ va migratsiya detallarini saqlaydi. Faqat vazifaga tegishli bo'limni o'qi.
 ## Mundarija
 
 - [Loyiha strukturasini tushun](#1-loyiha-strukturasini-tushun)
-- [Test fayl shabloni](#2-test-fayl-shabloni-run_-test_-ikki-funksiya)
+- [Test fayl shabloni](#2-test-fayl-shabloni-run_--test_-ikki-funksiya)
 - [Asosiy qoidalar](#3-asosiy-qoidalar)
 - [Runnerga qo'shish](#4-runnerga-qoshish)
 - [Loyiha xususiyatlari](#5-loyiha-xususiyatlari)
@@ -18,7 +18,8 @@ Quyidagi qoidalarga qat'iy rioya qil:
 
 - Testlar: `tests/smoke/test_setup/`, `tests/smoke/test_life_cycle/`,
   `tests/smoke/test_forms/` yoki mos `tests/smoke/test_groups/.../`
-- Flowlar: `tests/smoke/flows/`
+- Flowlar: consumer domaini yonidagi `flow_<domain>/`; aniq xarita
+  [project-context.md](../../project-guide/references/project-context.md#flow-va-page-object-joylashuvi)da.
 - User setup runner: `tests/smoke/test_setup/test_0_setup_runner.py`
 - Group runnerlar: har bir group papkasida `test_0_group_runner.py`
 - Full/groups targetlari: `scripts/run_tests.py` ichidagi runner fayllari ro'yxati
@@ -31,19 +32,19 @@ Quyidagi qoidalarga qat'iy rioya qil:
 Har bir test fayl IKKI funksiyadan iborat (test_legal_person / test_filial / test_room / test_robot real namunalari):
 
 - **`run_<nomi>(page, code, ...)`** — qayta ishlatiladigan biznes logika; setup/group runner zanjiri shuni chaqiradi. Odatda `page` ni **allaqachon login qilingan** deb qabul qiladi. Istisno: setupning birinchi umumiy itemi `run_legal_person` create/existing modega mos admin loginni o'zi bajaradi. Raqamlangan docstring testcase + `with allure.step("N - ...")` bloklari.
-- **`test_<nomi>(page, code, ...)`** — `@allure.title(...)` bilan pytest entry; alohida/debug run uchun. `authorization(...)` (+ forma faqat filialda ko'rinsa `base.switch_filial(...)`) qilib, so'ng `run_<nomi>(...)` ni chaqiradi. Kerakli fixturalarni (`save_data`/`load_data`) qabul qilib `run_` ga uzatadi.
+- **`test_<nomi>(page, code, ...)`** — `@allure.title(...)` bilan pytest entry; alohida/debug run uchun. `authorization(...)` (+ forma faqat filialda ko'rinsa `base.switch_filial(...)`) qilib, so'ng `run_<nomi>(...)` ni chaqiradi. `page`, `code`, kerak bo'lsa `logger` fixture sifatida keladi; `save_data`/`load_data` esa `utils.data_store`dan import qilinadigan funksiyalar.
 
 ```python
 import allure
 from playwright.sync_api import expect            # Python assert emas, faqat kerak bo'lsa import
 from tests.smoke.flows.flow_authorization import authorization
-from utils.base_page import BasePage
+from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("<Feature>"), allure.story("<Story>")]
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def run_<nomi>(page, code, save_data=None):
+def run_<nomi>(page, code):
     """Testcase: <maqsad>.
 
     1. <Tab> -> <Menyu> ro'yxatini ochish.
@@ -52,7 +53,7 @@ def run_<nomi>(page, code, save_data=None):
     """
     entity_name = f"<entity>-pw{code}"
     entity_code = f"c_<short_entity>_pw{code}"
-    base = BasePage(page)
+    base = AutoBasePage(page)
 
     with allure.step("1 - <Entity> ro'yxatiga o'tish"):
         base.navigate_to(tab="<Tab>", name="<Menyu>")
@@ -70,17 +71,18 @@ def run_<nomi>(page, code, save_data=None):
         base.expect_page(heading="<Ro'yxat heading>")
         base.grid(entity_name, entity_code, "Активный")
 
-    # Setup baseline'ni group testlarga uzatish kerak bo'lsa (oxirgi step):
+    # Setup baseline kerak bo'lsa modul boshida utils.data_store.save_data import qilinadi.
+    # Oxirgi step:
     #     save_data("<key>", entity_code)
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 @allure.title("<Inson o'qiydigan test nomi>")
-def test_<nomi>(page, code, save_data):
+def test_<nomi>(page, code):
     authorization(page, who='admin')
-    base = BasePage(page)
+    base = AutoBasePage(page)
     # base.switch_filial(name=f"filial-pw{code}")   # forma faqat o'sha filialda ko'rinsa
-    run_<nomi>(page, code, save_data=save_data)
+    run_<nomi>(page, code)
 ```
 
 ### `run_` / `test_` konvensiyasi qoidalari
@@ -115,15 +117,17 @@ Source: user
 
 - **Fixtures** — conftest.py dan keladi, import qilma:
   - `page` — yakka test uchun fresh page; `session_page` — setup chain; `group_user_page` — group chain (login qilingan)
-  - `code` — 6 xonali unikal son; `save_data` / `load_data` — data_store; `logger`
+  - `code` — sessionning 6 xonali qiymati; `logger` — test loggeri
+- **Data-store funksiyalari** — `save_data` / `load_data` fixture emas;
+  `utils.data_store`dan keraklisini import qil.
 - **Allure**: har bir test `@allure.title()` va `with allure.step()` bilan bo'lishi SHART
 - **Locator**: `page.locator()` ishlatilsin, `page.find_element()` EMAS
 - **Assert**: `expect(locator).to_be_visible()` ishlatilsin, Python `assert` EMAS
-- **Project helper first**: sahifa ochilishi, heading, semantic click, grid row/cell, form input, checkbox/switch, b-input/multiselect va loader kutish uchun avval mavjud loyiha helperlarini ishlat (`base.expect_page(...)`, `base.click(...)`, `base.grid(...)`, `base.grid_cell(...)`, `base.input(...)`, `base.checkbox(...)`, `base.wait_for_loader(...)`). `utils/base_page.py` ichida mos method bor bo'lsa raw `page.locator(...)`, raw `page.get_by_role(...)` yoki yangi local helper yozilmaydi; raw `expect(...)` faqat mos helper yo'q bo'lsa yoki yangi reusable helper yozishdan oldin lokal tekshiruv uchun ishlatiladi.
+- **Project helper first**: sahifa ochilishi, heading, semantic click, grid row/cell, form input, checkbox/switch, b-input/multiselect va loader kutish uchun avval mavjud loyiha helperlarini ishlat (`base.expect_page(...)`, `base.click(...)`, `base.grid(...)`, `base.grid_cell(...)`, `base.input(...)`, `base.checkbox(...)`, `base.wait_for_loader(...)`). `utils/base_pages/base_page.py` ichida mos method bor bo'lsa raw `page.locator(...)`, raw `page.get_by_role(...)` yoki yangi local helper yozilmaydi; raw `expect(...)` faqat mos helper yo'q bo'lsa yoki yangi reusable helper yozishdan oldin lokal tekshiruv uchun ishlatiladi.
 - **b-input API bir xilligi**: single-select uchun `base.b_input(label=..., value=..., expect_value=..., return_value=...)`, multi-select uchun ham shu uslubdagi `base.multiselect(label=..., value=..., expect_value=..., return_value=..., clear=...)` ishlatiladi. Auto-selected chipni tekshirish uchun `expect_value`, tanlash uchun `value` beriladi.
 - **Label-first form API**: `input`, `b_input`, `checkbox` va boshqa forma helperlarida avval ko'rinadigan `label=` ishlatiladi. `ng_model=` faqat label yo'q yoki live DOM/trace bilan label resolver noto'g'ri fieldni target qilishi tasdiqlangan legacy forma uchun hujjatlashtirilgan fallback; A2 migratsiya uchun yangi test contracti `ng_model`ga bog'lanmaydi.
-- **BasePage va AngularBasePage parity**: `utils/base_page.py` yoki `utils/angular_base_page.py`dagi umumiy UI primitive/public API o'zgarsa, shu taskning o'zida ikkinchi page-objectdagi ekvivalent method ham bir xil nom, parametr, default, tanlash/assert/clear/search/timeout semantikasi bilan yangilanadi. Legacy va A2 DOM locatorlari turlicha bo'lishi mumkin (`BasePage.b_input()` ↔ `AngularBasePage.b_input()`), lekin tashqi behavior contract doim bir xil saqlanadi; test forma A2'ga migratsiya bo'lganda test body o'zgarmasdan faqat import va `base = AngularBasePage(page)` almashtirilishi kerak. Parity `./.venv/bin/python scripts/validate_page_object_parity.py` bilan tekshiriladi; ekvivalent komponent bo'lmasa farq kod va canonical qoidada ochiq hujjatlanadi, jim API mismatch qoldirilmaydi.
-- **BasePage scope**: `utils/base_page.py` ga hamma yoki ko'p testlar ishlatadigan umumiy UI primitive'lar yoziladi. Faqat bitta testga kerak bo'lgan biznes/helper logika test faylida `_helper_name(...)` local helper bo'lib qoladi.
+- **BasePage va AngularBasePage parity**: `utils/base_pages/base_page.py` yoki `utils/base_pages/angular_base_page.py`dagi umumiy UI primitive/public API o'zgarsa, shu taskning o'zida ikkinchi page-objectdagi ekvivalent method ham bir xil nom, parametr, default, tanlash/assert/clear/search/timeout semantikasi bilan yangilanadi. Legacy va A2 DOM locatorlari turlicha bo'lishi mumkin (`BasePage.b_input()` ↔ `AngularBasePage.b_input()`), lekin tashqi behavior contract doim bir xil saqlanadi; test forma A2'ga migratsiya bo'lganda test body o'zgarmasdan faqat import va `base = AngularBasePage(page)` almashtirilishi kerak. Parity `./.venv/bin/python scripts/validate_page_object_parity.py` bilan tekshiriladi; ekvivalent komponent bo'lmasa farq kod va canonical qoidada ochiq hujjatlanadi, jim API mismatch qoldirilmaydi.
+- **BasePage scope**: `utils/base_pages/base_page.py` ga hamma yoki ko'p testlar ishlatadigan umumiy UI primitive'lar yoziladi. Faqat bitta testga kerak bo'lgan biznes/helper logika test faylida `_helper_name(...)` local helper bo'lib qoladi.
 - **Umumiy pure helperlar joyi**: DOM/UI action bajarmaydigan, bir nechta modul ishlatadigan kichik umumiy helperlar `utils/helper_utils.py` ichida saqlanadi; har biri uchun alohida `*_utils.py` fayl ochilmaydi. UI interaction esa tegishli `BasePage`/`AngularBasePage` methodida qoladi.
 - **Navigation wrapper ishlatilmaydi**: `navigate_to`, `expect_page`, `switch_filial` flow helper sifatida import qilinmaydi; test/flow ichida `base = BasePage(page)` qilib, to'g'ridan-to'g'ri `base.navigate_to(...)`, `base.expect_page(...)`, `base.switch_filial(...)` ishlatiladi.
 - **Page ready check**: `base.expect_page(..., heading=...)` heading visible bo'lishi bilan birga Smartup loader (`.block-ui-overlay:visible`) yo'qolganini ham kutadi. Loader yo'q bo'lsa 2 sekund kutmaydi; darhol davom etadi. Bu route/page state check uchun yetarli; lekin keyingi action aynan grid/form ichki async reloadga bog'liq bo'lsa `base.wait_for_loader()` alohida qoladi.
@@ -134,7 +138,7 @@ Source: user
   almashmaydi. `load_data("key")` defaultda missing/bo'sh key uchun aniq
   dependency xatosi ko'taradi; faqat optional key
   `load_data("key", allow_missing=True)` bilan `None` qaytarishi mumkin.
-- **`code`**: har bir test uchun unikal identifikator, nom sifatida ishlating
+- **`code`**: session-scoped identifikator; shu sessiyadagi testlar bir qiymatni ulashadi. Testcase nomlarini o'z prefixi bilan ajrating.
 
 ## 4. Runnerga qo'shish
 
@@ -154,19 +158,20 @@ def test_XX_<nomi>(session_page: Page, code):
 - Repo rootda `.env` mavjud bo'lsa direct `pytest`/PyCharm run konfiguratsiyasi undan olinadi; `.env` yo'q bo'lsa terminal/CI flaglari ishlaydi.
 - Lokal `.env` bo'lsa `COMPANY_URL` va company mode credentiallari o'sha yerdan
   olinadi; `.env` yo'q muhitda mos `--url`, `--company-code/--company-password`
-  yoki `--create-company --head-email/--head-password` CLI flaglari ishlaydi.
-- `.env`dagi `CREATE_COMPANY=1` bo'lsa setup runnerdagi `test_00_company`
+  yoki `--company-code 1 --head-email/--head-password` CLI flaglari ishlaydi.
+- `.env`dagi `COMPANY_CODE=1` bo'lsa setup runnerdagi `test_00_company`
   collectionda qoladi; aks holda `pytest_collection_modifyitems` uni deselect
   qiladi. Runtime `pytest.skip(...)` ishlatilmaydi, shu sabab Company testi
   Allure'da skipped test sifatida ko'rinmaydi.
-- `CREATE_COMPANY=1` uchun `HEAD_ADMIN_EMAIL` va `HEAD_ADMIN_PASSWORD`
+- `COMPANY_CODE=1` uchun `HEAD_ADMIN_EMAIL` va `HEAD_ADMIN_PASSWORD`
   majburiy; `DISABLE_LICENSE_POLICY` ham faqat shu rejimda ishlaydi.
 - Setup authorization alohida test emas: `test_01_legal_person` boshida admin
   login qilinadi. Create rejimida admin company kodi `test_00_company`
   `data_store.json`ga saqlagan `company_code`dan, existing rejimida esa
-  `COMPANY_CODE`dan olinadi. Existing rejimdagi `COMPANY_CODE=0`
-  `data_store.json`dagi saqlangan `company_code`ni qayta ishlatadi; har ikki
-  rejimda parol `COMPANY_PASSWORD`.
+  `COMPANY_CODE`dan olinadi. `COMPANY_CODE=0` configuration error; mavjud
+  company kodi ochiq beriladi. Existing admin paroli `COMPANY_PASSWORD`;
+  create rejimida runtime yangi company parolini o'zi o'rnatadi.
+- `USER_PASSWORD` har ikki rejimda majburiy environment qiymati.
 - Dinamik email va shunga o'xshash qiymatlar test/flow ichida active company code bilan quriladi:
   ```python
   user_email = f"user-pw{code}@{active_company_code}"
@@ -216,8 +221,8 @@ Source: user; `skills/write-test/SKILL.md:33`; `skills/write-test/references/pro
 
 ### authorization (rolga qarab login)
 - Yagona funksiya: `authorization(page, *, who="admin"|"user"|"head", code=None)`. `who` majburiy keyword-only parametr: har bir chaqiruv login rolini ochiq yozishi shart. **Eski `authorization_user` OLIB TASHLANGAN — ishlatma.**
-- `who="user"` → `user-pw{code}@{company}` + `USER_PASSWORD`/`USER_PASS`. Avvalgi `authorization_user(page, code)` o'rniga `authorization(page, who="user", code=code)` yoz.
-- `who="admin"` → `ADMIN_EMAIL`/`admin@{company}` + `ADMIN_PASSWORD`/`COMPANY_PASSWORD`.
+- `who="user"` → `user-pw{code}@{company}` + `USER_PASSWORD`. Avvalgi `authorization_user(page, code)` o'rniga `authorization(page, who="user", code=code)` yoz.
+- `who="admin"` → `admin@{company}` + `COMPANY_PASSWORD`.
 - `who="head"` → `HEAD_ADMIN_EMAIL`/`HEAD_ADMIN_PASSWORD` (company yaratish uchun).
 - `authorization` code generatsiya qilmaydi va `data_store.json`dan code o'qimaydi; `who="user"` uchun `code=code` majburiy. Yangi/eski code tanlovining yagona source'i `NEW_CODE` boshqaradigan `code` fixture.
 - `authorization(...)` oxirida `dashboard(page)` orqali `Trade` heading ko'rinishini o'zi tekshiradi; undan keyin `expect(... "Trade" ...).to_be_visible()` ni qayta yozma.
@@ -232,7 +237,10 @@ Source: user; `skills/write-test/SKILL.md:33`; `skills/write-test/references/pro
 - Migratsiyada foydalanuvchi `run_tests.sh` oldin run qilinganini aytsa, user setup tayyor deb hisobla; user bilan login qil va `code` qiymatini `test-results/data/data_store.json` dan ol.
 - Agar foydalanuvchi Playwright codegen pytest kodini bersa, Seleniumdan taxminiy migratsiya qilma; codegen kodini asos qilib olib loyiha fixture, Allure step, `code`, `authorization(who="user", code=code)`, helper flow va locator patternlariga moslab ber.
 - Codegen kodini moslashda har bir ochilgan sahifa, forma yoki view uchun `expect(...)` bilan ochilganini tasdiqla; mavjud login/navbar flowlari bo'lsa, codegen qatorlari o'rniga o'shalarni ishlat.
-- Codegen `page.goto("https://...")` kabi hardcode to'liq URL yozadi; bularni hech qachon kodda qoldirma. Conftest `--url` ni `os.environ["COMPANY_URL"]` ga yozadi va `tests/smoke/flows/flow_authorization.company_url()` shuni o'qiydi. Har bir hardcode URL ni `f"{company_url()}/login.html"`, `f"{company_url()}/a2/biruni/md/company_list"` kabi global URL ga bog'la (path qismi qoladi, domen `company_url()` dan keladi). `company_url` ni `flow_authorization` dan import qil.
+- Codegen hardcode to'liq URLlarini saqlama. Login uchun `authorization(...)`,
+  menu flow uchun page-object navigatsiyasini ishlat. Direct URL zarur bo'lsa
+  bazani `os.environ["COMPANY_URL"].rstrip("/")`dan ol;
+  `flow_authorization`da `company_url()` funksiyasi yo'q.
 - Umumiy test ma'lumotlarini ajratish uchun random ishlatma, `code` fixture qiymatini ishlat; bu test boshida generatsiya bo'ladi va butun sessiya davomida saqlanadi.
 - `code` fixture umumiy entity nomlari va testlarni ajratish uchun ishlatiladi;
   agar formaning o'z `code`/`number` maydoni setup baseline sifatida group
@@ -242,7 +250,7 @@ Source: user; `skills/write-test/SKILL.md:33`; `skills/write-test/references/pro
   bilan sibling consumer yaratmaydi.
 - Contract add formasida generated `contract_code_{random_son}` qiymati `Код` inputiga yoziladi; `Номер` inputi bilan almashtirib yuborma.
 - Dinamik test qiymatlarini test boshida alohida o'zgaruvchiga yig'ib olma; kerakli joyida `f"...{code}"` ko'rinishida yoz.
-- Barcha testlarda qayta ishlatiladigan umumiy helperlar, masalan `b-input` tanlash, local test helper emas `utils/base_page.py` ichidagi `BasePage` methodi bo'lsin.
+- Barcha testlarda qayta ishlatiladigan umumiy helperlar, masalan `b-input` tanlash, local test helper emas `utils/base_pages/base_page.py` ichidagi `BasePage` methodi bo'lsin.
 - `input[ng-model=...]` kabi Angularga bog'langan locatorlardan iloji boricha foydalanma; label/role/text asosidagi `BasePage.fill_textbox_by_label`, `BasePage.select_b_input`, `page.get_by_role(...)` kabi locatorlarni afzal ko'r.
 - Smoke UI testlarda form inputlarini to'ldirish, switch/radio/checkbox/button bosish uchun `page.evaluate()` ishlatma; real user action bo'lgan `locator.click()`, `locator.fill()`, `locator.press()` va `expect(...)` ishlat. `page.evaluate()` faqat o'qish/diagnostika yoki haqiqiy user flowga ta'sir qilmaydigan yordamchi holatlarda ishlatiladi.
 - Test nomi, Allure title va step nomlari professional, sodda va test maqsadini darhol tushuntiradigan bo'lsin.
@@ -275,9 +283,9 @@ o'chirilgan; ular qayta yozilganda quyidagi qoidalar joriy contract bo'ladi.
 
 Status: code-confirmed
 Verified: 2026-09-03
-Source: user; `utils/base_api.py`;
-`tests/smoke/flows/flow_mobile_authorization.py`;
-`tests/smoke/flows/flow_visit_sync.py`;
+Source: user; `tests/smoke/test_groups/test_visit_grup/flow_visit/base_api.py`;
+`tests/smoke/test_groups/test_visit_grup/flow_visit/flow_mobile_authorization.py`;
+`tests/smoke/test_groups/test_visit_grup/flow_visit/flow_visit_sync.py`;
 `tests/smoke/test_groups/test_visit_grup/test_01_mobile_visit.py`;
 `tests/smoke/test_groups/test_visit_grup/test_02_mobile_order_visit.py`;
 `tests/smoke/test_groups/test_visit_grup/test_0_visit_runner.py`

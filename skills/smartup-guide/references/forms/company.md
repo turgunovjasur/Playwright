@@ -13,9 +13,11 @@
 
 ## Navigatsiya
 
-- `CREATE_COMPANY=1` rejimida majburiy `HEAD_ADMIN_EMAIL` /
+- `COMPANY_CODE=1` rejimida majburiy `HEAD_ADMIN_EMAIL` /
   `HEAD_ADMIN_PASSWORD` bilan kirish kerak — oddiy user yoki admin emas.
-- `run_company` va `test_company_add` boshida mavjud flowlardan foydalanadi: `authorization(page, who="head")`, so'ng `navigate_to(page, tab="Главное", name="Компании")`.
+- Entrypointlar `run_company` va `test_company`; head login uchun
+  `authorization(page, who="head")`, navigatsiya uchun page-objectning
+  `base.navigate_to(tab="Главное", name="Компании")` metodi ishlatiladi.
 - Menyu: **Главное → Компании**.
 - Ro'yxatda `Компании` / `Companies` matni breadcrumb/navigation sifatida ko'rinadi;
   A2 `company_list` sahifasida u accessibility `heading` role'iga ega emas.
@@ -165,7 +167,7 @@ Tags: company, angular, select, validation, save, trace
 ```
 Company qatori → Просмотреть → "Безопасность" tab
 → "Ограничение количества одновременных сеансов" → Отключено (MAJBURIY)
-→ agar CREATE_COMPANY=1 va DISABLE_LICENSE_POLICY=1:
+→ agar COMPANY_CODE=1 va DISABLE_LICENSE_POLICY=1:
   "Политика лицензирования" → off
 → alohida Сохранить/confirm kerak emas
 ```
@@ -173,7 +175,7 @@ Company qatori → Просмотреть → "Безопасность" tab
 ## Loyiha Xususiyatlari (tasdiqlangan)
 
 ### Company View
-- Company viewda `Безопасность`/Security tab ichida `Политика лицензирования` radio/switch control bor; company setup runida `--create-company --disable-license-policy` berilsa off qilinadi.
+- Company viewda `Безопасность`/Security tab ichida `Политика лицензирования` radio/switch control bor; company setup runida `--company-code 1 --disable-license-policy` berilsa off qilinadi.
 - `Политика лицензирования` control view tabning o'zida interaktiv `smt-switch` sifatida turadi (`id="licensing_policy_enabled"`, `role="switch"`). Uni off qilish uchun global `Изменить` tugmasini bosmaslik kerak, chunki u oddiy `company_edit` formaga olib kiradi va tablar yo'qoladi.
 - Policy off qilingan runlarda setup zanjiri `Buy License` va `Attach License`
   qadamlari real license flowga kirmaydi. Policy yoqiq qolsa yangi company uchun
@@ -234,7 +236,7 @@ Tags: company, setup, locator, wait
 
 ## Test
 
-- `tests/smoke/test_setup/test_00_company.py` → `run_company(page, code, save_data)`
+- `tests/smoke/test_setup/test_00_company.py` → `run_company(page, code)`
 - `save_data("company_code", company_code)` — data_store.json ga saqlanadi
 - Keyingi `test_01_legal_person` admin authorizationda aynan shu saqlangan
   `company_code`ni login suffix sifatida ishlatadi.
