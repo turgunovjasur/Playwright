@@ -12,14 +12,15 @@ import time
 import zipfile
 from dataclasses import dataclass, replace
 from datetime import datetime, timedelta, timezone
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from zoneinfo import ZoneInfo
 
 import requests
 
+if __package__:
+    from .telegram_ci_settings import ConfigError, load_public_config
+else:
+    from telegram_ci_settings import ConfigError, load_public_config
 
-DEFAULT_REPOSITORY = "turgunovjasur/Playwright"
-DEFAULT_WORKFLOW = "daily-smoke.yml"
-DEFAULT_REF = "main"
 STATUS_POLL_INTERVAL_SECONDS = 30
 STATUS_POLL_ERROR_LIMIT = 5
 TELEGRAM_REQUEST_ATTEMPTS = 3
@@ -46,16 +47,6 @@ ACTIVE_WORKFLOW_RUN_STATUSES = (
     "requested",
     "pending",
 )
-
-SERVERS = {
-    "smartup": "https://smartup.online",
-    "app3": "https://app3.greenwhite.uz/xtrade",
-}
-
-
-class ConfigError(RuntimeError):
-    pass
-
 
 class TelegramAPIError(RuntimeError):
     def __init__(
@@ -253,6 +244,7 @@ class BotConfig:
     repository: str
     workflow: str
     ref: str
+    servers: dict[str, str]
     allowed_server_keys: set[str]
     hourly_schedule: HourlyScheduleConfig
 
@@ -315,7 +307,7 @@ def env_value(name, default):
     return os.getenv(name, default).strip() or default
 
 
-def load_hourly_schedule_config(allowed_server_keys):
+def load_hourly_schedule_config(schedule):
     enabled_value = env_value("HOURLY_SCHEDULE_ENABLED", "0").lower()
     if enabled_value in {"1", "true", "yes", "on"}:
         enabled = True
@@ -324,54 +316,16 @@ def load_hourly_schedule_config(allowed_server_keys):
     else:
         raise ConfigError("HOURLY_SCHEDULE_ENABLED must be boolean")
 
-    minute_value = env_value("HOURLY_SCHEDULE_MINUTE", "17")
-    try:
-        minute = int(minute_value)
-    except ValueError as exc:
-        raise ConfigError("HOURLY_SCHEDULE_MINUTE must be an integer from 0 to 59") from exc
-    if not 0 <= minute <= 59:
-        raise ConfigError("HOURLY_SCHEDULE_MINUTE must be an integer from 0 to 59")
-
-    timezone_name = env_value("HOURLY_SCHEDULE_TIMEZONE", "Asia/Tashkent")
-    try:
-        ZoneInfo(timezone_name)
-    except ZoneInfoNotFoundError as exc:
-        raise ConfigError("HOURLY_SCHEDULE_TIMEZONE is invalid") from exc
-
-    server_key = env_value("HOURLY_SCHEDULE_SERVER", "smartup").lower()
-    if enabled and server_key not in allowed_server_keys:
-        raise ConfigError("HOURLY_SCHEDULE_SERVER is not in ALLOWED_SERVER_URLS")
-
     return HourlyScheduleConfig(
         enabled=enabled,
-        minute=minute,
-        timezone_name=timezone_name,
-        server_key=server_key,
+        minute=schedule["minute"],
+        timezone_name=schedule["timezone"],
+        server_key=schedule["server"],
     )
 
 
-def split_csv(value):
-    return [item.strip() for item in value.split(",") if item.strip()]
-
-
-def server_keys_from_env(value):
-    if not value:
-        return set(SERVERS)
-    keys = set()
-    for item in split_csv(value):
-        lowered = item.lower().rstrip("/")
-        if lowered in SERVERS:
-            keys.add(lowered)
-            continue
-        for key, url in SERVERS.items():
-            if lowered == url.rstrip("/"):
-                keys.add(key)
-                break
-    return keys or set(SERVERS)
-
-
 def load_config():
-    allowed_server_keys = server_keys_from_env(os.getenv("ALLOWED_SERVER_URLS", ""))
+    public = load_public_config()
 
     # Botdan hamma foydalana oladi; run/stop faqat to'g'ri parol bilan ochiladi.
     run_password = env_required("TELEGRAM_RUN_PASSWORD")
@@ -380,11 +334,12 @@ def load_config():
         telegram_token=env_required("TELEGRAM_BOT_TOKEN"),
         run_password=run_password,
         github_token=env_required("GITHUB_TOKEN", "GITHUB_PAT"),
-        repository=env_value("GITHUB_REPOSITORY", DEFAULT_REPOSITORY),
-        workflow=env_value("GITHUB_WORKFLOW_FILE", DEFAULT_WORKFLOW),
-        ref=env_value("GITHUB_REF", DEFAULT_REF),
-        allowed_server_keys=allowed_server_keys,
-        hourly_schedule=load_hourly_schedule_config(allowed_server_keys),
+        repository=public["github"]["repository"],
+        workflow=public["github"]["workflow"],
+        ref=public["github"]["ref"],
+        servers=public["servers"],
+        allowed_server_keys=set(public["servers"]),
+        hourly_schedule=load_hourly_schedule_config(public["schedule"]),
     )
 
 
@@ -912,7 +867,7 @@ def help_text():
 
 
 def start_text(config):
-    servers = "\n".join(f"  • {SERVERS[key]}" for key in sorted(config.allowed_server_keys))
+    servers = "\n".join(f"  • {config.servers[key]}" for key in sorted(config.allowed_server_keys))
     return (
         "👋 Salom! Bu — Playwright Smoke va Forms testlarini GitHub Actions "
         "orqali manual ishga tushiradigan CI bot.\n"
@@ -1378,7 +1333,7 @@ def handle_message(
         telegram.send_message(chat_id, help_text())
         return
     if command == "/servers":
-        lines = [SERVERS[key] for key in sorted(config.allowed_server_keys)]
+        lines = [config.servers[key] for key in sorted(config.allowed_server_keys)]
         telegram.send_message(chat_id, "Mavjud serverlar:\n" + "\n".join(lines))
         return
     if command == "/status":
@@ -1469,7 +1424,7 @@ def handle_callback(
         if suite_key not in SUITES:
             telegram.answer_callback(callback_id, "Unknown suite")
             return
-        if server_key not in config.allowed_server_keys or server_key not in SERVERS:
+        if server_key not in config.allowed_server_keys or server_key not in config.servers:
             telegram.answer_callback(callback_id, "Server not allowed")
             return
         telegram.answer_callback(callback_id, "Parol kerak")
@@ -1482,7 +1437,7 @@ def handle_callback(
             chat_id,
             message_id,
             (
-                f"🔒 {SUITES[suite_key]} · {SERVERS[server_key]}\n\n"
+                f"🔒 {SUITES[suite_key]} · {config.servers[server_key]}\n\n"
                 "Testni run qilish uchun parolni yuboring:"
             ),
         )

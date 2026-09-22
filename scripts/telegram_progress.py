@@ -977,16 +977,38 @@ def render_message(state):
             )
             observed = str(ai.get("observed") or "").strip()
             probable_cause = str(ai.get("probable_cause") or "").strip()
+            ai_lines = [
+                f"Kuzatilgan: {observed}",
+                "",
+                f"Ehtimoliy sabab: {probable_cause}",
+                "",
+                f"Ishonch darajasi: {confidence}",
+            ]
+            cases = ai.get("cases")
+            if isinstance(cases, list) and cases:
+                ai_lines = [ai["coverage"]]
+                for case in cases:
+                    if case["provider_status"] == "ai":
+                        label = AI_CONFIDENCE_LABELS.get(case["confidence"], "past")
+                        outcome = f"AI tahlil qilindi; ishonch darajasi: {label}"
+                    else:
+                        outcome = f"Tahlil olinmadi: {case['availability_note']}"
+                    ai_lines.extend(["", f"{case['name']} — {outcome}"])
+                if ai.get("remaining_cases"):
+                    ai_lines.extend(["", f"Yana {ai['remaining_cases']} ta testning AI holati Allure hisobotida."])
+                # Limitga sig'dirishda avval qisqa holatlar, keyin ixtiyoriy izoh qoladi.
+                ai_lines.extend(["", "To'liq izohlar Allure hisobotida."])
+                for case in cases:
+                    if case["provider_status"] == "ai":
+                        ai_lines.extend([
+                            "", case["name"],
+                            f"Kuzatilgan: {case['observed']}", "",
+                            f"Ehtimoliy sabab: {case['probable_cause']}",
+                        ])
             expandables.append(
                 (
                     "AI tahlili:",
-                    [
-                        f"Kuzatilgan: {observed}",
-                        "",
-                        f"Ehtimoliy sabab: {probable_cause}",
-                        "",
-                        f"Ishonch darajasi: {confidence}",
-                    ],
+                    ai_lines,
                 )
             )
 
@@ -1367,11 +1389,29 @@ def read_ai_analysis():
     probable_cause = str(data.get("probable_cause") or "").strip()[:600]
     if not observed or not probable_cause:
         return {}
-    return {
+    result = {
         "observed": observed,
         "probable_cause": probable_cause,
         "confidence": str(data.get("confidence") or "low").strip().lower(),
     }
+    analyses = data.get("analyses")
+    if isinstance(analyses, list):
+        analyses = [item for item in analyses if isinstance(item, dict)]
+        available = sum(item.get("provider_status") == "ai" for item in analyses)
+        result["coverage"] = f"{len(analyses)} ta failed testdan {available} tasi AI bilan tahlil qilindi."
+        skipped_limit = sum(item.get("provider_status") == "skipped_limit" for item in analyses)
+        if skipped_limit:
+            result["coverage"] += f" AI limiti sabab {skipped_limit} ta test tahlil qilinmadi."
+        result["cases"] = [{
+            "name": str(item.get("name") or "Test")[:160],
+            "provider_status": item.get("provider_status"),
+            "observed": truncate_message(str(item.get("observed") or ""), 240),
+            "probable_cause": truncate_message(str(item.get("probable_cause") or ""), 240),
+            "confidence": str(item.get("confidence") or "low").lower(),
+            "availability_note": str(item.get("availability_note") or "AI javobi olinmadi.")[:180],
+        } for item in analyses[:3]]
+        result["remaining_cases"] = max(0, len(analyses) - 3)
+    return result
 
 
 def derive_summary(state):

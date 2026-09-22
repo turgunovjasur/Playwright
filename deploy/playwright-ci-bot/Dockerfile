@@ -10,7 +10,7 @@ RUN addgroup --system bot && adduser --system --ingroup bot bot
 COPY deploy/playwright-ci-bot/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-COPY scripts/telegram_ci_bot.py scripts/stop_ci_runs.py ./scripts/
+COPY scripts/telegram_ci_bot.py scripts/stop_ci_runs.py scripts/telegram_ci_settings.py scripts/telegram_ci_config.json ./scripts/
 
 USER bot
 

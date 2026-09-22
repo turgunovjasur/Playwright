@@ -36,6 +36,9 @@ jobs:
       APP3_COMPANY_PASSWORD: ${{ secrets.APP3_COMPANY_PASSWORD }}
       USER_PASSWORD: ${{ secrets.USER_PASSWORD }}
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      AI_ANALYSIS: ${{ vars.AI_ANALYSIS || '0' }}
+      AI_MAX_CASES: ${{ vars.AI_MAX_CASES || '5' }}
+      GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-2.5-flash-lite' }}
       ALLURE_HISTORY_PATH: test-results/allure-history/history.jsonl
 
     steps:
@@ -57,19 +60,17 @@ jobs:
 
       - name: Resolve server
         run: |
-          case "$TEST_SERVER_KEY" in
-            smartup)
-              TEST_SERVER_URL="https://smartup.online"
-              ;;
-            app3)
-              TEST_SERVER_URL="https://app3.greenwhite.uz/xtrade"
-              ;;
-            *)
-              echo "Unsupported server key: $TEST_SERVER_KEY" >&2
-              exit 2
-              ;;
-          esac
-          echo "TEST_SERVER_URL=$TEST_SERVER_URL" >> "$GITHUB_ENV"
+          python - <<'PY'
+          import os
+          from scripts.telegram_ci_settings import load_public_config
+
+          servers = load_public_config()["servers"]
+          server_key = os.environ["TEST_SERVER_KEY"]
+          if server_key not in servers:
+              raise SystemExit("Unsupported server key")
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as output:
+              output.write(f"TEST_SERVER_URL={servers[server_key]}\n")
+          PY
 
       - name: Start Telegram progress
         env:
@@ -134,7 +135,9 @@ jobs:
           [ -n "$APP3_COMPANY_PASSWORD" ] && echo "::add-mask::$APP3_COMPANY_PASSWORD"
           [ -n "$SELECTED_COMPANY_CODE" ] && echo "::add-mask::$SELECTED_COMPANY_CODE"
           [ -n "$SELECTED_COMPANY_PASSWORD" ] && echo "::add-mask::$SELECTED_COMPANY_PASSWORD"
-          [ -n "$GEMINI_API_KEY" ] && echo "::add-mask::$GEMINI_API_KEY"
+          if [ -n "$GEMINI_API_KEY" ]; then
+            echo "::add-mask::$GEMINI_API_KEY"
+          fi
 
       - name: Run test suite
         env:

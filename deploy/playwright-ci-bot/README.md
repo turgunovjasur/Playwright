@@ -47,10 +47,24 @@ Scheduler faqat server `.env`ida yoqiladi:
 
 ```dotenv
 HOURLY_SCHEDULE_ENABLED=1
-HOURLY_SCHEDULE_MINUTE=17
-HOURLY_SCHEDULE_TIMEZONE=Asia/Tashkent
-HOURLY_SCHEDULE_SERVER=smartup
 ```
+
+GitHub repository/workflow/ref, ruxsat etilgan serverlar va jadval tafsilotlari
+bot yonidagi `scripts/telegram_ci_config.json`da saqlanadi. Bot, `stop_ci_runs.py`
+va GitHub workflow server manzillarini shu fayldan o'qiydi. JSON yo'li joriy
+terminal katalogiga emas, loader fayli joylashuviga bog'langan.
+
+`.env`da bot uchun faqat `TELEGRAM_BOT_TOKEN`, `TELEGRAM_RUN_PASSWORD`,
+`GITHUB_TOKEN` va `HOURLY_SCHEDULE_ENABLED` kerak. Eski `GITHUB_REPOSITORY`,
+`GITHUB_WORKFLOW_FILE`, `GITHUB_REF`, `ALLOWED_SERVER_URLS`,
+`HOURLY_SCHEDULE_MINUTE`, `HOURLY_SCHEDULE_TIMEZONE`, `HOURLY_SCHEDULE_SERVER`
+environment qiymatlari endi bot konfiguratsiyasiga ta'sir qilmaydi; ulardagi
+custom qiymatlarni deploydan oldin JSON'ga ko'chiring.
+
+JSON Git'da saqlanadi va Docker image'ga kiradi. JSON o'zgarganda serverda pull
+va `docker compose -f deploy/playwright-ci-bot/docker-compose.yml -p playwright-ci-bot up -d --build`
+kerak; faqat `restart` yangi image yaratmaydi. CI joblari o'z checkoutidagi
+JSON'ni ishlatadi. JSON'ga token, API key va parol yozilmaydi.
 
 Rollbackda `HOURLY_SCHEDULE_ENABLED=0` qilinib faqat Playwright containeri
 recreate qilinadi. GitHub `schedule` triggeri qayta tiklanmaguncha hourly run

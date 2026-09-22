@@ -2,6 +2,8 @@
 !scripts/
 !scripts/telegram_ci_bot.py
 !scripts/stop_ci_runs.py
+!scripts/telegram_ci_settings.py
+!scripts/telegram_ci_config.json
 !deploy/
 !deploy/playwright-ci-bot/
 !deploy/playwright-ci-bot/Dockerfile

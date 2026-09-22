@@ -190,8 +190,8 @@ def main():
     ]
     if unsupported_ai_flags:
         print(
-            "AI tahlili GEMINI_API_KEY bilan boshqariladi: key berilsa yoqiladi, "
-            "bo'sh bo'lsa o'chiriladi",
+            "AI tahlili AI_ANALYSIS=1/0 bilan boshqariladi; yoqish uchun GEMINI_API_KEY kerak. "
+            "AI_MAX_CASES (default 5) va GEMINI_MODEL orqali limit/model tanlanadi.",
             file=sys.stderr,
         )
         return 2

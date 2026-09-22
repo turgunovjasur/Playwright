@@ -3,12 +3,8 @@ from __future__ import annotations
 import os
 import sys
 
-from telegram_ci_bot import (
-    DEFAULT_REF,
-    DEFAULT_REPOSITORY,
-    DEFAULT_WORKFLOW,
-    GitHubActionsClient,
-)
+from telegram_ci_bot import GitHubActionsClient
+from telegram_ci_settings import load_public_config
 
 
 def required_token():
@@ -22,17 +18,13 @@ def required_token():
 
 
 def main():
-    repository = (
-        os.getenv("GITHUB_REPOSITORY", DEFAULT_REPOSITORY).strip()
-        or DEFAULT_REPOSITORY
-    )
     try:
+        github = load_public_config()["github"]
         client = GitHubActionsClient(
             required_token(),
-            repository,
-            os.getenv("GITHUB_WORKFLOW_FILE", DEFAULT_WORKFLOW).strip()
-            or DEFAULT_WORKFLOW,
-            os.getenv("GITHUB_REF", DEFAULT_REF).strip() or DEFAULT_REF,
+            github["repository"],
+            github["workflow"],
+            github["ref"],
         )
         result = client.force_cancel_all_active_runs()
     except Exception as exc:

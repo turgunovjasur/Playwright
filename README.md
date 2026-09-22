@@ -196,19 +196,45 @@ yiqilsa `FAILED`, xato bo'lmay skip bo'lsa `SKIPPED`, qolgan holatda `PASSED`.
 Trace saqlashdagi xato contextni yopishni to'xtatmaydi. Qo'shimcha diagnostika
 yoki log yozilmasa, `[REPORTING]` xabari chiqadi va asl test natijasi saqlanadi.
 
-AI xulosa kerak bo'lsa Gemini API keyni environment variable qilib bering. Key repo yoki commandga yozilmaydi:
+AI xulosa uchun `AI_ANALYSIS=1` va Gemini API key kerak. Kalitni lokal `.env`
+yoki secret store orqali bering; repo va logga yozmang:
 
 ```bash
 export GEMINI_API_KEY="<gemini_api_key>"
+export AI_ANALYSIS=1
+export AI_MAX_CASES=5
+export GEMINI_MODEL=gemini-2.5-flash-lite
 python scripts/run_tests.py --url <server_url> --company-code <company_code> --company-password <company_password> --open-report
 ```
 
-`GEMINI_API_KEY` berilsa failed run uchun AI tahlil yoqiladi, bo'sh bo'lsa
-o'chiriladi. AI tahlil yoqilganida qo'shimcha
+`AI_ANALYSIS=0` (default) AI'ni o'chiradi; `1` faqat failed run uchun yoqadi.
+`AI_MAX_CASES=5` har analyzer/suite runidagi dastlabki beshta failed/broken
+testni tanlaydi. Har tanlangan testga ko'pi bilan ikki AI so'rovi yuboriladi;
+qolganlari limit sabab tahlil qilinmagani bilan Allure va summaryda saqlanadi.
+Kalit bo'sh bo'lsa API chaqirilmaydi. AI tahlil yoqilganida qo'shimcha
 `test-results/ai-summary.md` va `test-results/ai-summary.json` yoziladi.
 Deterministic System Summary har doim tashqi Markdown/JSON artefakt bo'lib
-qoladi va Allure test totaliga alohida pseudo-test qo'shmaydi. Optional AI
-tahlili failed run uchun Allure'da alohida item sifatida ko'rinadi.
+qoladi va Allure test totaliga alohida pseudo-test qo'shmaydi. AI izohi har
+failed testning Allure attachmentida ko'rinadi.
+
+CI boshqaruvi: GitHub repository **Settings → Secrets and variables → Actions →
+Variables** ichida `AI_ANALYSIS=1`, `AI_MAX_CASES=5`,
+`GEMINI_MODEL=gemini-2.5-flash-lite` qo'ying. `GEMINI_API_KEY` esa **Secrets**da qoladi.
+AI'ni o'chirish uchun faqat `AI_ANALYSIS=0` qiling; testlar va system summary
+ishlashda davom etadi. Variables berilmasa workflow defaultlari `0`, `5` va
+`gemini-2.5-flash-lite`. Sozlama keyingi joblarda olinadi; boshlangan analyzerga
+ta'sir qilmaydi. Smoke, Report va Forms alohida job: limit har biriga alohida.
+Noto'g'ri `AI_ANALYSIS` yoki AI yoqilgan failed run uchun musbat butun son
+bo'lmagan `AI_MAX_CASES` AI configuration error beradi; API chaqirilmaydi,
+yozilgan system summary va testning asl natijasi saqlanadi.
+
+Telegram CI botning maxfiy bo'lmagan sozlamalari
+[`scripts/telegram_ci_config.json`](scripts/telegram_ci_config.json)da:
+GitHub repository/workflow/branch, serverlar va soatlik jadval tafsilotlari.
+Bot, `/stop` CLI va CI server tanlovi shu fayldan o'qiydi. `.env`da bot tokenlari,
+run paroli va `HOURLY_SCHEDULE_ENABLED` qoladi; eski GitHub/jadval environment
+qiymatlari bot uchun ishlatilmaydi. Batafsil deploy va JSON yangilash tartibi
+[`deploy/playwright-ci-bot/README.md`](deploy/playwright-ci-bot/README.md)da.
 
 ✅ Tayyor — hisobot brauzerda ochiladi. Report tabini yopsangiz, lokal server ham avtomatik to'xtaydi.
 Keyinroq hisobotni qayta ochish uchun: `python scripts/open_allure_report.py`.
@@ -258,7 +284,10 @@ ishlatiladi.
 | `--new-report` / `--clean-results` / `CLEAN_ALLURE_RESULTS=1` | Oldingi raw natijalarni o'chirib, yangi toza Allure report zanjirini boshlaydi. `--clean-results` eski alias; default lokal run oldingi natijalarni saqlaydi. |
 | `--headless` | Browserni ko'rsatmasdan ishlatadi. |
 | `--show-trace` / `SHOW_TRACE=1` | Testdan keyin oxirgi Playwright trace viewerini ochadi. `SHOW_TRACE=1` shell env yoki repo `.env` ichida berilishi mumkin. |
-| `GEMINI_API_KEY` | Key berilsa failed run uchun Gemini AI xulosa yozadi; bo'sh bo'lsa o'chiriladi. |
+| `AI_ANALYSIS` | `1` — failed run uchun AI yoqiladi; `0` — o'chadi (default). |
+| `AI_MAX_CASES` | Har suite/analyzer runidagi AI'ga yuboriladigan failed testlar limiti; musbat butun son, default `5`. |
+| `GEMINI_MODEL` | Gemini model ID; default `gemini-2.5-flash-lite`. |
+| `GEMINI_API_KEY` | AI yoqilganda API chaqiruvi uchun kalit; bo'sh bo'lsa chaqirilmaydi. |
 | `--dry-run` | Testni ishga tushirmaydi, faqat pytest commandni ko'rsatadi. |
 | `all` | Default target. Setup + Group-0 + Visit + Report + Forms runner ishlaydi. |
 | `setup` | Faqat setup runner ishlaydi. |
@@ -368,11 +397,15 @@ Nima qiladi: test tugagandan keyin Allure reportni generate qilib ochadi.
 
 ```bash
 export GEMINI_API_KEY="<gemini_api_key>"
+export AI_ANALYSIS=1
+export AI_MAX_CASES=5
+export GEMINI_MODEL=gemini-2.5-flash-lite
 python scripts/run_tests.py --url <server_url> --company-code <company_code> --company-password <company_password> --open-report
 ```
 
-Nima qiladi: tizim xulosasi har doim yoziladi. `GEMINI_API_KEY` berilsa failed
-run uchun Gemini qo'shimcha qisqa AI xulosa yozadi va
+Nima qiladi: tizim xulosasi har doim yoziladi. `AI_ANALYSIS=1` va
+`GEMINI_API_KEY` berilsa failed run uchun `AI_MAX_CASES` chegarasida Gemini
+qo'shimcha qisqa AI xulosa yozadi va
 `test-results/ai-summary.md/json` saqlanadi. AI pass/fail, failed step yoki kod
 joyini hal qilmaydi; bu faktlarni tizim o'zi chiqaradi.
 
@@ -561,7 +594,7 @@ test-results/
 ├── logs/                    # Muvaffaqiyatsiz testlar uchun log fayllar
 │   └── *.log
 ├── system-summary.md/json   # Har doim yoziladigan tizim xulosasi
-└── ai-summary.md/json       # Faqat failed run + GEMINI_API_KEY berilganda AI xulosa
+└── ai-summary.md/json       # AI_ANALYSIS=1 + failed testcase mavjud bo'lsa AI holati/xulosasi
 ```
 
 Allure 2'dagi `allure-report/history → allure-results/history` papka copy

@@ -14,6 +14,31 @@ AI_LABEL = "04 - AI tahlili"
 CONFIDENCE = {"low": "past", "medium": "o'rtacha"}
 
 
+class AIAnalysisError(ValueError):
+    """Faqat kod belgilagan xavfsiz diagnostika; provider matni saqlanmaydi."""
+
+    def __init__(self, code, retryable=True):
+        super().__init__(code)
+        self.code = code
+        self.retryable = retryable
+
+
+def case_response_schema(case):
+    properties = {
+        "test_id": {"type": "string", "enum": [case["test_id"]]},
+        "observed": {"type": "string", "description": "Dalilda ko'ringan holat; 1-2 qisqa gap."},
+        "cause_status": {"type": "string", "enum": ["hypothesis", "unknown"]},
+        "probable_cause": {"type": "string", "description": "Dalilli gipoteza yoki sabab noma'lumligi; kuzatuvni takrorlama."},
+        "evidence_ids": {"type": "array", "items": {"type": "string", "enum": [e["id"] for e in case["evidence"]]}},
+        "unknown": {"type": "string", "description": "Mavjud dalildan aniqlab bo'lmaydigan jihat."},
+        "next_checks": {"type": "array", "items": {"type": "string"}, "minItems": 1, "maxItems": 2},
+        "confidence": {"type": "string", "enum": ["low", "medium"]},
+    }
+    if not case["evidence"]:
+        properties["evidence_ids"] = {"type": "array", "items": {"type": "string"}, "maxItems": 0}
+    return {"type": "object", "properties": properties, "required": list(properties), "propertyOrdering": list(properties), "additionalProperties": False}
+
+
 def plain_report(markdown):
     """Native Allure text preview: sandboxed Markdown iframega bog'liq emas."""
     text = re.sub(r"^#{1,6}\s+", "", markdown, flags=re.M).replace("**", "").replace("`", "")
@@ -133,21 +158,25 @@ def unavailable_analysis(case, failure, reason):
 def normalize_case_analysis(raw, case, failure, model):
     """Identity va dalil havolalarini tekshirish; ishonchni gipoteza chegarasida saqlash."""
     if raw.get("test_id") != case["test_id"]:
-        raise ValueError("AI javobi boshqa testga tegishli")
+        raise AIAnalysisError("test_id_mismatch")
     refs = raw.get("evidence_ids")
     allowed = {e["id"] for e in case["evidence"]}
     if not isinstance(refs, list) or any(not isinstance(r, str) or r not in allowed for r in refs):
-        raise ValueError("AI dalil havolasi yaroqsiz")
+        raise AIAnalysisError("invalid_evidence_ids")
     for key in ("observed", "probable_cause", "unknown"):
         if not isinstance(raw.get(key), str) or not raw[key].strip():
-            raise ValueError(f"AI javobida {key} yetishmaydi")
+            raise AIAnalysisError(f"missing_field:{key}")
     checks = raw.get("next_checks")
     if not isinstance(checks, list) or not checks or any(not isinstance(c, str) or not c.strip() for c in checks):
-        raise ValueError("AI keyingi tekshiruvni bermadi")
+        raise AIAnalysisError("invalid_next_checks")
+    if len(checks) > 2:
+        raise AIAnalysisError("too_many_next_checks")
     status = raw.get("cause_status")
-    if status not in {"hypothesis", "unknown"} or (status == "hypothesis" and not refs):
-        raise ValueError("AI sababni dalilga bog'lamadi")
-    confidence = "medium" if status == "hypothesis" and raw.get("confidence") in {"medium", "high"} else "low"
+    if not isinstance(status, str) or status not in {"hypothesis", "unknown"} or (status == "hypothesis" and not refs):
+        raise AIAnalysisError("invalid_cause_evidence")
+    if not isinstance(raw.get("confidence"), str) or raw["confidence"] not in CONFIDENCE:
+        raise AIAnalysisError("invalid_confidence")
+    confidence = "medium" if status == "hypothesis" and raw["confidence"] == "medium" else "low"
     def prose(value, limit):
         text = re.sub(r"\s*\(E\d+(?:\s*,\s*E\d+)*\)", "", value.strip())
         return text.replace("render qilinmagan", "ekranda ko'rsatilmagan")[:limit]
@@ -272,11 +301,15 @@ def aggregate_analyses(analyses):
     available = [a for a in analyses if a["provider_status"] == "ai"]
     first = available[0] if available else analyses[0]
     prefix = f"{len(analyses)} ta failed testdan {len(available)} tasi AI bilan tahlil qilindi. "
+    skipped_limit = sum(a["provider_status"] == "skipped_limit" for a in analyses)
+    if skipped_limit:
+        prefix += f"AI limiti sabab {skipped_limit} ta test tahlil qilinmadi. "
     return safe_payload({
         "result": "FAILED", "provider_status": "ai" if available else "unavailable",
         "observed": prefix + f"{first['name']}: {first['observed']}",
         "probable_cause": first["probable_cause"],
-        "confidence": first["confidence"] if len(analyses) == 1 else "low",
+        "confidence": first["confidence"],
         "analyses": analyses,
+        "skipped_limit_count": skipped_limit,
         "summary": prefix + "Har testning alohida izohi Allure ichida.",
     })

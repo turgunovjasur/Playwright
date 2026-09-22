@@ -7,6 +7,7 @@ import re
 import shutil
 import sys
 import textwrap
+import time
 import urllib.error
 import urllib.request
 import uuid
@@ -20,7 +21,7 @@ if str(ROOT) not in sys.path:
 
 from scripts.failure_evidence import local_time, trace_evidence
 from scripts.ai_failure_analysis import (
-    aggregate_analyses, attach_case_analysis, build_case_input, build_case_prompt,
+    AIAnalysisError, aggregate_analyses, attach_case_analysis, build_case_input, build_case_prompt, case_response_schema,
     next_check, normalize_case_analysis, plain_report, unavailable_analysis,
 )
 from utils.report_safety import safe_text, safe_url
@@ -30,7 +31,7 @@ SYSTEM_SUMMARY_MD = ROOT / "test-results" / "system-summary.md"
 SYSTEM_SUMMARY_JSON = ROOT / "test-results" / "system-summary.json"
 AI_SUMMARY_MD = ROOT / "test-results" / "ai-summary.md"
 AI_SUMMARY_JSON = ROOT / "test-results" / "ai-summary.json"
-DEFAULT_MODEL = "gemini-2.5-flash"
+DEFAULT_MODEL = "gemini-2.5-flash-lite"
 FAILED_STATUSES = {"failed", "broken"}
 A2_ADMIN_FORMS_TEST = "test_a2_admin_menu_forms"
 A2_ANGULAR_FORMS_TEST = "test_a2_angular_forms"
@@ -1566,7 +1567,7 @@ def build_local_summary(deterministic):
     }
 
 
-def call_gemini(prompt, model, api_key):
+def call_gemini(prompt, model, api_key, schema, diagnostic, max_output_tokens=2048, timeout=30):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
     body = {
         "systemInstruction": {
@@ -1583,8 +1584,9 @@ def call_gemini(prompt, model, api_key):
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
             "temperature": 0.2,
-            "maxOutputTokens": 2048,
+            "maxOutputTokens": max_output_tokens,
             "responseMimeType": "application/json",
+            "responseJsonSchema": schema,
         },
     }
     request = urllib.request.Request(
@@ -1594,22 +1596,37 @@ def call_gemini(prompt, model, api_key):
         method="POST",
     )
     try:
-        with urllib.request.urlopen(request, timeout=60) as response:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
             data = json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"Gemini API HTTP {exc.code}: {_truncate(_mask_sensitive(detail), 1000)}") from exc
-    except urllib.error.URLError as exc:
-        raise RuntimeError(f"Gemini API network xatosi: {exc}") from exc
-
-    parts = (
-        data.get("candidates", [{}])[0]
-        .get("content", {})
-        .get("parts", [])
-    )
-    text = "".join(str(part.get("text") or "") for part in parts if isinstance(part, dict)).strip()
+        diagnostic["http_status"] = exc.code
+        exc.close()
+        raise AIAnalysisError(f"http_{exc.code}", retryable=False) from None
+    except urllib.error.URLError:
+        raise AIAnalysisError("network_error", retryable=False) from None
+    if not isinstance(data, dict):
+        raise AIAnalysisError("invalid_api_response")
+    diagnostic["stage"] = "response"
+    usage = data.get("usageMetadata") or {}
+    if isinstance(usage, dict):
+        diagnostic["usage"] = {key: usage[key] for key in ("promptTokenCount", "candidatesTokenCount", "thoughtsTokenCount", "totalTokenCount") if type(usage.get(key)) is int}
+    candidates = data.get("candidates")
+    if not isinstance(candidates, list) or not candidates or not isinstance(candidates[0], dict):
+        raise AIAnalysisError("no_candidate", retryable=False)
+    candidate = candidates[0]
+    finish = candidate.get("finishReason")
+    diagnostic["finish_reason"] = finish if isinstance(finish, str) and finish in {"STOP", "MAX_TOKENS", "SAFETY", "RECITATION", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII", "OTHER"} else "UNKNOWN"
+    if finish == "MAX_TOKENS":
+        raise AIAnalysisError("output_truncated")
+    if finish != "STOP":
+        raise AIAnalysisError("generation_not_completed", retryable=False)
+    content = candidate.get("content")
+    parts = content.get("parts") if isinstance(content, dict) else None
+    if not isinstance(parts, list):
+        raise AIAnalysisError("empty_response")
+    text = "".join(part["text"] for part in parts if isinstance(part, dict) and not part.get("thought") and isinstance(part.get("text"), str)).strip()
     if not text:
-        raise RuntimeError("Gemini API bo'sh javob qaytardi")
+        raise AIAnalysisError("empty_response")
     return text
 
 
@@ -1626,8 +1643,69 @@ def parse_ai_json(text):
             raise
         data = json.loads(match.group(0))
     if not isinstance(data, dict):
-        raise ValueError("AI JSON object qaytarmadi")
+        raise AIAnalysisError("json_not_object")
     return data
+
+
+def analyze_case_with_gemini(case, failure, model, api_key):
+    """Ko'pi bilan ikki so'rov; faqat javob formati/validatsiyasi qayta uriniladi."""
+    prompt = build_case_prompt(case)
+    schema = case_response_schema(case)
+    diagnostics = []
+    # Bu retry budjeti; urllib timeouti socket I/O kutishiga qo'llanadi.
+    retry_deadline = time.monotonic() + 60
+    output_tokens = 2048
+    analysis = unavailable_analysis(case, failure, "AI tahlili yakunlanmadi.")
+    for attempt in (1, 2):
+        remaining = retry_deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        diagnostic = {"attempt": attempt, "stage": "request", "max_output_tokens": output_tokens}
+        started = time.monotonic()
+        retryable = False
+        try:
+            raw = call_gemini(prompt, model, api_key, schema, diagnostic, max_output_tokens=output_tokens, timeout=min(30, remaining))
+            diagnostic["stage"] = "parse"
+            parsed = parse_ai_json(raw)
+            diagnostic["stage"] = "validate"
+            analysis = normalize_case_analysis(parsed, case, failure, model)
+            diagnostic["stage"] = "complete"
+        except AIAnalysisError as exc:
+            diagnostic["error_code"] = exc.code
+            retryable = exc.retryable
+        except json.JSONDecodeError:
+            diagnostic["error_code"] = "invalid_json"
+            retryable = True
+        except TimeoutError:
+            diagnostic["error_code"] = "request_timeout"
+        except Exception:
+            diagnostic["error_code"] = "internal_error"
+        diagnostic["elapsed_seconds"] = round(time.monotonic() - started, 2)
+        diagnostics.append(diagnostic)
+        # Model javobi, exception matni va credentiallar logga chiqarilmaydi.
+        print(f"AI diagnostika: test_id={safe_text(case['test_id'])} {json.dumps(diagnostic, ensure_ascii=False)}", flush=True)
+        if diagnostic["stage"] == "complete":
+            break
+        code = diagnostic["error_code"]
+        notes = {
+            "output_truncated": "AI javobi uzunlik chegarasida uzildi.",
+            "invalid_json": "AI javobi JSON formatida o'qilmadi.",
+            "request_timeout": "AI javobini kutish muddati tugadi.",
+            "network_error": "AI xizmatiga ulanish amalga oshmadi.",
+            "generation_not_completed": "AI xizmati javob yaratishni yakunlamadi.",
+        }
+        note = notes.get(code, "AI javobi tekshiruvdan o'tmadi.")
+        if code.startswith("http_"):
+            note = "AI xizmati so'rovni qabul qilmadi."
+        analysis = unavailable_analysis(case, failure, note)
+        if attempt == 2 or not retryable:
+            break
+        if code == "output_truncated":
+            output_tokens = 4096
+        prompt = build_case_prompt(case) + f"\nOldingi urinish xatosi: {code}. Sxemaga mos to'liq JSON qaytar; matnlarni qisqa yoz."
+    analysis["diagnostics"] = diagnostics
+    analysis["model"] = model
+    return analysis
 
 
 def render_markdown(
@@ -1639,7 +1717,10 @@ def render_markdown(
     if isinstance(summary.get("analyses"), list):
         lines = ["# AI xatolik tahlili", "", summary["summary"], ""]
         for item in summary["analyses"]:
-            lines.extend([f"## {item['name']}", "", f"Kuzatilgan: {item['observed']}", "",
+            lines.extend([f"## {item['name']}", ""])
+            if item["provider_status"] != "ai":
+                lines.extend([f"Tahlil olinmadi: {item['availability_note']}", ""])
+            lines.extend([f"Kuzatilgan: {item['observed']}", "",
                           f"Ehtimoliy sabab: {item['probable_cause']}", "",
                           "Keyingi tekshiruv: " + " ".join(item["next_checks"]), ""])
         return safe_text("\n".join(lines))
@@ -1754,7 +1835,7 @@ def main():
     results = collect_allure_results(args.results_dir, args.started_at)
     deterministic = build_deterministic_summary(args.exit_code, results)
     enrich_failed_allure_results(results, args.results_dir)
-    model = os.getenv("GEMINI_MODEL", DEFAULT_MODEL)
+    model = os.getenv("GEMINI_MODEL", "").strip() or DEFAULT_MODEL
 
     args.ai_output_md.unlink(missing_ok=True)
     args.ai_output_json.unlink(missing_ok=True)
@@ -1768,10 +1849,24 @@ def main():
     )
     print(f"System summary yozildi: {args.system_output_md}")
 
-    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    ai_enabled = os.getenv("AI_ANALYSIS", "0").strip()
+    if ai_enabled not in {"0", "1"}:
+        print("AI configuration error: AI_ANALYSIS faqat 0 yoki 1 bo'lishi kerak; system summary saqlandi.", file=sys.stderr)
+        return 2
+    if ai_enabled == "0":
+        print("AI tahlili skipped: AI_ANALYSIS=0")
+        return 0
     if deterministic.get("result") != "FAILED":
         print("AI tahlili skipped: natija FAILED emas")
         return 0
+    try:
+        max_cases = int(os.getenv("AI_MAX_CASES", "5").strip())
+        if max_cases < 1:
+            raise ValueError
+    except ValueError:
+        print("AI configuration error: AI_MAX_CASES musbat butun son bo'lishi kerak; system summary saqlandi.", file=sys.stderr)
+        return 2
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
 
     failed_items = [item for item in results if item["status"] in FAILED_STATUSES]
     if not failed_items:
@@ -1780,20 +1875,20 @@ def main():
     analyses = []
     for index, item in enumerate(failed_items, 1):
         failure = _humanize_failure(item)
-        logs = collect_failure_logs(args.logs_dir, args.started_at, item)
+        logs = collect_failure_logs(args.logs_dir, args.started_at, item) if api_key and index <= max_cases else []
         case = build_case_input(failure, logs)
         analysis = unavailable_analysis(case, failure, "GEMINI_API_KEY sozlanmagan.")
-        if api_key:
-            print(f"AI tahlili: {index}/{len(failed_items)} — {_mask_sensitive(failure['name'])}", flush=True)
-            try:
-                raw = call_gemini(build_case_prompt(case), model=model, api_key=api_key)
-                analysis = normalize_case_analysis(parse_ai_json(raw), case, failure, model)
-            except Exception as exc:
-                print(f"AI tahlili olinmadi ({type(exc).__name__}); asosiy test natijasi saqlandi.", file=sys.stderr)
-                analysis = unavailable_analysis(case, failure, "AI javobi olinmadi yoki dalil talablari bo'yicha qabul qilinmadi.")
+        if index > max_cases:
+            analysis = unavailable_analysis(case, failure, f"AI_MAX_CASES={max_cases} limiti sabab tahlil qilinmadi.")
+            analysis["provider_status"] = "skipped_limit"
+        elif api_key:
+            print(f"AI tahlili: {index}/{min(len(failed_items), max_cases)} — {_mask_sensitive(failure['name'])}", flush=True)
+            analysis = analyze_case_with_gemini(case, failure, model, api_key)
         attach_case_analysis(item["result_path"], analysis, case)
         analyses.append(analysis)
     summary = aggregate_analyses(analyses)
+    summary["ai_max_cases"] = max_cases
+    print(summary["summary"], flush=True)
     write_outputs(
         summary,
         args.ai_output_md,
