@@ -1,0 +1,16 @@
+{
+  "github": {
+    "repository": "turgunovjasur/Playwright",
+    "workflow": "daily-smoke.yml",
+    "ref": "main"
+  },
+  "servers": {
+    "smartup": "https://smartup.online",
+    "app3": "https://app3.greenwhite.uz/xtrade"
+  },
+  "schedule": {
+    "minute": 17,
+    "timezone": "Asia/Tashkent",
+    "server": "smartup"
+  }
+}

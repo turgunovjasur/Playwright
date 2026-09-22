@@ -23,9 +23,14 @@ natijasi hisoblanmaydi.
 
 ## Hozir qayerdamiz?
 
-Oxirgi yangilanish: **2026-09-21 (Asia/Tashkent)**.
+Oxirgi yangilanish: **2026-09-22 (Asia/Tashkent)**.
 
 - **Branch:** `dev1`.
+- **Main bilan birlashtirish:** `origin/main` (`d9aa9e0`) `dev1`ga
+  (`ca48278`) `--no-commit --no-ff` bilan konfliktsiz birlashtirildi.
+  Foydalanuvchining 2026-09-22 kungi aniq ruxsati bilan merge va reja
+  yangilanishi dev1da commit orqali yakunlanadi. `main`, `debug` va remote
+  branchlarga yozilmaydi; `outputs/` commitga kiritilmaydi.
 - **Bajarildi:** P02 umumiy infra va P03 bazaviy setup runneri yozildi; statik tekshiruvlar o'tdi.
 - **Joriy ish:** P04 inventari davomida P05 qo'lda ТМЦ yaratish caselari implementatsiyasi boshlandi.
 - **Muhit:** mavjud test useriga admin orqali ERP users litsenziyasi biriktirildi;
@@ -35,11 +40,12 @@ Oxirgi yangilanish: **2026-09-21 (Asia/Tashkent)**.
   2 required validation va import-cancel. Qo'shimcha ТМЦ imkoniyatlari,
   narx/kirim kodi hali tugamagan. Runtime PASS deb belgilanmaydi.
 - **Test run:** bajarilmadi; collection ham bajarilmadi. Runtime mosligi hali tasdiqlanmagan.
-- **Commit:** foydalanuvchi aytmaguncha qilinmaydi.
+- **Commit:** joriy merge va reja yangilanishini commit qilishga 2026-09-22 kuni
+  ruxsat berildi. Bu keyingi ishlarga avtomatik commit/push ruxsati emas.
 
 | ID | Bosqich | Ish holati | Run/tekshiruv holati | Dalil yoki yakun mezoni |
 |---|---|---|---|---|
-| P00 | Branchlarni tenglashtirish | DONE | Git bilan tekshirildi | Lokal va origin `dev1/main/debug`: `d4f97f2` |
+| P00 | Branchlarni tenglashtirish | DONE (boshlang'ich) | Git bilan tekshirildi | 2026-09-21: faol branchlar `d4f97f2`; 2026-09-22: main tuzatishlari dev1ga commitsiz merge qilindi, tafsilotlar jurnalda |
 | P01 | Tasdiqlangan rejani saqlash | DONE | Hujjat tekshiruvi o'tdi | Majburiy mavzular, reliz havolasi va format tekshirildi |
 | P02 | Umumiy infra: fixture, config, browser, reporting | IMPLEMENTED | Static PASS / NOT RUN | 15 Python fayl sintaksisi, pyflakes, fixture signature/scope va ko'chirilgan kod auditi |
 | P03 | Regression runner va vaqtinchalik setup | IN PROGRESS | Static PASS / NOT RUN | Bazaviy 21 wrapper va regression-setup tayyor; domain target/baseline guard P05–P08 bilan tugaydi |
@@ -461,6 +467,9 @@ boshlang'ich qoldiq bosqichidan keyin, preconditionlari bilan rejalashtiriladi:
 | 2026-09-21 | P05 kod | 6 create varianti, mustaqil create-cancel, edit-save/cancel va 2 required validation yozildi; domain runner va 2 CLI target ulandi; baselinesiz/new-code domain va duplicate collector guard qo'shildi | Pyflakes o'tdi; pytest/collection bajarilmadi. To'liq P05 qamrovi emas | Import va qolgan ТМЦ imkoniyatlari |
 | 2026-09-21 | P05 import kodi | Ikki mahsulotli import va preview-cancel kodi, template/mapping guard, sector attach va user profilida qayta tekshirish qo'shildi. openpyxl/et_xmlfile dependencylari o'rnatildi | Real UI qadoq lug'atida `Коробка→кор`, `Блок→бл` tasdiqlandi; Excel shu qisqa nomlarni yozadi. Attach confirm ko'rildi va bekor qilindi; mavjud begona mahsulot biriktirilmadi | Static review; qolgan chuqur ТМЦ maydonlari va keyingi narx/kirim bosqichlari |
 | 2026-09-21 | P05 static tekshiruv va mapping | 22 Python fayli AST bilan tekshirildi, lokal importlar va 6 runner funksiyasining 12 item matritsasi tekshirildi; pyflakes va git diff --check o'tdi. reliz.mdga 12 NOT RUN item va node mapping yozildi | Pytest import/collection/business run bajarilmadi; yangi 8 mahsulot hali real tizimda yaratilmagan. Commit yo'q | P05: ishlab chiqaruvchi/yetkazib beruvchi, xarakteristika, shtrix-kod/fayl, status va negative import; keyin P06 narx |
+| 2026-09-22 | Main tuzatishlarini dev1ga olish | `git fetch origin`, `git switch dev1`, `git merge --no-commit --no-ff origin/main` bajarildi. Dev1dagi regression commit `ca48278` saqlandi; mainning `3885c0f` va `d9aa9e0` tuzatishlari birlashtirildi. README va runner avtomatik moslashdi | Konflikt yo'q; 52 Python fayli AST, regression/shared/runner pyflakes va staged diff check PASS. Regression/shared/smoke fayllari, pytest.ini, requirements.txt va reliz.md dev1 HEAD bilan aynan teng. Pytest/collection bajarilmadi; merge commit va push qilinmadi; outputs saqlandi | Dev1da P05 qolgan chuqur caselarini davom ettirish; merge foydalanuvchi commitga ruxsat berguncha ochiq qoladi |
+
+| 2026-09-22 | Merge commit | Foydalanuvchi dev1dagi o'zgarishlarni commit qilishni aniq so'radi; main tuzatishlari va reja yangilanishi merge commitga kiritiladi | Oldingi static tekshiruvlar PASS; ushbu qadamda biznes kodi o'zgarmadi. Test/collection run yo'q; push va outputs commit qamroviga kirmaydi | Dev1da P05 qolgan caselarini davom ettirish |
 
 Keyingi har ish yakunida bu jadvalga yangi qator qo'shiladi va yuqoridagi
 “Hozir qayerdamiz?” bo'limi ham birga yangilanadi.
