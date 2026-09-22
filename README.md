@@ -262,6 +262,9 @@ ishlatiladi.
 | `--dry-run` | Testni ishga tushirmaydi, faqat pytest commandni ko'rsatadi. |
 | `all` | Default target. Setup + Group-0 + Visit + Report + Forms runner ishlaydi. |
 | `setup` | Faqat setup runner ishlaydi. |
+| `regression-setup` | Regression uchun bazaviy setup: mavjud smoke run_* funksiyalari; mahsulot/kirim/aksiya kirmaydi. |
+| `regression-products` | Mavjud setup bilan ТМЦ caselari: 6 create, 2 mahsulotli import, cancel/edit va majburiy maydonlar. |
+| `setup-regression-products` | Regression bazaviy setup, keyin ТМЦ runneri; yangi muhit uchun. |
 | `setup-group-0` | Setup, keyin Group-0 runnerni bitta sessiyada ishlatadi. |
 | `setup-smoke` | CI Smoke targeti: Setup, Group-0 va Visit runnerlarni bitta sessiyada ishlatadi. |
 | `setup-visit` | Setup, keyin Visit runnerni bitta sessiyada ishlatadi. |
@@ -541,6 +544,74 @@ Group runnerlar — har bir case alohida pytest/Allure test. User grouplarida gr
 > qolganlari davom etadi. Group-0 default chain qoidasida ishlaydi.
 
 ---
+
+## Smoke va regression uchun umumiy infratuzilma
+
+`tests/conftest.py` umumiy browser, context, page, loginli group page, `code`
+va logger fixture'larini, CLI sozlamalarini hamda report lifecycle hooklarini
+beradi. Fixture'larni import qilish kerak emas — pytest ularni test argumenti
+orqali beradi.
+
+`tests/shared/` ichida konfiguratsiya, browser lifecycle, authorization,
+progress va diagnostika implementatsiyasi turadi. `tests/smoke/conftest.py`
+faqat smoke setup/group dependency qoidalari va Forms metadata'sini boshqaradi.
+Eski smoke helper import manzillari compatibility eksportlari orqali saqlangan;
+yangi umumiy consumerlar `tests.shared`dan foydalanadi.
+
+Smoke va regression bitta `test-results/data/data_store.json` hamda mavjud
+natija papkalaridan foydalanadi. Runlar ketma-ket bajariladi. Yangi setup yozgan
+kalitlar yangilanadi, qolgan eski kalitlar avtomatik yangi baseline hisoblanmaydi.
+Yangi regression ishlarining holati [regression-plan.md](regression-plan.md)da.
+
+Regression bazaviy setup targeti:
+
+```bash
+python scripts/run_tests.py regression-setup
+```
+
+Lokal `.env` bo'lsa URL, company va `NEW_CODE` shu fayldan olinadi. Yangi setup
+uchun `NEW_CODE=1` kerak. Ushbu target 21 ta alohida setup wrapperiga ega;
+mavjud company rejimida Company itemi deselect qilinadi. Litsenziya qadamlari
+mavjud smoke'dagi server/config shartlarini saqlaydi. Mahsulotlar, narxlash
+caselari, kirim va order regressioni hali bu target tarkibiga kirmaydi.
+`all` targetining mavjud smoke tarkibi o'zgarmagan.
+
+ТМЦ uchun yozilgan regression targetlari:
+
+```bash
+python scripts/run_tests.py regression-products
+python scripts/run_tests.py setup-regression-products
+```
+
+`regression-products` mavjud company va `NEW_CODE=0` bilan oldingi core setupni
+ishlatadi. `setup-regression-products` yangi core setup + mahsulot runnerini
+bitta pytest sessiyasida bajaradi; lokal `.env` bo'lsa `NEW_CODE=1` shu faylda
+beriladi. Domain-only run yangi code yoki mos code/filial baseline bo'lmasa
+browser ochishdan oldin bloklanadi. Runner va uning standalone leaflarini
+birga tanlash ham bloklanadi; CLI target faqat runnerni tanlaydi.
+
+ТМЦ runnerida hozir **12 ta pytest item** yozilgan: 6 mahsulotni qo'lda yaratish,
+UZS-B/USD-B uchun bitta ikki qatorli import, create-cancel, edit-save/cancel,
+2 ta required-field validation va import-preview cancel. Create/importdan
+keyin karta maydonlari qayta ochib tekshiriladi. Import adminning
+`Администрирование` kontekstida bajarilib, mahsulotlar test ТМЦ to'plamiga
+biriktiriladi va oddiy test useri profilida tekshiriladi.
+
+Import XLSX fayli `openpyxl` bilan run vaqtida yaratiladi. Saytdan yuklangan
+shablondagi mavjud mahsulotlar/IDlar yangi faylga ko'chirilmaydi; faqat ikki
+yangi testcase qatori yoziladi. Qadoq importida qisqa `кор/бл` nomlari ishlatiladi.
+Template schema yoki mapping kutilgandan farq qilsa, importdan oldin test
+tushunarli xato bilan to'xtaydi; adminning saqlangan mappingi o'zgartirilmaydi.
+
+Mahsulotlar `regression_product_<key>` kalitlarida **o'sha umumiy data store**ga
+yoziladi. Har record code/server/company bilan bog'langan; card tekshiruvi
+narx yoki qoldiq tayyorligini anglatmaydi. Narx/kirim/order va ТМЦning qolgan
+chuqur caselari hali implementatsiyada; umumiy `regression`/`setup-regression`
+targetlari hali ulanmagan. Ushbu yangi caselar statik tekshirilgan,
+**pytest/collection va real business run hali bajarilmagan**.
+
+Smoke va regression setupni bir pytest sessiyasida tanlash bloklanadi: ular
+bir xil session code bilan bir xil obyektlarni ikki marta yaratmasligi kerak.
 
 ## <a id="test-natijalari"></a>Test natijalari strukturasi
 

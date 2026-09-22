@@ -1,6 +1,6 @@
 # Smartup reliz regression jurnali
 
-Oxirgi yangilanish: **2026-09-20, 07:51 (Asia/Tashkent)** — smartup.online yangi903410 baseline: **88/88 case, 81 PASS, 4 FAIL, 3 OBSERVED**. Quyidagi checklist regressiyasi yakunlandi; qolgan tizim qamrovi alohida ko‘rsatilgan. Xtrade natijalari tarix sifatida saqlangan.
+Oxirgi hujjat yangilanishi: **2026-09-21 (Asia/Tashkent)** — yangi ТМЦ regression kodi uchun 12 itemli mapping qo'shildi, ularning barchasi **NOT RUN**. Oxirgi bajarilgan smartup.online run: **2026-09-20, 07:51**, yangi903410 baseline — **88/88 case, 81 PASS, 4 FAIL, 3 OBSERVED**. Xtrade va oldingi Online natijalari tarix sifatida saqlangan.
 
 Ushbu fayl bajarilgan caselar va relizdan keyingi qayta tekshiruv uchun yagona ishchi checklist. Har bir keyingi tekshiruvdan so‘ng tegishli natija, dalil, bug va vaqt shu faylda yangilanadi. Oldingi Xtrade natijasi saqlanadi; smartup.online natijasi alohida ustunda yoziladi. `order_beta` foydalanuvchi ko‘rsatmasi bilan qamrovdan chiqarilgan.
 
@@ -21,7 +21,7 @@ Bu barcha Smartup formalarining to‘liq regressioni emas. Asosiy e’tibor oddi
 
 ## Case inventari va keyingi foydalanish
 
-Hozir **88 ta takrorlanmaydigan case ID** bor. Bu 88 ta mustaqil pytest testi degani emas: ayrim qatorlar bitta ketma-ket oqimning qadami yoki bir nechta variantni jamlaydi. Xtrade setup29passed, Online setup28passed+1skipped natijalari SET-01 ichida qayd etilgan. Caselar uchun ma’lumotlar, bajarilgan qadamlar, kutilgan/haqiqiy natijalar, cheklovlar va bo‘limga tegishli screenshot/trace havolalari quyida saqlanadi.
+Oldingi bajarilgan checklistda **88 ta takrorlanmaydigan case ID** bor. Bu 88 ta mustaqil pytest testi degani emas: ayrim qatorlar bitta ketma-ket oqimning qadami yoki bir nechta variantni jamlaydi. Yangi ТМЦ autotest mappingi alohida bo'limda; u oldingi run hisobiga qo'shilmaydi. Xtrade setup29passed, Online setup28passed+1skipped natijalari SET-01 ichida qayd etilgan. Caselar uchun ma’lumotlar, bajarilgan qadamlar, kutilgan/haqiqiy natijalar, cheklovlar va bo‘limga tegishli screenshot/trace havolalari quyida saqlanadi.
 
 | Yo‘nalish | Case IDlar | Soni | Retest/autotest uchun tayyorgarlik |
 |---|---|---:|---|
@@ -329,6 +329,44 @@ Dalillar: return yakuniy holati (tarixiy dalil hozir diskda yo‘q: `test-result
 -06:42foydalanuvchining yangi ko‘rsatmasi: avvalsetupni qayta run qilish, so‘ng aynan yangi ma’lumotlardan regressionda foydalanish. `./.venv/bin/python scripts/run_tests.py setup` boshlandi;29selected,1deselected. Eski432477baseline retest uchun ishlatilmaydi.
 -Online dalillar `outputs/online-regression-20260920/` ostida yig‘iladi. Har qatordagi onlineNOTRUN faqat bajarilgan case dalili tekshirilgandan keyin o‘zgartiriladi. Userning oldingi keng run summarysi ushbu88case bajarilgani deb hisoblanmaydi.
 
+## Yangi ТМЦ autotest mappingi — 2026-09-21, NOT RUN
+
+Implementatsiya holati [regression-plan.md](regression-plan.md)da. Quyidagi
+12 item yozildi; pytest/collection bajarilmadi. Real UI inventari kodga asos
+bo'ldi, lekin yangi mahsulot yaratish/import/save caselari bajarilgan deb hisoblanmaydi.
+
+Runner: `tests/regression/test_products/test_0_products_runner.py`.
+Jadvaldagi node suffixlari shu faylga `::` orqali ulanadi.
+Precondition: core setupning code, test useri, filial, ish zonasi va ТМЦ to'plami;
+faqat `regression-products` uchun mavjud company va `NEW_CODE=0`.
+Baseline nomlari `reg-product-<key>-pw{code}`, kodlari `c_reg_<key>_pw{code}`;
+mustaqil cancel/edit/validation caselari o'z noyob prefiksini yaratadi.
+
+| Case ID | Node suffix | Qadamlar va expected | Holat |
+|---|---|---|---|
+| REG-PROD-CREATE-UZS-A | `test_01_create_product[UZS-A]` | ТМЦ create: Коробка12/Паллета10, netto0.45/brutto0.5/hajm0.75, nom/kod/artikul/tartib/birlik/to'plam → save → list → view/ID → editda barcha kiritilgan qiymatlar teng | NOT RUN |
+| REG-PROD-CREATE-UZS-C | `test_01_create_product[UZS-C]` | Блок6, Товар+Продукция, netto1.25/brutto1.5/hajm2; save/reopen karta tengligi | NOT RUN |
+| REG-PROD-CREATE-LOW | `test_01_create_product[LOW]` | Qadoqsiz Товар, netto0.125/brutto0.15/hajm0.25; save/reopen karta tengligi | NOT RUN |
+| REG-PROD-CREATE-BONUS | `test_01_create_product[BONUS]` | Коробка24, netto0.2/brutto0.25/hajm0.5; save/reopen karta tengligi; mahsulot nomi o'zi aksiya yaratmaydi | NOT RUN |
+| REG-PROD-CREATE-ZERO | `test_01_create_product[ZERO]` | Qadoqsiz Товар+Сырье, netto2/brutto2.5/hajm3; save/reopen karta tengligi; bu case kirim qilmaydi | NOT RUN |
+| REG-PROD-CREATE-USD-A | `test_01_create_product[USD-A]` | Коробка8/Паллета5, netto0.333/brutto0.4/hajm0.75; save/reopen karta tengligi; dollar narxi alohida keyingi bosqich | NOT RUN |
+| REG-PROD-IMPORT | `test_02_import_products` | Admin → Администрирование → ТМЦ import; 28 ustun/mapping tekshiruvi; UZS-B va USD-B uchun faqat 2 yangi qatorli XLSX, ID bo'sh; preview → save → sector attach → user profilida list/view/edit qiymatlari Excelga teng | NOT RUN |
+| REG-PROD-CANCEL | `test_03_cancel_creation` | Alohida kartani to'ldirish → Закрыть; kod bo'yicha list bo'sh | NOT RUN |
+| REG-PROD-LIFECYCLE | `test_04_edit_product` | O'z mahsulotini yaratish → nom/kod/birlik/qadoq/turlar/vazn/Новинка edit-save → reopen tekshirish → boshqa editni cancel → avval saqlangan qiymatlar qolishi, cancelled kod yo'qligi | NOT RUN |
+| REG-PROD-REQUIRED-NAME | `test_05_required_field[name]` | Qolgan maydonlar valid, nom bo'sh → Save rad etilishi, nom invalid, forma create'da qolishi → yopilgach listda mahsulot yo'qligi | NOT RUN |
+| REG-PROD-REQUIRED-MEASURE | `test_05_required_field[measure]` | Qolgan maydonlar valid, birlik tanlovi olib tashlangan → Save rad etilishi, model-key invalid → listda mahsulot yo'qligi | NOT RUN |
+| REG-PROD-IMPORT-CANCEL | `test_06_cancel_import` | Mustaqil 2 qatorli valid XLSX → preview → save qilmasdan yopish; ikkala mahsulot kodi ham listda yo'q | NOT RUN |
+
+Import fixture shablondagi eski qatorlarni ko'chirmaydi. Qadoq importida qisqa
+`кор/бл`, kartada esa to'liq `Коробка/Блок` nomlari tekshiriladi. Baseline data
+yozilganda karta, narx va stock holatlari alohida: faqat karta tekshirilishi
+order uchun mahsulot tayyor bo'ldi degani emas.
+
+Qolgan ТМЦ qamrovi: ishlab chiqaruvchi/yetkazib beruvchi, xarakteristikalar,
+shtrix-kod/fayl CRUD, status va list sozlamalari, IKPU/ТН ВЭД/uzunlik/duplicate,
+invalid va mixed import, qayta import update siyosati. Keyingi bosqichlar —
+ikki narxlash yo'li, 6 boshlang'ich qoldiq case'i va Остатки ТМЦ/order tayyorligi.
+
 ## Yangilanishlar
 
 | Vaqt | Yangilanish |
@@ -341,5 +379,6 @@ Dalillar: return yakuniy holati (tarixiy dalil hozir diskda yo‘q: `test-result
 
 | 2026-09-20 06:52 | Online903410setup28passed,1skipped,1deselected,0failed;574.26s. Freshbaseline bilan4parallelbrauzer regressiyasi boshlandi |
 | 2026-09-20 07:49 | 88/88yakunlandi:81PASS,4FAIL,3OBSERVED. F7mustaqil manualretestbilan tasdiqlandi. Aksiya11reservcancelda bo‘shadi; hujjatlar/dalillaroutputsda saqlandi |
+| 2026-09-21 | Yangi ТМЦ regression kodining 12 itemi, node mappingi, precondition va expectedlari qo'shildi. Barchasi NOT RUN; oldingi 88 case natijasi o'zgartirilmadi |
 
 Keyingi run yakunida: muhit/build/vaqtni qayd etish; bajarilgan case natijasini real dalil bilan yangilash; FAIL uchun bug ID, screenshot va trace qo‘shish; tekshirilmagan case NOT RUN qolishi; oldingi natijalarni o‘chirmasdan yangi sanali ustun yoki run bo‘limi qo‘shish.

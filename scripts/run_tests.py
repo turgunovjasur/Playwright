@@ -27,6 +27,8 @@ GROUP_RUNNER_PATHS = (
 )
 FORMS_RUNNER_PATH = "tests/smoke/test_forms/test_0_forms_runner.py"
 A2_ANGULAR_FORMS_PATH = "tests/smoke/test_forms/test_a2_angular_forms.py"
+REGRESSION_SETUP_PATH = "tests/regression/test_setup/test_0_setup_runner.py"
+REGRESSION_PRODUCTS_PATH = "tests/regression/test_products/test_0_products_runner.py"
 
 TARGETS = {
     "all": (
@@ -38,6 +40,9 @@ TARGETS = {
         "--new-code",
     ),
     "setup": ("tests/smoke/test_setup/test_0_setup_runner.py", "--new-code"),
+    "regression-setup": (REGRESSION_SETUP_PATH, "--new-code"),
+    "regression-products": (REGRESSION_PRODUCTS_PATH, ""),
+    "setup-regression-products": ((REGRESSION_SETUP_PATH, REGRESSION_PRODUCTS_PATH), "--new-code"),
     "setup-group-0": (
         (
             "tests/smoke/test_setup/test_0_setup_runner.py",
@@ -140,7 +145,7 @@ def run(command, env, dry_run=False):
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Smartup smoke testlarini Mac, Linux va Windows terminalida ishga tushiradi."
+        description="Smartup testlarini Mac, Linux va Windows terminalida ishga tushiradi."
     )
     parser.add_argument(
         "target",
@@ -150,7 +155,7 @@ def parse_args():
             "Default: all. CI uchun: setup-smoke yoki forms. Debug uchun: setup, "
             "setup-smoke, setup-group-0, setup-visit, setup-report, setup-a2-admin, "
             "company, groups, group-0, group-visit, group-report, "
-            "forms yoki pytest target path."
+            "forms, regression-setup, regression-products, setup-regression-products yoki pytest target path."
         ),
     )
     parser.add_argument("--url", help="Server URL; lokal .env bo'lsa COMPANY_URL ishlatiladi.")
@@ -214,6 +219,9 @@ def main():
     if args.clean_results:
         env["CLEAN_ALLURE_RESULTS"] = "1"
     group_only_targets = {*GROUP_ONLY_CODE_TARGETS, "group-report", "forms"}
+    if args.target == "regression-products" and (create_company or new_code_enabled(env, local_dotenv_exists=local_dotenv_exists, pytest_extra=pytest_extra)):
+        print("regression-products mavjud muhitni talab qiladi: COMPANY_CODE mavjud company, NEW_CODE=0. Yangi muhit uchun setup-regression-products targetini ishlating.", file=sys.stderr)
+        return 2
     if create_company and args.target in group_only_targets:
         print(
             "COMPANY_CODE=1 group-only targetlar bilan ishlamaydi; all, setup yoki company ishlating",
