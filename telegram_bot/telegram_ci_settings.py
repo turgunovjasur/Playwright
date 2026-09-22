@@ -1,9 +1,15 @@
-"""Bot, stop CLI va workflow uchun bitta maxfiy bo'lmagan konfiguratsiya."""
+"""Validated JSON settings and environment credentials for bot and CLI."""
 
-import json
+from __future__ import annotations
+
 from pathlib import Path
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+import json
+import os
+
+from .environment import env_value
+from .models import BotConfig, HourlyScheduleConfig
 
 
 CONFIG_PATH = Path(__file__).with_name("telegram_ci_config.json")
@@ -11,6 +17,51 @@ CONFIG_PATH = Path(__file__).with_name("telegram_ci_config.json")
 
 class ConfigError(RuntimeError):
     pass
+
+
+def env_required(name, *fallbacks):
+    for key in (name, *fallbacks):
+        value = os.getenv(key, "").strip()
+        if value:
+            return value
+    names = ", ".join((name, *fallbacks))
+    raise ConfigError(f"Required environment variable is missing: {names}")
+
+
+def load_hourly_schedule_config(schedule):
+    enabled_value = env_value("HOURLY_SCHEDULE_ENABLED", "0").lower()
+    if enabled_value in {"1", "true", "yes", "on"}:
+        enabled = True
+    elif enabled_value in {"0", "false", "no", "off"}:
+        enabled = False
+    else:
+        raise ConfigError("HOURLY_SCHEDULE_ENABLED must be boolean")
+
+    return HourlyScheduleConfig(
+        enabled=enabled,
+        minute=schedule["minute"],
+        timezone_name=schedule["timezone"],
+        server_key=schedule["server"],
+    )
+
+
+def load_config():
+    public = load_public_config()
+
+    # Botdan hamma foydalana oladi; run/stop faqat to'g'ri parol bilan ochiladi.
+    run_password = env_required("TELEGRAM_RUN_PASSWORD")
+
+    return BotConfig(
+        telegram_token=env_required("TELEGRAM_BOT_TOKEN"),
+        run_password=run_password,
+        github_token=env_required("GITHUB_TOKEN", "GITHUB_PAT"),
+        repository=public["github"]["repository"],
+        workflow=public["github"]["workflow"],
+        ref=public["github"]["ref"],
+        servers=public["servers"],
+        allowed_server_keys=set(public["servers"]),
+        hourly_schedule=load_hourly_schedule_config(public["schedule"]),
+    )
 
 
 def load_public_config():

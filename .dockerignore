@@ -1,10 +1,7 @@
 **
-!scripts/
-!scripts/telegram_ci_bot.py
-!scripts/stop_ci_runs.py
-!scripts/telegram_ci_settings.py
-!scripts/telegram_ci_config.json
-!deploy/
-!deploy/playwright-ci-bot/
-!deploy/playwright-ci-bot/Dockerfile
-!deploy/playwright-ci-bot/requirements.txt
+!telegram_bot/
+!telegram_bot/*.py
+!telegram_bot/telegram_ci_config.json
+!telegram_bot/deploy/
+!telegram_bot/deploy/Dockerfile
+!telegram_bot/deploy/requirements.txt

@@ -229,12 +229,14 @@ bo'lmagan `AI_MAX_CASES` AI configuration error beradi; API chaqirilmaydi,
 yozilgan system summary va testning asl natijasi saqlanadi.
 
 Telegram CI botning maxfiy bo'lmagan sozlamalari
-[`scripts/telegram_ci_config.json`](scripts/telegram_ci_config.json)da:
+[`telegram_bot/telegram_ci_config.json`](telegram_bot/telegram_ci_config.json)da:
 GitHub repository/workflow/branch, serverlar va soatlik jadval tafsilotlari.
 Bot, `/stop` CLI va CI server tanlovi shu fayldan o'qiydi. `.env`da bot tokenlari,
 run paroli va `HOURLY_SCHEDULE_ENABLED` qoladi; eski GitHub/jadval environment
 qiymatlari bot uchun ishlatilmaydi. Batafsil deploy va JSON yangilash tartibi
-[`deploy/playwright-ci-bot/README.md`](deploy/playwright-ci-bot/README.md)da.
+[`telegram_bot/deploy/README.md`](telegram_bot/deploy/README.md)da.
+Telegram kodi, Windows launcher va deploy fayllari
+[`telegram_bot/`](telegram_bot/README.md) papkasida jamlangan.
 
 ✅ Tayyor — hisobot brauzerda ochiladi. Report tabini yopsangiz, lokal server ham avtomatik to'xtaydi.
 Keyinroq hisobotni qayta ochish uchun: `python scripts/open_allure_report.py`.

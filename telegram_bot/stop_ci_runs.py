@@ -1,27 +1,24 @@
+"""Standalone CLI for cancelling active GitHub Actions runs."""
+
 from __future__ import annotations
 
-import os
 import sys
 
-from telegram_ci_bot import GitHubActionsClient
-from telegram_ci_settings import load_public_config
+from pathlib import Path
 
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    __package__ = "telegram_bot"
 
-def required_token():
-    token = (
-        os.getenv("GITHUB_TOKEN", "").strip()
-        or os.getenv("GITHUB_PAT", "").strip()
-    )
-    if not token:
-        raise RuntimeError("GITHUB_TOKEN or GITHUB_PAT environment variable is required")
-    return token
+from .github_api import GitHubActionsClient
+from .telegram_ci_settings import env_required, load_public_config
 
 
 def main():
     try:
         github = load_public_config()["github"]
         client = GitHubActionsClient(
-            required_token(),
+            env_required("GITHUB_TOKEN", "GITHUB_PAT"),
             github["repository"],
             github["workflow"],
             github["ref"],

@@ -3,6 +3,16 @@
 `@smartup_ci_bot` Hetzner serverda boshqa servislar bilan bir hostda, lekin
 alohida Docker Compose project sifatida ishlaydi.
 
+## Fayllarning yangi joylashuvi
+
+Bot kodi va konfiguratsiyasi `telegram_bot/`da, deploy fayllari esa
+`telegram_bot/deploy/`da. Repo yangilangach Compose buyruqlarida yangi
+`telegram_bot/deploy/docker-compose.yml` yo'lini ishlating va image'ni qayta
+build qiling. Compose project nomi `playwright-ci-bot`, servis nomi `bot` va
+repo ildizidagi `.env` manzili saqlangan. Windows launcher ham
+`telegram_bot/run_telegram_ci_bot.bat`ga ko'chdi; tashqi Task Scheduler yoki
+service sozlamasida eski script yo'li bo'lsa uni yangilash kerak.
+
 ## Server topologiyasi
 
 Serverda uchta mustaqil loyiha mavjud:
@@ -50,7 +60,7 @@ HOURLY_SCHEDULE_ENABLED=1
 ```
 
 GitHub repository/workflow/ref, ruxsat etilgan serverlar va jadval tafsilotlari
-bot yonidagi `scripts/telegram_ci_config.json`da saqlanadi. Bot, `stop_ci_runs.py`
+bot yonidagi `telegram_bot/telegram_ci_config.json`da saqlanadi. Bot, `stop_ci_runs.py`
 va GitHub workflow server manzillarini shu fayldan o'qiydi. JSON yo'li joriy
 terminal katalogiga emas, loader fayli joylashuviga bog'langan.
 
@@ -62,7 +72,7 @@ environment qiymatlari endi bot konfiguratsiyasiga ta'sir qilmaydi; ulardagi
 custom qiymatlarni deploydan oldin JSON'ga ko'chiring.
 
 JSON Git'da saqlanadi va Docker image'ga kiradi. JSON o'zgarganda serverda pull
-va `docker compose -f deploy/playwright-ci-bot/docker-compose.yml -p playwright-ci-bot up -d --build`
+va `docker compose -f telegram_bot/deploy/docker-compose.yml -p playwright-ci-bot up -d --build`
 kerak; faqat `restart` yangi image yaratmaydi. CI joblari o'z checkoutidagi
 JSON'ni ishlatadi. JSON'ga token, API key va parol yozilmaydi.
 
@@ -76,19 +86,19 @@ Quyidagi buyruqlar serverdagi `/opt/playwright-ci-bot` katalogidan bajariladi:
 
 ```bash
 docker compose \
-  -f deploy/playwright-ci-bot/docker-compose.yml \
+  -f telegram_bot/deploy/docker-compose.yml \
   -p playwright-ci-bot ps
 
 docker compose \
-  -f deploy/playwright-ci-bot/docker-compose.yml \
+  -f telegram_bot/deploy/docker-compose.yml \
   -p playwright-ci-bot logs --tail 100 bot
 
 docker compose \
-  -f deploy/playwright-ci-bot/docker-compose.yml \
+  -f telegram_bot/deploy/docker-compose.yml \
   -p playwright-ci-bot up -d --build
 
 docker compose \
-  -f deploy/playwright-ci-bot/docker-compose.yml \
+  -f telegram_bot/deploy/docker-compose.yml \
   -p playwright-ci-bot restart bot
 ```
 

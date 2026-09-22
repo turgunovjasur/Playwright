@@ -62,7 +62,7 @@ jobs:
         run: |
           python - <<'PY'
           import os
-          from scripts.telegram_ci_settings import load_public_config
+          from telegram_bot.telegram_ci_settings import load_public_config
 
           servers = load_public_config()["servers"]
           server_key = os.environ["TEST_SERVER_KEY"]
@@ -78,7 +78,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           mkdir -p test-results
-          python scripts/telegram_progress.py start \
+          python telegram_bot/telegram_progress.py start \
             --server "$TEST_SERVER_URL" \
             --target "$TEST_TARGET" \
             --message-id "$TEST_TELEGRAM_PROGRESS_MESSAGE_ID" \
@@ -103,7 +103,7 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python scripts/telegram_progress.py update --status "Playwright browser o‘rnatilmoqda"
+        run: python telegram_bot/telegram_progress.py update --status "Playwright browser o‘rnatilmoqda"
 
       - name: Install Playwright browser
         run: python -m playwright install --with-deps chromium
@@ -147,7 +147,7 @@ jobs:
         run: |
           mkdir -p test-results
           set -o pipefail
-          python -u scripts/telegram_progress.py run -- python -u scripts/run_tests.py "$TEST_TARGET" \
+          python -u telegram_bot/telegram_progress.py run -- python -u scripts/run_tests.py "$TEST_TARGET" \
             --url "$TEST_SERVER_URL" \
             --company-code "$TEST_COMPANY_CODE" \
             --company-password "$TEST_COMPANY_PASSWORD" \
@@ -205,24 +205,13 @@ jobs:
           PY
           )
 
-          python scripts/telegram_progress.py finish \
+          python telegram_bot/telegram_progress.py finish \
             --result "$JOB_STATUS" \
             --run-url "$RUN_URL" \
             --run-code "$RUN_CODE" \
             --summary "$SUMMARY"
 
-          if [ "$JOB_STATUS" != "success" ]; then
-            SCREENSHOT=$(find test-results -type f -name "*.png" 2>/dev/null | sort | tail -1 || true)
-            if [ -n "$SCREENSHOT" ]; then
-              curl --fail-with-body -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto" \
-                -F "chat_id=${TELEGRAM_CHAT_ID}" \
-                -F "caption=Failed screenshot" \
-                -F "photo=@${SCREENSHOT}" \
-                || echo "Telegram screenshot upload failed."
-            else
-              echo "Failed screenshot not found; trace/log is in the artifact."
-            fi
-          fi
+          python -m telegram_bot.screenshots
 
       - name: Upload Telegram delivery status
         if: ${{ always() }}
