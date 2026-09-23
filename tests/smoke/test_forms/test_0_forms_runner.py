@@ -15,8 +15,8 @@ Forms run buyrug'i:
 ./.venv/bin/pytest -q -s --maxfail=0 tests/smoke/test_forms/test_0_forms_runner.py
 ```
 
-Joriy inventory snapshotida Allure'da 345 ta aktiv forma alohida PASSED/FAILED
-test, registrydagi 13 ta intentional skip esa alohida SKIPPED test sifatida
+Joriy inventory snapshotida Allure'da 344 ta aktiv forma alohida PASSED/FAILED
+test, registry bo'yicha 15 ta intentional skip esa alohida SKIPPED test sifatida
 ko'rinadi.
 ``--maxfail=0`` bir nechta forma failed bo'lsa ham qolgan formalar davom
 etishini explicit kafolatlaydi.

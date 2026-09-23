@@ -1,11 +1,12 @@
 """``Справочники`` tabidagi legacy formalarni user-visible yo'llar orqali tekshirish.
 
 Live inventar: ``skills/smartup-guide/references/legacy-form-navigation.md``.
-Aktiv qamrov — jami 88 ta navigatsiya: operatsion filialda 33 direct menu
-forma, 35 page-link/sub-page-link va 14 ``Создать`` dropdown forma;
+Aktiv qamrov — jami 88 ta navigatsiya: operatsion filialda 34 direct menu
+forma, 34 page-link/sub-page-link va 14 ``Создать`` dropdown forma;
 ``Администрирование`` filialida 1 direct, 2 page-link va 3 ``Создать``
-dropdown forma. ``Продавцы`` (8 yo'l) va ``Публикация в бот`` (4 yo'l)
-parentlariga tegishli 12 ta yo'l vaqtincha qamrovdan chiqarilgan. Har bir
+dropdown forma. ``Продавцы`` (7 yo'l), ``Публикация в бот`` (4 yo'l)
+va ``Дашборд по MML`` (1 yo'l) — jami 12 ta yo'l umumiy skip registry
+orqali qamrovdan chiqarilgan. Har bir
 aktiv forma Allure va terminalda filial, tab, menu, forma, kutilgan URL va
 haqiqiy URL bilan hisobot qilinadi.
 """

@@ -1,10 +1,10 @@
 """``Продажа`` navbaridagi user-visible forma yo'llarini ochish smoke testi.
 
 Live inventar: ``skills/smartup-guide/references/legacy-form-navigation.md``.
-Aktiv qamrov: 26 direct menu forma va 12 ta rekursiv page-link — jami 38 ta
+Aktiv qamrov: 25 direct menu forma va 13 ta rekursiv page-link — jami 38 ta
 navigatsiya. ``+add`` ikonka-linklar tekshirilmaydi.
-``Дашборд по продажам (БЕТА)`` umumiy skip registry orqali test rejasidan
-chiqariladi.
+``Дашборд по продажам (БЕТА)`` va ``Коммерческий дашборд`` umumiy skip
+registry orqali test rejasidan chiqariladi.
 """
 
 import allure

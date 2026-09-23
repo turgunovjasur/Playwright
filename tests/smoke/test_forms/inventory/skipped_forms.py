@@ -11,8 +11,26 @@ QLIK_BETA_SKIP_REASON = (
     "'Дашборд по продажам (БЕТА)' foydalanuvchi qarori bilan vaqtincha "
     "chiqarilgan: joriy muhitda Qlik litsenziyasi yo'q."
 )
+REMOVED_DASHBOARD_SKIP_REASON = (
+    "Foydalanuvchi xabariga ko'ra forma endi mavjud emas va server xatoligi "
+    "bermoqda; foydalanuvchi qarori bilan aktiv test rejasidan chiqarilgan."
+)
 
 SKIPPED_FORMS = [
+    {
+        "name": "Коммерческий дашборд",
+        "navbar_tab": "Продажа",
+        "menu_item": "Коммерческий дашборд",
+        "path": "trade/tdeal/commercial_dashboard",
+        "reason": REMOVED_DASHBOARD_SKIP_REASON,
+    },
+    {
+        "name": "Дашборд по MML",
+        "navbar_tab": "Справочники",
+        "menu_item": "Минимальные обязательные ассортименты",
+        "path": "anor/mcg/mml_dashboard",
+        "reason": REMOVED_DASHBOARD_SKIP_REASON,
+    },
     {
         "name": "Продавцы",
         "navbar_tab": "Справочники",

@@ -10,7 +10,7 @@ A2 FORMALAR INVENTARI — kelajakdagi menu-track testlar uchun
 
 Tarixiy inventar manbasi: ``test_a2_new_forms.py::A2_FORMS``.
 Canonical navigatsiya: ``skills/smartup-guide/references/a2-migrated-forms.md``.
-Jami: 54 | ✅ YOZILGAN: 22 | ⏸ VAQTINCHA SKIP: 1 | ⬜ QOLGAN: 31.
+Jami: 54 | ✅ YOZILGAN: 21 | ⏸ VAQTINCHA SKIP: 2 | ⬜ QOLGAN: 31.
 
 Status shu faylga nisbatan:
 - ``✅ YOZILGAN`` — real menu/page-link yo'li shu testda mavjud va live o'tgan.
@@ -88,9 +88,10 @@ ADMIN profil → operatsion filial (25 ta)
     Title: Логистика
     User trace: Склад → Справочники → Логистика
 
-16. ✅ YOZILGAN | direct | ``trade/tdeal/commercial_dashboard``
+16. ⏸ VAQTINCHA SKIP | direct | ``trade/tdeal/commercial_dashboard``
     Title: Коммерческий дашборд
     User trace: Продажа → Отчеты по продажам → Коммерческий дашборд
+    Skip sababi: foydalanuvchi xabariga ko'ra forma endi mavjud emas va server xatoligi bermoqda.
 
 17. ✅ YOZILGAN | direct | ``anor/rep/mbi/mkcs/operation``
     Title: Конструктор отчетов по финансам
