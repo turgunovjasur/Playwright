@@ -10,8 +10,8 @@ from utils.base_pages.angular_base_page import AngularBasePage
 from utils.base_pages.base_page import BasePage
 from utils.base_pages.page_diagnostics import expectation_gate, report_page_expectation
 
+# Logical Angular routes (kernel ng-serve AND packaged deploy under ``/a2``).
 KERNEL_ANGULAR_PREFIXES = (
-    "/a2/",
     "/auth",
     "/biruni",
     "/trade",
@@ -28,18 +28,36 @@ KERNEL_ANGULAR_PREFIXES = (
 )
 
 
+def angular_route_path(url):
+    """Path without packaged ``/a2`` prefix.
+
+    Local ``ng serve``: ``/anor/mr/user_list``.
+    Prod/test SPA: ``/a2/anor/mr/user_list`` → same logical ``/anor/mr/user_list``.
+    Legacy Metronic stays on ``/`` + hash ``#!/…`` — prefix is not stripped from hash.
+    """
+    path = urlsplit(str(url or "")).path or "/"
+    if path == "/a2":
+        return "/"
+    if path.startswith("/a2/"):
+        rest = path[3:]
+        return rest if rest.startswith("/") else f"/{rest}"
+    return path
+
+
 def is_angular_page_url(url):
     path = urlsplit(str(url or "")).path
-    if "/a2/" in path:
+    if path == "/a2" or path.startswith("/a2/"):
         return True
-    return any(path == prefix or path.startswith(f"{prefix}/") for prefix in KERNEL_ANGULAR_PREFIXES)
+    logical = angular_route_path(url)
+    return any(logical == prefix or logical.startswith(f"{prefix}/") for prefix in KERNEL_ANGULAR_PREFIXES)
 
 
 class AutoBasePage:
     """Har bir public metod chaqiruvida joriy sahifaga mos helperni tanlaydi.
 
-    URL path'ida ``/a2/`` yoki kernel Angular route (``/auth``, ``/trade``,
-    ``/biruni``, …) bo'lsa AngularBasePage, aks holda BasePage ishlaydi.
+    URL path'ida packaged ``/a2/…`` (prod/test) yoki shu route'lar
+    prefix'siz (local ng-serve: ``/auth``, ``/trade``, ``/anor``, …)
+    bo'lsa AngularBasePage, aks holda BasePage (legacy hash) ishlaydi.
     Public metodlarning parametrlari va return kontrakti ikkala helperda bir xil.
     Locator va UI amallari tanlangan helperda bajariladi; xatoda boshqa helper
     sinalmaydi. Explicit CSS selector va model nomlari avtomatik tarjima qilinmaydi.
@@ -102,9 +120,9 @@ class AutoBasePage:
             try:
                 expect(self.page).to_have_url(pattern, timeout=timeout)
             except AssertionError:
-                current_path = urlsplit(self.page.url).path
+                current_path = angular_route_path(self.page.url)
                 expected = getattr(url, "pattern", str(url))
-                # Kernel Angular post-login is `/trade` (Trade shell), not `/dashboard`.
+                # Post-login Trade shell: local `/trade`, packaged `/a2/trade`.
                 if (
                     "dashboard" in expected.lower()
                     and is_angular_page_url(self.page.url)
@@ -118,7 +136,8 @@ class AutoBasePage:
                     )
                     if (
                         heading is None
-                        or "/auth" in current_path
+                        or current_path == "/auth"
+                        or current_path.startswith("/auth/")
                         or "dashboard" in expected.lower()
                         or not is_angular_page_url(self.page.url)
                         or not parent_kept
