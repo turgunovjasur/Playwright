@@ -50,6 +50,23 @@ def _is_login_redirect(page: Page) -> bool:
         return False
 
 
+def _is_dead_browser_page(page: Page, error: Exception) -> bool:
+    url = str(getattr(page, "url", "") or "")
+    if "chrome-error://" in url or "chromewebdata" in url:
+        return True
+    message = str(error)
+    return any(
+        token in message
+        for token in (
+            "Target closed",
+            "Target page, context or browser has been closed",
+            "write EPIPE",
+            "ERR_CONNECTION_REFUSED",
+            "net::ERR_",
+        )
+    )
+
+
 def _session_unauthorized_match(
     context: FormRecoveryContext,
     error: Exception,
@@ -70,6 +87,17 @@ def _session_unauthorized_match(
             "status": None,
             "ui_state": "login_redirect",
             "summary": "UI login sahifasiga redirect bo'ldi",
+            "original_error_type": type(error).__name__,
+        }
+
+    if _is_dead_browser_page(context.page, error):
+        return {
+            "rule": "session_unauthorized",
+            "kind": "dead_browser_page",
+            "error_type": "DeadBrowserPage",
+            "status": None,
+            "ui_state": str(getattr(context.page, "url", "") or ""),
+            "summary": "Browser page chrome-error yoki connection refused holatiga tushdi",
             "original_error_type": type(error).__name__,
         }
 

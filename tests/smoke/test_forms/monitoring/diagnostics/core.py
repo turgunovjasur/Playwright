@@ -7,6 +7,7 @@ from playwright.sync_api import Error as PlaywrightError
 from tests.smoke.test_forms.monitoring.checks import (
     canonical_form_path,
     clean_text,
+    detect_shell,
     normalize_enabled_names,
 )
 from tests.smoke.test_forms.monitoring.diagnostics.failed_requests import (
@@ -100,7 +101,7 @@ def capture_form_state(page):
     )
 
     document_title = _safe_page_title(page)
-    is_a2 = "/a2/" in actual_url
+    is_a2 = detect_shell(actual_url) == "a2"
     title_candidates = [document_title] if is_a2 and document_title else []
     if not is_a2:
         title_candidates = _safe_visible_headings(page)

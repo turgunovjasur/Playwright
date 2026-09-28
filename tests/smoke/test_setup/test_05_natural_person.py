@@ -37,6 +37,15 @@ def run_natural_person(page, code):
     person_name = f"natural_person-pw{code}"
 
     open_natural_person_list(page, step_name="1 - Jismoniy shaxslar ro'yxatini ochish")
+    base.grid_controller(search=person_code)
+    already = base.grid(person_name, return_bool=True)
+    if already:
+        open_natural_person_view(page, person_name, step_name="5 - Jismoniy shaxs view formasini ochish")
+        with allure.step("7 - User person IDni olish va saqlash"):
+            save_data("user_person_id", query_int_from_url(page.url, "person_id"))
+        close_natural_person_view(page, step_name="8 - View formasini yopib, ro'yxatga qaytish")
+        return
+
     open_natural_person_create(page, step_name="2 - Yangi jismoniy shaxs formasini ochish")
     create_natural_person(page, person_name, person_code, step_name="3 - Jismoniy shaxs ma'lumotlarini kiritib saqlash")
 

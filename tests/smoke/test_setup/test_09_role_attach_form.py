@@ -34,12 +34,12 @@ def run_role_attach_form(page):
         base.expect_page(heading="Роль (Просмотр)")
 
     with allure.step("4 - Admin rolining formalar ruxsatini ochish"):
-        base.click(name="Формы", role="link")
+        base.click(name="Формы", role="tab")
         base.text("Доступ ко всем формам")
 
     with allure.step("5 - Barcha formalarga ruxsat berish"):
         base.click(name="Доступ ко всем формам")
-        base.click(name="Разрешить", role="link")
+        base.click(name="Разрешить", role="menuitem")
         base.confirm_biruni(expected_text="Разрешить доступ ко всем формам?")
         base.wait_for_loader(timeout=ROLE_FORMS_LOADER_TIMEOUT)
         base.expect_page(heading="Роль (Просмотр)")
@@ -51,7 +51,11 @@ def run_role_attach_form(page):
 
     with allure.step("7 - Sahifani yopib, rollar ro'yxatiga qaytish"):
         base.click(name="Закрыть")
-        base.expect_page(heading="Роли")
+        try:
+            base.expect_page(heading="Роли", timeout=8_000)
+        except AssertionError:
+            base.click(name="Роли", role="link")
+            base.expect_page(heading="Роли")
 
 # ----------------------------------------------------------------------------------------------------------------------
 

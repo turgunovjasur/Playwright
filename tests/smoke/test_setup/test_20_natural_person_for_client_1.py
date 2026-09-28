@@ -34,6 +34,20 @@ def run_natural_person_for_client_1(page, code):
     person_name = f"natural_client-pw{code}"
 
     open_natural_person_list(page, step_name="1 - Jismoniy shaxslar ro'yxatini ochish")
+    base.grid_controller(search=person_code)
+    already = base.grid(person_name, return_bool=True)
+    if already:
+        open_natural_person_view(page, person_name, step_name="5 - Jismoniy shaxs view formasini ochish")
+        with allure.step("7 - Client person IDni olish va saqlash"):
+            save_data("client_person_id", query_int_from_url(page.url, "person_id"))
+        close_natural_person_view(page, step_name="8 - View formasini yopib, ro'yxatga qaytish")
+        with allure.step("9 - Mijozlar ro'yxatida ko'rinishini tekshirish"):
+            base.navigate_to(tab="Справочники", name="Клиенты")
+            base.expect_page(heading="Клиенты")
+            base.grid_controller(search=person_name)
+            base.grid(person_name)
+        return
+
     open_natural_person_create(page, step_name="2 - Yangi jismoniy shaxs formasini ochish")
     create_natural_person(page, person_name, person_code, step_name="3 - 'Клиент' belgili jismoniy shaxsni saqlash", client=True)
 

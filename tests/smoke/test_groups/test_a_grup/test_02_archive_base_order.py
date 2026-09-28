@@ -39,12 +39,14 @@ def run_archive_base_order(page, code):
     with allure.step("1 - Saqlangan order ID bo'yicha order listini ochish"):
         base.navigate_to(tab="Продажа", name="Заказы")
         base.expect_page(heading="Заказы", url="order_list")
-        status_button = page.locator(f"#status-btn-{order_id}")
-        order_row = status_button.locator("xpath=ancestor::div[contains(@class, 'tbl-row')][1]")
+        base.grid_controller(search=order_id)
+        status_button = base.status_button(order_id)
+        order_row = base.status_row(order_id)
+        expect(order_row).to_be_visible()
         base.text(client, "7 000", "Новый", root=order_row)
 
     with allure.step("2 - Aynan shu orderni Архив statusiga o'tkazish"):
-        status_button.locator(".dropdown-toggle").click()
+        status_button.locator(".dropdown-toggle, button").first.click()
         base.click(name="Архив", root=status_button)
         base.confirm_biruni(expected_text="Изменить статус на Архив?")
         base.expect_page(heading="Заказы", url="order_list")

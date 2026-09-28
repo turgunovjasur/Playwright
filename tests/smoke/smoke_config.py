@@ -107,4 +107,8 @@ def browser_context_options():
         options["viewport"] = {"width": 1920, "height": 1080}
     else:
         options["no_viewport"] = True
+    proxy = os.getenv("KERNEL_DEV_PROXY", "").strip()
+    if proxy:
+        # Cookie rewrite is unreliable; the proxy reads this header per request.
+        options["extra_http_headers"] = {"x-kernel-dev-proxy": proxy}
     return options

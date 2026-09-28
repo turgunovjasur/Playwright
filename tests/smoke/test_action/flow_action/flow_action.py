@@ -2,12 +2,32 @@
 
 import allure
 
-from utils.base_pages.base_page import BasePage
+from utils.base_pages.auto_base_page import AutoBasePage
+
+
+def existing_action_id(page, action_name, calc_kind, start_date, end_date):
+    """Ro'yxatda shu nomdagi aktiv aksiya bo'lsa IDsini qaytaradi, aks holda None."""
+    base = AutoBasePage(page)
+    with allure.step("Aksiyalar ro'yxatida mavjud yozuvni qidirish"):
+        base.navigate_to(tab="Справочники", name="Акции")
+        base.expect_page(heading="Акции", url="anor/mcg/action_list")
+        try:
+            action_id_index = base.grid_setting(
+                menu_name="Настройка таблицы", field_name="ИД", search_name="Название"
+            )
+            base.grid_controller(search=action_name)
+            action_row = base.grid(action_name, calc_kind, start_date, end_date, "Активный")
+            action_id = int(base.grid_cell(action_row, action_id_index, return_value=True).strip())
+        except (AssertionError, Exception) as exc:
+            if "Timeout" not in type(exc).__name__ and not isinstance(exc, AssertionError):
+                raise
+            return None
+        return action_id if action_id > 0 else None
 
 
 def open_action_form(page):
     """Aksiyalar ro'yxatidan yangi aksiya formasini ochadi."""
-    base = BasePage(page)
+    base = AutoBasePage(page)
     with allure.step("Aksiyalar ro'yxatini ochish"):
         base.navigate_to(tab="Справочники", name="Акции")
         base.expect_page(heading="Акции", url="anor/mcg/action_list")
@@ -18,7 +38,7 @@ def open_action_form(page):
 
 def fill_action_scope(page, *, name, action_code, room, price_type, start_date, end_date):
     """Besh aksiya uchun umumiy qo'llanish doirasini to'ldiradi."""
-    base = BasePage(page)
+    base = AutoBasePage(page)
     with allure.step("Aksiya rekvizitlari va qo'llanish doirasini to'ldirish"):
         base.input(label="Название", value=name)
         base.input(label="Код акции", value=action_code)

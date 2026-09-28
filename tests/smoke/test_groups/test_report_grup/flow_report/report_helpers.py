@@ -7,6 +7,8 @@ from urllib.parse import urlsplit, urlunsplit
 import allure
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
+from utils.base_pages.auto_base_page import is_angular_page_url
+
 DOWNLOAD_DIR = Path("test-results/downloads")
 REPORT_DOWNLOAD_TIMEOUT = 120_000
 
@@ -14,12 +16,14 @@ REPORT_DOWNLOAD_TIMEOUT = 120_000
 # ----------------------------------------------------------------------------------------------------------------------
 
 def open_report(base, route, heading=None, timeout=30_000):
-    """Menyuda yo'q report URLini joriy legacy/A2 sahifa turiga qarab yasaydi."""
+    """Menyuda yo'q report URLini joriy legacy/A2/kernel sahifa turiga qarab yasaydi."""
     current = urlsplit(base.page.url)
     report_path = f"trade/rep/integration/{route}"
     if "/a2/" in current.path:
         app_path = current.path.split("/a2/", 1)[0]
         target_url = urlunsplit((current.scheme, current.netloc, f"{app_path}/a2/{report_path}", "", ""))
+    elif is_angular_page_url(current.path):
+        target_url = urlunsplit((current.scheme, current.netloc, f"/{report_path}", "", ""))
     else:
         session_token = current.fragment.lstrip("/").split("/", 1)[0]
         if not session_token.startswith("!") or len(session_token) == 1:
@@ -40,7 +44,10 @@ def generate_and_verify_download(base, button_name, expected_prefix, save_name, 
         with base.page.expect_download(timeout=timeout) as download_info:
             base.click(name=button_name, exact=True, timeout=timeout)
     except PlaywrightTimeoutError as exc:
-        alerts = base.page.locator("#biruniAlert:visible, #biruniAlertExtended:visible")
+        alerts = base.page.locator(
+            "#biruniAlert:visible, #biruniAlertExtended:visible, "
+            "[role='alertdialog']:visible, smt-alert-dialog:visible"
+        )
         allure.attach(base.page.url, name=f"{save_name}-url", attachment_type=allure.attachment_type.TEXT)
         allure.attach("\n".join(alerts.all_inner_texts()), name=f"{save_name}-alerts", attachment_type=allure.attachment_type.TEXT)
         allure.attach(base.page.screenshot(full_page=True), name=f"{save_name}-timeout", attachment_type=allure.attachment_type.PNG)

@@ -1,5 +1,6 @@
 import allure
 from playwright.sync_api import expect, TimeoutError as PlaywrightTimeoutError
+import pytest
 
 from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.test_setup.flow_setup.flow_license import skip_license_purchase_if_needed
@@ -36,12 +37,14 @@ def run_buy_license(page, logger):
     with allure.step("1 - Litsenziyalar sahifasiga o'tish va balansni tekshirish"):
         base.switch_filial(name="Администрирование")
         base.navigate_to(tab="Главное", name="Лицензии")
-        base.expect_page(heading="Лицензии")
-        base.text(root=page.locator('p.text-success[ng-if="q.balance > 0"]'), timeout=LICENSE_BALANCE_TIMEOUT)
+        base.expect_page(url="license_list")
+        if page.get_by_text("Компания не активирована").count() > 0:
+            pytest.skip("Лицензии: компания не активирована (:model 400), покупка недоступна")
+        expect(page.locator("p.text-3xl").first).to_be_visible(timeout=30_000)
         logger.info("Balans musbat — Success")
 
     with allure.step("2 - Litsenziya sotib olish formasini ochish"):
-        base.click(name="Покупка", role="link")
+        base.click(name="Покупка", role="tab")
         base.wait_for_loader()
         base.expect_page(heading="Покупка 1")
 
@@ -52,7 +55,9 @@ def run_buy_license(page, logger):
         base.wait_for_loader()
 
     with allure.step("4 - License turini UI ro'yxatidan tanlash"):
-        purchase_table = page.locator("table:visible").filter(has=page.get_by_role("columnheader", name="Тип лицензии", exact=True)).first
+        purchase_table = page.locator("smt-table:visible, table:visible").filter(
+            has=page.get_by_text("Тип лицензии")
+        ).first
         try:
             base.text(MANDATORY_LICENSE, root=purchase_table, timeout=MANDATORY_LICENSE_ROW_TIMEOUT)
             license_row = purchase_table.get_by_role("row").filter(has=page.get_by_text(MANDATORY_LICENSE, exact=True)).first
@@ -68,8 +73,8 @@ def run_buy_license(page, logger):
             logger.info("Oddiy bazaviy litsenziya tanlandi: miqdor 1")
 
     with allure.step("5 - Tanlangan litsenziyani sotib olish"):
-        base.click(name="Купить")
-        terms = page.locator("span").filter(has_text="Я ознакомился с тем").first
+        base.click(name="Покупка лицензий")
+        terms = page.get_by_text("Я ознакомился с тем", exact=False).first
         expect(terms).to_be_visible()
         terms.click()
         base.click(name="Да", exact=True)

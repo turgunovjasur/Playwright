@@ -11,6 +11,15 @@ QLIK_BETA_SKIP_REASON = (
     "'Дашборд по продажам (БЕТА)' foydalanuvchi qarori bilan vaqtincha "
     "chiqarilgan: joriy muhitda Qlik litsenziyasi yo'q."
 )
+KERNEL_CHECKOUT_NO_KWH_REASON = (
+    "This isolated kernel checkout has no core/kwh Angular routes "
+    "(register_list / log_list). Documented out-of-scope for this "
+    "checkout; not a fake pass."
+)
+KERNEL_CHECKOUT_MISSING_MODULE_REASON = (
+    "This isolated kernel checkout does not expose the form in the navbar "
+    "(missing module route or grant). Documented out-of-scope; not a fake pass."
+)
 REMOVED_DASHBOARD_SKIP_REASON = (
     "Foydalanuvchi xabariga ko'ra forma endi mavjud emas va server xatoligi "
     "bermoqda; foydalanuvchi qarori bilan aktiv test rejasidan chiqarilgan."
@@ -114,6 +123,41 @@ SKIPPED_FORMS = [
         "menu_item": "Дашборд по продажам (БЕТА)",
         "path": "trade/tdeal/qlik_sales_dashboard",
         "reason": QLIK_BETA_SKIP_REASON,
+    },
+    {
+        "name": "Регистры вебхуков",
+        "navbar_tab": "Главное",
+        "menu_item": "Регистры вебхуков",
+        "path": "core/kwh/register_list",
+        "reason": KERNEL_CHECKOUT_NO_KWH_REASON,
+    },
+    {
+        "name": "Логи вебхуков",
+        "navbar_tab": "Главное",
+        "menu_item": "Регистры вебхуков",
+        "path": "core/kwh/log_list",
+        "reason": KERNEL_CHECKOUT_NO_KWH_REASON,
+    },
+    {
+        "name": "Автоформирование плана визитов",
+        "navbar_tab": "Продажа",
+        "menu_item": "Автоформирование плана визитов",
+        "path": "trade/tvt/auto_gen_visit_plan",
+        "reason": KERNEL_CHECKOUT_MISSING_MODULE_REASON,
+    },
+    {
+        "name": "Отчёт о маршруте пользователей",
+        "navbar_tab": "Продажа",
+        "menu_item": "Отчёт о маршруте пользователей",
+        "path": "trade/rep/path_visit_user",
+        "reason": KERNEL_CHECKOUT_MISSING_MODULE_REASON,
+    },
+    {
+        "name": "Документы WMS",
+        "navbar_tab": "Склад",
+        "menu_item": "Документы WMS",
+        "path": "anor/mxsx/wms/document_list",
+        "reason": KERNEL_CHECKOUT_MISSING_MODULE_REASON,
     },
 ]
 

@@ -42,90 +42,64 @@ def run_room_attachment(page, code):
     with allure.step("3 - Ish zonasining biriktirish sahifasini ochish"):
         base.grid(room_name, click=True)
         base.click(name="Прикрепление", exact=True)
-        base.expect_page(heading=f"Рабочая зона (прикрепление): {room_name}", root="#kt_content")
+        base.expect_page(heading=f"Рабочая зона (прикрепление): {room_name}", url="room_attachment")
 
     with allure.step("4 - To'lov turlarini ulash"):
-        base.click(name="Типы оплат", role="link")
-        base.expect_page(heading="Типы оплат", root="b-page")
-        base.click(name="Доступные", exact=True)
-        base.wait_for_loader()
-
-        payment_grid = 'b-grid[name="table_payment_type"]'
-        if not base.grid(state="empty", return_bool=True, root=payment_grid):
-            base.grid(checkbox="all", root=payment_grid)
+        _open_detached_section(base, "Типы оплат")
+        if not base.grid(state="empty", return_bool=True):
+            base.grid(checkbox="all")
             base.click(name="Прикрепить")
-            base.confirm_biruni("Прикрепить 4?")
+            base.confirm_biruni("Прикрепить")
             base.wait_for_loader()
 
-        base.click(name="Прикрепленные", exact=True)
-        base.wait_for_loader()
-
-        base.grid("Наличные деньги", root=payment_grid)
-        base.grid("Терминал", root=payment_grid)
-        base.grid("Перечисление", root=payment_grid)
-        base.grid("Чековая книжка", root=payment_grid)
+        _open_attached_tab(base)
+        base.grid("Наличные деньги")
+        base.grid("Терминал")
+        base.grid("Перечисление")
+        base.grid("Чековая книжка")
 
     with allure.step("5 - Omborni ulash"):
-        base.click(name="Склады", role="link")
-        base.expect_page(heading="Склады", root="b-page")
-        base.click(name="Доступные", exact=True)
-        base.wait_for_loader()
-
-        warehouse_grid = 'b-grid[name="table_warehouse"]'
-        if not base.grid(state="empty", return_bool=True, root=warehouse_grid):
-            base.grid(checkbox="all", root=warehouse_grid)
+        _open_detached_section(base, "Склады")
+        if not base.grid(state="empty", return_bool=True):
+            base.grid(checkbox="all")
             base.click(name="Прикрепить")
-            base.confirm_biruni("Прикрепить 1?")
+            base.confirm_biruni("Прикрепить")
             base.wait_for_loader()
 
-        base.click(name="Прикрепленные", exact=True)
-        base.wait_for_loader()
-
-        base.grid("Основной склад", root=warehouse_grid)
+        _open_attached_tab(base)
+        base.grid("Основной склад")
 
     with allure.step("6 - Kassani ulash"):
-        base.click(name="Кассы", role="link")
-        base.expect_page(heading="Кассы", root="b-page")
-        base.click(name="Доступные", exact=True)
-        base.wait_for_loader()
-
-        cashbox_grid = 'b-grid[name="table_cashbox"]'
-        if not base.grid(state="empty", return_bool=True, root=cashbox_grid):
-            base.grid(checkbox="all", root=cashbox_grid)
+        _open_detached_section(base, "Кассы")
+        if not base.grid(state="empty", return_bool=True):
+            base.grid(checkbox="all")
             base.click(name="Прикрепить")
-            base.confirm_biruni("Прикрепить 1?")
+            base.confirm_biruni("Прикрепить")
             base.wait_for_loader()
 
-        base.click(name="Прикрепленные", exact=True)
-        base.wait_for_loader()
-
-        base.grid("Основная касса", root=cashbox_grid)
+        _open_attached_tab(base)
+        base.grid("Основная касса")
 
     with allure.step("7 - Mijozni ulash"):
-        base.click(name="Физические лица", role="link")
-        base.expect_page(heading="Физические лица", root="b-page")
-        base.click(name="Доступные", exact=True)
-        base.wait_for_loader()
-
+        _open_detached_section(base, "Физические лица")
         if base.grid(client_name, return_bool=True):
-            base.grid(client_name, click=True)
+            base.grid(client_name, checkbox="row")
             base.click(name="Прикрепить")
-            base.confirm_biruni(f"Прикрепить {client_name}?")
+            base.confirm_biruni("Прикрепить")
             base.wait_for_loader()
 
-        base.click(name="Прикрепленные", exact=True)
-        base.wait_for_loader()
-
+        _open_attached_tab(base)
         base.grid(client_name)
 
     with allure.step("8 - Narx turlari bo'limini ochish"):
-        base.click(name="Тип цены", role="link")
-        base.expect_page(heading="Тип цены", root="b-page")
+        base.click(name="Тип цены", role="tab")
+        base.wait_for_loader()
+        base.grid_controller(search="Акция")
 
     price_attached = base.grid("Акция", return_bool=True)
     if not price_attached:
         with allure.step("9 - Mavjud narx turlarini ochish"):
-            base.click(name="Доступные", exact=True)
+            base.click(name="Доступные", role="tab")
             base.wait_for_loader()
 
         if not base.grid("Акция", return_bool=True):
@@ -135,20 +109,26 @@ def run_room_attachment(page, code):
 
             with allure.step("11 - 'Акция'ni katalogdan ulab, narx turlariga qaytish"):
                 base.grid_controller(search="Акция")
-                base.grid("Акция", click=True)
-                base.click(name="Прикрепить", exact=True)
-                base.confirm_biruni("Прикрепить Акция?")
-                base.expect_page(heading="Тип цены", root="b-page")
+                base.grid("Акция", checkbox="row")
+                base.click(name="Прикрепить")
+                base.confirm_biruni("Прикрепить")
+                base.click(name="Закрыть")
+                base.expect_page(url="room_attachment")
+                base.click(name="Тип цены", role="tab")
+                base.wait_for_loader()
+                base.click(name="Доступные", role="tab")
+                base.wait_for_loader()
 
     with allure.step("12 - 'Акция' narx turini roomga ulash va tekshirish"):
         if not price_attached:
-            base.grid("Акция", click=True)
-            base.click(name="Прикрепить", exact=True)
-            base.confirm_biruni("Прикрепить Акция?")
-            base.wait_for_loader()
-
-            base.click(name="Прикрепленные", exact=True)
-            base.wait_for_loader()
+            base.grid_controller(search="Акция")
+            if base.grid("Акция", return_bool=True):
+                base.grid("Акция", checkbox="row")
+                base.click(name="Прикрепить")
+                base.confirm_biruni("Прикрепить")
+                base.wait_for_loader()
+            _open_attached_tab(base)
+            base.grid_controller(search="Акция")
 
         base.grid("Акция")
 
@@ -157,6 +137,18 @@ def run_room_attachment(page, code):
         base.expect_page(heading="Рабочие зоны")
 
 # ----------------------------------------------------------------------------------------------------------------------
+
+def _open_detached_section(base: AutoBasePage, tab_name: str) -> None:
+    base.click(name=tab_name, role="tab")
+    base.wait_for_loader()
+    base.click(name="Доступные", role="tab")
+    base.wait_for_loader()
+
+
+def _open_attached_tab(base: AutoBasePage) -> None:
+    base.click(name="Прикрепленные", role="tab")
+    base.wait_for_loader()
+
 
 @allure.title("Ish zonasiga kerakli kataloglarni ulash")
 def test_room_attachment(page, code):

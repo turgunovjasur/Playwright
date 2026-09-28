@@ -28,9 +28,26 @@ def run_user(page, code):
     """
     user_password = os.environ["USER_PASSWORD"]
     base = AutoBasePage(page)
+    user_email = f"user-pw{code}@{current_company_code()}"
+    person_name = f"natural_person-pw{code}"
+
     with allure.step("1 - Foydalanuvchilar ro'yxatiga o'tish"):
         base.navigate_to(tab="Главное", name="Пользователи")
         base.expect_page(heading="Пользователи")
+        already = base.grid(user_email, return_bool=True) or base.grid(person_name, return_bool=True)
+
+    if already:
+        with allure.step("4 - Mavjud foydalanuvchi view formasini ochish"):
+            base.grid(person_name, user_email, "Активный", click=True)
+            base.click(name="Просмотреть")
+            base.expect_page(heading="Пользователь (просмотр)", url="user_view?user_id=")
+            base.text(person_name, user_email, "Активный")
+        with allure.step("5 - User IDni olish va saqlash"):
+            save_data("user_id", query_int_from_url(page.url, "user_id"))
+        with allure.step("6 - View formasini yopib, ro'yxatga qaytish"):
+            base.click(name="Закрыть")
+            base.expect_page(heading="Пользователи")
+        return
 
     with allure.step("2 - Yangi foydalanuvchi formasini to'ldirish"):
         base.click(name="Создать")
@@ -38,7 +55,7 @@ def run_user(page, code):
         base.input(label="Логин", value=f"user-pw{code}")
         base.input(label="Пароль", value=user_password)
         base.b_input(label="Физическое лицо", value=f"natural_person-pw{code}")
-        base.b_input(label="Штат", value=f"robot-pw{code}")
+        base.multiselect(label="Штат", value=f"robot-pw{code}")
         base.form_view(label="Роли", expect_value="Админ")
         base.checkbox(label="Статус", expect_checked=True)
 

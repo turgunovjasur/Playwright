@@ -7,7 +7,11 @@ from time import sleep
 from typing import Callable
 from uuid import UUID, uuid4
 
-from tests.smoke.flows.flow_authorization import current_company_code
+from tests.smoke.flows.flow_authorization import (
+    current_company_code,
+    kernel_api_base_url,
+    kernel_dev_proxy_headers,
+)
 from utils.data_store import load_data, save_data
 from utils.report_context import record_api_context
 from tests.smoke.test_groups.test_visit_grup.flow_visit.base_api import APIConnectTimeout, APIError, BaseAPI
@@ -217,6 +221,9 @@ def _authorize_with_credentials(
 ):
     """Berilgan credentiallar bilan yangi authenticated context qaytaradi."""
     api = BaseAPI(server_url)
+    proxy_headers = kernel_dev_proxy_headers()
+    if proxy_headers:
+        api.set_default_headers(**proxy_headers)
     login_result = login_mobile(
         api,
         login=login,
@@ -260,9 +267,10 @@ def authorize_mobile():
 
     user_email = f"user-pw{code}@{current_company_code()}"
     company_url = os.environ["COMPANY_URL"]
+    api_base_url = kernel_api_base_url(company_url)
     record_api_context(server=company_url, company=current_company_code(), login=user_email, password=user_password, code=code, authorization="Kirishga urinish")
     authorization = _authorize_with_credentials(
-        server_url=company_url,
+        server_url=api_base_url,
         login=user_email,
         password=user_password,
         device_code=device_code,
