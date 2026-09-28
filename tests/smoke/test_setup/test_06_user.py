@@ -46,10 +46,9 @@ def run_user(page, code):
         base.click(name="Сохранить", exact=True)
         base.expect_page(heading="Пользователи")
         user_email = f"user-pw{code}@{current_company_code()}"
-        base.grid(f"natural_person-pw{code}", user_email, "Активный")
+        base.grid(f"natural_person-pw{code}", user_email, "Активный", click=True)
 
     with allure.step("4 - Foydalanuvchi view formasini ochish va tekshirish"):
-        base.grid(f"natural_person-pw{code}", user_email, "Активный", click=True)
         base.click(name="Просмотреть")
         base.expect_page(heading="Пользователь (просмотр)", url="user_view?user_id=")
         base.text(f"natural_person-pw{code}", user_email, "Активный")

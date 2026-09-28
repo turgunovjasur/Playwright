@@ -34,10 +34,9 @@ def create_product_with_price(
         base.click(name="Сохранить", exact=True)
         base.expect_page(heading="ТМЦ")
         base.grid_controller(search=product_code)
-        base.grid(product_code, product_name)
+        base.grid(product_code, product_name, click=True)
 
     with allure.step(f"4 - {price_label} TMC view formasini ochish va ID olish"):
-        base.grid(product_code, product_name, click=True)
         base.click(name="Просмотреть")
         base.expect_page(heading="ТМЦ (просмотр)", url="inventory_view?product_id=")
         base.text(product_code, product_name)

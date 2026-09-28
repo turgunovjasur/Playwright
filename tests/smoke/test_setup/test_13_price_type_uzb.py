@@ -45,11 +45,10 @@ def run_price_type_uzb(page, code, logger):
         base.click(name="Сохранить", exact=True)
         base.expect_page(heading="Цены")
         base.grid_controller(search=price_type_name)
-        base.grid(price_type_name)
+        base.grid(price_type_name, click=True)
         save_data("price_type_name_UZB", price_type_name)
 
     with allure.step("5 - View formasidan UZB price type IDni olish va saqlash"):
-        base.grid(price_type_name, click=True)
         base.click(name="Просмотр", exact=True)
         base.expect_page(heading="Цена (просмотр)", url="price_type_view?price_type_id=")
         base.text(price_type_name, price_type_code, "Активный")

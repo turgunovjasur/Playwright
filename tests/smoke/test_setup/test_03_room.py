@@ -37,10 +37,9 @@ def run_room(page, code):
     with allure.step("3 - Saqlash va ro'yxatda tekshirish"):
         base.click(name="Сохранить", exact=True)
         base.expect_page(heading="Рабочие зоны")
-        base.grid(room_name, room_code)
+        base.grid(room_name, room_code, click=True)
 
     with allure.step("4 - View formasidan room IDni olish va saqlash"):
-        base.grid(room_name, room_code, click=True)
         base.click(name="Просмотреть", exact=True)
         base.expect_page(heading="Рабочая зона (просмотр)", url="room_view?room_id=")
         base.text(room_name, room_code, "Активный")

@@ -44,17 +44,15 @@ def run_init_balance(page, code):
         base.click(name="Сохранить", exact=True)
         base.confirm_biruni("Сохранить?")
         base.expect_page(heading="Ввод начальных остатков ТМЦ", url="init_inventory_balance_list")
-        base.grid(document_number)
+        base.grid(document_number, click=True)
 
     with allure.step("4 - UZS qoldiq hujjatini o'tkazish"):
-        base.grid(document_number, click=True)
         base.click(name="Провести")
         base.confirm_biruni(f"Провести документ № {document_number}?")
         base.expect_page(heading="Ввод начальных остатков ТМЦ", url="init_inventory_balance_list")
-        base.grid(document_number)
+        base.grid(document_number, click=True)
 
     with allure.step("5 - UZS provodkalarida miqdor va summani tekshirish"):
-        base.grid(document_number, click=True)
         with page.expect_popup(timeout=30_000) as postings_page_info:
             base.click(name="Проводки")
         postings_page = postings_page_info.value
@@ -77,10 +75,9 @@ def run_init_balance(page, code):
         base.click(name="Сохранить", exact=True)
         base.confirm_biruni("Сохранить?")
         base.expect_page(heading="Ввод начальных остатков ТМЦ", url="init_inventory_balance_list")
-        base.grid(document_usa_number)
+        base.grid(document_usa_number, click=True)
 
     with allure.step("8 - USD qoldiq hujjatini o'tkazish"):
-        base.grid(document_usa_number, click=True)
         base.click(name="Провести")
         base.confirm_biruni(f"Провести документ № {document_usa_number}?")
         base.expect_page(heading="Ввод начальных остатков ТМЦ", url="init_inventory_balance_list")

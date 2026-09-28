@@ -1,6 +1,6 @@
 """100 000 xarid summasiga shu mahsulotdan 1 dona bonus beruvchi aksiya yaratish."""
 
-import re
+from pathlib import Path
 
 import allure
 
@@ -11,6 +11,8 @@ from utils.data_store import save_data
 
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Aksiya Setup"), allure.story("04 - 100 000 summaga 1 dona bonus aksiyasi")]
+
+ACTION_DATA_PATH = Path(__file__).resolve().with_name("data_store")
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -54,17 +56,17 @@ def run_amount_bonus(page, code):
         # Legacy shart mahsuloti qidiruvida alohida field label yo'q.
         base.b_input(ng_model="d['selected_rule_name_' + condition_index + rule_index]", value=product_name)
         # Jadval sarlavhalari bitta qatorda; label resolver birinchi inputga tushadi.
-        base.input(ng_model="rule.main_value", value="100000", press_tab=True)
+        base.input(ng_model="rule.main_value", value="100000")
         base.input(ng_model="rule.extra_value", expect_value="")
-        base.input(ng_model="rule.required_count", value="1", press_tab=True)
+        base.input(ng_model="rule.required_count", value="1")
 
     with allure.step("5 - 1 dona bonusni belgilash"):
         base.ui_select(label="Тип бонуса", value="Кол-во")
         # Bonus mahsuloti qidiruvida ham label yo'q; live DOM modeli ishlatiladi.
         base.b_input(ng_model="d['selected_bonus_name_' + condition_index + bonus_index]", value=product_name)
-        base.input(ng_model="product.value", value="1", press_tab=True)
+        base.input(ng_model="product.value", value="1")
         base.ui_select(label="Тип условия", expect_value="Обычный")
-        base.input(ng_model="rule.main_value", expect_value=re.compile(r"100\s*000"))
+        base.input(ng_model="rule.main_value", expect_value="100000")
 
     with allure.step("6 - Aksiyani saqlash va ro'yxatga qaytish"):
         base.click(name="Завершить", exact=True)
@@ -95,7 +97,7 @@ def run_amount_bonus(page, code):
             "start_date": start_date,
             "end_date": end_date,
         }
-        save_data("action_amount_bonus", action_data)
+        save_data("action_amount_bonus", action_data, path=ACTION_DATA_PATH)
 
 # ----------------------------------------------------------------------------------------------------------------------
 

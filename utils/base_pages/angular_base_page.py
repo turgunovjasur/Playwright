@@ -6,6 +6,7 @@ from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from utils.date_utils import format_date, resolve_date
 from utils.helper_utils import first_non_admin_filial, label_pattern
 from utils.base_pages.page_diagnostics import expectation_gate, report_page_expectation
+from utils.base_pages.page_errors import expect_no_application_error
 from utils.base_pages.page_reporting import report_web_action
 from utils.report_context import record_filial
 
@@ -115,15 +116,21 @@ class AngularBasePage:
 
     def click(
         self,
-        name,
+        name=None,
         *,
+        locator=None,
         role="button",
         exact=False,
         index=0,
         root=None,
         timeout=10_000,
     ):
-        """A2 elementni semantic role/name bo'yicha topib bosadi.
+        """A2 elementni semantic role/name yoki locator orqali topib bosadi.
+
+        ``name`` yoki ``locator``dan aynan bittasi beriladi. ``locator`` CSS
+        selector yoki tayyor Locator bo'lishi mumkin. ``root`` name/selector
+        qidiruvini cheklaydi; tayyor Locator o'z scope'idan foydalanadi.
+        ``index`` mos elementlardan N-chisini tanlaydi.
 
         Styled radio inputlar ko'rinadigan label/span ostida qolishi mumkin;
         radio tanlash uchun ``radio(label, click=True)`` ishlatiladi.
@@ -134,17 +141,22 @@ class AngularBasePage:
             index=index,
             timeout=timeout,
         )
-        root = self._resolve_root(root)
-        target = root.get_by_role(role, name=name, exact=exact)
-        if role == "tab":
-            matcher = name if isinstance(name, re.Pattern) else (
-                self._label_pattern(name) if exact else re.compile(re.escape(name))
-            )
-            smt_tab = root.locator("smt-tab-button:not([role='tab'])").filter(
-                has_text=matcher,
-                has_not=self.page.get_by_role("tab"),
-            )
-            target = target.or_(smt_tab)
+        if (name is not None) + (locator is not None) != 1:
+            raise ValueError("click(): name yoki locator dan aynan bittasini bering")
+        if locator is not None:
+            target = self._resolve_root(root).locator(locator) if isinstance(locator, str) else locator
+        else:
+            root = self._resolve_root(root)
+            target = root.get_by_role(role, name=name, exact=exact)
+            if role == "tab":
+                matcher = name if isinstance(name, re.Pattern) else (
+                    self._label_pattern(name) if exact else re.compile(re.escape(name))
+                )
+                smt_tab = root.locator("smt-tab-button:not([role='tab'])").filter(
+                    has_text=matcher,
+                    has_not=self.page.get_by_role("tab"),
+                )
+                target = target.or_(smt_tab)
         target = target.nth(index)
         expect(target).to_be_visible(timeout=timeout)
         target.click(timeout=timeout)
@@ -195,8 +207,9 @@ class AngularBasePage:
     ):
         """A2 ``smt-input`` ichidagi native input/textarea bilan ishlaydi.
 
-        Biruni-number inputida avtomatik value asserti formatlashdagi
-        whitespace'ni hisobga olmaydi; explicit expect_value aynan tekshiriladi.
+        String expect_value tekshiruvida barcha whitespace e'tiborsiz qoladi;
+        regex expect_value o'z holicha ishlatiladi. Biruni-number inputida
+        avtomatik value asserti ham formatlashdagi whitespace'ni hisobga olmaydi.
         """
         self._validate_options(
             'input',
@@ -253,6 +266,8 @@ class AngularBasePage:
                 "xpath=ancestor::smt-input[@smtbehavior='biruni-number']"
             ).count():
                 expected = _whitespace_agnostic_pattern(expected, exact=True)
+        elif isinstance(expected, str):
+            expected = _whitespace_agnostic_pattern(expected, exact=True)
         if expected is not _UNSET:
             expect(input_el).to_have_value(expected, timeout=10_000)
 
@@ -751,22 +766,31 @@ class AngularBasePage:
         expect_value=_UNSET,
         return_value=False,
         clear=False,
+        select_first=False,
         index=0,
         close=True,
         exact=True,
         timeout=10_000,
         root=None,
     ):
-        """A2 multi-select componentini canonical API bilan boshqaradi."""
+        """A2 multi-select componentini canonical API bilan boshqaradi.
+
+        select_first=True qidiruvni tozalab birinchi ko'rinadigan variantni
+        tanlaydi va chipini tekshiradi; value bilan birga berilmaydi.
+        return_value=True tanlangan chip matnlarini ro'yxat qilib qaytaradi.
+        """
         self._validate_options(
             'multiselect',
             return_value=return_value,
             clear=clear,
+            select_first=select_first,
             index=index,
             close=close,
             exact=exact,
             timeout=timeout,
         )
+        if select_first and value is not _UNSET:
+            raise ValueError("multiselect(): select_first va value birga berilmaydi")
         root = self._resolve_root(root)
         if label is not None and name is not None:
             raise ValueError("multiselect(): label yoki name dan faqat bittasini bering")
@@ -827,9 +851,21 @@ class AngularBasePage:
             expect(option).to_be_visible(timeout=timeout)
             option.click(timeout=timeout)
 
+        if select_first:
+            if not dropdown.is_visible():
+                trigger.click(timeout=timeout)
+            expect(search).to_be_visible(timeout=timeout)
+            search.press("ControlOrMeta+A", timeout=timeout)
+            search.press("Backspace", timeout=timeout)
+            expect(dropdown).to_be_visible(timeout=timeout)
+            option = dropdown.locator("li:visible").first
+            expect(option).to_be_visible(timeout=timeout)
+            selected_values = [" ".join(option.inner_text(timeout=timeout).split())]
+            option.click(timeout=timeout)
+
         expected_values = (
             selected_values
-            if expect_value is _UNSET and value is not _UNSET
+            if expect_value is _UNSET and (value is not _UNSET or select_first)
             else values_list(expect_value)
         )
         for option_text in expected_values:
@@ -842,7 +878,7 @@ class AngularBasePage:
             ).first
             expect(selected).to_be_visible(timeout=timeout)
 
-        if close and value is not _UNSET:
+        if close and (value is not _UNSET or select_first):
             self.page.keyboard.press("Escape")
         if return_value:
             return [" ".join(text.split()) for text in chips.all_inner_texts() if text.strip()]
@@ -1005,12 +1041,19 @@ class AngularBasePage:
         timeout=30_000,
         check_unblocked=True,
         root=None,
+        *,
+        check_no_error=True,
     ):
-        """A2 sahifani canonical URL/heading contracti bilan tekshiradi."""
+        """A2 sahifani URL → loader → error yo'qligi → heading tartibida tekshiradi.
+
+        Loader va error tekshiruvi global; ``root`` heading uchun ishlatiladi.
+        Error kuzatuvi 1,2 soniyagacha; ``check_no_error=False`` uni o'chiradi.
+        """
         self._validate_options(
             'expect_page',
             timeout=timeout,
             check_unblocked=check_unblocked,
+            check_no_error=check_no_error,
         )
         if heading is None and url is None:
             raise ValueError("expect_page: kamida 'heading' yoki 'url' berilishi kerak")
@@ -1019,6 +1062,18 @@ class AngularBasePage:
             pattern = url if isinstance(url, re.Pattern) else re.compile(re.escape(url))
             expectation_gate(self.page, "url")
             expect(self.page).to_have_url(pattern, timeout=timeout)
+
+        if check_unblocked:
+            expectation_gate(self.page, "loader")
+            self._wait_for_loader(timeout=timeout, root=self.page)
+
+        if check_no_error:
+            expectation_gate(self.page, "application_error")
+            expect_no_application_error(
+                self.page,
+                ".alert-danger:visible, [role='dialog']:visible [data-testid*='error' i]",
+                timeout=timeout,
+            )
 
         scope = self._content_root(root)
         if heading is not None:
@@ -1029,10 +1084,6 @@ class AngularBasePage:
             ).filter(visible=True).first
             target = role_heading.or_(text_heading).first
             expect(target).to_be_visible(timeout=timeout)
-
-        if check_unblocked:
-            expectation_gate(self.page, "loader")
-            self._wait_for_loader(timeout=timeout, root=self.page)
 
     # ------------------------------------------------------------------------------------------------------------------
 

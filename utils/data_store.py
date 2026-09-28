@@ -54,8 +54,8 @@ def write_data_file(data, file_name="data_store"):
     data: JSONga mos qiymatlardan iborat dict.
     file_name: .json kengaytmasisiz fayl nomi; standart — "data_store".
     """
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
     path = data_file(file_name)
+    path.parent.mkdir(parents=True, exist_ok=True)
     temporary_path = path.with_suffix(".json.tmp")
     with temporary_path.open("w", encoding="utf-8") as data_output:
         json.dump(data, data_output, indent=4, ensure_ascii=False)
@@ -65,17 +65,18 @@ def write_data_file(data, file_name="data_store"):
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def save_data(key, value, file_name="data_store"):
+def save_data(key, value, path="data_store"):
     """Bitta kalitni qo'shadi/yangilaydi; qolgan kalitlar saqlanadi.
 
     key: Kalit nomi, masalan, "product_id".
     value: Saqlanadigan JSONga mos qiymat.
-    file_name: .json kengaytmasisiz fayl nomi; standart — "data_store".
+    path: .json kengaytmasisiz fayl nomi yoki mutlaq yo'l.
+        Oddiy nom test-results/data/ ichida saqlanadi; standart — "data_store".
     """
-    data = load_data_file(file_name)
+    data = load_data_file(path)
     data[key] = value
-    write_data_file(data, file_name)
-    record_data(key, value, file_name=file_name, saved=True)
+    write_data_file(data, path)
+    record_data(key, value, file_name=str(path), saved=True)
 
 
 # ----------------------------------------------------------------------------------------------------------------------

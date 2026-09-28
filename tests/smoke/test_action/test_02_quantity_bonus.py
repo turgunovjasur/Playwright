@@ -52,15 +52,15 @@ def run_quantity_bonus(page, code):
         # Legacy shart mahsuloti qidiruvida alohida field label yo'q.
         base.b_input(ng_model="d['selected_rule_name_' + condition_index + rule_index]", value=product_name)
         # Jadval sarlavhalari bitta qatorda; label resolver birinchi inputga tushadi.
-        base.input(ng_model="rule.main_value", value="10", press_tab=True)
+        base.input(ng_model="rule.main_value", value="10")
         base.input(ng_model="rule.extra_value", expect_value="")
-        base.input(ng_model="rule.required_count", value="1", press_tab=True)
+        base.input(ng_model="rule.required_count", value="1")
 
     with allure.step("5 - 1 dona bonusni belgilash"):
         base.ui_select(label="Тип бонуса", value="Кол-во")
         # Bonus mahsuloti qidiruvida ham label yo'q; live DOM modeli ishlatiladi.
         base.b_input(ng_model="d['selected_bonus_name_' + condition_index + bonus_index]", value=product_name)
-        base.input(ng_model="product.value", value="1", press_tab=True)
+        base.input(ng_model="product.value", value="1")
         base.ui_select(label="Тип условия", expect_value="Обычный")
         base.input(ng_model="rule.main_value", expect_value="10")
 

@@ -27,6 +27,7 @@ GROUP_RUNNER_PATHS = (
 )
 FORMS_RUNNER_PATH = "tests/smoke/test_forms/test_0_forms_runner.py"
 A2_ANGULAR_FORMS_PATH = "tests/smoke/test_forms/test_a2_angular_forms.py"
+REGRESSION_RUNNER_PATH = "tests/regression/test_0_regression_runner.py"
 REGRESSION_SETUP_PATH = "tests/regression/test_setup/test_0_setup_runner.py"
 REGRESSION_PRODUCTS_PATH = "tests/regression/test_products/test_0_products_runner.py"
 
@@ -40,6 +41,7 @@ TARGETS = {
         "--new-code",
     ),
     "setup": ("tests/smoke/test_setup/test_0_setup_runner.py", "--new-code"),
+    "regression": (REGRESSION_RUNNER_PATH, "--new-code"),
     "regression-setup": (REGRESSION_SETUP_PATH, "--new-code"),
     "regression-products": (REGRESSION_PRODUCTS_PATH, ""),
     "setup-regression-products": ((REGRESSION_SETUP_PATH, REGRESSION_PRODUCTS_PATH), "--new-code"),
@@ -155,7 +157,7 @@ def parse_args():
             "Default: all. CI uchun: setup-smoke yoki forms. Debug uchun: setup, "
             "setup-smoke, setup-group-0, setup-visit, setup-report, setup-a2-admin, "
             "company, groups, group-0, group-visit, group-report, "
-            "forms, regression-setup, regression-products, setup-regression-products yoki pytest target path."
+            "forms, regression, regression-setup, regression-products, setup-regression-products yoki pytest target path."
         ),
     )
     parser.add_argument("--url", help="Server URL; lokal .env bo'lsa COMPANY_URL ishlatiladi.")

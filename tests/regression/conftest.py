@@ -21,6 +21,9 @@ def pytest_configure(config):
 def pytest_collection_modifyitems(items):
     """Faqat regression itemlarini belgilaydi; umumiy reporting parent hookda."""
     regression_items = [item for item in items if Path(str(item.path)).is_relative_to(REGRESSION_DIR)]
+    regression_paths = {Path(str(item.path)) for item in regression_items}
+    if REGRESSION_DIR / "test_0_regression_runner.py" in regression_paths and len(regression_paths) > 1:
+        raise pytest.UsageError("Asosiy regression runnerni uning setup/products runnerlari yoki leaflari bilan birga tanlamang. Faqat test_0_regression_runner.py yoki alohida runnerni ishlating.")
     product_paths = {Path(str(item.path)) for item in regression_items if Path(str(item.path)).parent.name == "test_products"}
     if any(path.name == "test_0_products_runner.py" for path in product_paths) and len(product_paths) > 1:
         raise pytest.UsageError("ТМЦ runner va standalone leaflarni birga tanlamang: caselar ikki marta bajariladi. regression-products targeti yoki bitta leaf faylini ishlating.")

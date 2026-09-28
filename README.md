@@ -294,7 +294,8 @@ ishlatiladi.
 | `all` | Default target. Setup + Group-0 + Visit + Report + Forms runner ishlaydi. |
 | `setup` | Faqat setup runner ishlaydi. |
 | `regression-setup` | Regression uchun bazaviy setup: mavjud smoke run_* funksiyalari; mahsulot/kirim/aksiya kirmaydi. |
-| `regression-products` | Mavjud setup bilan ТМЦ caselari: 6 create, 2 mahsulotli import, cancel/edit va majburiy maydonlar. |
+| `regression` | Asosiy regression runner: setup → hozir ulangan barcha regression domainlari (hozir ТМЦ). |
+| `regression-products` | Mavjud setup bilan 3 manual TMZ testi + 3 mahsulotli bitta Excel import testi; karta va UZS/USD narxlash. |
 | `setup-regression-products` | Regression bazaviy setup, keyin ТМЦ runneri; yangi muhit uchun. |
 | `setup-group-0` | Setup, keyin Group-0 runnerni bitta sessiyada ishlatadi. |
 | `setup-smoke` | CI Smoke targeti: Setup, Group-0 va Visit runnerlarni bitta sessiyada ishlatadi. |
@@ -593,8 +594,9 @@ faqat smoke setup/group dependency qoidalari va Forms metadata'sini boshqaradi.
 Eski smoke helper import manzillari compatibility eksportlari orqali saqlangan;
 yangi umumiy consumerlar `tests.shared`dan foydalanadi.
 
-Smoke va regression bitta `test-results/data/data_store.json` hamda mavjud
-natija papkalaridan foydalanadi. Runlar ketma-ket bajariladi. Yangi setup yozgan
+Smoke va regression setup ma'lumotlari uchun bitta `test-results/data/data_store.json`
+hamda mavjud natija papkalaridan foydalanadi. TMZ natijalari test yonidagi
+`tests/regression/test_products/data_store.json`ga yoziladi. Runlar ketma-ket bajariladi. Yangi setup yozgan
 kalitlar yangilanadi, qolgan eski kalitlar avtomatik yangi baseline hisoblanmaydi.
 Yangi regression ishlarining holati [regression-plan.md](regression-plan.md)da.
 
@@ -611,7 +613,25 @@ mavjud smoke'dagi server/config shartlarini saqlaydi. Mahsulotlar, narxlash
 caselari, kirim va order regressioni hali bu target tarkibiga kirmaydi.
 `all` targetining mavjud smoke tarkibi o'zgarmagan.
 
-ТМЦ uchun yozilgan regression targetlari:
+Asosiy regression runner — `tests/regression/test_0_regression_runner.py`.
+Oddiy pytest fayli: `Test01Setup`dan keyin `Test02Products` bajariladi.
+U alohida runnerlardagi test funksiyalari, parametrlar va markerlarni qayta
+ishlatadi. Har case alohida pytest/Allure natijasi bo'lib qoladi.
+
+```bash
+python -m pytest tests/regression/test_0_regression_runner.py
+# Shu asosiy runner tarkibi umumiy CLI orqali ham ishlaydi:
+python scripts/run_tests.py regression
+```
+
+Ikkalasi bir xil run uchun alternativ buyruqlar; ketma-ket ikkalasini bajarish
+shart emas. PyCharm'da `test_0_regression_runner.py`ni repo `.venv`
+interpreterida pytest bilan Run qilish mumkin. Alohida qismlar saqlanadi:
+
+- Setup: `tests/regression/test_setup/test_0_setup_runner.py`.
+- Mahsulotlar: `tests/regression/test_products/test_0_products_runner.py`.
+
+ТМЦ uchun alohida targetlar:
 
 ```bash
 python scripts/run_tests.py regression-products
@@ -619,31 +639,53 @@ python scripts/run_tests.py setup-regression-products
 ```
 
 `regression-products` mavjud company va `NEW_CODE=0` bilan oldingi core setupni
-ishlatadi. `setup-regression-products` yangi core setup + mahsulot runnerini
+ishlatadi. `regression` va `setup-regression-products` yangi core setup + mahsulot runnerini
 bitta pytest sessiyasida bajaradi; lokal `.env` bo'lsa `NEW_CODE=1` shu faylda
 beriladi. Domain-only run yangi code yoki mos code/filial baseline bo'lmasa
 browser ochishdan oldin bloklanadi. Runner va uning standalone leaflarini
 birga tanlash ham bloklanadi; CLI target faqat runnerni tanlaydi.
+Asosiy runner bilan alohida setup/products runnerlarini birga tanlash ham
+bloklanadi. Asosiy fayldagi node IDlar `Test01Setup::...` va
+`Test02Products::...` bilan ajraladi; alohida runnerlarning node IDlari saqlanadi.
 
-ТМЦ runnerida hozir **12 ta pytest item** yozilgan: 6 mahsulotni qo'lda yaratish,
-UZS-B/USD-B uchun bitta ikki qatorli import, create-cancel, edit-save/cancel,
-2 ta required-field validation va import-preview cancel. Create/importdan
-keyin karta maydonlari qayta ochib tekshiriladi. Import adminning
-`Администрирование` kontekstida bajarilib, mahsulotlar test ТМЦ to'plamiga
-biriktiriladi va oddiy test useri profilida tekshiriladi.
+ТМЦ runnerida **2 ta testcase, 6 ta mahsulot** bor:
 
-Import XLSX fayli `openpyxl` bilan run vaqtida yaratiladi. Saytdan yuklangan
-shablondagi mavjud mahsulotlar/IDlar yangi faylga ko'chirilmaydi; faqat ikki
-yangi testcase qatori yoziladi. Qadoq importida qisqa `кор/бл` nomlari ishlatiladi.
-Template schema yoki mapping kutilgandan farq qilsa, importdan oldin test
-tushunarli xato bilan to'xtaydi; adminning saqlangan mappingi o'zgartirilmaydi.
+- TMZ-1: bitta yaratish testi; kod/nom search, view va ТМЦ listidan UZS/USD narxlash.
+- TMZ-2, TMZ-3, TMZ-4, TMZ-5, TMZ-6: bitta 5 qatorli Excel import testi; to'plamga biriktirish, karta tekshiruvi va Цены listidan UZS/USD narxlash.
 
-Mahsulotlar `regression_product_<key>` kalitlarida **o'sha umumiy data store**ga
-yoziladi. Har record code/server/company bilan bog'langan; card tekshiruvi
-narx yoki qoldiq tayyorligini anglatmaydi. Narx/kirim/order va ТМЦning qolgan
-chuqur caselari hali implementatsiyada; umumiy `regression`/`setup-regression`
-targetlari hali ulanmagan. Ushbu yangi caselar statik tekshirilgan,
-**pytest/collection va real business run hali bajarilmagan**.
+Barcha product qadamlari test fayllarida:
+`test_01_create_product.py`da bitta manual test,
+`test_02_import_products.py`da bitta import testi. Data, Excel tayyorlash,
+UI va tekshiruvlar shu fayllardagi `run_product_full` va `run_import_product`
+funksiyalarida, alohida product flow/helper papkasi yo'q. Product runner smoke
+runner kabi `@allure.title` + `def test_*` wrapperlaridan shu `run_*`larni
+chaqiradi. Standalone test wrapperlari ham bor. Asosiy va product runnerlarda
+`test_01_tmz_1` va `test_02_import_tmz` bor. Base metodlari va umumiy fixturelar qayta ishlatiladi.
+
+Barchasi `шт / Количество` (dona), `Товар`, birinchi ko'ringan ТМЦ to'plami va
+`tmz-N-{code}` kodidan foydalanadi. Netto/brutto/hajm butun sonlar. Narxlar:
+TMZ-1…6 uchun 5000/10000/15000/20000/25000/30000 UZS va 5/10/15/20/25/30 USD.
+Har bir saqlangan narx qayta ochib tekshiriladi. View'da ko'rsatilmagan
+birlik/to'plam Изменить formasida o'zgartirishsiz o'qiladi.
+
+Import adminning alohida contextida bajariladi. Excel `openpyxl` bilan run
+vaqtida yaratiladi; shablondagi mavjud mahsulot/IDlar ko'chirilmaydi. Schema
+yoki mapping farq qilsa importdan oldin xato chiqadi. Fayl
+`test-results/downloads/regression-tmz-{code}/TMZ-2-3-4-5-6.xlsx`da va Allure'da qoladi.
+
+Natijalar `regression_tmz_1` … `regression_tmz_6` kalitlarida test yonidagi
+`tests/regression/test_products/data_store.json`ga yoziladi. Har record
+code/server/company bilan bog'langan. Karta va narxlar
+tekshirilgandan so'ng `card_verified=True`, `price_verified=True`,
+`stock_verified=False`: kirim/qoldiq va order hali yozilmagan.
+
+Asosiy runner hozir setup + shu product testlarini birlashtiradi. Barcha
+checklistlar [regression-plan.md](regression-plan.md) va [reliz.md](reliz.md)da.
+**2026-09-22 local product run: 4 FAIL.** TMZ-1/2/3 karta va narxlari saqlanib,
+yakuniy close locatorida xato bo'lgan; import preview input qiymatini matn deb
+qidirgan. Ikkala locator tuzatildi, lekin tuzatishdan keyingi run bajarilmagan.
+Shu koddagi TMZ-1/2/3 mavjud: full product retest uchun yangi setup/code bilan
+asosiy regression runneridan foydalaning; kod yo'qligi tekshiruvi saqlanadi.
 
 Smoke va regression setupni bir pytest sessiyasida tanlash bloklanadi: ular
 bir xil session code bilan bir xil obyektlarni ikki marta yaratmasligi kerak.

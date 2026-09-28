@@ -41,11 +41,10 @@ def run_price_type_usa(page, code):
         base.click(name="Сохранить", exact=True)
         base.expect_page(heading="Цены")
         base.grid_controller(search=price_type_name)
-        base.grid(price_type_name)
+        base.grid(price_type_name, click=True)
         save_data("price_type_name_USA", price_type_name)
 
     with allure.step("4 - View formasidan USA price type IDni olish va saqlash"):
-        base.grid(price_type_name, click=True)
         base.click(name="Просмотр", exact=True)
         base.expect_page(heading="Цена (просмотр)", url="price_type_view?price_type_id=")
         base.text(price_type_name, price_type_code, "Активный")

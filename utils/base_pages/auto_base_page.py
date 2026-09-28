@@ -60,10 +60,13 @@ class AutoBasePage:
         timeout=30_000,
         check_unblocked=True,
         root=None,
+        *,
+        check_no_error=True,
     ):
         """Kutilgan URLga o'tishni kutib, destination helper bilan tekshiradi."""
         self._legacy._validate_options(
-            "expect_page", timeout=timeout, check_unblocked=check_unblocked
+            "expect_page", timeout=timeout, check_unblocked=check_unblocked,
+            check_no_error=check_no_error,
         )
         if heading is None and url is None:
             raise ValueError("expect_page: kamida 'heading' yoki 'url' berilishi kerak")
@@ -79,4 +82,5 @@ class AutoBasePage:
             timeout=timeout,
             check_unblocked=check_unblocked,
             root=root,
+            check_no_error=check_no_error,
         )

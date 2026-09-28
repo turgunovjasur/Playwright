@@ -89,7 +89,8 @@ def pytest_collection_modifyitems(config, items):
             item
             for item in items
             if (
-                Path(str(item.path)).name == "test_0_setup_runner.py"
+                (Path(str(item.path)).name == "test_0_setup_runner.py"
+                 or item.get_closest_marker("regression_setup") is not None)
                 and item.name == "test_00_company"
             ) or (
                 Path(str(item.path)).name == "test_00_company.py"

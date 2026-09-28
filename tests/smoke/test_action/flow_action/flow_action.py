@@ -22,8 +22,8 @@ def fill_action_scope(page, *, name, action_code, room, price_type, start_date, 
     with allure.step("Aksiya rekvizitlari va qo'llanish doirasini to'ldirish"):
         base.input(label="Название", value=name)
         base.input(label="Код акции", value=action_code)
-        base.input(label="Дата начала", value=start_date, press_tab=True)
-        base.input(label="Срок действия", value=end_date, press_tab=True)
+        base.input(label="Дата начала", value=start_date)
+        base.input(label="Срок действия", value=end_date)
         base.multiselect(label="Рабочие зоны", value=room)
         base.b_input(label="Бонусный склад", value="Основной склад")
         base.multiselect(label="Тип цены", value=price_type)

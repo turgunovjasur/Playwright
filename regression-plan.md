@@ -10,8 +10,9 @@ takror ishlatiladigan Playwright/pytest testlarini yaratish.
 
 **Arxitektura:** umumiy fixture, browser, konfiguratsiya va diagnostika smoke'dan
 yuqoriga chiqariladi. Regression setup hozircha mavjud smoke `run_*`
-funksiyalarini import qiladi. Bitta umumiy data store va umumiy natija mexanizmi
-saqlanadi; smoke va regression runlari ketma-ket bajariladi.
+funksiyalarini import qiladi. Setup uchun umumiy data store va umumiy natija
+mexanizmi saqlanadi; TMZ natijalari test yonidagi data_store.json ga yoziladi.
+Smoke va regression runlari ketma-ket bajariladi.
 
 **Texnologiya:** Python, pytest, Playwright Chromium, Allure, mavjud
 `AutoBasePage` va repo helperlari; importlar uchun haqiqiy XLSX fayllar.
@@ -23,23 +24,60 @@ natijasi hisoblanmaydi.
 
 ## Hozir qayerdamiz?
 
-Oxirgi yangilanish: **2026-09-22 (Asia/Tashkent)**.
+**Joriy product tuzilmasi:** product runner smoke runner kabi explicit
+`@allure.title` + `def test_*` wrapperlaridan test faylidagi `run_*`ni chaqiradi.
+Barcha product data, UI, Excel va narxlash qadamlari shu test fayllarida:
+`run_product_full` va `run_import_product` ichida. Alohida `flow_product/` va
+`product_cases.py` yo'q. Standalone wrapperlar ham saqlanadi. Product runnerdagi
+aliaslar olib tashlandi; main runner 21 setup + 2 product testidan iborat.
+Product nodelari: `test_01_tmz_1` va `test_02_import_tmz`.
+TMZ-1 manual yaratiladi, TMZ-2–6 bitta Excel orqali import qilinadi.
+Base metodlari va fixturelar saqlanadi; refactordan keyin run yo'q.
+
+**Multiselect:** `select_first=True` BasePage va AngularBasePagega qo'shildi.
+U birinchi ko'rinadigan variantni tanlab, chipni tekshiradi. Product caselarining
+ikkita joyida raw tanlash o'rniga shu metod ishlatiladi; retest NOT RUN.
+
+**Eng yangi run — 2026-09-22, 14:05–14:08:** foydalanuvchining local product
+runneri **4 FAIL / 0 PASS**. TMZ-1/2/3 yaratish/karta/narx tekshiruvlari o'tgan,
+yakuniy close heading locatori yiqilgan. TMZ-4/5/6 Excel previewga xatosiz
+yuklangan, ammo input qiymatini matn deb izlaydigan locator yiqilgan; savega
+yetmagan. **Ikkala locator tuzatildi; tuzatishdan keyingi run NOT RUN.**
+Narx close flowi faqat mavjud base metodlaridan foydalanadi: ТМЦ narx formasi
+`click → expect_page`; Цены narx formasi `click → confirm_biruni(нет) → expect_page`.
+Takroriy heading/confirm locatorlari olib tashlangan. Import
+preview mahsulotni nom bo'yicha filtrlaydi, kod/nom/birlikni input qiymatidan
+solishtiradi; qator soni faqat mahsulot inputi bor qatorlar bo'yicha olinadi.
+Oldingi FAIL natijalari `reliz.md`da saqlangan; ular PASSga almashtirilmadi.
+
+**2026-09-22 — tasdiqlangan yangi product scope implementatsiya qilindi.**
+Oldingi 8 mahsulot/12 item matritsasi va cancel/edit/required caselari bekor
+qilindi. O'shanda 3 ta manual test va 3 qatorli bitta import testi bor edi — jami
+4 testcase, 6 mahsulot. 2026-09-25 kuni takroriy manual testlar birlashtirildi:
+hozir 1 manual + 5 qatorli import — 2 testcase, 6 mahsulot. Karta va ikki valyutadagi narx tekshiruvlari
+yozildi; birinchi local run va undan keyingi tuzatish holati yuqorida. Foydalanuvchi dona uchun mavjud
+**шт / Количество** birligini tasdiqladi.
+
+Oxirgi yangilanish: **2026-09-25 (Asia/Tashkent)**.
 
 - **Branch:** `dev1`.
 - **Main bilan birlashtirish:** `origin/main` (`d9aa9e0`) `dev1`ga
   (`ca48278`) `--no-commit --no-ff` bilan konfliktsiz birlashtirildi.
   Foydalanuvchining 2026-09-22 kungi aniq ruxsati bilan merge va reja
-  yangilanishi dev1da commit orqali yakunlanadi. `main`, `debug` va remote
-  branchlarga yozilmaydi; `outputs/` commitga kiritilmaydi.
+  yangilanishi `93816e9` commitida yakunlandi. Push qilinmadi; `outputs/`
+  commitga kiritilmadi. Keyingi asosiy runner o'zgarishlari hali commit qilinmagan.
 - **Bajarildi:** P02 umumiy infra va P03 bazaviy setup runneri yozildi; statik tekshiruvlar o'tdi.
-- **Joriy ish:** P04 inventari davomida P05 qo'lda ТМЦ yaratish caselari implementatsiyasi boshlandi.
+- **Runnerlar:** alohida setup va products runnerlari saqlandi;
+  `tests/regression/test_0_regression_runner.py` hamda `regression` CLI targeti
+  setup → products tartibini bitta pytest sessiyasida birlashtiradi.
+- **Joriy ish:** P05/P06 local runidagi ikki locator tuzatildi; qayta run kutilmoqda. Keyingi implementatsiya P07/P08 — kirim va qoldiq.
 - **Muhit:** mavjud test useriga admin orqali ERP users litsenziyasi biriktirildi;
   o'z filialidagi dashboardga kirishi tekshirildi. Oldingi biriktirilgan user saqlandi.
-- **Regression kodi:** 21 ta setup wrapperi; ТМЦ uchun 12 ta item yozildi:
-  6 create, ikki mahsulotli import, create-cancel, edit-save/cancel,
-  2 required validation va import-cancel. Qo'shimcha ТМЦ imkoniyatlari,
-  narx/kirim kodi hali tugamagan. Runtime PASS deb belgilanmaydi.
-- **Test run:** bajarilmadi; collection ham bajarilmadi. Runtime mosligi hali tasdiqlanmagan.
+- **Regression kodi:** 21 ta setup wrapperi + 2 product testi. TMZ-1
+  alohida yaratiladi; TMZ-2/3/4/5/6 bitta Excel orqali import qilinadi. Kod/nom
+  search, view, birlik/to'plam va narxning saqlanishi tekshiriladi.
+
+- **Test run:** foydalanuvchining local product runi 4 FAIL; agent tuzatishdan keyin pytest/collection yoki biznes run bajarmadi.
 - **Commit:** joriy merge va reja yangilanishini commit qilishga 2026-09-22 kuni
   ruxsat berildi. Bu keyingi ishlarga avtomatik commit/push ruxsati emas.
 
@@ -48,10 +86,10 @@ Oxirgi yangilanish: **2026-09-22 (Asia/Tashkent)**.
 | P00 | Branchlarni tenglashtirish | DONE (boshlang'ich) | Git bilan tekshirildi | 2026-09-21: faol branchlar `d4f97f2`; 2026-09-22: main tuzatishlari dev1ga commitsiz merge qilindi, tafsilotlar jurnalda |
 | P01 | Tasdiqlangan rejani saqlash | DONE | Hujjat tekshiruvi o'tdi | Majburiy mavzular, reliz havolasi va format tekshirildi |
 | P02 | Umumiy infra: fixture, config, browser, reporting | IMPLEMENTED | Static PASS / NOT RUN | 15 Python fayl sintaksisi, pyflakes, fixture signature/scope va ko'chirilgan kod auditi |
-| P03 | Regression runner va vaqtinchalik setup | IN PROGRESS | Static PASS / NOT RUN | Bazaviy 21 wrapper va regression-setup tayyor; domain target/baseline guard P05–P08 bilan tugaydi |
+| P03 | Regression runner va vaqtinchalik setup | IMPLEMENTED | Static PASS / NOT RUN | 21 setup + 2 product wrapper; asosiy va alohida .py runnerlar, dependency/duplicate guard |
 | P04 | Real formalarning to'liq imkoniyatlar inventari | IN PROGRESS | UI DISCOVERY | Ko'rinadigan Chromium; pytest/collection bajarilmaydi |
-| P05 | ТМЦ yaratish va ТМЦ import regressioni | IN PROGRESS | Static PASS / NOT RUN | 12 item yozildi; 22 Python fayli sintaksisi, lokal importlar, pyflakes va diff check o'tdi; qolgan chuqur caselar davom etadi |
-| P06 | Ikki yo'l bilan narx belgilash | PLANNED | NOT RUN | UZS/USD, qayta ochish va ikki yo'l orqali solishtirish |
+| P05 | ТМЦ yaratish va import — yangi scope | FIX IMPLEMENTED | Oldingi run FAIL / retest NOT RUN | 3 karta yaratildi; import preview input locatori tuzatildi |
+| P06 | Ikki yo‘l bilan narx belgilash | FIX IMPLEMENTED | Oldingi run FAIL / retest NOT RUN | TMZ-1/2/3 narxlari tasdiqlangan; close locatori tuzatildi; import narxlashiga run yetmagan |
 | P07 | Boshlang'ich qoldiq: 3 usul × 2 hajm | PLANNED | NOT RUN | 6 ta asosiy case va forma validatsiyalari |
 | P08 | Qoldiq va orderga tayyorlik | PLANNED | NOT RUN | Aniq ombor/miqdor/narx; tayyor baseline |
 | P09 | Smoke saqlanganini va yangi regressionni tekshirish | PLANNED | NOT RUN | Static tekshiruv va ruxsatli real run dalillari |
@@ -81,9 +119,10 @@ Oxirgi yangilanish: **2026-09-22 (Asia/Tashkent)**.
   tarqatish ushbu boshlang'ich tenglashtirishning davomiy avtomatik amali emas.
 - Mavjud smoke ssenariylari saqlanadi; umumiy infra uchun import/ulanishlar
   o'zgarishi mumkin. Unrelated o'zgarishlar va `outputs/` dalillari saqlanadi.
-- Bitta `test-results/data/data_store.json` ishlatiladi. Yangi setup yozgan
+- Setup uchun bitta `test-results/data/data_store.json` ishlatiladi. Yangi setup yozgan
   kalitlari oldingi qiymatlarni almashtiradi; boshqa kalitlar avtomatik
-  yangilangan hisoblanmaydi. Alohida smoke/regression data fayli kiritilmaydi.
+  yangilangan hisoblanmaydi. TMZ natijalari esa
+  `tests/regression/test_products/data_store.json`da saqlanadi.
 - Runlar ketma-ket. Parallel yozuvchi smoke/regression sessiyalari rejalashtirilmaydi.
 - URL, credential va run qiymatlari mavjud konfiguratsiyadan olinadi; secret
   yoki eski sessiyaning entity IDsi testga va rejaga hardcode qilinmaydi.
@@ -154,7 +193,7 @@ smoke entrypoint va ssenariylari saqlanadi, regression bir xil infradan foydalan
 
 ## P03. Regression runner va vaqtinchalik setup
 
-**Fayllar:** yangi `tests/regression/__init__.py`, `tests/regression/conftest.py`,
+**Fayllar:** yangi `tests/regression/test_0_regression_runner.py`, `tests/regression/__init__.py`, `tests/regression/conftest.py`,
 `tests/regression/test_setup/test_0_setup_runner.py`; domain papkalarida alohida
 runner/leaf modullar; `scripts/run_tests.py`, `pytest.ini` va README run yo'riqnomasi.
 
@@ -173,20 +212,27 @@ runner/leaf modullar; `scripts/run_tests.py`, `pytest.ini` va README run yo'riqn
 - [ ] Setup uchun ketma-ket umumiy session; mustaqil regression case uchun
       o'z preconditioni va alohida hujjat/mahsulot. Bir biznes case boshqa
       mustaqil case yaratgan state'ni kutmasin.
-- [ ] Sakkiz mahsulotli tayanchni tayyorlash alohida setup bosqichi bo'lsin;
-      shu tayanchni yaratish qadamlari dependency'lari hisobotda ochiq ko'rinsin.
-      Mustaqil domain run uchun tayyorlash funksiyalari qayta ishlatilsin.
+- [x] Olti mahsulotli tayanch alohida product runnerida: uch manual test va
+      bitta import testi. Har test shared setupga tayanadi; boshqa product
+      testi yaratgan mahsulotni talab qilmaydi.
 - [x] `regression-setup` targeti: 21 ta bazaviy setup wrapperi; existing companyda
       Company deselect, litsenziya skip shartlari mavjud run_* funksiyalarida saqlangan.
-- [ ] Qolgan targetlar:
-      `setup-regression` — yangi setup + mavjud regression domainlari;
-      `regression` — joriy baseline bilan. Bu ikkalasi biznes caselar yaratilganda
-      qo'shiladi; bo'sh domain targetga PASS taassuroti berilmaydi.
-- [ ] Baselinesiz regression va yangi code bilan setupni tashlab ketish holatini
+- [x] 2026-09-22 talabiga mos asosiy runner: `tests/regression/test_0_regression_runner.py` va
+      `regression` targeti — setup + hozir tayyor regression domainlari.
+      `Test01Setup` → `Test02Products`; har case alohida pytest/Allure item.
+      Oddiy pytest fayli alohida runnerlardagi testlarni staticmethod orqali
+      qayta ishlatadi; fixture/parametr/title va classga ko'chirilgan markerlar
+      saqlanadi. Ichma-ich pytest yoki subprocess yo'q. Asosiy va alohida
+      runnerlarni birga tanlash duplicate guard bilan bloklanadi.
+- [x] Alohida `regression-setup`, `regression-products` va faqat shu ikki qismga
+      mo'ljallangan `setup-regression-products` targetlarini saqlash.
+      Oldingi rejalashtirilgan baseline-only `regression` ma'nosi almashtirildi;
+      mavjud baseline uchun `regression-products` ishlatiladi.
+- [x] Baselinesiz regression va yangi code bilan setupni tashlab ketish holatini
       tushunarli sabab bilan bloklash. Mavjud smoke targetlar tarkibi saqlansin.
 - [x] Hozirgi `regression-setup` faqat runner faylini target qiladi; faqat run_*
       importlari bor. Smoke/regression setupni bitta sessiyaga qo'shish bloklangan.
-- [ ] Yangi domainlarda runner va standalone leafni bitta targetda ikki marta collect qilmaslik;
+- [x] Product domainida runner va standalone leafni bitta targetda ikki marta collect qilmaslik;
       test nomlari/node IDlari takrorlanmasin.
 
 **Yakun mezoni:** regression setupda barcha zarur preconditionlar bor, har qadam
@@ -227,105 +273,78 @@ bog'langan; noma'lum biznes xulqi alohida ko'rsatilgan. Yakuniy case soni shunda
 
 ## P05. ТМЦ yaratish va import
 
-**Fayllar:** `tests/regression/test_products/` ichidagi create, edit, validation,
-import leaflari va domain runner; zarur takroriy UI choreography uchun domain flow.
-Aniq leaf raqamlari P04 inventaridan keyin runner bilan birga belgilanadi.
+**Holat: IMPLEMENTED / RETEST NOT RUN.** Checkboxlar kod yozilganini bildiradi;
+biznes case PASS bo'lganini emas. Foydalanuvchi rad etgan eski caselar
+runner va leaf fayllaridan olib tashlandi; eski ish jurnali tarix sifatida qoldi.
 
-### Sakkizta tayanch mahsulot
+### Olti mahsulotning joriy matritsasi
 
-Nom va kodlar regression prefiksi hamda `{code}` bilan noyob yaratiladi.
-UZS/USD nomi mahsulot kartasidagi valyuta deb taxmin qilinmaydi; quyidagilar
-keyingi sotuv narxining valyutasini ifodalaydi.
+| Mahsulot | Yaratish | Netto / brutto / hajm | UZS | USD | Narx yo'li |
+|---|---|---|---:|---:|---|
+| TMZ-1 | Создать | 100 / 110 / 120 | 5000 | 5 | ТМЦ → Установить цены |
+| TMZ-2 | Excel import | 200 / 210 / 220 | 10000 | 10 | Цены → Установка цен |
+| TMZ-3 | Excel import | 300 / 310 / 320 | 15000 | 15 | Цены → Установка цен |
+| TMZ-4 | Excel import | 400 / 410 / 420 | 20000 | 20 | Цены → Установка цен |
+| TMZ-5 | Excel import | 500 / 510 / 520 | 25000 | 25 | Цены → Установка цен |
+| TMZ-6 | Excel import | 600 / 610 / 620 | 30000 | 30 | Цены → Установка цен |
 
-| Kalit | Yaratish yo'li | Sotuv narxi | Narxlash yo'li | P07dan so'ng maqsadli qoldiq | Vazifa |
-|---|---|---:|---|---:|---|
-| UZS-A | Создать | 7000 UZS | ТМЦ listi | 100 | Oddiy hisob-kitob |
-| UZS-B | ТМЦ (импорт) | 12500 UZS | Цены listi | 100 | Turli narxli ko'p mahsulot |
-| UZS-C | Создать | 2500 UZS | ТМЦ listi | 100 | Chegirma/kombinatsiya |
-| LOW | Создать | 5000 UZS | ТМЦ listi | 3 | Qoldiq chegarasi |
-| BONUS | Создать | 2000 UZS | Цены listi | 100 | Aksiya uchun bonus mahsulot |
-| ZERO | Создать | 9000 UZS | Цены listi | 0 | Narx bor, kirim yo'q |
-| USD-A | Создать | 1 USD | ТМЦ listi | 100 | Dollar orderi |
-| USD-B | ТМЦ (импорт) | 2.35 USD | Цены listi | 100 | Kasrli narx/yaxlitlash |
+Barchasida nom aynan `TMZ-N`, kod `tmz-N-{code}` (conftestdan), birlik `шт`,
+tur `Товар`, faol holat va filialda birinchi ko'ringan `Наборы ТМЦ` ishlatiladi.
+Import narxlari manual narxlarning 5000 UZS / 5 USD qadamini davom ettiradi.
 
-### Qo'lda yaratish va forma imkoniyatlari
+### Manual test: TMZ-1
 
-**Implementatsiya, hali run qilinmagan:**
+- [x] Test filialida Справочники → ТМЦ ochish.
+- [x] Har test ichidagi alohida Allure qadamida kod mavjud emasligini tekshirish.
+- [x] Создать formasida nom, kod, birlik, Товар, birinchi to'plam va uchta butun sonli vazn/hajmni kiritish.
+- [x] Saqlash → listga qaytish → xato yo'qligini tekshirish.
+- [x] Kod va nom bilan alohida qidirish; aynan run kodi qatorini tanlash.
+- [x] View'da nom, kod, tur, netto/brutto/hajm va product IDni tekshirish.
+- [x] View'da birlik/to'plam yo'q: Изменить formasida qiymatlarni o'qish, o'zgartirishsiz yopish.
+- [x] ТМЦ listidan Установить цены → tegishli UZS/USD price typega jadvaldagi narxlar.
+- [x] Saqlash/tasdiq → qayta ochish → har ikkala narx aynan tengligini tekshirish.
+- [x] Barcha product amallari test faylidagi run_* ichida, raqamlangan Allure qadamlari bilan; alohida product flow/helper papkasi yo'q. Runner smoke uslubida test_* wrapper orqali chaqiradi.
+- [ ] Real run va Allure/trace dalillari.
 
-| Case ID | Kod / parametr | Yozilgan qamrov | Hali qolgan qamrov |
-|---|---|---|---|
-| REG-PROD-CREATE | `test_01_create_product.py`, 6 mahsulot kaliti | Nom, alternativ nom, kod/artikul/tartib, birlik, to'plam, holat/turlar, 1/2-daraja qadoq, netto/brutto/hajm; save → list → view/ID → edit solishtirish | Ishlab chiqaruvchi/yetkazib beruvchi, xarakteristika, shtrix-kod, fayl, IKPU/ТН ВЭД |
-| REG-PROD-CANCEL | `test_02_product_lifecycle.py` | To'ldirilgan create'ni yopish; listda mahsulot saqlanmaganligi | Real run |
-| REG-PROD-LIFECYCLE | `test_02_product_lifecycle.py` | O'z mahsulotini yaratish, edit-save, qayta ochish, edit-cancel, oxirgi saqlangan qiymatlar; Новинка belgisi | Real run, status va boshqa list actionlari |
-| REG-PROD-REQUIRED | `test_03_product_required_fields.py`, nom/birlik | Bitta majburiy qiymatni bo'shatish, save rad etilishi, invalid control va listda yashirin record yo'qligi | To'plam, format/uzunlik/duplicate validatsiyalari |
-| REG-PROD-IMPORT | `test_04_product_import.py` | 28 ustunli shablon/mapping, faqat 2 yangi qatorli XLSX, preview, save, sector'ga attach va test userida list/view/edit solishtirish | Real run; save response/transition hali kuzatilmagan |
-| REG-PROD-IMPORT-CANCEL | `test_04_product_import.py` | Noyob 2 qatorli previewni saqlamasdan yopish va listda ikkala kod yo'qligi | Real run; malformed/mixed/duplicate/update import variantlari |
+### Bitta import testi: TMZ-2, TMZ-3, TMZ-4, TMZ-5, TMZ-6
 
-`regression-products` faqat domain runnerini collect qiladi;
-`setup-regression-products` core setup + shu runnerdan iborat.
-Runner va standalone leaflarni birga tanlash duplicate execution sababli bloklanadi.
-Mahsulot card tekshiruvi data-store'ga narx/qoldiq tayyorligini tasdiqlab yozmaydi:
-ular `price_verified=False`, `stock_verified=False` bo'lib qoladi.
+- [x] User filialida birinchi to'plamni aniqlash; admin uchun alohida browser context.
+- [x] Admin → Администрирование → Справочники → ТМЦ: beshta kod yo'qligi.
+- [x] Создать dropdown → Импорт; 28 ustunli shablon/mapping va start row 2 tekshiruvi.
+- [x] Yuklangan shablondagi mavjud qator/IDlarni ko'chirmasdan yangi 5 qatorli Excel yaratish.
+- [x] Загрузить файл → tasdiqlash → preview'da 5 qator va xatolar yo'qligi.
+- [x] Загрузить и сохранить → tasdiqlash → preview tozalanishi → listda beshta kod/nom.
+- [x] Наборы ТМЦ orqali mahsulotlarni aniqlangan to'plamga biriktirish.
+- [x] Oddiy userda beshta kartani kod/nom search, view va birlik/to'plam orqali solishtirish.
+- [x] Цены listidan UZS va USD turini ochish → har 5 mahsulotga narx → save → qayta ochib solishtirish.
+- [ ] Real run, yaratilgan Excel, product ID va saqlangan narx dalillari.
 
-- [ ] Oltita mahsulotni faqat minimal maydonlar bilan emas, inventardagi
-      mos qo'shimcha maydon/tab/sozlama kombinatsiyalariga taqsimlab yaratish.
-- [ ] Kod, nom, o'lchov birligi, ТМЦ to'plami, faol holat va mahsulot turini tekshirish.
-- [ ] Har saqlashdan keyin listdan kod bilan topish, view/editda barcha kiritilgan
-      ma'lumotlarni solishtirish; auto-default bilan qo'lda kiritilganini ajratish.
-- [ ] Tahrir qilib saqlash va qayta ochish; bekor qilingan tahrir saqlanmasligini tekshirish.
-- [ ] Majburiy maydonlar, tasdiqlangan kod uniqueness qoidasi, uzunlik/format
-      limitlari va o'zaro bog'liq sozlamalarni alohida parametr/case bilan tekshirish.
-- [ ] Salbiy/destruktiv variantlar uchun alohida vaqtinchalik mahsulot yaratish;
-      orderga tayanch bo'ladigan sakkiz mahsulotni noto'g'ri holatda qoldirmaslik.
+**Fayllar:** `tests/regression/test_products/test_01_create_product.py`da
+bitta to'liq manual test; `test_02_import_products.py`da to'liq Excel import
+testi. `test_0_products_runner.py` ularning ikkitasini
+smoke uslubidagi test_* → run_* wrapperlari orqali yig'adi. Asosiy `tests/regression/test_0_regression_runner.py`
+avval setup, keyin shu testlarni ishlatadi. Runner va uning leaflarini birga
+tanlash bloklanadi. Alohida product flow va data factory fayllari yo'q.
 
-### ТМЦ (импорт)
-
-- [x] Importga kirish kontekstini aniqlash: admin profilidagi
-      `Администрирование → Справочники → ТМЦ → Создать dropdown → Импорт`.
-      Oddiy filialda import action yo'q; ortiqcha user huquqlarini yoqish kerak emas.
-- [x] Saytdagi joriy `ТМЦ.xlsx` shablonini yuklab olish; import va Настройка
-      oynalarining ustun/mapping inventarini dalilga saqlash.
-- [x] Shablon tarkibini o'qish: u bo'sh emas, mavjud mahsulotlar va IDlarni ham
-      olib keladi. Yangi import fayli faqat testcase qatorlarini oladi; mavjud
-      shablon qatorlari va IDlari importga yuborilmaydi.
-- [x] Importdan keyingi biriktirish oynasini topish: admin kontekstida
-      `Наборы ТМЦ → kerakli to'plam → Прикрепить → Доступные`.
-      Bu navigatsiya tekshirildi; yangi import mahsulotini biriktirish hali bajarilmadi.
-- [ ] Joriy shablon va qo'llab-quvvatlanadigan ustunlarni real formada tekshirish.
-- [ ] Admin orqali import qilingan ikki mahsulotni kerakli ТМЦ to'plami va
-      operatsion filialga bog'lash yo'lini tekshirish; test useri listida ko'rinishini tasdiqlash.
-- [ ] UZS-B va USD-B uchun kamida ikki valid qatorli XLSX yaratish; mavjud barcha
-      mos qo'shimcha import maydonlarini qamrab olish, faylni dalil sifatida saqlash.
-- [ ] Fayl yuklash, ustun mappingi va previewdagi qiymatlarni tekshirish.
-- [ ] Importni yakunlash, ikkala mahsulotni kod bilan topib Excel bilan solishtirish.
-- [ ] Yetishmagan majburiy maydon, noto'g'ri reference/format, takroriy kod,
-      valid+invalid aralash fayl va importni bekor qilish caselarini ajratish.
-- [ ] Atomik yoki qisman import xulqini real contract bo'yicha belgilash;
-      xato chiqishidan tashqari listdagi haqiqiy saqlangan natijani tekshirish.
-- [ ] Importni qayta yuborishdagi duplicate/update siyosatini aniqlab, mos assertion yozish.
-
-**Yakun mezoni:** 6 create + 2 import mahsulot qayta ochib tekshirilgan; yaratish,
-tahrir, validatsiya va import imkoniyatlari inventar bo'yicha qamrab olingan.
+Run muvaffaqiyatli bo'lsa test yonidagi `tests/regression/test_products/data_store.json`ga `regression_tmz_1` …
+`regression_tmz_6` yoziladi: code/server/company/product ID, karta qiymatlari,
+`card_verified=True`, `price_verified=True`, `stock_verified=False`.
+Yangi attempt boshlanishida shu product recordi tozalanadi. Bu kodning xulqi;
+hozir yangi TMZlar yaratilgan yoki orderga tayyor deb belgilanmaydi.
 
 ## P06. Ikki yo'l bilan sotuv narxi
 
-**Fayllar:** `tests/regression/test_prices/` domain runner va leaflari.
+**Holat: IMPLEMENTED / RETEST NOT RUN.** Narxlash kodi bevosita product
+testlari ichida; alohida price flow yoki price runner yo'q.
 
-- [ ] ТМЦ listi → Установить цены: UZS-A, UZS-C, LOW, USD-A.
-- [ ] Цены listi → tegishli narx turi → mahsulot narxlash: UZS-B, BONUS, ZERO, USD-B.
-- [ ] Har ikki yo'lda UZS va USD narx turi hamda valyutani tekshirish.
-- [ ] Save/tasdiqdan keyin qayta ochib narxni tekshirish; ikkinchi kirish yo'li
-      orqali ham ayni mahsulot va narx turining qiymatini solishtirish.
-- [ ] 2.35 USD kasrining saqlanishi va ko'rsatilishini tekshirish.
-- [ ] Narxni o'zgartirish va bekor qilish, majburiylik/format, nol/manfiy/chegara
-      qiymatlarni tasdiqlangan biznes qoidaga muvofiq alohida caselarda tekshirish.
-- [ ] Bir mahsulot/narx turiga o'zgartirish boshqa mahsulot/narx turini o'zgartirmasligini tekshirish.
-- [ ] UI ko'rsatgan qo'shimcha ustun, soliq yoki narx rejimlari uchun shartlarni
-      P04 inventariga yozish; hisoblash formulasini kuzatilgan xatodan ko'chirmaslik.
-- [ ] Tayanch mahsulotlar narxlarini jadvaldagi qiymatlarda yakunlash.
+- [x] TMZ-1: ТМЦ → Установить цены orqali UZS va USD narx.
+- [x] TMZ-2/3/4/5/6: Цены → price type → Установка цен orqali har biriga UZS/USD narx.
+- [x] Saqlash va qayta ochish orqali barcha 12 narx qiymatini tekshirish.
+- [x] O'qish uchun ochilgan narx formasini saqlamasdan yopish; save-changes confirmda нет.
+- [ ] Real run natijasi va narxlarning saqlanish dalili.
 
-**Yakun mezoni:** ikkala narxlash yo'li va valyuta ishlaydi, saqlangan qiymatlar
-ikki tomonda mos. Sotuv narxi kirim narxidan alohida tekshiriladi.
+**Yakun mezoni:** 6 karta va 12 narx tekshiruvi muvaffaqiyatli; qoldiq hali
+P07/P08ga tegishli. Eski negative/edit/cancel narx caselari joriy scope emas.
 
 ## P07. Ввод начальных остатков ТМЦ
 
@@ -335,22 +354,22 @@ helper ownershipiga mos joydan foydalanadi.
 
 ### Uch usul × bitta/ko'p mahsulot
 
-Quyidagi jadval fresh sakkiz mahsulotli baseline uchun. Qoldiqlar yig'indisi
-tekshiriladi; mustaqil case runida precondition shu casening o'zida tayyorlanadi.
+Yangi TMZ-1…TMZ-6 matritsasi ishlatiladi. Qaysi mahsulotga qancha kirim
+qilish va kirim narxlari P07 implementatsiyasida belgilanadi; eski UZS-A/LOW/ZERO
+matritsasi joriy emas. Kutilgan qoldiq har hujjat oldi/keyingi delta bilan tekshiriladi.
 
-| Case ID | Kiritish yo'li | Mahsulot va miqdor | Hujjat valyutasi |
-|---|---|---|---|
-| REG-INIT-01 | Oddiy list, bitta | UZS-A: 90 | UZS |
-| REG-INIT-02 | Oddiy list, ko'p | UZS-B: 100; UZS-C: 100 | UZS |
-| REG-INIT-03 | Подбор, bitta | LOW: 3 | UZS |
-| REG-INIT-04 | Подбор, ko'p | UZS-A: 10; BONUS: 100 | UZS |
-| REG-INIT-05 | Импорт, bitta | USD-A: 90 | USD |
-| REG-INIT-06 | Импорт, ko'p | USD-A: 10; USD-B: 100 | USD |
+| Case ID | Kiritish yo'li | Miqdor/valyuta |
+|---|---|---|
+| REG-INIT-01 | Oddiy list, bitta mahsulot | P07da belgilanadi |
+| REG-INIT-02 | Oddiy list, bir nechta mahsulot | P07da belgilanadi |
+| REG-INIT-03 | Подбор, bitta mahsulot | P07da belgilanadi |
+| REG-INIT-04 | Подбор, bir nechta mahsulot | P07da belgilanadi |
+| REG-INIT-05 | Импорт, bitta mahsulot | P07da belgilanadi |
+| REG-INIT-06 | Импорт, bir nechta mahsulot | P07da belgilanadi |
 
 - [ ] Har hujjat uchun noyob raqam, to'g'ri ombor, valyuta, sana va inventarda
       aniqlangan boshqa mos maydonlarni to'ldirish/tekshirish.
-- [ ] Kirim narxlarini alohida data sifatida belgilash; UZS-A uchun 5000 UZS
-      kirim va 7000 UZS sotuv narxi farqini saqlash.
+- [ ] Kirim narxlarini sotuv narxidan alohida data sifatida belgilash.
 - [ ] Qator miqdori × kirim narxi va hujjat summasini mustaqil hisoblash.
 - [ ] Save → qayta ochish: qatorlar, kodlar, miqdorlar, kirim narxlari,
       valyuta, ombor va summa yo'qolmaganini tekshirish.
@@ -366,10 +385,9 @@ tekshiriladi; mustaqil case runida precondition shu casening o'zida tayyorlanadi
       qoldiq o'zgarmaganini isbotlash; wizarddan o'tishni saqlash deb hisoblamaslik.
 - [ ] O'tkazilmagan hujjat, tahrir, qayta o'tkazish yoki o'tkazishni bekor qilish
       amallari UI'da mavjud bo'lsa ularning qoldiqqa ta'sirini alohida mahsulotda tekshirish.
-- [ ] ZERO mahsulotiga kirim qilmaslik.
 
 **Yakun mezoni:** 6 asosiy case, forma imkoniyatlari va xatolik yo'llari
-tekshirilgan; tayanchning yakuniy qoldiqlari P05 jadvaliga mos.
+tekshirilgan; yakuniy qoldiqlar P07da belgilangan miqdorlarga mos.
 
 ## P08. Остатки ТМЦ va orderga tayyorlik
 
@@ -378,15 +396,14 @@ tekshirilgan; tayanchning yakuniy qoldiqlari P05 jadvaliga mos.
 
 - [ ] Qoldiq listida mahsulot nomi mavjudligini emas, aynan tanlangan filial va
       ombordagi miqdorni tekshirish; filterlar natijaga qanday ta'sir qilishini yozish.
-- [ ] UZS-A: 90 + 10 = 100; USD-A: 90 + 10 = 100; LOW: 3;
-      ZERO: 0; qolganlar: 100 ekanini tekshirish.
+- [ ] Har bir TMZ uchun P07 kirimlari yig‘indisi va yakuniy qoldiqni solishtirish.
 - [ ] Nol qoldiq qatori yashirilgan bo'lsa tegishli filter/qo'llab-quvvatlanadigan
       qoldiq ko'rinishi orqali tasdiqlash; yo'q qatorni o'z-o'zidan nol deb olmaslik.
 - [ ] Inventardagi qidirish/filter, ustun, batafsil ko'rish va export amallari
       mavjud bo'lsa natija mazmunigacha tekshirish.
 - [ ] Oddiy orderda qoldiqli mahsulotlar tanlanishi, ombor va sotuv narxi mosligini tekshirish.
-- [ ] UZS-A: 2 × 7000 = 14000; USD-B: 2 × 2.35 = 4.70 nazorat hisoblari.
-- [ ] Narxi bor ZERO mahsulotining ko'rinishi/tanlanishi bo'yicha haqiqiy sozlama
+- [ ] TMZ-1: 2 × 5000 = 10000 UZS; 2 × 5 = 10 USD nazorat hisoblari.
+- [ ] Nol qoldiqli mahsulot ssenariysi uchun haqiqiy sozlama
       va biznes qoidani yozish; avtomatik “ko'rinmasligi shart” deb taxmin qilmaslik.
 - [ ] Tayyorlik tekshiruvi orderni saqlamasdan tugasa buni aniq qayd etish;
       real order lifecycle qamrovi P10da bo'ladi.
@@ -471,5 +488,17 @@ boshlang'ich qoldiq bosqichidan keyin, preconditionlari bilan rejalashtiriladi:
 
 | 2026-09-22 | Merge commit | Foydalanuvchi dev1dagi o'zgarishlarni commit qilishni aniq so'radi; main tuzatishlari va reja yangilanishi merge commitga kiritiladi | Oldingi static tekshiruvlar PASS; ushbu qadamda biznes kodi o'zgarmadi. Test/collection run yo'q; push va outputs commit qamroviga kirmaydi | Dev1da P05 qolgan caselarini davom ettirish |
 
+| 2026-09-22 | P03 asosiy runner | Alohida setup/products runnerlari saqlanib, `scripts/run_regression.py` va `regression` targeti qo'shildi. Tartib bitta ro'yxatdan olinadi; setup va products bitta pytest sessiyasiga uzatiladi, mavjud case/node ID va dependency hooklari saqlanadi. README va reliz yo'riqnomasi yangilandi | 15 Python fayli AST, ikki CLI fayli pyflakes, runner path mavjudligi va git diff --check PASS. Pytest/collection va real run bajarilmadi; yangi commit/push yo'q | P05 qolgan caselari |
+
+| 2026-09-22 | P03 oddiy pytest runner | Foydalanuvchi aniqlashtirishiga ko'ra `scripts/run_regression.py` olib tashlandi. Asosiy fayl `tests/regression/test_0_regression_runner.py`: `Test01Setup` → `Test02Products`, alohida runnerlarning 21 + 6 parametrli wrapperi qayta ishlatiladi. Company deselect va duplicate guard asosiy faylga moslandi; README va reliz node prefikslari yangilandi | 16 Python fayli AST, pyflakes, original wrapperlarga alias/tartib mosligi va diff check PASS. Pytest/collection/run bajarilmadi; commit/push yo'q | P05 qolgan caselari |
+
 Keyingi har ish yakunida bu jadvalga yangi qator qo'shiladi va yuqoridagi
 “Hozir qayerdamiz?” bo'limi ham birga yangilanadi.
+
+| 2026-09-22 | P05/P06 yangi scope | Eski 12 item o‘rniga 3 manual TMZ + bitta 3 qatorli import testi yozildi; ikki narxlash yo‘li va qayta ochish tekshiruvlari qo‘shildi. User mavjud шт / Количество birligini tasdiqladi. Main runner 21 setup + 4 product wrapperga moslandi | Static PASS; pytest/collection va biznes run bajarilmadi. Joriy o‘zgarishlar commit/push qilinmagan | P07/P08 kirim/qoldiq; alohida so‘ralganda real run |
+| 2026-09-22 | Yakuniy static tekshiruv | 16 Python fayli AST va lokal import yo‘llari; main runnerning 21 + 4 alias tartibi; leaf amallarining bir qatorligi; pyflakes va git diff --check | PASS. Real UI/source orqali importdagi ikkala confirm, preview tozalanishi va Цены lokal grid search modeli aniqlanib flowga moslandi. Yangi mahsulot/import/narx save bajarilmadi | Real run hali NOT RUN; P07/P08 rejalashtirilgan |
+| 2026-09-22 | Local run locator tuzatishlari | Narx close headingi DOM matni bilan tekshiriladi; import preview nom bo'yicha filtrlanib input qiymatlari tekshiriladi, qator sanog'idan header chiqarildi | 14 regression Python fayli AST, product domain pyflakes va git diff --check PASS. Retest NOT RUN; commit/push yo'q | Fresh setup/code bilan productlarni qayta tekshirish |
+| 2026-09-22 | Close flowini base metodlariga qaytarish | Raw heading/confirm locatorlari va re/expect importlari olib tashlandi. ТМЦ close to'g'ridan-to'g'ri expect_page; Цены close tasdiqni confirm_biruni orqali нет bilan yopadi | Static tekshiruv; retest NOT RUN. Oldingi raw locator tuzatishi almashtirildi; commit yo'q | Ruxsatli qayta run |
+| 2026-09-22 | Product kodlarini test ichiga ko'chirish | 3 manual va bitta import testining barcha data/UI/Excel/narxlash qadamlari test_* ichiga olindi; product flowlar, run_* va data factory olib tashlandi. Product runner 4 original testga alias beradi; main node nomlari saqlandi | 9 Python fayli AST, regression pyflakes, 4 test/runner/main alias va fixture signature auditi, git diff --check PASS. Pytest/collection/run bajarilmadi; commit/push yo'q | Ruxsatli qayta run |
+| 2026-09-22 | Product runner smoke uslubida | User talabiga ko'ra aliaslar o'rniga 4 ta Allure title bilan explicit test_* wrapper yozildi; ular leaf test fayllaridagi run_* entrypointlarni chaqiradi. Barcha biznes qadamlar shu test fayllarida, alohida product flow yo'q; standalone wrapperlar saqlandi | 9 Python fayli AST, 4 wrapper/entrypoint signature va main runner mapping, regression pyflakes, git diff --check PASS. Pytest/collection/run va commit/push bajarilmadi | Ruxsatli qayta run |
+| 2026-09-22 | Base multiselect birinchi variant | Legacy/A2 multiselectga select_first=True qo'shildi; tanlash, chip tekshiruvi, close va list return kontrakti saqlandi. 3 manual + 1 import case raw locatorlari bitta base chaqiruviga o'tdi | Public API parity, pyflakes va git diff --check PASS. Test/collection run va commit yo'q | Ruxsatli qayta run |

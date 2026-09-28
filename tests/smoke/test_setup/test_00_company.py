@@ -92,10 +92,9 @@ def run_company(page, code):
 
     with allure.step("9 - Company code ni ro'yxatda tekshirish"):
         base.grid_controller(search=company_code)
-        base.grid(company_code)
+        base.grid(company_code, click=True)
 
     with allure.step("10 - Company viewni ochish"):
-        base.grid(company_code, click=True)
         base.click(name="Просмотреть")
         base.expect_page(heading="Компания (просмотр)", url="company_view")
 

@@ -6,6 +6,7 @@ from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from utils.date_utils import format_date, resolve_date
 from utils.helper_utils import first_non_admin_filial, label_pattern
 from utils.base_pages.page_diagnostics import expectation_gate, report_page_expectation
+from utils.base_pages.page_errors import expect_no_application_error
 from utils.base_pages.page_reporting import report_web_action
 from utils.report_context import record_filial
 
@@ -84,15 +85,21 @@ class BasePage:
 
     def click(
         self,
-        name,
+        name=None,
         *,
+        locator=None,
         role="button",
         exact=False,
         index=0,
         root=None,
         timeout=10_000,
     ):
-        """Semantic role va accessible name orqali elementni topib bosadi.
+        """Elementni semantic role/name yoki locator orqali topib bosadi.
+
+        ``name`` yoki ``locator``dan aynan bittasi beriladi. ``locator`` CSS
+        selector yoki tayyor Locator bo'lishi mumkin. ``root`` name/selector
+        qidiruvini cheklaydi; tayyor Locator o'z scope'idan foydalanadi.
+        ``index`` mos elementlardan N-chisini tanlaydi.
 
         Styled radio inputlar ko'rinadigan label/span ostida qolishi mumkin;
         radio tanlash uchun ``radio(label, click=True)`` ishlatiladi.
@@ -103,8 +110,13 @@ class BasePage:
             index=index,
             timeout=timeout,
         )
-        root = self._resolve_root(root)
-        target = root.get_by_role(role, name=name, exact=exact).nth(index)
+        if (name is not None) + (locator is not None) != 1:
+            raise ValueError("click(): name yoki locator dan aynan bittasini bering")
+        if locator is not None:
+            target = self._resolve_root(root).locator(locator) if isinstance(locator, str) else locator
+        else:
+            target = self._resolve_root(root).get_by_role(role, name=name, exact=exact)
+        target = target.nth(index)
         expect(target).to_be_visible(timeout=timeout)
         target.click(timeout=timeout)
         return target
@@ -526,16 +538,21 @@ class BasePage:
 
     @report_web_action
     @report_page_expectation
-    def expect_page(self, heading=None, url=None, timeout=30_000, check_unblocked=True, root=None):
-        """Sahifaning URL va heading holatini tekshiradi.
+    def expect_page(
+        self, heading=None, url=None, timeout=30_000, check_unblocked=True,
+        root=None, *, check_no_error=True,
+    ):
+        """URL → loader → application error yo'qligi → headingni tekshiradi.
 
         ``root`` berilsa, heading faqat shu CSS selector yoki Locator ichidan qidiriladi.
-        Loader bloklanishi esa sahifa bo'yicha global tekshiriladi.
+        Loader va errorlar sahifa bo'yicha global tekshiriladi.
+        Error kuzatuvi 1,2 soniyagacha; ``check_no_error=False`` uni o'chiradi.
         """
         self._validate_options(
             'expect_page',
             timeout=timeout,
             check_unblocked=check_unblocked,
+            check_no_error=check_no_error,
         )
         if heading is None and url is None:
             raise ValueError("expect_page: kamida 'heading' yoki 'url' berilishi kerak")
@@ -551,6 +568,18 @@ class BasePage:
                     f"hozirgi url={self.page.url}"
                 ) from exc
 
+        if check_unblocked:
+            expectation_gate(self.page, "loader")
+            expect(self.page.locator(".block-ui-overlay:visible")).to_have_count(0, timeout=timeout)
+
+        if check_no_error:
+            expectation_gate(self.page, "application_error")
+            expect_no_application_error(
+                self.page,
+                "#biruniAlertExtended:visible, #biruniAlert:visible, .alert-danger:visible",
+                timeout=timeout,
+            )
+
         if heading is not None:
             expectation_gate(self.page, "heading")
             scope = self.page if root is None else self.page.locator(root) if isinstance(root, str) else root
@@ -564,10 +593,6 @@ class BasePage:
                     f"hozirgi heading(lar)=\"{self._current_heading_text(root=root) or 'yo`q'}\", "
                     f"root={root or 'page'}, url={self.page.url}"
                 ) from exc
-
-        if check_unblocked:
-            expectation_gate(self.page, "loader")
-            expect(self.page.locator(".block-ui-overlay:visible")).to_have_count(0, timeout=timeout)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -941,10 +966,11 @@ class BasePage:
         root=None,
         timeout=10_000,
     ):
-        """View formadagi ``label + .form-view`` qiymatini tekshiradi yoki qaytaradi.
+        """View formadagi labelga bog'langan qiymatni tekshiradi yoki qaytaradi.
 
         Smartup view sahifalarida read-only ko'rinadigan maydonlar ko'pincha
         ``input[readonly]`` emas, ``<span class="form-view">...</span>`` bo'ladi.
+        Yon paneldagi ``span (label) + span (qiymat)`` juftligi ham qo'llanadi.
         ``index`` bir xil label/value juftliklari orasidan N-chisini tanlaydi.
         ``remove_spaces=True`` assert va return qiymatida barcha whitespace'ni
         olib tashlaydi (masalan UI'dagi ``7 000`` ni ``7000`` sifatida tekshiradi).
@@ -964,8 +990,14 @@ class BasePage:
         labelled_values = labels.locator(
             "xpath=following-sibling::*[contains(concat(' ', normalize-space(@class), ' '), ' form-view ')][1]"
         )
-        translated_values = translated_labels.locator("xpath=(../../span)[1]")
-        value = labelled_values.or_(translated_values).filter(visible=True).nth(index)
+        translated_values = translated_labels.locator(
+            "xpath=parent::*[not(self::span)]/../span[1]"
+        )
+        # Span ichidagi <t> uchun yuqoridagi yo'l labelning o'zini olmasin.
+        span_values = root.locator("span").filter(has_text=pattern).locator(
+            "xpath=following-sibling::span[1]"
+        )
+        value = labelled_values.or_(translated_values).or_(span_values).filter(visible=True).nth(index)
         expect(value).to_be_visible(timeout=timeout)
         if expect_value is not _UNSET:
             if remove_spaces:
@@ -1061,6 +1093,7 @@ class BasePage:
         expect_value=_UNSET,
         return_value=False,
         clear=False,
+        select_first=False,
         index=0,
         close=True,
         exact=True,
@@ -1078,6 +1111,8 @@ class BasePage:
           - expect_value="Админ" yoki ro'yxat: selected chiplarni tekshiradi
           - return_value=True: tanlangan chip matnlarini list qilib qaytaradi
           - clear=True: mavjud tanlovlarning barchasini tozalaydi
+          - select_first=True: qidiruvni tozalab, birinchi ko'rinadigan variantni
+            tanlaydi va chipini tekshiradi; value bilan birga berilmaydi
 
         Single-select `select_b_input`/`b_input` dan farqi (Штат formasida
         MCP bilan tasdiqlangan, 2026-06-30):
@@ -1093,11 +1128,14 @@ class BasePage:
             'multiselect',
             return_value=return_value,
             clear=clear,
+            select_first=select_first,
             index=index,
             close=close,
             exact=exact,
             timeout=timeout,
         )
+        if select_first and value is not _UNSET:
+            raise ValueError("multiselect(): select_first va value birga berilmaydi")
         root = self._resolve_root(root)
         if label is not None and name is not None:
             raise ValueError("multiselect(): label yoki name dan faqat bittasini bering")
@@ -1139,16 +1177,24 @@ class BasePage:
             expect(option).to_be_visible(timeout=timeout)
             option.click(timeout=timeout)
 
+        if select_first:
+            search.click(timeout=timeout)
+            search.fill("", timeout=timeout)
+            option = b_input.locator(".hint:visible .hint-item:visible").first
+            expect(option).to_be_visible(timeout=timeout)
+            selected_values = [" ".join(option.inner_text(timeout=timeout).split())]
+            option.click(timeout=timeout)
+
         expected_values = (
             selected_values
-            if expect_value is _UNSET and value is not _UNSET
+            if expect_value is _UNSET and (value is not _UNSET or select_first)
             else values_list(expect_value)
         )
         for option_text in expected_values:
             selected = chips.get_by_text(option_text, exact=exact).first
             expect(selected).to_be_visible(timeout=timeout)
 
-        if close and value is not _UNSET:
+        if close and (value is not _UNSET or select_first):
             search.press("Escape", timeout=timeout)
         if return_value:
             return [" ".join(text.split()) for text in chips.all_inner_texts() if text.strip()]
@@ -1620,8 +1666,9 @@ class BasePage:
         `index` bir nechta mos input orasidan N-chisini, `root` (Page, Locator yoki
         selector string) topishni cheklaydi.
 
-        b-number inputida avtomatik value asserti formatlashdagi whitespace'ni
-        hisobga olmaydi; explicit expect_value aynan tekshiriladi.
+        String expect_value tekshiruvida barcha whitespace e'tiborsiz qoladi;
+        regex expect_value o'z holicha ishlatiladi. b-number inputida avtomatik
+        value asserti ham formatlashdagi whitespace'ni hisobga olmaydi.
         """
         self._validate_options(
             'input',
@@ -1668,6 +1715,8 @@ class BasePage:
             expected = str(value)
             if input_el.get_attribute("b-number") is not None:
                 expected = _whitespace_agnostic_pattern(expected, exact=True)
+        elif isinstance(expected, str):
+            expected = _whitespace_agnostic_pattern(expected, exact=True)
         if expected is not _UNSET:
             expect(input_el).to_have_value(expected, timeout=10_000)
 

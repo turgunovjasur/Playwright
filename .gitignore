@@ -208,6 +208,10 @@ __marimo__/
 
 # Test run outputs
 test-results/
+tests/regression/test_products/data_store.json
+tests/regression/test_products/data_store.json.tmp
+tests/smoke/test_action/data_store.json
+tests/smoke/test_action/data_store.json.tmp
 daily-smoke-test-results*
 smoke-test-results*
 forms-test-results*

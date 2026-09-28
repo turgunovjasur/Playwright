@@ -43,10 +43,9 @@ def run_robot(page, code):
     with allure.step("4 - Saqlash va ro'yxatda tekshirish"):
         base.click(name="Сохранить", exact=True)
         base.expect_page(heading="Штат")
-        base.grid(robot_name, robot_code)
+        base.grid(robot_name, robot_code, click=True)
 
     with allure.step("5 - View formasidan robot IDni olish va saqlash"):
-        base.grid(robot_name, robot_code, click=True)
         base.click(name="Просмотреть", exact=True)
         base.expect_page(heading="Штат (просмотр)", url="robot_view?robot_id=")
         base.text(robot_name, robot_code, "Активный")

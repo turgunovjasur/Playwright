@@ -1,0 +1,6499 @@
+{
+  "source_url": "https://docs.google.com/spreadsheets/d/1TZ63CrVwL-yPjL6n6s4G3TfeZUODOYthuQZP-AoFpXs/edit?gid=198146594",
+  "spreadsheet_id": "1TZ63CrVwL-yPjL6n6s4G3TfeZUODOYthuQZP-AoFpXs",
+  "sheet_id": 198146594,
+  "sheet_name": "Not given",
+  "captured_at": "2026-09-28T05:10:31.877Z",
+  "range": "'Not given'!A1:D4500",
+  "values": [
+    [
+      "Type",
+      "Path",
+      "Test Status",
+      "Prod status"
+    ],
+    [
+      "1. Акт-сверки"
+    ],
+    [
+      "Menyu: Биллинг → Отчеты → Акт-сверки"
+    ],
+    [
+      "Root: /billing/rep/bldeal/reconciliation_acts · billing/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/billing/rep/bldeal/reconciliation_acts"
+    ],
+    [
+      "2. Баланс по серверам"
+    ],
+    [
+      "Menyu: Биллинг → Отчеты → Баланс по серверам"
+    ],
+    [
+      "Root: /billing/rep/bldeal/person_balances · billing/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/billing/rep/bldeal/person_balances"
+    ],
+    [
+      "3. Бонусы реферального агента"
+    ],
+    [
+      "Menyu: Биллинг → Отчеты → Бонусы реферального агента"
+    ],
+    [
+      "Root: /billing/rep/bln/agent_bonuses · billing/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/billing/rep/bln/agent_bonuses"
+    ],
+    [
+      "4. Дневное хранилище лицензий"
+    ],
+    [
+      "Menyu: Биллинг → Отчеты → Дневное хранилище лицензий"
+    ],
+    [
+      "Root: /billing/rep/bldeal/dw_daily_licenses · billing/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/billing/rep/bldeal/dw_daily_licenses"
+    ],
+    [
+      "5. Отчет по лицензиям"
+    ],
+    [
+      "Menyu: Биллинг → Отчеты → Отчет по лицензиям"
+    ],
+    [
+      "Root: /billing/rep/bldeal/deals · billing/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/billing/rep/bldeal/deals"
+    ],
+    [
+      "6. Отчет по оттокам"
+    ],
+    [
+      "Menyu: Биллинг → Отчеты → Отчет по оттокам"
+    ],
+    [
+      "Root: /billing/rep/bldeal/churn_rate · billing/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/billing/rep/bldeal/churn_rate"
+    ],
+    [
+      "7. Отчет по продаже лицензии организации"
+    ],
+    [
+      "Menyu: Биллинг → Отчеты → Отчет по продаже лицензии организации"
+    ],
+    [
+      "Root: /billing/rep/bldeal/filial_license_sales · billing/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/billing/rep/bldeal/filial_license_sales"
+    ],
+    [
+      "8. Хранилище лицензий"
+    ],
+    [
+      "Menyu: Биллинг → Отчеты → Хранилище лицензий"
+    ],
+    [
+      "Root: /billing/rep/bldeal/dw_licenses · billing/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/billing/rep/bldeal/dw_licenses"
+    ],
+    [
+      "9. Продуктовая аналитика"
+    ],
+    [
+      "Menyu: Главное → Дополнительное → Продуктовая аналитика"
+    ],
+    [
+      "Root: /trade/rep/head/product_analytics · trade/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/trade/rep/head/product_analytics"
+    ],
+    [
+      "10. Отчёт по начислениям и выплатам персоналу"
+    ],
+    [
+      "Menyu: Кадры и зарплата → Отчеты → Отчёт по начислениям и выплатам персоналу"
+    ],
+    [
+      "Root: /anor/rep/mpr/employee_accruals_and_payments · anor/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/anor/rep/mpr/employee_accruals_and_payments"
+    ],
+    [
+      "11. Отчет по анализу визитов"
+    ],
+    [
+      "Menyu: Продажа → Визиты → Отчет по анализу визитов"
+    ],
+    [
+      "Root: /trade/rep/tvta/visit_analysis_report · trade/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/trade/rep/tvta/visit_analysis_report"
+    ],
+    [
+      "12. Анализ маршрута"
+    ],
+    [
+      "Menyu: Продажа → Отчеты по визитам → Анализ маршрута"
+    ],
+    [
+      "Root: /trade/rep/route_analysis · trade/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/trade/rep/route_analysis"
+    ],
+    [
+      "13. Отчет по визитам"
+    ],
+    [
+      "Menyu: Продажа → Отчеты по визитам → Отчет по визитам"
+    ],
+    [
+      "Root: /trade/rep/tvt/visits · trade/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/trade/rep/tvt/visits"
+    ],
+    [
+      "14. Отчёт о маршруте пользователей"
+    ],
+    [
+      "Menyu: Продажа → Отчеты по визитам → Отчёт о маршруте пользователей"
+    ],
+    [
+      "Root: /trade/rep/path_visit_user · trade/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/trade/rep/path_visit_user"
+    ],
+    [
+      "15. Задолженность покупателей по срокам задолженности"
+    ],
+    [
+      "Menyu: Продажа → Отчеты по продажам → Задолженность покупателей по срокам задолженности"
+    ],
+    [
+      "Root: /anor/rep/analytics/debtor_clients · anor/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/anor/rep/analytics/debtor_clients"
+    ],
+    [
+      "16. Конструктор отчётов по продажам"
+    ],
+    [
+      "Menyu: Продажа → Отчеты по продажам → Конструктор отчётов по продажам"
+    ],
+    [
+      "Root: /trade/rep/mbi/tdeal/order · trade/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/trade/rep/mbi/tdeal/order"
+    ],
+    [
+      "17. Общий отчет по продажам (организации)"
+    ],
+    [
+      "Menyu: Продажа → Отчеты по продажам → Общий отчет по продажам (организации)"
+    ],
+    [
+      "Root: /trade/rep/tdeal/sales · trade/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/trade/rep/tdeal/sales"
+    ],
+    [
+      "18. Движение ТМЦ в производстве"
+    ],
+    [
+      "Menyu: Производство → Отчёты → Движение ТМЦ в производстве"
+    ],
+    [
+      "Root: /anor/rep/mfg/manufacture/inventory_process · anor/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/anor/rep/mfg/manufacture/inventory_process"
+    ],
+    [
+      "19. Обеспечение производства"
+    ],
+    [
+      "Menyu: Производство → Отчёты → Обеспечение производства"
+    ],
+    [
+      "Root: /anor/rep/mfg/manufacture/inventory_analyse · anor/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/anor/rep/mfg/manufacture/inventory_analyse"
+    ],
+    [
+      "20. Материальный отчет"
+    ],
+    [
+      "Menyu: Склад → Отчеты → Материальный отчет"
+    ],
+    [
+      "Root: /anor/rep/mkw/warehouse_inventories · anor/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/anor/rep/mkw/warehouse_inventories"
+    ],
+    [
+      "21. Общий отчет по складам"
+    ],
+    [
+      "Menyu: Склад → Отчеты → Общий отчет по складам"
+    ],
+    [
+      "Root: /anor/rep/mkw/warehouse_balance/warehouse_balance · anor/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/anor/rep/mkw/warehouse_balance/warehouse_balance"
+    ],
+    [
+      "22. Отчёт по отгрузкам и оплатам"
+    ],
+    [
+      "Menyu: Склад → Отчеты → Отчёт по отгрузкам и оплатам"
+    ],
+    [
+      "Root: /trade/rep/warehouse_and_delivery · trade/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/trade/rep/warehouse_and_delivery"
+    ],
+    [
+      "23. Отчет по результату категоризации"
+    ],
+    [
+      "Menyu: Справочники → Маркетинг → Отчет по результату категоризации"
+    ],
+    [
+      "Root: /anor/rep/mcg/category_results · anor/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/anor/rep/mcg/category_results"
+    ],
+    [
+      "24. Отчет анализа цен"
+    ],
+    [
+      "Menyu: Торговый маркетинг → Отчеты → Отчет анализа цен"
+    ],
+    [
+      "Root: /trade/tmcg/rep/price_comparison · trade/tmcg · 1 forma"
+    ],
+    [
+      "report",
+      "/trade/tmcg/rep/price_comparison"
+    ],
+    [
+      "25. Отчет об отсутствии или несоответствии"
+    ],
+    [
+      "Menyu: Торговый маркетинг → Отчеты → Отчет об отсутствии или несоответствии"
+    ],
+    [
+      "Root: /trade/tmcg/rep/unavailable_inventories · trade/tmcg · 1 forma"
+    ],
+    [
+      "report",
+      "/trade/tmcg/rep/unavailable_inventories"
+    ],
+    [
+      "26. Отчет по POS-материалам"
+    ],
+    [
+      "Menyu: Торговый маркетинг → Отчеты → Отчет по POS-материалам"
+    ],
+    [
+      "Root: /trade/tmcg/rep/display · trade/tmcg · 1 forma"
+    ],
+    [
+      "report",
+      "/trade/tmcg/rep/display"
+    ],
+    [
+      "27. Отчет по ассортиментам"
+    ],
+    [
+      "Menyu: Торговый маркетинг → Отчеты → Отчет по ассортиментам"
+    ],
+    [
+      "Root: /trade/tmcg/rep/assortment · trade/tmcg · 1 forma"
+    ],
+    [
+      "report",
+      "/trade/tmcg/rep/assortment"
+    ],
+    [
+      "28. Отчет по доле на полке"
+    ],
+    [
+      "Menyu: Торговый маркетинг → Отчеты → Отчет по доле на полке"
+    ],
+    [
+      "Root: /trade/tmcg/rep/shelf_share · trade/tmcg · 1 forma"
+    ],
+    [
+      "report",
+      "/trade/tmcg/rep/shelf_share"
+    ],
+    [
+      "29. Отчет по планограмме"
+    ],
+    [
+      "Menyu: Торговый маркетинг → Отчеты → Отчет по планограмме"
+    ],
+    [
+      "Root: /trade/tmcg/rep/planogram · trade/tmcg · 1 forma"
+    ],
+    [
+      "report",
+      "/trade/tmcg/rep/planogram"
+    ],
+    [
+      "30. Отчет по статусам мерчандайзинга"
+    ],
+    [
+      "Menyu: Торговый маркетинг → Отчеты → Отчет по статусам мерчандайзинга"
+    ],
+    [
+      "Root: /trade/tmcg/rep/status · trade/tmcg · 1 forma"
+    ],
+    [
+      "report",
+      "/trade/tmcg/rep/status"
+    ],
+    [
+      "31. Отчет по ценам на полке"
+    ],
+    [
+      "Menyu: Торговый маркетинг → Отчеты → Отчет по ценам на полке"
+    ],
+    [
+      "Root: /trade/tmcg/rep/shelf_price · trade/tmcg · 1 forma"
+    ],
+    [
+      "report",
+      "/trade/tmcg/rep/shelf_price"
+    ],
+    [
+      "32. Отчет по ценникам конкурентов"
+    ],
+    [
+      "Menyu: Торговый маркетинг → Отчеты → Отчет по ценникам конкурентов"
+    ],
+    [
+      "Root: /trade/tmcg/rep/competitors · trade/tmcg · 1 forma"
+    ],
+    [
+      "report",
+      "/trade/tmcg/rep/competitors"
+    ],
+    [
+      "33. Сводный отчет по мерчандайзингу"
+    ],
+    [
+      "Menyu: Торговый маркетинг → Отчеты → Сводный отчет по мерчандайзингу"
+    ],
+    [
+      "Root: /trade/tmcg/rep/score · trade/tmcg · 1 forma"
+    ],
+    [
+      "report",
+      "/trade/tmcg/rep/score"
+    ],
+    [
+      "34. Экспорт фото и видео отчётов по визитам"
+    ],
+    [
+      "Menyu: Торговый маркетинг → Отчеты → Экспорт фото и видео отчётов по визитам"
+    ],
+    [
+      "Root: /trade/rep/tvt/photo · trade/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/trade/rep/tvt/photo"
+    ],
+    [
+      "35. Акт-сверки"
+    ],
+    [
+      "Menyu: Финансы → Отчеты → Акт-сверки"
+    ],
+    [
+      "Root: /anor/rep/mkr/reconciliation_acts · anor/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/anor/rep/mkr/reconciliation_acts"
+    ],
+    [
+      "36. Анализ счета"
+    ],
+    [
+      "Menyu: Финансы → Отчеты → Анализ счета"
+    ],
+    [
+      "Root: /anor/rep/mkr/coa_analysis · anor/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/anor/rep/mkr/coa_analysis"
+    ],
+    [
+      "37. Денежный поток"
+    ],
+    [
+      "Menyu: Финансы → Отчеты → Денежный поток"
+    ],
+    [
+      "Root: /anor/rep/mkcs/cashflow · anor/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/anor/rep/mkcs/cashflow"
+    ],
+    [
+      "38. Карточка счета"
+    ],
+    [
+      "Menyu: Финансы → Отчеты → Карточка счета"
+    ],
+    [
+      "Root: /anor/rep/mkr/coa_card · anor/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/anor/rep/mkr/coa_card"
+    ],
+    [
+      "39. Оборотно-сальдовая ведомость"
+    ],
+    [
+      "Menyu: Финансы → Отчеты → Оборотно-сальдовая ведомость"
+    ],
+    [
+      "Root: /anor/rep/mkr/osv · anor/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/anor/rep/mkr/osv"
+    ],
+    [
+      "40. Оборотно-сальдовая ведомость по счету"
+    ],
+    [
+      "Menyu: Финансы → Отчеты → Оборотно-сальдовая ведомость по счету"
+    ],
+    [
+      "Root: /anor/rep/mkr/osv_by_coa · anor/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/anor/rep/mkr/osv_by_coa"
+    ],
+    [
+      "41. Оборотно-сальдовая ведомость(BETA)"
+    ],
+    [
+      "Menyu: Финансы → Отчеты → Оборотно-сальдовая ведомость(BETA)"
+    ],
+    [
+      "Root: /anor/rep/mkr/osv_beta · anor/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/anor/rep/mkr/osv_beta"
+    ],
+    [
+      "42. Обороты по контрагентам"
+    ],
+    [
+      "Menyu: Финансы → Отчеты → Обороты по контрагентам"
+    ],
+    [
+      "Root: /anor/rep/person_turnovers · anor/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/anor/rep/person_turnovers"
+    ],
+    [
+      "43. Оплаты"
+    ],
+    [
+      "Menyu: Финансы → Отчеты → Оплаты"
+    ],
+    [
+      "Root: /anor/rep/mkcs/payment · anor/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/anor/rep/mkcs/payment"
+    ],
+    [
+      "44. Отчет о движении денежных средств (БЕТА)"
+    ],
+    [
+      "Menyu: Финансы → Отчеты → Отчет о движении денежных средств (БЕТА)"
+    ],
+    [
+      "Root: /anor/rep/mkr/statement_of_cashflows · anor/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/anor/rep/mkr/statement_of_cashflows"
+    ],
+    [
+      "45. Отчет о прибылях и убытках (БЕТА)"
+    ],
+    [
+      "Menyu: Финансы → Отчеты → Отчет о прибылях и убытках (БЕТА)"
+    ],
+    [
+      "Root: /anor/rep/mkr/profit_and_loss_two · anor/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/anor/rep/mkr/profit_and_loss_two"
+    ],
+    [
+      "46. Отчет по должникам"
+    ],
+    [
+      "Menyu: Финансы → Отчеты → Отчет по должникам"
+    ],
+    [
+      "Root: /anor/rep/mdeal/offset/debtor_clients · anor/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/anor/rep/mdeal/offset/debtor_clients"
+    ],
+    [
+      "47. Прибыль и убыток (PnL)"
+    ],
+    [
+      "Menyu: Финансы → Отчеты → Прибыль и убыток (PnL)"
+    ],
+    [
+      "Root: /anor/rep/mkr/profit_and_loss · anor/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/anor/rep/mkr/profit_and_loss"
+    ],
+    [
+      "48. Проводки счетов"
+    ],
+    [
+      "Menyu: Финансы → Отчеты → Проводки счетов"
+    ],
+    [
+      "Root: /anor/rep/mkr/transactions · anor/rep · 1 forma"
+    ],
+    [
+      "report",
+      "/anor/rep/mkr/transactions"
+    ],
+    [
+      "49. Дашборд по денежному потоку (QLIK)"
+    ],
+    [
+      "Menyu: Биллинг → Отчеты → Дашборд по денежному потоку (QLIK)"
+    ],
+    [
+      "Root: /billing/blbi/qlik_cashflow_dashboard · billing/blbi · 1 forma"
+    ],
+    [
+      "dashboard",
+      "/billing/blbi/qlik_cashflow_dashboard"
+    ],
+    [
+      "50. Дашборд по продажам(QLIK)"
+    ],
+    [
+      "Menyu: Биллинг → Отчеты → Дашборд по продажам(QLIK)"
+    ],
+    [
+      "Root: /billing/blbi/qlik_sales_dashboard · billing/blbi · 1 forma"
+    ],
+    [
+      "dashboard",
+      "/billing/blbi/qlik_sales_dashboard"
+    ],
+    [
+      "51. Дашборд удовлетворенности клиентов"
+    ],
+    [
+      "Menyu: Биллинг → Отчеты → Дашборд удовлетворенности клиентов"
+    ],
+    [
+      "Root: /billing/blx/nps_dashboard · billing/blx · 1 forma"
+    ],
+    [
+      "dashboard",
+      "/billing/blx/nps_dashboard"
+    ],
+    [
+      "52. Дашборд по финансам"
+    ],
+    [
+      "Menyu: Наличные → Отчеты → Дашборд по финансам"
+    ],
+    [
+      "Root: /anor/rep/finance_dashboard · anor/rep · 1 forma"
+    ],
+    [
+      "dashboard",
+      "/anor/rep/finance_dashboard"
+    ],
+    [
+      "53. Дашборд"
+    ],
+    [
+      "Menyu: Продажа → Отчеты по продажам → Дашборд"
+    ],
+    [
+      "Root: /trade/tdeal/sales_dashboard · trade/tdeal · 1 forma"
+    ],
+    [
+      "dashboard",
+      "/trade/tdeal/sales_dashboard"
+    ],
+    [
+      "54. Дашборд по продажам"
+    ],
+    [
+      "Menyu: Продажа → Отчеты по продажам → Дашборд по продажам"
+    ],
+    [
+      "Root: /trade/tdeal/sales_dashboard_two · trade/tdeal · 1 forma"
+    ],
+    [
+      "dashboard",
+      "/trade/tdeal/sales_dashboard_two"
+    ],
+    [
+      "55. Дашборд по продажам (БЕТА 2)"
+    ],
+    [
+      "Menyu: Продажа → Отчеты по продажам → Дашборд по продажам (БЕТА 2)"
+    ],
+    [
+      "Root: /trade/tdeal/sales_dashboard_three · trade/tdeal · 1 forma"
+    ],
+    [
+      "dashboard",
+      "/trade/tdeal/sales_dashboard_three"
+    ],
+    [
+      "56. Дашборд по продажам (БЕТА)"
+    ],
+    [
+      "Menyu: Продажа → Отчеты по продажам → Дашборд по продажам (БЕТА)"
+    ],
+    [
+      "Root: /trade/tdeal/qlik_sales_dashboard · trade/tdeal · 1 forma"
+    ],
+    [
+      "dashboard",
+      "/trade/tdeal/qlik_sales_dashboard"
+    ],
+    [
+      "57. Дашборд по продажам"
+    ],
+    [
+      "Menyu: Продажи → Дашборд продаж → Дашборд по продажам"
+    ],
+    [
+      "Root: /dwh/dwdeal/sales_dashboard · dwh/dwdeal · 1 forma"
+    ],
+    [
+      "dashboard",
+      "/dwh/dwdeal/sales_dashboard"
+    ],
+    [
+      "58. Дашборд по КПЭ"
+    ],
+    [
+      "Menyu: Торговый маркетинг → КПЭ → Дашборд по КПЭ"
+    ],
+    [
+      "Root: /anor/mkpi/kpi_dashboard · anor/mkpi · 1 forma"
+    ],
+    [
+      "dashboard",
+      "/anor/mkpi/kpi_dashboard"
+    ],
+    [
+      "59. Дашборд по финансам"
+    ],
+    [
+      "Menyu: Финансы → Отчеты → Дашборд по финансам"
+    ],
+    [
+      "Root: /trade/rep/finance_dashboard · trade/rep · 1 forma"
+    ],
+    [
+      "dashboard",
+      "/trade/rep/finance_dashboard"
+    ],
+    [
+      "60. Настройки системы"
+    ],
+    [
+      "Menyu: Админ → Основное → Настройки системы"
+    ],
+    [
+      "Root: /anor/pref/system_setting · anor/pref · 1 forma"
+    ],
+    [
+      "form",
+      "/anor/pref/system_setting"
+    ],
+    [
+      "61. Настройки системы Биллинга"
+    ],
+    [
+      "Menyu: Админ → Основное → Настройки системы Биллинга"
+    ],
+    [
+      "Root: /billing/pref/system_setting · billing/pref · 1 forma"
+    ],
+    [
+      "form",
+      "/billing/pref/system_setting"
+    ],
+    [
+      "62. Заполнение данных"
+    ],
+    [
+      "Menyu: Главное → Дополнительное → Заполнение данных"
+    ],
+    [
+      "Root: /trade/tr/fill_data · trade/tr · 1 forma"
+    ],
+    [
+      "form",
+      "/trade/tr/fill_data"
+    ],
+    [
+      "63. Настройки модулей"
+    ],
+    [
+      "Menyu: Главное → Настройки → Настройки модулей"
+    ],
+    [
+      "Root: /biruni/md/company_module_setting · biruni/md · 1 forma"
+    ],
+    [
+      "form",
+      "/biruni/md/company_module_setting"
+    ],
+    [
+      "64. Инструкция для быстрого запуска"
+    ],
+    [
+      "Menyu: Главное → Помощь → Инструкция для быстрого запуска"
+    ],
+    [
+      "Root: /core/intro/quickstart · core/intro · 1 forma"
+    ],
+    [
+      "form",
+      "/core/intro/quickstart"
+    ],
+    [
+      "65. Настройки системы"
+    ],
+    [
+      "Menyu: Информация → Основное → Настройки системы"
+    ],
+    [
+      "Root: /finance/pref/system_setting · finance/pref · 1 forma"
+    ],
+    [
+      "form",
+      "/finance/pref/system_setting"
+    ],
+    [
+      "66. Расчет зарплаты"
+    ],
+    [
+      "Menyu: Кадры → Документы → Расчет зарплаты"
+    ],
+    [
+      "Root: /anor/mpr/settings · anor/mpr · 1 forma"
+    ],
+    [
+      "form",
+      "/anor/mpr/settings"
+    ],
+    [
+      "67. Настройки счетов"
+    ],
+    [
+      "Menyu: Настройки → Организация → Настройки счетов"
+    ],
+    [
+      "Root: /anor/mk/default_coa_setting · anor/mk · 1 forma"
+    ],
+    [
+      "form",
+      "/anor/mk/default_coa_setting"
+    ],
+    [
+      "68. Автоформирование плана визитов"
+    ],
+    [
+      "Menyu: Продажа → Визиты → Автоформирование плана визитов"
+    ],
+    [
+      "Root: /trade/tvt/auto_gen_visit_plan · trade/tvt · 1 forma"
+    ],
+    [
+      "form",
+      "/trade/tvt/auto_gen_visit_plan"
+    ],
+    [
+      "69. Пересчет приходных цен"
+    ],
+    [
+      "Menyu: Склад → Документы → Пересчет приходных цен"
+    ],
+    [
+      "Root: /anor/mkw/recalculate_input · anor/mkw · 1 forma"
+    ],
+    [
+      "form",
+      "/anor/mkw/recalculate_input"
+    ],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "72. Виды лицензий"
+    ],
+    [
+      "Menyu: Биллинг → Основное → Виды лицензий"
+    ],
+    [
+      "Root: /billing/blr/service_list · billing/blr · 1 forma"
+    ],
+    [
+      "list",
+      "/billing/blr/service_list"
+    ],
+    [
+      "73. История изменений"
+    ],
+    [
+      "Menyu: Главное → Дополнительное → История изменений"
+    ],
+    [
+      "Root: /biruni/md/audit_list · biruni/md · 1 forma"
+    ],
+    [
+      "list",
+      "/biruni/md/audit_list"
+    ],
+    [
+      "75. Виды лицензий"
+    ],
+    [
+      "Menyu: Главное → Настройки → Виды лицензий"
+    ],
+    [
+      "Root: /biruni/md/license_list · biruni/md · 1 forma"
+    ],
+    [
+      "list",
+      "/biruni/md/license_list"
+    ],
+    [
+      "76. Шаблоны Easy Report"
+    ],
+    [
+      "Menyu: Главное → Основное → Шаблоны Easy Report"
+    ],
+    [
+      "Root: /biruni/ker/head_template_list · biruni/ker · 1 forma"
+    ],
+    [
+      "list",
+      "/biruni/ker/head_template_list"
+    ],
+    [
+      "77. Шаблоны накладных"
+    ],
+    [
+      "Menyu: Главное → Основное → Шаблоны накладных"
+    ],
+    [
+      "Root: /anor/mr/template_list · anor/mr · 1 forma"
+    ],
+    [
+      "list",
+      "/anor/mr/template_list"
+    ],
+    [
+      "80. Роли"
+    ],
+    [
+      "Menyu: Основное → Администрирование → Роли"
+    ],
+    [
+      "Root: /anor/mr/role_list · anor/mr · 1 forma"
+    ],
+    [
+      "list",
+      "/anor/mr/role_list"
+    ],
+    [
+      "81. Архив заказов"
+    ],
+    [
+      "Menyu: Продажа → Архив заказов"
+    ],
+    [
+      "Root: /trade/tdeal/order/order_history_list · trade/tdeal · 1 forma"
+    ],
+    [
+      "list",
+      "/trade/tdeal/order/order_history_list"
+    ],
+    [
+      "82. Отмененные заказы"
+    ],
+    [
+      "Menyu: Продажа → Отмененные заказы"
+    ],
+    [
+      "Root: /trade/tdeal/order/order_cancelled_list · trade/tdeal · 1 forma"
+    ],
+    [
+      "list",
+      "/trade/tdeal/order/order_cancelled_list"
+    ],
+    [
+      "83. Производственные задания"
+    ],
+    [
+      "Menyu: Производство → Основное → Производственные задания"
+    ],
+    [
+      "Root: /anor/mfg/manufacture/manufacture_task_list · anor/mfg · 1 forma"
+    ],
+    [
+      "list",
+      "/anor/mfg/manufacture/manufacture_task_list"
+    ],
+    [
+      "85. Архив межорг. перемещений"
+    ],
+    [
+      "Menyu: Склад → Перемещения → Архив межорг. перемещений"
+    ],
+    [
+      "Root: /anor/mfm/from_movement_history_list · anor/mfm · 1 forma"
+    ],
+    [
+      "list",
+      "/anor/mfm/from_movement_history_list"
+    ],
+    [
+      "86. Отмененные межорг. перемещения"
+    ],
+    [
+      "Menyu: Склад → Перемещения → Отмененные межорг. перемещения"
+    ],
+    [
+      "Root: /anor/mfm/cancelled_from_movement_list · anor/mfm · 1 forma"
+    ],
+    [
+      "list",
+      "/anor/mfm/cancelled_from_movement_list"
+    ],
+    [
+      "88. Категоризация физических лиц"
+    ],
+    [
+      "Menyu: Справочники → Маркетинг → Категоризация физических лиц"
+    ],
+    [
+      "Root: /anor/mcg/categorization/natural_person_list · anor/mcg · 1 forma"
+    ],
+    [
+      "list",
+      "/anor/mcg/categorization/natural_person_list"
+    ],
+    [
+      "89. Журнал документов"
+    ],
+    [
+      "Menyu: Финансы → Отчеты → Журнал документов"
+    ],
+    [
+      "Root: /anor/rep/mkr/journal_list · anor/rep · 1 forma"
+    ],
+    [
+      "list",
+      "/anor/rep/mkr/journal_list"
+    ],
+    [],
+    [],
+    [],
+    [],
+    [
+      "91. Аппараты фискализации"
+    ],
+    [
+      "Menyu: Главное → Дополнительное → Настройки системы → Аппараты фискализации"
+    ],
+    [
+      "Root: /anor/mrf/fiscal_cash_register_list · anor/mrf · 1 forma"
+    ],
+    [
+      "list",
+      "/anor/mrf/fiscal_cash_register_list"
+    ],
+    [
+      "94. Все пользователи"
+    ],
+    [
+      "Menyu: Главное → Основное → Пользователи → Все пользователи"
+    ],
+    [
+      "Root: /anor/mr/all_users_list · anor/mr · 1 forma"
+    ],
+    [
+      "list",
+      "/anor/mr/all_users_list"
+    ],
+    [
+      "95. Все пользователи"
+    ],
+    [
+      "Menyu: Главное → Основное → Пользователи → Все пользователи"
+    ],
+    [
+      "Root: /biruni/md/all_users_list · biruni/md · 1 forma"
+    ],
+    [
+      "list",
+      "/biruni/md/all_users_list"
+    ],
+    [
+      "96. Коды платежей"
+    ],
+    [
+      "Menyu: Наличные → Банк → Импорт банковских выписок → Коды платежей"
+    ],
+    [
+      "Root: /anor/mkcs/bank/payment_code_list · anor/mkcs · 1 forma"
+    ],
+    [
+      "list",
+      "/anor/mkcs/bank/payment_code_list"
+    ],
+    [
+      "97. Архив"
+    ],
+    [
+      "Menyu: Продажа → Визиты → Отслеживание оборудования → Архив"
+    ],
+    [
+      "Root: /trade/tvt/equipment_review_history_list · trade/tvt · 1 forma"
+    ],
+    [
+      "list",
+      "/trade/tvt/equipment_review_history_list"
+    ],
+    [
+      "98. Детали задолженности"
+    ],
+    [
+      "Menyu: Продажа → Заказы → Детали задолженности"
+    ],
+    [
+      "Root: /anor/mdeal/order/offset/offset_detail_list · anor/mdeal · 1 forma"
+    ],
+    [
+      "list",
+      "/anor/mdeal/order/offset/offset_detail_list"
+    ],
+    [
+      "99. История взаиморасчетов"
+    ],
+    [
+      "Menyu: Продажа → Заказы → История взаиморасчетов"
+    ],
+    [
+      "Root: /anor/mdeal/order/offset/offset_history_list · anor/mdeal · 1 forma"
+    ],
+    [
+      "list",
+      "/anor/mdeal/order/offset/offset_history_list"
+    ],
+    [],
+    [],
+    [],
+    [],
+    [
+      "111. Рекомендуемые категории"
+    ],
+    [
+      "Menyu: Биллинг → Справочники → Категория клиента → Рекомендуемые категории"
+    ],
+    [
+      "Root: /billing/blnf/category_recommendation · billing/blnf · 1 forma"
+    ],
+    [
+      "sibling",
+      "/billing/blnf/category_recommendation"
+    ],
+    [
+      "114. Дашборд команды продаж"
+    ],
+    [
+      "Menyu: Продажа → Отчеты по продажам → Коммерческий дашборд → Дашборд команды продаж"
+    ],
+    [
+      "Root: /trade/tdeal/sales_team_dashboard · trade/tdeal · 1 forma"
+    ],
+    [
+      "sibling",
+      "/trade/tdeal/sales_team_dashboard"
+    ],
+    [
+      "116. Регионы"
+    ],
+    [
+      "Menyu: Справочники → Регионы"
+    ],
+    [
+      "Root: /anor/mfk/regions · anor/mfk · 1 forma"
+    ],
+    [
+      "sibling",
+      "/anor/mfk/regions"
+    ],
+    [
+      "117. Дашборд по MML"
+    ],
+    [
+      "Menyu: Торговый маркетинг → Справочники → Минимальные обязательные ассортименты → Дашборд по MML"
+    ],
+    [
+      "Root: /anor/mcg/mml_dashboard · anor/mcg · 1 forma"
+    ],
+    [
+      "sibling",
+      "/anor/mcg/mml_dashboard"
+    ],
+    [
+      "118. Настройка счетов акта-сверки"
+    ],
+    [
+      "Menyu: Финансы → Отчеты → Акт-сверки → Настройка счетов акта-сверки"
+    ],
+    [
+      "Root: /anor/rep/mkr/reconciliation_acts_coa_setting · anor/rep · 1 forma"
+    ],
+    [
+      "sibling",
+      "/anor/rep/mkr/reconciliation_acts_coa_setting"
+    ],
+    [
+      "119. Настройка плана счетов прибыли и убытков"
+    ],
+    [
+      "Menyu: Финансы → Отчеты → Отчет о прибылях и убытках (БЕТА) → Настройка плана счетов прибыли и убытков"
+    ],
+    [
+      "Root: /anor/mku/pnl_setting · anor/mku · 1 forma"
+    ],
+    [
+      "sibling",
+      "/anor/mku/pnl_setting"
+    ],
+    [
+      "120. Настройка прибыли и убытков"
+    ],
+    [
+      "Menyu: Финансы → Отчеты → Прибыль и убыток (PnL) → Настройка прибыли и убытков"
+    ],
+    [
+      "Root: /anor/mkr/profit_and_loss_setting · anor/mkr · 1 forma"
+    ],
+    [
+      "sibling",
+      "/anor/mkr/profit_and_loss_setting"
+    ],
+    [
+      "121. Расчет бонуса за оплату долга"
+    ],
+    [
+      "Menyu: Продажа → Отчеты по продажам → Расчет бонуса за оплату долга"
+    ],
+    [
+      "Root: /trade/rep/tdeal/sales_discount · trade/rep · 2 forma"
+    ],
+    [
+      "picker",
+      "/trade/rep/tdeal/sales_discount_product_list"
+    ],
+    [
+      "report",
+      "/trade/rep/tdeal/sales_discount"
+    ],
+    [
+      "122. Фото- и видеоотчеты"
+    ],
+    [
+      "Menyu: Продажа → Визиты → Фото- и видеоотчеты"
+    ],
+    [
+      "Root: /trade/tvt/photo_video_gallery · trade/tvt · 2 forma"
+    ],
+    [
+      "form",
+      "/trade/tvt/shelf_analysis"
+    ],
+    [
+      "form",
+      "/trade/tvt/photo_video_gallery"
+    ],
+    [
+      "123. Формы, перенесённые на Angular"
+    ],
+    [
+      "Menyu: Главное → Дополнительное → Формы, перенесённые на Angular"
+    ],
+    [
+      "Root: /biruni/md/angular_migrated_form_list · biruni/md · 2 forma"
+    ],
+    [
+      "list",
+      "/biruni/md/angular_migrated_form_list"
+    ],
+    [
+      "list",
+      "/biruni/md/angular_migrated_form_list+attach"
+    ],
+    [
+      "124. Запросы на доступ к действиям"
+    ],
+    [
+      "Menyu: Главное → Основное → Запросы на доступ к действиям"
+    ],
+    [
+      "Root: /biruni/md/access_request_list · biruni/md · 2 forma"
+    ],
+    [
+      "form",
+      "/biruni/md/access_request"
+    ],
+    [
+      "list",
+      "/biruni/md/access_request_list"
+    ],
+    [
+      "125. Отчeты"
+    ],
+    [
+      "Menyu: Главное → Отчеты → Отчeты"
+    ],
+    [
+      "Root: /anor/rep/report_list · anor/rep · 2 forma"
+    ],
+    [
+      "list",
+      "/anor/rep/report_list"
+    ],
+    [
+      "list",
+      "/anor/rep/report_list+extra"
+    ],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "127. Планы"
+    ],
+    [
+      "Menyu: Продажа → Визиты → Планы"
+    ],
+    [
+      "Root: /trade/tvt/plan/plan_list · trade/tvt · 2 forma"
+    ],
+    [
+      "form",
+      "/trade/tvt/plan/plan"
+    ],
+    [
+      "list",
+      "/trade/tvt/plan/plan_list"
+    ],
+    [
+      "128. Запросы на межорг. перемещ.: прием"
+    ],
+    [
+      "Menyu: Склад → Перемещения → Запросы на межорг. перемещ.: прием"
+    ],
+    [
+      "Root: /anor/mfm/to_movement_request_list · anor/mfm · 2 forma"
+    ],
+    [
+      "view",
+      "/anor/mfm/to_movement_request_view"
+    ],
+    [
+      "list",
+      "/anor/mfm/to_movement_request_list"
+    ],
+    [
+      "129. Результат категоризации"
+    ],
+    [
+      "Menyu: Справочники → Маркетинг → Результат категоризации"
+    ],
+    [
+      "Root: /anor/mcg/categorization/result_list · anor/mcg · 2 forma"
+    ],
+    [
+      "view",
+      "/anor/mcg/categorization/result_view"
+    ],
+    [
+      "list",
+      "/anor/mcg/categorization/result_list"
+    ],
+    [
+      "130. Продавцы"
+    ],
+    [
+      "Menyu: Справочники → Продавцы"
+    ],
+    [
+      "Root: /trade/tr/store_seller_list · trade/tr · 2 forma"
+    ],
+    [
+      "attach",
+      "/trade/tr/store_seller_person_list"
+    ],
+    [
+      "list",
+      "/trade/tr/store_seller_list"
+    ],
+    [
+      "131. Оплаты"
+    ],
+    [
+      "Menyu: Финансы → Денежный поток → Оплаты"
+    ],
+    [
+      "Root: /anor/mkcs/request/detailed_payment_list · anor/mkcs · 2 forma"
+    ],
+    [
+      "list",
+      "/anor/mkcs/request/detailed_payment_list"
+    ],
+    [
+      "list",
+      "/anor/mkcs/request/payment_list"
+    ],
+    [
+      "132. Отказы"
+    ],
+    [
+      "Menyu: Продажа → Заказы → Отказы"
+    ],
+    [
+      "Root: /anor/mdeal/order/sales_return_list · anor/mdeal · 2 forma"
+    ],
+    [
+      "form",
+      "/anor/mdeal/order/sales_return"
+    ],
+    [
+      "list",
+      "/anor/mdeal/order/sales_return_list"
+    ],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "134. Лицензионные договоры"
+    ],
+    [
+      "Menyu: Админ → Справочники → Лицензионные договоры"
+    ],
+    [
+      "Root: /billing/blr/contract_list · billing/blr · 2 forma"
+    ],
+    [
+      "add",
+      "/billing/blr/contract+add"
+    ],
+    [
+      "list",
+      "/billing/blr/contract_list"
+    ],
+    [
+      "135. Объекты"
+    ],
+    [
+      "Menyu: Главное → Дополнительное → Объекты"
+    ],
+    [
+      "Root: /biruni/kdyn/entity_list · biruni/kdyn · 2 forma"
+    ],
+    [
+      "edit",
+      "/biruni/kdyn/entity+edit"
+    ],
+    [
+      "list",
+      "/biruni/kdyn/entity_list"
+    ],
+    [
+      "136. Расчеты зарплаты"
+    ],
+    [
+      "Menyu: Кадры и зарплата → Документы → Расчеты зарплаты"
+    ],
+    [
+      "Root: /anor/mpr/book_list · anor/mpr · 2 forma"
+    ],
+    [
+      "add",
+      "/anor/mpr/book+add"
+    ],
+    [
+      "list",
+      "/anor/mpr/book_list"
+    ],
+    [
+      "137. Производители"
+    ],
+    [
+      "Menyu: Справочники → Производители"
+    ],
+    [
+      "Root: /anor/mr/product/producer_list · anor/mr · 2 forma"
+    ],
+    [
+      "add",
+      "/anor/mr/product/producer+add"
+    ],
+    [
+      "list",
+      "/anor/mr/product/producer_list"
+    ],
+    [
+      "138. Мои заявки"
+    ],
+    [
+      "Menyu: Финансы → Денежный поток → Мои заявки"
+    ],
+    [
+      "Root: /anor/mkcs/request/request_list · anor/mkcs · 2 forma"
+    ],
+    [
+      "add",
+      "/anor/mkcs/request/request+add"
+    ],
+    [
+      "list",
+      "/anor/mkcs/request/request_list"
+    ],
+    [
+      "139. Розничная продажа (бета версия)"
+    ],
+    [
+      "Menyu: Продажа → Заказы → Розничная продажа (бета версия)"
+    ],
+    [
+      "Root: /anor/mdeal/order/order_event_list · anor/mdeal · 2 forma"
+    ],
+    [
+      "add",
+      "/anor/mdeal/order/order_event"
+    ],
+    [
+      "list",
+      "/anor/mdeal/order/order_event_list"
+    ],
+    [
+      "140. Рекомендованные остатки"
+    ],
+    [
+      "Menyu: Склад → Справочники → Остатки  ТМЦ → Рекомендованные остатки"
+    ],
+    [
+      "Root: /anor/mkw/balance/recommended_balance_list · anor/mkw · 2 forma"
+    ],
+    [
+      "import",
+      "/anor/mkw/balance/recommended_balance_import"
+    ],
+    [
+      "list",
+      "/anor/mkw/balance/recommended_balance_list"
+    ],
+    [
+      "141. Характеристики физических лиц"
+    ],
+    [
+      "Menyu: Справочники → Основное → Физические лица → Характеристики физических лиц"
+    ],
+    [
+      "Root: /anor/mr/person/natural_person_group_list · anor/mr · 2 forma"
+    ],
+    [
+      "add",
+      "/anor/mr/person/person_group+add_natural"
+    ],
+    [
+      "list",
+      "/anor/mr/person/natural_person_group_list"
+    ],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "143. План главных счетов"
+    ],
+    [
+      "Menyu: Финансы → Справочники → План счетов → План главных счетов"
+    ],
+    [
+      "Root: /anor/mk/coa_group_list · anor/mk · 2 forma"
+    ],
+    [
+      "edit",
+      "/anor/mk/coa_group+edit"
+    ],
+    [
+      "list",
+      "/anor/mk/coa_group_list"
+    ],
+    [
+      "144. Импорт банковских выписок"
+    ],
+    [
+      "Menyu: Наличные → Банк → Импорт банковских выписок"
+    ],
+    [
+      "Root: /anor/mkcs/bank/operation_import · anor/mkcs · 2 forma"
+    ],
+    [
+      "add",
+      "/anor/mkcs/bank/operation_import_template+add"
+    ],
+    [
+      "import",
+      "/anor/mkcs/bank/operation_import"
+    ],
+    [
+      "145. Импорт кассовых документов"
+    ],
+    [
+      "Menyu: Наличные → Касса → Импорт кассовых документов"
+    ],
+    [
+      "Root: /anor/mkcs/cash/operation_import · anor/mkcs · 2 forma"
+    ],
+    [
+      "add",
+      "/anor/mkcs/cash/operation_import_template+add"
+    ],
+    [
+      "import",
+      "/anor/mkcs/cash/operation_import"
+    ],
+    [
+      "146. order"
+    ],
+    [
+      "Menyu: Продажа → Заявки на заказ → order"
+    ],
+    [
+      "Root: /anor/mdeal/order/order+edit · anor/mdeal · 2 forma"
+    ],
+    [
+      "add",
+      "/anor/mdeal/order/order+add"
+    ],
+    [
+      "edit",
+      "/anor/mdeal/order/order+edit"
+    ],
+    [
+      "147. Шаблоны отчетов"
+    ],
+    [
+      "Menyu: Настройки → Главное → Шаблоны отчетов"
+    ],
+    [
+      "Root: /biruni/ker/template_list · biruni/ker · 3 forma"
+    ],
+    [
+      "attach",
+      "/biruni/ker/template_role_list"
+    ],
+    [
+      "attach",
+      "/biruni/ker/template_user_list"
+    ],
+    [
+      "list",
+      "/biruni/ker/template_list"
+    ],
+    [
+      "148. Ввод производственных остатков ТМЦ"
+    ],
+    [
+      "Menyu: Производство → Основное → Ввод производственных остатков ТМЦ"
+    ],
+    [
+      "Root: /anor/mfg/manufacture/init_manufacture_balance_list · anor/mfg · 3 forma"
+    ],
+    [
+      "audit",
+      "/anor/mfg/manufacture/init_manufacture_balance_audit_details"
+    ],
+    [
+      "view",
+      "/anor/mfg/manufacture/init_manufacture_balance_view"
+    ],
+    [
+      "list",
+      "/anor/mfg/manufacture/init_manufacture_balance_list"
+    ],
+    [
+      "149. Межорг. перемещения: прием"
+    ],
+    [
+      "Menyu: Склад → Перемещения → Межорг. перемещения: прием"
+    ],
+    [
+      "Root: /anor/mfm/to_movement_list · anor/mfm · 3 forma"
+    ],
+    [
+      "form",
+      "/anor/mfm/to_movement"
+    ],
+    [
+      "view",
+      "/anor/mfm/to_movement_view"
+    ],
+    [
+      "list",
+      "/anor/mfm/to_movement_list"
+    ],
+    [
+      "150. Документооборот"
+    ],
+    [
+      "Menyu: Финансы → Денежный поток → Документооборот"
+    ],
+    [
+      "Root: /anor/mrf/sign_document_list · anor/mrf · 3 forma"
+    ],
+    [
+      "form",
+      "/anor/mrf/sign_document"
+    ],
+    [
+      "view",
+      "/anor/mrf/sign_document_view"
+    ],
+    [
+      "list",
+      "/anor/mrf/sign_document_list"
+    ],
+    [
+      "151. Запросы об оплате"
+    ],
+    [
+      "Menyu: Финансы → Основное → Запросы об оплате"
+    ],
+    [
+      "Root: /trade/tcs/request_list · trade/tcs · 3 forma"
+    ],
+    [
+      "audit",
+      "/trade/tcs/request_audit_details"
+    ],
+    [
+      "view",
+      "/trade/tcs/request_view"
+    ],
+    [
+      "list",
+      "/trade/tcs/request_list"
+    ],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "153. Поставщики"
+    ],
+    [
+      "Menyu: Склад → Справочники → Поставщики"
+    ],
+    [
+      "Root: /anor/mkw/supplier_list · anor/mkw · 3 forma"
+    ],
+    [
+      "add",
+      "/anor/mkw/supplier+add"
+    ],
+    [
+      "list",
+      "/anor/mkw/supplier_list"
+    ],
+    [
+      "list",
+      "/anor/mkw/supplier_product_list"
+    ],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "155. Рабочие зоны"
+    ],
+    [
+      "Menyu: Справочники → Основное → Рабочие зоны"
+    ],
+    [
+      "Root: /trade/trf/room_list · trade/trf · 3 forma"
+    ],
+    [
+      "import",
+      "/anor/mrf/room_import"
+    ],
+    [
+      "form",
+      "/trade/trf/visualize_rooms"
+    ],
+    [
+      "list",
+      "/trade/trf/room_list"
+    ],
+    [
+      "156. Согласование"
+    ],
+    [
+      "Menyu: Финансы → Денежный поток → Согласование"
+    ],
+    [
+      "Root: /anor/mkcs/request/approve_list · anor/mkcs · 3 forma"
+    ],
+    [
+      "edit",
+      "/anor/mkcs/request/request+edit"
+    ],
+    [
+      "view",
+      "/anor/mkcs/request/request_view"
+    ],
+    [
+      "list",
+      "/anor/mkcs/request/approve_list"
+    ],
+    [
+      "157. Характеристики юридических лиц"
+    ],
+    [
+      "Menyu: Справочники → Основное → Юридические лица → Характеристики юридических лиц"
+    ],
+    [
+      "Root: /anor/mr/person/legal_person_group_list · anor/mr · 3 forma"
+    ],
+    [
+      "add",
+      "/anor/mr/person/person_group+add_legal"
+    ],
+    [
+      "form",
+      "/anor/mr/person/person_group_settings"
+    ],
+    [
+      "list",
+      "/anor/mr/person/legal_person_group_list"
+    ],
+    [
+      "158. КПЭ по штатам"
+    ],
+    [
+      "Menyu: Биллинг → Основное → КПЭ по штатам"
+    ],
+    [
+      "Root: /billing/blr/robot_kpi_list · billing/blr · 3 forma"
+    ],
+    [
+      "add",
+      "/billing/blr/robot_kpi+add"
+    ],
+    [
+      "edit",
+      "/billing/blr/robot_kpi+edit"
+    ],
+    [
+      "list",
+      "/billing/blr/robot_kpi_list"
+    ],
+    [
+      "159. Разрешения"
+    ],
+    [
+      "Menyu: Биллинг → Основное → Разрешения"
+    ],
+    [
+      "Root: /billing/blr/permission_list · billing/blr · 3 forma"
+    ],
+    [
+      "add",
+      "/billing/blr/permission+add"
+    ],
+    [
+      "edit",
+      "/billing/blr/permission+edit"
+    ],
+    [
+      "list",
+      "/billing/blr/permission_list"
+    ],
+    [
+      "160. Сервер (Instances)"
+    ],
+    [
+      "Menyu: Биллинг → Основное → Сервер (Instances)"
+    ],
+    [
+      "Root: /billing/bln/instance_list · billing/bln · 3 forma"
+    ],
+    [
+      "add",
+      "/billing/bln/instance+add"
+    ],
+    [
+      "edit",
+      "/billing/bln/instance+edit"
+    ],
+    [
+      "list",
+      "/billing/bln/instance_list"
+    ],
+    [
+      "161. Виды деятельности"
+    ],
+    [
+      "Menyu: Биллинг → Справочники → Виды деятельности"
+    ],
+    [
+      "Root: /anor/mr/person/activity_list · anor/mr · 3 forma"
+    ],
+    [
+      "add",
+      "/anor/mr/person/activity+add"
+    ],
+    [
+      "edit",
+      "/anor/mr/person/activity+edit"
+    ],
+    [
+      "list",
+      "/anor/mr/person/activity_list"
+    ],
+    [
+      "162. Вопросы"
+    ],
+    [
+      "Menyu: Биллинг → Справочники → Вопросы"
+    ],
+    [
+      "Root: /billing/blqz/quiz_list · billing/blqz · 3 forma"
+    ],
+    [
+      "add",
+      "/billing/blqz/quiz+add"
+    ],
+    [
+      "edit",
+      "/billing/blqz/quiz+edit"
+    ],
+    [
+      "list",
+      "/billing/blqz/quiz_list"
+    ],
+    [
+      "163. Скидки"
+    ],
+    [
+      "Menyu: Биллинг → Справочники → Скидки"
+    ],
+    [
+      "Root: /billing/bln/discount_list · billing/bln · 3 forma"
+    ],
+    [
+      "add",
+      "/billing/bln/discount+add"
+    ],
+    [
+      "edit",
+      "/billing/bln/discount+edit"
+    ],
+    [
+      "list",
+      "/billing/bln/discount_list"
+    ],
+    [
+      "169. Оборудование"
+    ],
+    [
+      "Menyu: Производство → Справочники → Оборудование"
+    ],
+    [
+      "Root: /anor/mfg/equipment_list · anor/mfg · 3 forma"
+    ],
+    [
+      "add",
+      "/anor/mfg/equipment+add"
+    ],
+    [
+      "edit",
+      "/anor/mfg/equipment+edit"
+    ],
+    [
+      "list",
+      "/anor/mfg/equipment_list"
+    ],
+    [
+      "170. Прогноз для закупки"
+    ],
+    [
+      "Menyu: Склад → Документы → Прогноз для закупки"
+    ],
+    [
+      "Root: /anor/mfc/forecast_list · anor/mfc · 3 forma"
+    ],
+    [
+      "add",
+      "/anor/mfc/forecast+add"
+    ],
+    [
+      "edit",
+      "/anor/mfc/forecast+edit"
+    ],
+    [
+      "list",
+      "/anor/mfc/forecast_list"
+    ],
+    [
+      "171. Вопросы категоризации"
+    ],
+    [
+      "Menyu: Справочники → Маркетинг → Вопросы категоризации"
+    ],
+    [
+      "Root: /anor/mcg/categorization/quiz_list · anor/mcg · 3 forma"
+    ],
+    [
+      "add",
+      "/anor/mcg/categorization/quiz+add"
+    ],
+    [
+      "edit",
+      "/anor/mcg/categorization/quiz+edit"
+    ],
+    [
+      "list",
+      "/anor/mcg/categorization/quiz_list"
+    ],
+    [
+      "177. Виды операций"
+    ],
+    [
+      "Menyu: Финансы → Справочники → Виды операций"
+    ],
+    [
+      "Root: /anor/mkcs/cashflow_reason_list · anor/mkcs · 3 forma"
+    ],
+    [
+      "add",
+      "/anor/mkcs/cashflow_reason+add"
+    ],
+    [
+      "edit",
+      "/anor/mkcs/cashflow_reason+edit"
+    ],
+    [
+      "list",
+      "/anor/mkcs/cashflow_reason_list"
+    ],
+    [
+      "178. Связи для миграции"
+    ],
+    [
+      "Menyu: Биллинг → Основное → Сервер (Instances) → Связи для миграции"
+    ],
+    [
+      "Root: /billing/bln/instance_collection_list · billing/bln · 3 forma"
+    ],
+    [
+      "add",
+      "/billing/bln/instance_collection+add"
+    ],
+    [
+      "edit",
+      "/billing/bln/instance_collection+edit"
+    ],
+    [
+      "list",
+      "/billing/bln/instance_collection_list"
+    ],
+    [
+      "180. Доп. Журнал план производства"
+    ],
+    [
+      "Menyu: Производство → Основное → Журнал план производства → Доп. Журнал план производства"
+    ],
+    [
+      "Root: /anor/mfg/manufacture/extra_order_plan_list · anor/mfg · 3 forma"
+    ],
+    [
+      "add",
+      "/anor/mfg/manufacture/extra_order_plan+add"
+    ],
+    [
+      "edit",
+      "/anor/mfg/manufacture/extra_order_plan+edit"
+    ],
+    [
+      "list",
+      "/anor/mfg/manufacture/extra_order_plan_list"
+    ],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "184. Ограничения по клиенту"
+    ],
+    [
+      "Menyu: Справочники → Маркетинг → Правила ограничений → Ограничения по клиенту"
+    ],
+    [
+      "Root: /anor/mcg/client_order_restriction_list · anor/mcg · 3 forma"
+    ],
+    [
+      "add",
+      "/anor/mcg/client_order_restriction+add"
+    ],
+    [
+      "edit",
+      "/anor/mcg/client_order_restriction+edit"
+    ],
+    [
+      "list",
+      "/anor/mcg/client_order_restriction_list"
+    ],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "186. Дополнительные договоры"
+    ],
+    [
+      "Menyu: Финансы → Справочники → Договоры → Дополнительные договоры"
+    ],
+    [
+      "Root: /anor/mkf/sub_contract_list · anor/mkf · 3 forma"
+    ],
+    [
+      "add",
+      "/anor/mkf/sub_contract+add"
+    ],
+    [
+      "edit",
+      "/anor/mkf/sub_contract+edit"
+    ],
+    [
+      "list",
+      "/anor/mkf/sub_contract_list"
+    ],
+    [
+      "187. Шаблон КПЭ"
+    ],
+    [
+      "Menyu: Торговый маркетинг → КПЭ → Шаблон КПЭ"
+    ],
+    [
+      "Root: /anor/mkpi/plan_template · anor/mkpi · 4 forma"
+    ],
+    [
+      "audit",
+      "/anor/mkpi/plan_template_audit_details"
+    ],
+    [
+      "form",
+      "/anor/mkpi/plan_template_settings"
+    ],
+    [
+      "view",
+      "/anor/mkpi/plan_template_view"
+    ],
+    [
+      "form",
+      "/anor/mkpi/plan_template"
+    ],
+    [
+      "188. Взаиморасчеты с клиентами"
+    ],
+    [
+      "Menyu: Продажа → Взаиморасчеты с клиентами"
+    ],
+    [
+      "Root: /anor/mdeal/order/offset/offset_list · anor/mdeal · 4 forma"
+    ],
+    [
+      "form",
+      "/anor/mdeal/order/offset/change_consignment"
+    ],
+    [
+      "form",
+      "/anor/mdeal/order/offset/offset"
+    ],
+    [
+      "form",
+      "/anor/mdeal/order/offset/payment"
+    ],
+    [
+      "list",
+      "/anor/mdeal/order/offset/offset_list"
+    ],
+    [
+      "189. Отслеживание оборудования"
+    ],
+    [
+      "Menyu: Продажа → Визиты → Отслеживание оборудования"
+    ],
+    [
+      "Root: /trade/tvt/equipment_review_item_list · trade/tvt · 4 forma"
+    ],
+    [
+      "audit",
+      "/trade/tvt/equipment_review_audit_details"
+    ],
+    [
+      "view",
+      "/trade/tvt/equipment_review_view"
+    ],
+    [
+      "list",
+      "/trade/tvt/equipment_review_item_list"
+    ],
+    [
+      "list",
+      "/trade/tvt/equipment_review_list"
+    ],
+    [
+      "190. Остатки  ТМЦ"
+    ],
+    [
+      "Menyu: Склад → Справочники → Остатки  ТМЦ"
+    ],
+    [
+      "Root: /anor/mkw/balance/balance_list · anor/mkw · 4 forma"
+    ],
+    [
+      "list",
+      "/anor/mkw/balance/balance_list"
+    ],
+    [
+      "list",
+      "/anor/mkw/balance/balance_list+detail"
+    ],
+    [
+      "list",
+      "/anor/mkw/balance/booked_inventory_list"
+    ],
+    [
+      "list",
+      "/anor/mkw/product_file_list"
+    ],
+    [
+      "191. Категоризация юридических лиц"
+    ],
+    [
+      "Menyu: Справочники → Маркетинг → Категоризация юридических лиц"
+    ],
+    [
+      "Root: /anor/mcg/categorization/legal_person_list · anor/mcg · 4 forma"
+    ],
+    [
+      "form",
+      "/anor/mcg/categorization/setting"
+    ],
+    [
+      "list",
+      "/anor/mcg/categorization/legal_person_list"
+    ],
+    [
+      "list",
+      "/anor/mcg/categorization/level_list"
+    ],
+    [
+      "list",
+      "/anor/mcg/categorization/person_type_quiz_list"
+    ],
+    [
+      "192. Продуктовые корзины по клиентам"
+    ],
+    [
+      "Menyu: Справочники → Маркетинг → Продуктовая корзина → Продуктовые корзины по клиентам"
+    ],
+    [
+      "Root: /anor/mrf/client_product_set_list · anor/mrf · 4 forma"
+    ],
+    [
+      "attach",
+      "/anor/mrf/client_product_set"
+    ],
+    [
+      "audit",
+      "/anor/mrf/client_product_set_audit_details"
+    ],
+    [
+      "view",
+      "/anor/mrf/client_product_set_view"
+    ],
+    [
+      "list",
+      "/anor/mrf/client_product_set_list"
+    ],
+    [
+      "193. Продуктовые корзины по рабочим местам"
+    ],
+    [
+      "Menyu: Справочники → Маркетинг → Продуктовая корзина → Продуктовые корзины по рабочим местам"
+    ],
+    [
+      "Root: /anor/mrf/room_product_set_list · anor/mrf · 4 forma"
+    ],
+    [
+      "attach",
+      "/anor/mrf/room_product_set"
+    ],
+    [
+      "audit",
+      "/anor/mrf/room_product_set_audit_details"
+    ],
+    [
+      "view",
+      "/anor/mrf/room_product_set_view"
+    ],
+    [
+      "list",
+      "/anor/mrf/room_product_set_list"
+    ],
+    [
+      "194. Продуктовые корзины по штатам"
+    ],
+    [
+      "Menyu: Справочники → Маркетинг → Продуктовая корзина → Продуктовые корзины по штатам"
+    ],
+    [
+      "Root: /anor/mrf/robot_product_set_list · anor/mrf · 4 forma"
+    ],
+    [
+      "attach",
+      "/anor/mrf/robot_product_set"
+    ],
+    [
+      "audit",
+      "/anor/mrf/robot_product_set_audit_details"
+    ],
+    [
+      "view",
+      "/anor/mrf/robot_product_set_view"
+    ],
+    [
+      "list",
+      "/anor/mrf/robot_product_set_list"
+    ],
+    [
+      "195. Лицензии"
+    ],
+    [
+      "Menyu: Главное → Основное → Лицензии"
+    ],
+    [
+      "Root: /biruni/kl/license_list · biruni/kl · 4 forma"
+    ],
+    [
+      "add",
+      "/biruni/kl/license+add"
+    ],
+    [
+      "form",
+      "/biruni/kl/license_video"
+    ],
+    [
+      "list",
+      "/biruni/kl/license_list"
+    ],
+    [
+      "list",
+      "/biruni/kl/license_user_list"
+    ],
+    [
+      "196. Запросы на межорг. перемещ.: отправка"
+    ],
+    [
+      "Menyu: Склад → Перемещения → Запросы на межорг. перемещ.: отправка"
+    ],
+    [
+      "Root: /anor/mfm/from_movement_request_list · anor/mfm · 4 forma"
+    ],
+    [
+      "audit",
+      "/anor/mfm/from_movement_request_audit_details"
+    ],
+    [
+      "edit",
+      "/anor/mfm/from_movement_request+edit"
+    ],
+    [
+      "view",
+      "/anor/mfm/from_movement_request_view"
+    ],
+    [
+      "list",
+      "/anor/mfm/from_movement_request_list"
+    ],
+    [
+      "197. Мерчандайзинг"
+    ],
+    [
+      "Menyu: Торговый маркетинг → Конструктор → Мерчандайзинг"
+    ],
+    [
+      "Root: /trade/tvt/visit/merchandising_list · trade/tvt · 4 forma"
+    ],
+    [
+      "audit",
+      "/trade/tvt/visit/merchandising_audit_details"
+    ],
+    [
+      "edit",
+      "/trade/tvt/visit/merchandising+edit"
+    ],
+    [
+      "view",
+      "/trade/tvt/visit/merchandising_view"
+    ],
+    [
+      "list",
+      "/trade/tvt/visit/merchandising_list"
+    ],
+    [
+      "198. Взаиморасчеты"
+    ],
+    [
+      "Menyu: Финансы → Основное → Взаиморасчеты"
+    ],
+    [
+      "Root: /anor/mku/offset/offset_list · anor/mku · 4 forma"
+    ],
+    [
+      "audit",
+      "/anor/mku/offset/offset_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mku/offset/offset+add"
+    ],
+    [
+      "view",
+      "/anor/mku/offset/offset_view"
+    ],
+    [
+      "list",
+      "/anor/mku/offset/offset_list"
+    ],
+    [
+      "199. Шаблоны импорта выписки из банка"
+    ],
+    [
+      "Menyu: Наличные → Банк → Импорт банковских выписок → Шаблоны импорта выписки из банка"
+    ],
+    [
+      "Root: /anor/mkcs/bank/operation_import_template_list · anor/mkcs · 4 forma"
+    ],
+    [
+      "audit",
+      "/anor/mkcs/bank/operation_import_template_audit_details"
+    ],
+    [
+      "edit",
+      "/anor/mkcs/bank/operation_import_template+edit"
+    ],
+    [
+      "view",
+      "/anor/mkcs/bank/operation_import_template_view"
+    ],
+    [
+      "list",
+      "/anor/mkcs/bank/operation_import_template_list"
+    ],
+    [
+      "200. Шаблоны импорта кассовых документов"
+    ],
+    [
+      "Menyu: Наличные → Касса → Импорт кассовых документов → Шаблоны импорта кассовых документов"
+    ],
+    [
+      "Root: /anor/mkcs/cash/operation_import_template_list · anor/mkcs · 4 forma"
+    ],
+    [
+      "audit",
+      "/anor/mkcs/cash/operation_import_template_audit_details"
+    ],
+    [
+      "edit",
+      "/anor/mkcs/cash/operation_import_template+edit"
+    ],
+    [
+      "view",
+      "/anor/mkcs/cash/operation_import_template_view"
+    ],
+    [
+      "list",
+      "/anor/mkcs/cash/operation_import_template_list"
+    ],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "205. Заявки на добавление компании"
+    ],
+    [
+      "Menyu: Биллинг → Основное → Заявки на добавление компании"
+    ],
+    [
+      "Root: /billing/blcr/request_list · billing/blcr · 4 forma"
+    ],
+    [
+      "add",
+      "/billing/blcr/request+add"
+    ],
+    [
+      "edit",
+      "/billing/blcr/request+edit"
+    ],
+    [
+      "view",
+      "/billing/blcr/request_view"
+    ],
+    [
+      "list",
+      "/billing/blcr/request_list"
+    ],
+    [
+      "206. Серверы БД"
+    ],
+    [
+      "Menyu: Биллинг → Основное → Серверы БД"
+    ],
+    [
+      "Root: /billing/bln/server_list · billing/bln · 4 forma"
+    ],
+    [
+      "add",
+      "/billing/bln/server+add"
+    ],
+    [
+      "edit",
+      "/billing/bln/server+edit"
+    ],
+    [
+      "form",
+      "/billing/bln/server_credentials"
+    ],
+    [
+      "list",
+      "/billing/bln/server_list"
+    ],
+    [
+      "207. Категория клиента"
+    ],
+    [
+      "Menyu: Биллинг → Справочники → Категория клиента"
+    ],
+    [
+      "Root: /billing/bln/category_list · billing/bln · 4 forma"
+    ],
+    [
+      "add",
+      "/billing/bln/category+add"
+    ],
+    [
+      "edit",
+      "/billing/bln/category+edit"
+    ],
+    [
+      "form",
+      "/billing/bln/category_debt_limit"
+    ],
+    [
+      "list",
+      "/billing/bln/category_list"
+    ],
+    [
+      "208. Опросники"
+    ],
+    [
+      "Menyu: Биллинг → Справочники → Опросники"
+    ],
+    [
+      "Root: /billing/blqz/quiz_set_list · billing/blqz · 4 forma"
+    ],
+    [
+      "attach",
+      "/billing/blqz/quiz_set_bind_roles"
+    ],
+    [
+      "add",
+      "/billing/blqz/quiz_set+add"
+    ],
+    [
+      "edit",
+      "/billing/blqz/quiz_set+edit"
+    ],
+    [
+      "list",
+      "/billing/blqz/quiz_set_list"
+    ],
+    [
+      "209. Типы оплат"
+    ],
+    [
+      "Menyu: Настройки → Дополнительные справочники → Типы оплат"
+    ],
+    [
+      "Root: /anor/mkr/payment_type_list · anor/mkr · 4 forma"
+    ],
+    [
+      "add",
+      "/anor/mkr/payment_type+add"
+    ],
+    [
+      "edit",
+      "/anor/mkr/payment_type+edit"
+    ],
+    [
+      "list",
+      "/anor/mkr/payment_type_list"
+    ],
+    [
+      "list",
+      "/anor/mkr/payment_type_list+attach"
+    ],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "211. Вопросы двойного визита"
+    ],
+    [
+      "Menyu: Справочники → Вопросы двойного визита"
+    ],
+    [
+      "Root: /core/mqz/dv_quiz_list · core/mqz · 4 forma"
+    ],
+    [
+      "add",
+      "/core/mqz/dv_quiz+add"
+    ],
+    [
+      "edit",
+      "/core/mqz/dv_quiz+edit"
+    ],
+    [
+      "form",
+      "/core/mqz/dv_quiz_settings"
+    ],
+    [
+      "list",
+      "/core/mqz/dv_quiz_list"
+    ],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "217. Шаблон отчета по опросам"
+    ],
+    [
+      "Menyu: Торговый маркетинг → Справочники → Шаблон отчета по опросам"
+    ],
+    [
+      "Root: /trade/rep/tvt/quiz/template_list · trade/rep · 4 forma"
+    ],
+    [
+      "add",
+      "/trade/rep/tvt/quiz/template+add"
+    ],
+    [
+      "edit",
+      "/trade/rep/tvt/quiz/template+edit"
+    ],
+    [
+      "report",
+      "/trade/rep/tvt/quiz/report"
+    ],
+    [
+      "list",
+      "/trade/rep/tvt/quiz/template_list"
+    ],
+    [
+      "218. Характеристики услуг"
+    ],
+    [
+      "Menyu: Справочники → Услуги → Характеристики услуг"
+    ],
+    [
+      "Root: /anor/mr/product/service_group_list · anor/mr · 4 forma"
+    ],
+    [
+      "add",
+      "/anor/mr/product/product_group+add_service"
+    ],
+    [
+      "edit",
+      "/anor/mr/product/product_group+edit_service"
+    ],
+    [
+      "form",
+      "/anor/mr/product/product_group_settings+service"
+    ],
+    [
+      "list",
+      "/anor/mr/product/service_group_list"
+    ],
+    [
+      "219. Шаги визита"
+    ],
+    [
+      "Menyu: Главное → Дополнительное → Шаги визита"
+    ],
+    [
+      "Root: /trade/tph/role_list · trade/tph · 5 forma"
+    ],
+    [
+      "form",
+      "/trade/tph/role_function_visit"
+    ],
+    [
+      "form",
+      "/trade/tph/set_natural_person_info"
+    ],
+    [
+      "form",
+      "/trade/tph/set_person_info"
+    ],
+    [
+      "form",
+      "/trade/tvta/role_function_criteria"
+    ],
+    [
+      "list",
+      "/trade/tph/role_list"
+    ],
+    [
+      "220. Взаиморасчеты с поставщиками"
+    ],
+    [
+      "Menyu: Склад → Документы → Взаиморасчеты с поставщиками"
+    ],
+    [
+      "Root: /anor/mkw/purchase/offset/offset_detail_list · anor/mkw · 5 forma"
+    ],
+    [
+      "form",
+      "/anor/mkw/purchase/offset/offset"
+    ],
+    [
+      "form",
+      "/anor/mkw/purchase/offset/payment"
+    ],
+    [
+      "list",
+      "/anor/mkw/purchase/offset/offset_detail_list"
+    ],
+    [
+      "list",
+      "/anor/mkw/purchase/offset/offset_history_list"
+    ],
+    [
+      "list",
+      "/anor/mkw/purchase/offset/offset_list"
+    ],
+    [
+      "221. Лимитирование ТМЦ"
+    ],
+    [
+      "Menyu: Справочники → Маркетинг → Лимитирование ТМЦ"
+    ],
+    [
+      "Root: /anor/mcg/order_product_limit/order_product_limit_list · anor/mcg · 5 forma"
+    ],
+    [
+      "picker",
+      "/anor/mcg/order_product_limit/product_list"
+    ],
+    [
+      "import",
+      "/anor/mcg/order_product_limit/order_product_limit_import"
+    ],
+    [
+      "audit",
+      "/anor/mcg/order_product_limit/order_product_limit_audit_details"
+    ],
+    [
+      "view",
+      "/anor/mcg/order_product_limit/order_product_limit_view"
+    ],
+    [
+      "list",
+      "/anor/mcg/order_product_limit/order_product_limit_list"
+    ],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "229. Журнал план производства"
+    ],
+    [
+      "Menyu: Производство → Основное → Журнал план производства"
+    ],
+    [
+      "Root: /anor/mfg/manufacture/order_plan_list · anor/mfg · 5 forma"
+    ],
+    [
+      "audit",
+      "/anor/mfg/manufacture/order_plan_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mfg/manufacture/order_plan+add"
+    ],
+    [
+      "edit",
+      "/anor/mfg/manufacture/order_plan+edit"
+    ],
+    [
+      "view",
+      "/anor/mfg/manufacture/order_plan_view"
+    ],
+    [
+      "list",
+      "/anor/mfg/manufacture/order_plan_list"
+    ],
+    [
+      "230. План производства"
+    ],
+    [
+      "Menyu: Производство → Основное → План производства"
+    ],
+    [
+      "Root: /anor/mfg/manufacture/plan_list · anor/mfg · 5 forma"
+    ],
+    [
+      "audit",
+      "/anor/mfg/manufacture/plan_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mfg/manufacture/plan+add"
+    ],
+    [
+      "edit",
+      "/anor/mfg/manufacture/plan+edit"
+    ],
+    [
+      "view",
+      "/anor/mfg/manufacture/plan_view"
+    ],
+    [
+      "list",
+      "/anor/mfg/manufacture/plan_list"
+    ],
+    [
+      "231. Ресурсы/доп.затраты"
+    ],
+    [
+      "Menyu: Производство → Справочники → Ресурсы/доп.затраты"
+    ],
+    [
+      "Root: /anor/mfg/extra_cost_list · anor/mfg · 5 forma"
+    ],
+    [
+      "audit",
+      "/anor/mfg/extra_cost_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mfg/extra_cost+add"
+    ],
+    [
+      "edit",
+      "/anor/mfg/extra_cost+edit"
+    ],
+    [
+      "view",
+      "/anor/mfg/extra_cost_view"
+    ],
+    [
+      "list",
+      "/anor/mfg/extra_cost_list"
+    ],
+    [
+      "232. Технологическая карта"
+    ],
+    [
+      "Menyu: Производство → Справочники → Технологическая карта"
+    ],
+    [
+      "Root: /anor/mfg/manufacture/manufacture_step_list · anor/mfg · 5 forma"
+    ],
+    [
+      "audit",
+      "/anor/mfg/manufacture/manufacture_step_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mfg/manufacture/manufacture_step+add"
+    ],
+    [
+      "edit",
+      "/anor/mfg/manufacture/manufacture_step+edit"
+    ],
+    [
+      "view",
+      "/anor/mfg/manufacture/manufacture_step_view"
+    ],
+    [
+      "list",
+      "/anor/mfg/manufacture/manufacture_step_list"
+    ],
+    [
+      "234. Запросы на закупку"
+    ],
+    [
+      "Menyu: Склад → Документы → Запросы на закупку"
+    ],
+    [
+      "Root: /anor/mkw/purchase/purchase_request_list · anor/mkw · 5 forma"
+    ],
+    [
+      "audit",
+      "/anor/mkw/purchase/purchase_request_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkw/purchase/purchase_request+add"
+    ],
+    [
+      "edit",
+      "/anor/mkw/purchase/purchase_request+edit"
+    ],
+    [
+      "view",
+      "/anor/mkw/purchase/purchase_request_view"
+    ],
+    [
+      "list",
+      "/anor/mkw/purchase/purchase_request_list"
+    ],
+    [
+      "236. Вопросы"
+    ],
+    [
+      "Menyu: Справочники → Вопросы"
+    ],
+    [
+      "Root: /core/mqz/quiz_list · core/mqz · 5 forma"
+    ],
+    [
+      "add",
+      "/core/mqz/quiz+add"
+    ],
+    [
+      "add",
+      "/core/mqz/quiz_set+add"
+    ],
+    [
+      "add",
+      "/core/mqz/quiz_type+add"
+    ],
+    [
+      "edit",
+      "/core/mqz/quiz+edit"
+    ],
+    [
+      "list",
+      "/core/mqz/quiz_list"
+    ],
+    [
+      "237. Нагрузки"
+    ],
+    [
+      "Menyu: Справочники → Маркетинг → Нагрузки"
+    ],
+    [
+      "Root: /anor/mcg/overload_list · anor/mcg · 5 forma"
+    ],
+    [
+      "audit",
+      "/anor/mcg/overload_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mcg/overload+add"
+    ],
+    [
+      "edit",
+      "/anor/mcg/overload+edit"
+    ],
+    [
+      "view",
+      "/anor/mcg/overload_view"
+    ],
+    [
+      "list",
+      "/anor/mcg/overload_list"
+    ],
+    [
+      "238. Правила ограничений"
+    ],
+    [
+      "Menyu: Справочники → Маркетинг → Правила ограничений"
+    ],
+    [
+      "Root: /anor/mcg/order_restriction_list · anor/mcg · 5 forma"
+    ],
+    [
+      "audit",
+      "/anor/mcg/order_restriction_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mcg/order_restriction+add"
+    ],
+    [
+      "edit",
+      "/anor/mcg/order_restriction+edit"
+    ],
+    [
+      "view",
+      "/anor/mcg/order_restriction_view"
+    ],
+    [
+      "list",
+      "/anor/mcg/order_restriction_list"
+    ],
+    [
+      "240. Презентации"
+    ],
+    [
+      "Menyu: Справочники → Презентации"
+    ],
+    [
+      "Root: /trade/tr/presentation_list · trade/tr · 5 forma"
+    ],
+    [
+      "audit",
+      "/trade/tr/presentation_audit_details"
+    ],
+    [
+      "add",
+      "/trade/tr/presentation+add"
+    ],
+    [
+      "edit",
+      "/trade/tr/presentation+edit"
+    ],
+    [
+      "view",
+      "/trade/tr/presentation_view"
+    ],
+    [
+      "list",
+      "/trade/tr/presentation_list"
+    ],
+    [
+      "241. КПЭ по штатам"
+    ],
+    [
+      "Menyu: Торговый маркетинг → КПЭ → КПЭ по штатам"
+    ],
+    [
+      "Root: /anor/mkpi/robot_plan_list · anor/mkpi · 5 forma"
+    ],
+    [
+      "audit",
+      "/anor/mkpi/robot_plan_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkpi/robot_plan+add"
+    ],
+    [
+      "edit",
+      "/anor/mkpi/robot_plan+edit"
+    ],
+    [
+      "view",
+      "/anor/mkpi/robot_plan_view"
+    ],
+    [
+      "list",
+      "/anor/mkpi/robot_plan_list"
+    ],
+    [
+      "242. Банковские выписки"
+    ],
+    [
+      "Menyu: Финансы → Основное → Банковские выписки"
+    ],
+    [
+      "Root: /anor/mkcs/bank/operation_list · anor/mkcs · 5 forma"
+    ],
+    [
+      "audit",
+      "/anor/mkcs/bank/bank_operation_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkcs/bank/operation+add"
+    ],
+    [
+      "edit",
+      "/anor/mkcs/bank/operation+edit"
+    ],
+    [
+      "view",
+      "/anor/mkcs/bank/operation_view"
+    ],
+    [
+      "list",
+      "/anor/mkcs/bank/operation_list"
+    ],
+    [
+      "243. Документы чековой книжки"
+    ],
+    [
+      "Menyu: Финансы → Основное → Документы чековой книжки"
+    ],
+    [
+      "Root: /anor/mkcs/checkbook/operation_list · anor/mkcs · 5 forma"
+    ],
+    [
+      "audit",
+      "/anor/mkcs/checkbook/checkbook_operation_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkcs/checkbook/operation+add"
+    ],
+    [
+      "edit",
+      "/anor/mkcs/checkbook/operation+edit"
+    ],
+    [
+      "view",
+      "/anor/mkcs/checkbook/operation_view"
+    ],
+    [
+      "list",
+      "/anor/mkcs/checkbook/operation_list"
+    ],
+    [
+      "244. Кассовые документы"
+    ],
+    [
+      "Menyu: Финансы → Основное → Кассовые документы"
+    ],
+    [
+      "Root: /anor/mkcs/cash/operation_list · anor/mkcs · 5 forma"
+    ],
+    [
+      "audit",
+      "/anor/mkcs/cash/cash_operation_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkcs/cash/operation+add"
+    ],
+    [
+      "edit",
+      "/anor/mkcs/cash/operation+edit"
+    ],
+    [
+      "view",
+      "/anor/mkcs/cash/operation_view"
+    ],
+    [
+      "list",
+      "/anor/mkcs/cash/operation_list"
+    ],
+    [
+      "245. Ввод начального баланса счетов"
+    ],
+    [
+      "Menyu: Склад → Документы → Ввод начальных остатков ТМЦ → Ввод начального баланса счетов"
+    ],
+    [
+      "Root: /anor/mku/init_balance/init_balance_list · anor/mku · 5 forma"
+    ],
+    [
+      "audit",
+      "/anor/mku/init_balance/init_balance_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mku/init_balance/init_balance+add"
+    ],
+    [
+      "edit",
+      "/anor/mku/init_balance/init_balance+edit"
+    ],
+    [
+      "view",
+      "/anor/mku/init_balance/init_balance_view"
+    ],
+    [
+      "list",
+      "/anor/mku/init_balance/init_balance_list"
+    ],
+    [
+      "246. Списания при закупке"
+    ],
+    [
+      "Menyu: Склад → Документы → Закупки → Списания при закупке"
+    ],
+    [
+      "Root: /anor/mkw/purchase/purchase_writeoff_list · anor/mkw · 5 forma"
+    ],
+    [
+      "audit",
+      "/anor/mkw/purchase/purchase_writeoff_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkw/purchase/purchase_writeoff+add"
+    ],
+    [
+      "edit",
+      "/anor/mkw/purchase/purchase_writeoff+edit"
+    ],
+    [
+      "view",
+      "/anor/mkw/purchase/purchase_writeoff_view"
+    ],
+    [
+      "list",
+      "/anor/mkw/purchase/purchase_writeoff_list"
+    ],
+    [
+      "247. Инвентаризация склада"
+    ],
+    [
+      "Menyu: Склад → Документы → Инвентаризации → Инвентаризация склада"
+    ],
+    [
+      "Root: /anor/mkw/stocktaking/stocktaking_ban_period_list · anor/mkw · 5 forma"
+    ],
+    [
+      "audit",
+      "/anor/mkw/stocktaking/stocktaking_ban_period_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkw/stocktaking/stocktaking_ban_period+add"
+    ],
+    [
+      "edit",
+      "/anor/mkw/stocktaking/stocktaking_ban_period+edit"
+    ],
+    [
+      "view",
+      "/anor/mkw/stocktaking/stocktaking_ban_period_view"
+    ],
+    [
+      "list",
+      "/anor/mkw/stocktaking/stocktaking_ban_period_list"
+    ],
+    [
+      "248. Конвертации расчетных счетов (Бета)"
+    ],
+    [
+      "Menyu: Финансы → Основное → Банковские выписки → Конвертации расчетных счетов (Бета)"
+    ],
+    [
+      "Root: /anor/mkcs/bank_exchange_list · anor/mkcs · 5 forma"
+    ],
+    [
+      "audit",
+      "/anor/mkcs/bank_exchange_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkcs/bank_exchange+add"
+    ],
+    [
+      "edit",
+      "/anor/mkcs/bank_exchange+edit"
+    ],
+    [
+      "view",
+      "/anor/mkcs/bank_exchange_view"
+    ],
+    [
+      "list",
+      "/anor/mkcs/bank_exchange_list"
+    ],
+    [
+      "249. Регионы"
+    ],
+    [
+      "Menyu: Справочники → Регионы"
+    ],
+    [
+      "Root: /anor/mr/region_list · anor/mr · 6 forma"
+    ],
+    [
+      "attach",
+      "/anor/mr/region_legal_person_list"
+    ],
+    [
+      "attach",
+      "/anor/mr/region_natural_person_list"
+    ],
+    [
+      "list",
+      "/anor/mr/region_list"
+    ],
+    [
+      "list",
+      "/anor/mr/region_list+districts"
+    ],
+    [
+      "list",
+      "/anor/mr/region_list+regions"
+    ],
+    [
+      "list",
+      "/anor/mr/region_list+towns"
+    ],
+    [
+      "250. Наборы ТМЦ"
+    ],
+    [
+      "Menyu: Админ → Основное → Наборы ТМЦ"
+    ],
+    [
+      "Root: /anor/mr/sector_list · anor/mr · 6 forma"
+    ],
+    [
+      "audit",
+      "/anor/mr/sector_audit_details"
+    ],
+    [
+      "edit",
+      "/anor/mr/sector+edit"
+    ],
+    [
+      "view",
+      "/anor/mr/sector_view"
+    ],
+    [
+      "list",
+      "/anor/mr/sector_list"
+    ],
+    [
+      "list",
+      "/anor/mr/sector_list+attach"
+    ],
+    [
+      "list",
+      "/anor/mr/sector_product_list"
+    ],
+    [
+      "251. Заказы"
+    ],
+    [
+      "Menyu: Продажа → Заказы"
+    ],
+    [
+      "Root: /trade/tdeal/order/order_list · trade/tdeal · 6 forma"
+    ],
+    [
+      "import",
+      "/trade/tdeal/order/import_many"
+    ],
+    [
+      "attach",
+      "/trade/tdeal/order/order_attach_data"
+    ],
+    [
+      "form",
+      "/trade/tdeal/order/change_booking"
+    ],
+    [
+      "view",
+      "/trade/tdeal/order/order_view"
+    ],
+    [
+      "view",
+      "/trade/tvt/visit_view"
+    ],
+    [
+      "list",
+      "/trade/tdeal/order/order_list"
+    ],
+    [
+      "252. Опросники"
+    ],
+    [
+      "Menyu: Справочники → Опросники"
+    ],
+    [
+      "Root: /anor/mqzm/quiz_set_list · anor/mqzm · 6 forma"
+    ],
+    [
+      "import",
+      "/anor/mqzm/quiz_set_bind_person_type_import"
+    ],
+    [
+      "form",
+      "/anor/mqzm/quiz_set_bind_person_types"
+    ],
+    [
+      "form",
+      "/anor/mqzm/quiz_set_bind_rooms"
+    ],
+    [
+      "view",
+      "/anor/mqzm/quiz_set_view"
+    ],
+    [
+      "list",
+      "/anor/mqzm/quiz_set_list"
+    ],
+    [
+      "list",
+      "/anor/mqzm/quiz_set_list+attach"
+    ],
+    [
+      "253. Лицензии"
+    ],
+    [
+      "Menyu: Биллинг → Основное → Лицензии"
+    ],
+    [
+      "Root: /billing/bldeal/deal_list · billing/bldeal · 6 forma"
+    ],
+    [
+      "audit",
+      "/billing/bldeal/deal_audit_details"
+    ],
+    [
+      "add",
+      "/billing/bldeal/deal+add"
+    ],
+    [
+      "edit",
+      "/billing/bldeal/deal+edit"
+    ],
+    [
+      "form",
+      "/billing/bldeal/deal+copy"
+    ],
+    [
+      "view",
+      "/billing/bldeal/deal_view"
+    ],
+    [
+      "list",
+      "/billing/bldeal/deal_list"
+    ],
+    [
+      "254. Организации"
+    ],
+    [
+      "Menyu: Главное → Основное → Организации"
+    ],
+    [
+      "Root: /biruni/md/filial_list · biruni/md · 6 forma"
+    ],
+    [
+      "audit",
+      "/biruni/md/filial_audit_details"
+    ],
+    [
+      "add",
+      "/biruni/md/filial+add"
+    ],
+    [
+      "edit",
+      "/biruni/md/filial+edit"
+    ],
+    [
+      "view",
+      "/biruni/md/filial_view"
+    ],
+    [
+      "list",
+      "/biruni/md/filial_list"
+    ],
+    [
+      "255. Кассы"
+    ],
+    [
+      "Menyu: Наличные → Справочники → Кассы"
+    ],
+    [
+      "Root: /anor/mkcs/cashbox_currency_list · anor/mkcs · 6 forma"
+    ],
+    [
+      "audit",
+      "/anor/mkcs/cashbox_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkcs/cashbox+add"
+    ],
+    [
+      "edit",
+      "/anor/mkcs/cashbox+edit"
+    ],
+    [
+      "view",
+      "/anor/mkcs/cashbox_view"
+    ],
+    [
+      "list",
+      "/anor/mkcs/cashbox_currency_list"
+    ],
+    [
+      "list",
+      "/anor/mkcs/cashbox_list"
+    ],
+    [
+      "256. Переоценки себестоимости ТМЦ"
+    ],
+    [
+      "Menyu: Склад → Документы → Переоценки себестоимости ТМЦ"
+    ],
+    [
+      "Root: /anor/mkw/revaluation/revaluation_list · anor/mkw · 6 forma"
+    ],
+    [
+      "picker",
+      "/anor/mkw/revaluation/product_list"
+    ],
+    [
+      "audit",
+      "/anor/mkw/revaluation/revaluation_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkw/revaluation/revaluation+add"
+    ],
+    [
+      "edit",
+      "/anor/mkw/revaluation/revaluation+edit"
+    ],
+    [
+      "view",
+      "/anor/mkw/revaluation/revaluation_view"
+    ],
+    [
+      "list",
+      "/anor/mkw/revaluation/revaluation_list"
+    ],
+    [
+      "257. Склады"
+    ],
+    [
+      "Menyu: Склад → Справочники → Склады"
+    ],
+    [
+      "Root: /anor/mkw/warehouse_list · anor/mkw · 6 forma"
+    ],
+    [
+      "attach",
+      "/anor/mkw/warehouse_price_type_list"
+    ],
+    [
+      "audit",
+      "/anor/mkw/warehouse_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkw/warehouse+add"
+    ],
+    [
+      "edit",
+      "/anor/mkw/warehouse+edit"
+    ],
+    [
+      "view",
+      "/anor/mkw/warehouse_view"
+    ],
+    [
+      "list",
+      "/anor/mkw/warehouse_list"
+    ],
+    [
+      "258. Продуктовая корзина"
+    ],
+    [
+      "Menyu: Справочники → Маркетинг → Продуктовая корзина"
+    ],
+    [
+      "Root: /anor/mrf/product_set_list · anor/mrf · 6 forma"
+    ],
+    [
+      "attach",
+      "/anor/mrf/product_set_item_list"
+    ],
+    [
+      "audit",
+      "/anor/mrf/product_set_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mrf/product_set+add"
+    ],
+    [
+      "edit",
+      "/anor/mrf/product_set+edit"
+    ],
+    [
+      "view",
+      "/anor/mrf/product_set_view"
+    ],
+    [
+      "list",
+      "/anor/mrf/product_set_list"
+    ],
+    [
+      "259. Сеты ТМЦ"
+    ],
+    [
+      "Menyu: Справочники → Маркетинг → Сеты ТМЦ"
+    ],
+    [
+      "Root: /anor/mr/product_kit_list · anor/mr · 6 forma"
+    ],
+    [
+      "audit",
+      "/anor/mr/product_kit_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mr/product_kit+add"
+    ],
+    [
+      "edit",
+      "/anor/mr/product_kit+edit"
+    ],
+    [
+      "view",
+      "/anor/mr/product_kit_view"
+    ],
+    [
+      "list",
+      "/anor/mr/product_kit_list"
+    ],
+    [
+      "list",
+      "/anor/mr/product_kit_list+attach"
+    ],
+    [
+      "260. Клиенты"
+    ],
+    [
+      "Menyu: Справочники → Основное → Клиенты"
+    ],
+    [
+      "Root: /anor/mrf/client_list · anor/mrf · 6 forma"
+    ],
+    [
+      "audit",
+      "/anor/mrf/client_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mrf/client+add"
+    ],
+    [
+      "edit",
+      "/anor/mrf/client+edit"
+    ],
+    [
+      "form",
+      "/anor/mkf/set_person_type_margin"
+    ],
+    [
+      "view",
+      "/anor/mrf/client_view"
+    ],
+    [
+      "list",
+      "/anor/mrf/client_list"
+    ],
+    [
+      "261. Регионы"
+    ],
+    [
+      "Menyu: Справочники → Регионы"
+    ],
+    [
+      "Root: /biruni/md/region_list · biruni/md · 6 forma"
+    ],
+    [
+      "add",
+      "/biruni/md/region+add"
+    ],
+    [
+      "edit",
+      "/biruni/md/region+edit"
+    ],
+    [
+      "list",
+      "/biruni/md/region_list"
+    ],
+    [
+      "list",
+      "/biruni/md/region_list+cities"
+    ],
+    [
+      "list",
+      "/biruni/md/region_list+districts"
+    ],
+    [
+      "list",
+      "/biruni/md/region_list+towns"
+    ],
+    [
+      "262. Настройки бонуса"
+    ],
+    [
+      "Menyu: Торговый маркетинг → КПЭ → Настройки бонуса"
+    ],
+    [
+      "Root: /trade/tkpi/bonus_setting_list · trade/tkpi · 6 forma"
+    ],
+    [
+      "audit",
+      "/trade/tkpi/bonus_setting_audit_details"
+    ],
+    [
+      "add",
+      "/trade/tkpi/bonus_setting+add"
+    ],
+    [
+      "edit",
+      "/trade/tkpi/bonus_setting+edit"
+    ],
+    [
+      "form",
+      "/trade/tkpi/calc_bonus"
+    ],
+    [
+      "view",
+      "/trade/tkpi/bonus_setting_view"
+    ],
+    [
+      "list",
+      "/trade/tkpi/bonus_setting_list"
+    ],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "267. КПЭ клиентов по ТМЦ"
+    ],
+    [
+      "Menyu: Торговый маркетинг → КПЭ → КПЭ клиентов по ТМЦ"
+    ],
+    [
+      "Root: /anor/mkpi/client_product_plan_list · anor/mkpi · 6 forma"
+    ],
+    [
+      "import",
+      "/anor/mkpi/client_product_plan_import"
+    ],
+    [
+      "audit",
+      "/anor/mkpi/client_product_plan_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkpi/client_product_plan+add"
+    ],
+    [
+      "edit",
+      "/anor/mkpi/client_product_plan+edit"
+    ],
+    [
+      "view",
+      "/anor/mkpi/client_product_plan_view"
+    ],
+    [
+      "list",
+      "/anor/mkpi/client_product_plan_list"
+    ],
+    [
+      "268. КПЭ на категорию клиентов по характеристикам ТМЦ"
+    ],
+    [
+      "Menyu: Торговый маркетинг → КПЭ → КПЭ на категорию клиентов по характеристикам ТМЦ"
+    ],
+    [
+      "Root: /anor/mkpi/client_type_product_type_plan_list · anor/mkpi · 6 forma"
+    ],
+    [
+      "import",
+      "/anor/mkpi/client_type_product_type_plan_import"
+    ],
+    [
+      "audit",
+      "/anor/mkpi/client_type_product_type_plan_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkpi/client_type_product_type_plan+add"
+    ],
+    [
+      "edit",
+      "/anor/mkpi/client_type_product_type_plan+edit"
+    ],
+    [
+      "view",
+      "/anor/mkpi/client_type_product_type_plan_view"
+    ],
+    [
+      "list",
+      "/anor/mkpi/client_type_product_type_plan_list"
+    ],
+    [
+      "269. КПЭ по ТМЦ"
+    ],
+    [
+      "Menyu: Торговый маркетинг → КПЭ → КПЭ по ТМЦ"
+    ],
+    [
+      "Root: /anor/mkpi/room_product_plan_list · anor/mkpi · 6 forma"
+    ],
+    [
+      "import",
+      "/anor/mkpi/room_product_plan_import"
+    ],
+    [
+      "audit",
+      "/anor/mkpi/room_product_plan_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkpi/room_product_plan+add"
+    ],
+    [
+      "edit",
+      "/anor/mkpi/room_product_plan+edit"
+    ],
+    [
+      "view",
+      "/anor/mkpi/room_product_plan_view"
+    ],
+    [
+      "list",
+      "/anor/mkpi/room_product_plan_list"
+    ],
+    [
+      "270. КПЭ по клиентам"
+    ],
+    [
+      "Menyu: Торговый маркетинг → КПЭ → КПЭ по клиентам"
+    ],
+    [
+      "Root: /anor/mkpi/client_plan_list · anor/mkpi · 6 forma"
+    ],
+    [
+      "import",
+      "/anor/mkpi/client_plan_import"
+    ],
+    [
+      "audit",
+      "/anor/mkpi/client_plan_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkpi/client_plan+add"
+    ],
+    [
+      "edit",
+      "/anor/mkpi/client_plan+edit"
+    ],
+    [
+      "view",
+      "/anor/mkpi/client_plan_view"
+    ],
+    [
+      "list",
+      "/anor/mkpi/client_plan_list"
+    ],
+    [
+      "271. КПЭ по рабочим зонам"
+    ],
+    [
+      "Menyu: Торговый маркетинг → КПЭ → КПЭ по рабочим зонам"
+    ],
+    [
+      "Root: /anor/mkpi/room_plan_list · anor/mkpi · 6 forma"
+    ],
+    [
+      "import",
+      "/anor/mkpi/room_plan_import"
+    ],
+    [
+      "audit",
+      "/anor/mkpi/room_plan_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkpi/room_plan+add"
+    ],
+    [
+      "edit",
+      "/anor/mkpi/room_plan+edit"
+    ],
+    [
+      "view",
+      "/anor/mkpi/room_plan_view"
+    ],
+    [
+      "list",
+      "/anor/mkpi/room_plan_list"
+    ],
+    [
+      "272. КПЭ по характеристикам ТМЦ"
+    ],
+    [
+      "Menyu: Торговый маркетинг → КПЭ → КПЭ по характеристикам ТМЦ"
+    ],
+    [
+      "Root: /anor/mkpi/room_product_type_plan_list · anor/mkpi · 6 forma"
+    ],
+    [
+      "import",
+      "/anor/mkpi/room_product_type_plan_import"
+    ],
+    [
+      "audit",
+      "/anor/mkpi/room_product_type_plan_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkpi/room_product_type_plan+add"
+    ],
+    [
+      "edit",
+      "/anor/mkpi/room_product_type_plan+edit"
+    ],
+    [
+      "view",
+      "/anor/mkpi/room_product_type_plan_view"
+    ],
+    [
+      "list",
+      "/anor/mkpi/room_product_type_plan_list"
+    ],
+    [
+      "273. Шаблон КПЭ по организациям"
+    ],
+    [
+      "Menyu: Торговый маркетинг → КПЭ → Шаблон КПЭ по организациям"
+    ],
+    [
+      "Root: /anor/mkpi/filial_plan_list · anor/mkpi · 6 forma"
+    ],
+    [
+      "import",
+      "/anor/mkpi/filial_plan_import"
+    ],
+    [
+      "audit",
+      "/anor/mkpi/filial_plan_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkpi/filial_plan+add"
+    ],
+    [
+      "edit",
+      "/anor/mkpi/filial_plan+edit"
+    ],
+    [
+      "view",
+      "/anor/mkpi/filial_plan_view"
+    ],
+    [
+      "list",
+      "/anor/mkpi/filial_plan_list"
+    ],
+    [
+      "274. Оплаты от клиентов"
+    ],
+    [
+      "Menyu: Финансы → Основное → Оплаты от клиентов"
+    ],
+    [
+      "Root: /trade/tcs/cashin_list · trade/tcs · 6 forma"
+    ],
+    [
+      "import",
+      "/trade/tcs/cashin_import"
+    ],
+    [
+      "audit",
+      "/trade/tcs/cashin_audit_details"
+    ],
+    [
+      "add",
+      "/trade/tcs/cashin+add"
+    ],
+    [
+      "edit",
+      "/trade/tcs/cashin+edit"
+    ],
+    [
+      "view",
+      "/trade/tcs/cashin_view"
+    ],
+    [
+      "list",
+      "/trade/tcs/cashin_list"
+    ],
+    [
+      "275. Оплаты поставщикам"
+    ],
+    [
+      "Menyu: Финансы → Основное → Оплаты поставщикам"
+    ],
+    [
+      "Root: /trade/tcs/cashout_list · trade/tcs · 6 forma"
+    ],
+    [
+      "import",
+      "/trade/tcs/cashout_import"
+    ],
+    [
+      "audit",
+      "/trade/tcs/cashout_audit_details"
+    ],
+    [
+      "add",
+      "/trade/tcs/cashout+add"
+    ],
+    [
+      "edit",
+      "/trade/tcs/cashout+edit"
+    ],
+    [
+      "view",
+      "/trade/tcs/cashout_view"
+    ],
+    [
+      "list",
+      "/trade/tcs/cashout_list"
+    ],
+    [
+      "276. Договоры"
+    ],
+    [
+      "Menyu: Финансы → Справочники → Договоры"
+    ],
+    [
+      "Root: /anor/mkf/contract_list · anor/mkf · 6 forma"
+    ],
+    [
+      "import",
+      "/anor/mkf/contract_import"
+    ],
+    [
+      "audit",
+      "/anor/mkf/contract_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkf/contract+add"
+    ],
+    [
+      "edit",
+      "/anor/mkf/contract+edit"
+    ],
+    [
+      "view",
+      "/anor/mkf/contract_view"
+    ],
+    [
+      "list",
+      "/anor/mkf/contract_list"
+    ],
+    [
+      "277. Ввод начального баланса поставщиков"
+    ],
+    [
+      "Menyu: Склад → Документы → Ввод начальных остатков ТМЦ → Ввод начального баланса поставщиков"
+    ],
+    [
+      "Root: /anor/mku/init_balance/init_supplier_balance_list · anor/mku · 6 forma"
+    ],
+    [
+      "picker",
+      "/anor/mku/init_balance/supplier_list"
+    ],
+    [
+      "import",
+      "/anor/mku/init_balance/init_supplier_balance_import"
+    ],
+    [
+      "add",
+      "/anor/mku/init_balance/init_supplier_balance+add"
+    ],
+    [
+      "edit",
+      "/anor/mku/init_balance/init_supplier_balance+edit"
+    ],
+    [
+      "view",
+      "/anor/mku/init_balance/init_supplier_balance_view"
+    ],
+    [
+      "list",
+      "/anor/mku/init_balance/init_supplier_balance_list"
+    ],
+    [
+      "278. Реферальные агенты"
+    ],
+    [
+      "Menyu: Биллинг → Справочники → Реферальные агенты"
+    ],
+    [
+      "Root: /billing/bln/agent_list · billing/bln · 7 forma"
+    ],
+    [
+      "audit",
+      "/billing/bln/agent_audit_details"
+    ],
+    [
+      "audit",
+      "/billing/bln/instance_audit_details"
+    ],
+    [
+      "add",
+      "/billing/bln/agent+add"
+    ],
+    [
+      "edit",
+      "/billing/bln/agent+edit"
+    ],
+    [
+      "view",
+      "/billing/bln/agent_view"
+    ],
+    [
+      "view",
+      "/billing/bln/instance_view"
+    ],
+    [
+      "list",
+      "/billing/bln/agent_list"
+    ],
+    [
+      "279. Пользователи"
+    ],
+    [
+      "Menyu: Главное → Основное → Пользователи"
+    ],
+    [
+      "Root: /biruni/md/user_form_list · biruni/md · 7 forma"
+    ],
+    [
+      "audit",
+      "/biruni/md/user_audit_details"
+    ],
+    [
+      "add",
+      "/biruni/md/user+add"
+    ],
+    [
+      "edit",
+      "/biruni/md/user+edit"
+    ],
+    [
+      "form",
+      "/biruni/md/user_form_action"
+    ],
+    [
+      "view",
+      "/biruni/md/user_view"
+    ],
+    [
+      "list",
+      "/biruni/md/user_form_list"
+    ],
+    [
+      "list",
+      "/biruni/md/user_list"
+    ],
+    [
+      "280. Выплаты"
+    ],
+    [
+      "Menyu: Кадры и зарплата → Документы → Выплаты"
+    ],
+    [
+      "Root: /anor/mpr/payment_list · anor/mpr · 7 forma"
+    ],
+    [
+      "audit",
+      "/anor/mpr/payment_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mpr/payment+add"
+    ],
+    [
+      "add",
+      "/anor/mpr/payment_advance+add"
+    ],
+    [
+      "edit",
+      "/anor/mpr/payment+edit"
+    ],
+    [
+      "edit",
+      "/anor/mpr/payment_advance+edit"
+    ],
+    [
+      "view",
+      "/anor/mpr/payment_view"
+    ],
+    [
+      "list",
+      "/anor/mpr/payment_list"
+    ],
+    [
+      "281. Спецификация"
+    ],
+    [
+      "Menyu: Производство → Справочники → Спецификация"
+    ],
+    [
+      "Root: /anor/mfg/specification_list · anor/mfg · 7 forma"
+    ],
+    [
+      "audit",
+      "/anor/mfg/specification_audit_details"
+    ],
+    [
+      "copy",
+      "/anor/mfg/specification_copy"
+    ],
+    [
+      "add",
+      "/anor/mfg/specification+add"
+    ],
+    [
+      "edit",
+      "/anor/mfg/specification+edit"
+    ],
+    [
+      "view",
+      "/anor/mfg/specification_view"
+    ],
+    [
+      "list",
+      "/anor/mfg/specification_list"
+    ],
+    [
+      "list",
+      "/anor/mfg/specification_list+attach"
+    ],
+    [
+      "282. Дополнительные расходы"
+    ],
+    [
+      "Menyu: Склад → Документы → Дополнительные расходы"
+    ],
+    [
+      "Root: /anor/mkw/extra_cost_list · anor/mkw · 7 forma"
+    ],
+    [
+      "audit",
+      "/anor/mkw/extra_cost_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkw/corr_template+add"
+    ],
+    [
+      "add",
+      "/anor/mkw/extra_cost+add"
+    ],
+    [
+      "edit",
+      "/anor/mkw/extra_cost+edit"
+    ],
+    [
+      "form",
+      "/anor/mkw/extra_cost_sharing"
+    ],
+    [
+      "view",
+      "/anor/mkw/extra_cost_view"
+    ],
+    [
+      "list",
+      "/anor/mkw/extra_cost_list"
+    ],
+    [
+      "283. Автотранспорт"
+    ],
+    [
+      "Menyu: Склад → Справочники → Автотранспорт"
+    ],
+    [
+      "Root: /anor/mrf/van_list · anor/mrf · 7 forma"
+    ],
+    [
+      "attach",
+      "/anor/mfk/van_person_attachment"
+    ],
+    [
+      "audit",
+      "/anor/mrf/van_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mrf/van+add"
+    ],
+    [
+      "edit",
+      "/anor/mrf/van+edit"
+    ],
+    [
+      "form",
+      "/anor/mm/van_marking_balance"
+    ],
+    [
+      "view",
+      "/anor/mrf/van_view"
+    ],
+    [
+      "list",
+      "/anor/mrf/van_list"
+    ],
+    [
+      "284. Акции"
+    ],
+    [
+      "Menyu: Справочники → Маркетинг → Акции"
+    ],
+    [
+      "Root: /anor/mcg/action_list · anor/mcg · 7 forma"
+    ],
+    [
+      "picker",
+      "/anor/mcg/action_product_list"
+    ],
+    [
+      "attach",
+      "/anor/mcg/filial_action_list"
+    ],
+    [
+      "audit",
+      "/anor/mcg/action_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mcg/action+add"
+    ],
+    [
+      "edit",
+      "/anor/mcg/action+edit"
+    ],
+    [
+      "view",
+      "/anor/mcg/action_view"
+    ],
+    [
+      "list",
+      "/anor/mcg/action_list"
+    ],
+    [
+      "285. Опросники двойных визитов"
+    ],
+    [
+      "Menyu: Справочники → Опросники двойных визитов"
+    ],
+    [
+      "Root: /core/mqz/dv_quiz_set_bind_list · core/mqz · 7 forma"
+    ],
+    [
+      "add",
+      "/core/mqz/dv_quiz_set+add"
+    ],
+    [
+      "edit",
+      "/core/mqz/dv_quiz_set+edit"
+    ],
+    [
+      "form",
+      "/core/mqz/dv_quiz_set_bind_order_no"
+    ],
+    [
+      "view",
+      "/core/mqz/dv_quiz_set_view"
+    ],
+    [
+      "list",
+      "/core/mqz/dv_quiz_set_bind_list"
+    ],
+    [
+      "list",
+      "/core/mqz/dv_quiz_set_list"
+    ],
+    [
+      "list",
+      "/core/mqz/dv_quiz_set_list+copy_head"
+    ],
+    [
+      "286. Заявки на заказ"
+    ],
+    [
+      "Menyu: Продажа → Заявки на заказ"
+    ],
+    [
+      "Root: /anor/mdeal/order/order_request_list · anor/mdeal · 7 forma"
+    ],
+    [
+      "picker",
+      "/anor/mdeal/order/order_request_product_list"
+    ],
+    [
+      "import",
+      "/anor/mdeal/order/order_request_import"
+    ],
+    [
+      "audit",
+      "/anor/mdeal/order/order_request_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mdeal/order/order_request+add"
+    ],
+    [
+      "edit",
+      "/anor/mdeal/order/order_request+edit"
+    ],
+    [
+      "view",
+      "/anor/mdeal/order/order_request_view"
+    ],
+    [
+      "list",
+      "/anor/mdeal/order/order_request_list"
+    ],
+    [
+      "287. Ввод начальных остатков ТМЦ"
+    ],
+    [
+      "Menyu: Склад → Документы → Ввод начальных остатков ТМЦ"
+    ],
+    [
+      "Root: /anor/mkw/init_balance/init_inventory_balance_list · anor/mkw · 7 forma"
+    ],
+    [
+      "picker",
+      "/anor/mkw/init_balance/inventory_list"
+    ],
+    [
+      "import",
+      "/anor/mkw/init_balance/init_inventory_balance_import"
+    ],
+    [
+      "audit",
+      "/anor/mkw/init_balance/init_inventory_balance_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkw/init_balance/init_inventory_balance+add"
+    ],
+    [
+      "edit",
+      "/anor/mkw/init_balance/init_inventory_balance+edit"
+    ],
+    [
+      "view",
+      "/anor/mkw/init_balance/init_inventory_balance_view"
+    ],
+    [
+      "list",
+      "/anor/mkw/init_balance/init_inventory_balance_list"
+    ],
+    [
+      "288. КПЭ клиентов по характеристикам ТМЦ"
+    ],
+    [
+      "Menyu: Торговый маркетинг → КПЭ → КПЭ клиентов по характеристикам ТМЦ"
+    ],
+    [
+      "Root: /anor/mkpi/client_product_type_plan_list · anor/mkpi · 7 forma"
+    ],
+    [
+      "import",
+      "/anor/mkpi/client_product_type_plan_import"
+    ],
+    [
+      "audit",
+      "/anor/mkpi/client_product_type_plan_audit_details"
+    ],
+    [
+      "audit",
+      "/anor/mkpi/client_product_type_plan_setting_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkpi/client_product_type_plan+add"
+    ],
+    [
+      "edit",
+      "/anor/mkpi/client_product_type_plan+edit"
+    ],
+    [
+      "view",
+      "/anor/mkpi/client_product_type_plan_view"
+    ],
+    [
+      "list",
+      "/anor/mkpi/client_product_type_plan_list"
+    ],
+    [
+      "289. Ручные операции"
+    ],
+    [
+      "Menyu: Финансы → Основное → Ручные операции"
+    ],
+    [
+      "Root: /anor/mku/operation/operation_list · anor/mku · 7 forma"
+    ],
+    [
+      "picker",
+      "/anor/mku/operation/select_account"
+    ],
+    [
+      "import",
+      "/anor/mku/operation/import_account"
+    ],
+    [
+      "audit",
+      "/anor/mku/operation/operation_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mku/operation/operation+add"
+    ],
+    [
+      "edit",
+      "/anor/mku/operation/operation+edit"
+    ],
+    [
+      "view",
+      "/anor/mku/operation/operation_view"
+    ],
+    [
+      "list",
+      "/anor/mku/operation/operation_list"
+    ],
+    [
+      "290. Ввод начального баланса клиентов"
+    ],
+    [
+      "Menyu: Склад → Документы → Ввод начальных остатков ТМЦ → Ввод начального баланса клиентов"
+    ],
+    [
+      "Root: /anor/mku/init_balance/init_client_balance_list · anor/mku · 7 forma"
+    ],
+    [
+      "picker",
+      "/anor/mku/init_balance/client_list"
+    ],
+    [
+      "import",
+      "/anor/mku/init_balance/init_client_balance_import"
+    ],
+    [
+      "audit",
+      "/anor/mku/init_balance/init_person_balance_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mku/init_balance/init_client_balance+add"
+    ],
+    [
+      "edit",
+      "/anor/mku/init_balance/init_client_balance+edit"
+    ],
+    [
+      "view",
+      "/anor/mku/init_balance/init_client_balance_view"
+    ],
+    [
+      "list",
+      "/anor/mku/init_balance/init_client_balance_list"
+    ],
+    [
+      "291. Ввод начальных остатков оборудования клиентов"
+    ],
+    [
+      "Menyu: Склад → Документы → Ввод начальных остатков ТМЦ → Ввод начальных остатков оборудования клиентов"
+    ],
+    [
+      "Root: /anor/mkw/init_balance/init_client_inventory_balance_list · anor/mkw · 7 forma"
+    ],
+    [
+      "picker",
+      "/anor/mkw/init_balance/equipment_list"
+    ],
+    [
+      "import",
+      "/anor/mkw/init_balance/init_client_inventory_balance_import"
+    ],
+    [
+      "audit",
+      "/anor/mkw/init_balance/init_client_inventory_balance_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkw/init_balance/init_client_inventory_balance+add"
+    ],
+    [
+      "edit",
+      "/anor/mkw/init_balance/init_client_inventory_balance+edit"
+    ],
+    [
+      "view",
+      "/anor/mkw/init_balance/init_client_inventory_balance_view"
+    ],
+    [
+      "list",
+      "/anor/mkw/init_balance/init_client_inventory_balance_list"
+    ],
+    [
+      "292. Опросники"
+    ],
+    [
+      "Menyu: Настройки → Главное → Опросники"
+    ],
+    [
+      "Root: /core/mqz/quiz_set_list · core/mqz · 8 forma"
+    ],
+    [
+      "edit",
+      "/core/mqz/quiz_set+edit"
+    ],
+    [
+      "edit",
+      "/core/mqz/quiz_type+edit"
+    ],
+    [
+      "form",
+      "/core/mqz/quiz_set_bind_roles"
+    ],
+    [
+      "form",
+      "/core/mqz/quiz_set_binds"
+    ],
+    [
+      "form",
+      "/core/mqz/quiz_set_binds_set_order"
+    ],
+    [
+      "form",
+      "/core/mqz/quiz_set_list_set_order"
+    ],
+    [
+      "list",
+      "/core/mqz/quiz_set_list"
+    ],
+    [
+      "list",
+      "/core/mqz/quiz_set_list+attach"
+    ],
+    [
+      "293. Планирование визитов"
+    ],
+    [
+      "Menyu: Продажа → Визиты → Планирование визитов"
+    ],
+    [
+      "Root: /trade/tvt/plan/person_visit_plan_template_list · trade/tvt · 8 forma"
+    ],
+    [
+      "import",
+      "/trade/tvt/plan/person_visit_plan_template_import"
+    ],
+    [
+      "audit",
+      "/trade/tvt/plan/person_visit_plan_template_audit_details"
+    ],
+    [
+      "form",
+      "/trade/tvt/plan/person_visit_plan_order_no"
+    ],
+    [
+      "form",
+      "/trade/tvt/plan/person_visit_plan_template"
+    ],
+    [
+      "view",
+      "/trade/tvt/plan/person_visit_plan_template_view"
+    ],
+    [
+      "list",
+      "/trade/tvt/plan/person_visit_plan_template_list"
+    ],
+    [
+      "list",
+      "/trade/tvt/plan/room_list"
+    ],
+    [
+      "list",
+      "/trade/tvt/plan/room_robot_list"
+    ],
+    [
+      "294. Бонусная система"
+    ],
+    [
+      "Menyu: Кадры и зарплата → Документы → Бонусная система"
+    ],
+    [
+      "Root: /anor/mkpi/robot_bonus_setting_list · anor/mpr · 8 forma"
+    ],
+    [
+      "import",
+      "/anor/mpr/book_import"
+    ],
+    [
+      "audit",
+      "/anor/mpr/book_audit_details"
+    ],
+    [
+      "edit",
+      "/anor/mpr/book+edit"
+    ],
+    [
+      "view",
+      "/anor/mpr/bonus_system_result_view"
+    ],
+    [
+      "view",
+      "/anor/mpr/book_view"
+    ],
+    [
+      "form",
+      "/anor/mpr/bonus_system"
+    ],
+    [
+      "list",
+      "/anor/mkpi/robot_bonus_setting_list"
+    ],
+    [
+      "list",
+      "/anor/mpr/bonus_system_result_list"
+    ],
+    [
+      "295. Рабочие зоны"
+    ],
+    [
+      "Menyu: Админ → Основное → Рабочие зоны"
+    ],
+    [
+      "Root: /anor/mrf/room_list · anor/mrf · 8 forma"
+    ],
+    [
+      "attach",
+      "/anor/mrf/room_attachment"
+    ],
+    [
+      "attach",
+      "/anor/mrf/rooms_attachment"
+    ],
+    [
+      "audit",
+      "/anor/mrf/room_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mrf/room+add"
+    ],
+    [
+      "add",
+      "/anor/mrf/room_type+add"
+    ],
+    [
+      "edit",
+      "/anor/mrf/room+edit"
+    ],
+    [
+      "view",
+      "/anor/mrf/room_view"
+    ],
+    [
+      "list",
+      "/anor/mrf/room_list"
+    ],
+    [
+      "296. Организации"
+    ],
+    [
+      "Menyu: Главное → Основное → Организации"
+    ],
+    [
+      "Root: /anor/mr/filial_list · anor/mr · 8 forma"
+    ],
+    [
+      "add",
+      "/anor/mr/filial+add"
+    ],
+    [
+      "edit",
+      "/anor/mr/filial+edit"
+    ],
+    [
+      "form",
+      "/anor/mr/filial_head"
+    ],
+    [
+      "form",
+      "/anor/mr/integration_imkon"
+    ],
+    [
+      "form",
+      "/biruni/md/filial_head_security"
+    ],
+    [
+      "view",
+      "/anor/mr/filial_view"
+    ],
+    [
+      "list",
+      "/anor/mr/filial_list"
+    ],
+    [
+      "list",
+      "/biruni/md/filial_user_list"
+    ],
+    [
+      "297. Пользователи"
+    ],
+    [
+      "Menyu: Главное → Основное → Пользователи"
+    ],
+    [
+      "Root: /anor/mr/user_filial_list · anor/mr · 8 forma"
+    ],
+    [
+      "attach",
+      "/biruni/md/attach_role"
+    ],
+    [
+      "add",
+      "/anor/mr/user+add"
+    ],
+    [
+      "edit",
+      "/anor/mr/user+edit"
+    ],
+    [
+      "view",
+      "/anor/mr/user_view"
+    ],
+    [
+      "list",
+      "/anor/mr/user_filial_list"
+    ],
+    [
+      "list",
+      "/anor/mr/user_list"
+    ],
+    [
+      "list",
+      "/biruni/md/user_device_list"
+    ],
+    [
+      "list",
+      "/biruni/md/user_token_list"
+    ],
+    [
+      "298. Заказ на производство"
+    ],
+    [
+      "Menyu: Производство → Основное → Заказ на производство"
+    ],
+    [
+      "Root: /anor/mfg/manufacture/manufacture_order_list · anor/mfg · 8 forma"
+    ],
+    [
+      "audit",
+      "/anor/mfg/manufacture/manufacture_order_audit_details"
+    ],
+    [
+      "audit",
+      "/anor/mfg/manufacture/manufacture_task_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mfg/manufacture/manufacture_order+add"
+    ],
+    [
+      "edit",
+      "/anor/mfg/manufacture/manufacture_order+edit"
+    ],
+    [
+      "edit",
+      "/anor/mfg/manufacture/manufacture_task+edit"
+    ],
+    [
+      "view",
+      "/anor/mfg/manufacture/manufacture_order_view"
+    ],
+    [
+      "view",
+      "/anor/mfg/manufacture/manufacture_task_view"
+    ],
+    [
+      "list",
+      "/anor/mfg/manufacture/manufacture_order_list"
+    ],
+    [
+      "299. Списания"
+    ],
+    [
+      "Menyu: Склад → Документы → Списания"
+    ],
+    [
+      "Root: /anor/mkw/writeoff/writeoff_list · anor/mkw · 8 forma"
+    ],
+    [
+      "picker",
+      "/anor/mkw/writeoff/product_list"
+    ],
+    [
+      "import",
+      "/anor/mkw/writeoff/writeoff_import"
+    ],
+    [
+      "audit",
+      "/anor/mkw/writeoff/writeoff_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkw/writeoff/writeoff+add"
+    ],
+    [
+      "edit",
+      "/anor/mkw/writeoff/writeoff+edit"
+    ],
+    [
+      "form",
+      "/anor/mkw/writeoff/writeoff_expense"
+    ],
+    [
+      "view",
+      "/anor/mkw/writeoff/writeoff_view"
+    ],
+    [
+      "list",
+      "/anor/mkw/writeoff/writeoff_list"
+    ],
+    [
+      "300. Физические лица"
+    ],
+    [
+      "Menyu: Справочники → Основное → Физические лица"
+    ],
+    [
+      "Root: /anor/mr/person/natural_person_list · anor/mr · 8 forma"
+    ],
+    [
+      "import",
+      "/anor/mr/person/natural_person_import"
+    ],
+    [
+      "add",
+      "/anor/mr/person/natural_person+add"
+    ],
+    [
+      "edit",
+      "/anor/mr/person/contact_position+edit"
+    ],
+    [
+      "form",
+      "/anor/mr/person/set_natural_person_local_code"
+    ],
+    [
+      "view",
+      "/anor/mr/person/natural_person_view"
+    ],
+    [
+      "list",
+      "/anor/mr/person/natural_person_list"
+    ],
+    [
+      "list",
+      "/anor/mr/person/natural_person_list+attach"
+    ],
+    [
+      "list",
+      "/anor/mr/person/natural_person_list+x"
+    ],
+    [
+      "301. Штат"
+    ],
+    [
+      "Menyu: Справочники → Основное → Штат"
+    ],
+    [
+      "Root: /anor/mrf/robot_list · anor/mrf · 8 forma"
+    ],
+    [
+      "import",
+      "/anor/mrf/robot_import"
+    ],
+    [
+      "audit",
+      "/anor/mrf/robot_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mrf/robot+add"
+    ],
+    [
+      "edit",
+      "/anor/mrf/robot+edit"
+    ],
+    [
+      "form",
+      "/anor/mrf/robot_data_access"
+    ],
+    [
+      "form",
+      "/anor/mrf/robot_visit_duration_rule"
+    ],
+    [
+      "view",
+      "/anor/mrf/robot_view"
+    ],
+    [
+      "list",
+      "/anor/mrf/robot_list"
+    ],
+    [
+      "302. Характеристики ТМЦ"
+    ],
+    [
+      "Menyu: Справочники → ТМЦ → Характеристики ТМЦ"
+    ],
+    [
+      "Root: /anor/mr/product/inventory_group_list · anor/mr · 9 forma"
+    ],
+    [
+      "audit",
+      "/anor/mr/product/inventory_group_audit_details"
+    ],
+    [
+      "audit",
+      "/anor/mr/product/inventory_group_type_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mr/product/product_group+add_product"
+    ],
+    [
+      "edit",
+      "/anor/mr/product/product_group+edit_product"
+    ],
+    [
+      "form",
+      "/anor/mr/product/product_group_settings"
+    ],
+    [
+      "view",
+      "/anor/mr/product/inventory_group_type_view"
+    ],
+    [
+      "view",
+      "/anor/mr/product/inventory_group_view"
+    ],
+    [
+      "list",
+      "/anor/mr/product/inventory_group_list"
+    ],
+    [
+      "list",
+      "/anor/mr/product/inventory_type_bind_list"
+    ],
+    [
+      "303. Возвраты"
+    ],
+    [
+      "Menyu: Продажа → Возвраты"
+    ],
+    [
+      "Root: /anor/mdeal/return/return_list · anor/mdeal · 9 forma"
+    ],
+    [
+      "picker",
+      "/anor/mdeal/order/order_history_list"
+    ],
+    [
+      "picker",
+      "/anor/mdeal/return/action_gift_product_list"
+    ],
+    [
+      "picker",
+      "/anor/mdeal/return/product_list"
+    ],
+    [
+      "import",
+      "/anor/mdeal/return/return_import"
+    ],
+    [
+      "attach",
+      "/anor/mdeal/return/return_attach_data"
+    ],
+    [
+      "add",
+      "/anor/mdeal/return/return+add"
+    ],
+    [
+      "edit",
+      "/anor/mdeal/return/return+edit"
+    ],
+    [
+      "view",
+      "/anor/mdeal/return/return_view"
+    ],
+    [
+      "list",
+      "/anor/mdeal/return/return_list"
+    ],
+    [
+      "304. Внутренние перемещения"
+    ],
+    [
+      "Menyu: Склад → Перемещения → Внутренние перемещения"
+    ],
+    [
+      "Root: /anor/mkw/movement/movement_list · anor/mkw · 9 forma"
+    ],
+    [
+      "picker",
+      "/anor/mkw/movement/product_list"
+    ],
+    [
+      "import",
+      "/anor/mkw/movement/movement_import"
+    ],
+    [
+      "audit",
+      "/anor/mkw/movement/movement_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkw/movement/movement+add"
+    ],
+    [
+      "add",
+      "/anor/mkw/movement/movement_reason+add"
+    ],
+    [
+      "edit",
+      "/anor/mkw/movement/movement+edit"
+    ],
+    [
+      "form",
+      "/anor/mkw/movement/spread_balance_movement"
+    ],
+    [
+      "view",
+      "/anor/mkw/movement/movement_view"
+    ],
+    [
+      "list",
+      "/anor/mkw/movement/movement_list"
+    ],
+    [
+      "307. Услуги"
+    ],
+    [
+      "Menyu: Справочники → Услуги"
+    ],
+    [
+      "Root: /anor/mr/product/service_list · anor/mr · 10 forma"
+    ],
+    [
+      "picker",
+      "/anor/mr/product/service_type_list"
+    ],
+    [
+      "import",
+      "/anor/mr/product/service_import"
+    ],
+    [
+      "attach",
+      "/anor/mr/product/service_type_bind_list"
+    ],
+    [
+      "add",
+      "/anor/mr/product/service+add"
+    ],
+    [
+      "edit",
+      "/anor/mr/product/measure+edit"
+    ],
+    [
+      "edit",
+      "/anor/mr/product/product_group_type+edit"
+    ],
+    [
+      "edit",
+      "/anor/mr/product/service+edit"
+    ],
+    [
+      "view",
+      "/anor/mr/product/service_view"
+    ],
+    [
+      "list",
+      "/anor/mr/product/service_list"
+    ],
+    [
+      "list",
+      "/anor/mr/product/service_list+attach"
+    ],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "309. Роли"
+    ],
+    [
+      "Menyu: Главное → Основное → Роли"
+    ],
+    [
+      "Root: /biruni/md/role_form_action_list · biruni/md · 11 forma"
+    ],
+    [
+      "import",
+      "/biruni/md/role_grant_form_import"
+    ],
+    [
+      "audit",
+      "/biruni/md/role_audit_details"
+    ],
+    [
+      "add",
+      "/biruni/md/role+add"
+    ],
+    [
+      "edit",
+      "/biruni/md/role+edit"
+    ],
+    [
+      "form",
+      "/biruni/md/role_form_action"
+    ],
+    [
+      "form",
+      "/biruni/md/role_project"
+    ],
+    [
+      "view",
+      "/biruni/md/role_view"
+    ],
+    [
+      "list",
+      "/biruni/md/role_form_action_list"
+    ],
+    [
+      "list",
+      "/biruni/md/role_form_list"
+    ],
+    [
+      "list",
+      "/biruni/md/role_list"
+    ],
+    [
+      "list",
+      "/biruni/md/role_user_list"
+    ],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "311. Заказы на закупку"
+    ],
+    [
+      "Menyu: Склад → Документы → Заказы на закупку"
+    ],
+    [
+      "Root: /anor/mkw/purchase/order_list · anor/mkw · 11 forma"
+    ],
+    [
+      "picker",
+      "/anor/mkw/purchase/order_add_product_list"
+    ],
+    [
+      "picker",
+      "/anor/mkw/purchase/order_edit_product_list"
+    ],
+    [
+      "picker",
+      "/anor/mkw/purchase/request_product_list"
+    ],
+    [
+      "import",
+      "/anor/mkw/purchase/purchase_request_import"
+    ],
+    [
+      "audit",
+      "/anor/mkw/purchase/order_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkw/purchase/purchase_request_reason+add"
+    ],
+    [
+      "edit",
+      "/anor/mkw/purchase/order_edit"
+    ],
+    [
+      "edit",
+      "/anor/mkw/purchase/purchase_request_reason+edit"
+    ],
+    [
+      "form",
+      "/anor/mkw/purchase/order_add"
+    ],
+    [
+      "view",
+      "/anor/mkw/purchase/order_view"
+    ],
+    [
+      "list",
+      "/anor/mkw/purchase/order_list"
+    ],
+    [
+      "312. Технологические операции"
+    ],
+    [
+      "Menyu: Производство → Основное → Технологические операции"
+    ],
+    [
+      "Root: /anor/mfg/file/file_list · anor/mfg · 12 forma"
+    ],
+    [
+      "picker",
+      "/anor/mfg/manufacture/step_list"
+    ],
+    [
+      "audit",
+      "/anor/mfg/manufacture/manufacture_audit_details"
+    ],
+    [
+      "complete",
+      "/anor/mfg/manufacture/manufacture_complete"
+    ],
+    [
+      "add",
+      "/anor/mfg/file/product_file+add"
+    ],
+    [
+      "add",
+      "/anor/mfg/manufacture/manufacture+add"
+    ],
+    [
+      "add",
+      "/anor/mfg/manufacture/step+add"
+    ],
+    [
+      "edit",
+      "/anor/mfg/manufacture/manufacture+edit"
+    ],
+    [
+      "edit",
+      "/anor/mfg/manufacture/step+edit"
+    ],
+    [
+      "view",
+      "/anor/mfg/manufacture/manufacture_view"
+    ],
+    [
+      "list",
+      "/anor/mfg/file/file_list"
+    ],
+    [
+      "list",
+      "/anor/mfg/file/output_product_list"
+    ],
+    [
+      "list",
+      "/anor/mfg/manufacture/manufacture_list"
+    ],
+    [
+      "313. appointment_list"
+    ],
+    [
+      "Menyu: Финансы → Основное → appointment_list"
+    ],
+    [
+      "Root: /anor/mkcs/bank/appointment_list+expense · anor/mkcs · 12 forma"
+    ],
+    [
+      "audit",
+      "/anor/mkcs/bank/appointment_audit_details"
+    ],
+    [
+      "audit",
+      "/anor/mkcs/bank/payment_code_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkcs/bank/payment_code+add"
+    ],
+    [
+      "edit",
+      "/anor/mkcs/bank/appointment+edit_expense"
+    ],
+    [
+      "edit",
+      "/anor/mkcs/bank/appointment+edit_income"
+    ],
+    [
+      "edit",
+      "/anor/mkcs/bank/payment_code+edit"
+    ],
+    [
+      "form",
+      "/anor/mkcs/bank/appointment+add_expense"
+    ],
+    [
+      "form",
+      "/anor/mkcs/bank/appointment+add_income"
+    ],
+    [
+      "view",
+      "/anor/mkcs/bank/appointment_view"
+    ],
+    [
+      "view",
+      "/anor/mkcs/bank/payment_code_view"
+    ],
+    [
+      "list",
+      "/anor/mkcs/bank/appointment_list+expense"
+    ],
+    [
+      "list",
+      "/anor/mkcs/bank/appointment_list+income"
+    ],
+    [
+      "314. Возвраты поставщику"
+    ],
+    [
+      "Menyu: Склад → Документы → Возвраты поставщику"
+    ],
+    [
+      "Root: /anor/mkw/return/file_list · anor/mkw · 12 forma"
+    ],
+    [
+      "picker",
+      "/anor/mkw/return/file_product_list"
+    ],
+    [
+      "picker",
+      "/anor/mkw/return/product_list"
+    ],
+    [
+      "import",
+      "/anor/mkw/return/return_import"
+    ],
+    [
+      "audit",
+      "/anor/mkw/return/return_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkw/return/return+add"
+    ],
+    [
+      "add",
+      "/anor/mkw/return/return_reason+add"
+    ],
+    [
+      "edit",
+      "/anor/mkw/return/return+edit"
+    ],
+    [
+      "form",
+      "/anor/mkw/return/file_upload"
+    ],
+    [
+      "form",
+      "/anor/mkw/return/product_file_upload"
+    ],
+    [
+      "view",
+      "/anor/mkw/return/return_view"
+    ],
+    [
+      "list",
+      "/anor/mkw/return/file_list"
+    ],
+    [
+      "list",
+      "/anor/mkw/return/return_list"
+    ],
+    [
+      "315. Запросы на внутр. перемещения"
+    ],
+    [
+      "Menyu: Склад → Перемещения → Запросы на внутр. перемещения"
+    ],
+    [
+      "Root: /anor/mkw/movement/movement_request_list · anor/mkw · 12 forma"
+    ],
+    [
+      "picker",
+      "/anor/mkw/movement/movement_request_reason_list"
+    ],
+    [
+      "picker",
+      "/anor/mkw/movement/request_product_list"
+    ],
+    [
+      "import",
+      "/anor/mkw/movement/movement_request_import"
+    ],
+    [
+      "audit",
+      "/anor/mkw/movement/movement_request_audit_details"
+    ],
+    [
+      "audit",
+      "/anor/mkw/movement/movement_request_reason_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkw/movement/movement_request+add"
+    ],
+    [
+      "add",
+      "/anor/mkw/movement/movement_request_reason+add"
+    ],
+    [
+      "edit",
+      "/anor/mkw/movement/movement_request+edit"
+    ],
+    [
+      "edit",
+      "/anor/mkw/movement/movement_request_reason+edit"
+    ],
+    [
+      "view",
+      "/anor/mkw/movement/movement_request_reason_view"
+    ],
+    [
+      "view",
+      "/anor/mkw/movement/movement_request_view"
+    ],
+    [
+      "list",
+      "/anor/mkw/movement/movement_request_list"
+    ],
+    [
+      "316. oper_type_list"
+    ],
+    [
+      "Menyu: Кадры и зарплата → Справочники → oper_type_list"
+    ],
+    [
+      "Root: /anor/mpr/oper_type_list+accrual · anor/mpr · 13 forma"
+    ],
+    [
+      "audit",
+      "/anor/mpr/oper_type_audit_details"
+    ],
+    [
+      "edit",
+      "/anor/mpr/oper_type+edit_accrual"
+    ],
+    [
+      "edit",
+      "/anor/mpr/oper_type+edit_deduction"
+    ],
+    [
+      "edit",
+      "/anor/mpr/oper_type+edit_payout"
+    ],
+    [
+      "form",
+      "/anor/mpr/oper_type+add_accrual"
+    ],
+    [
+      "form",
+      "/anor/mpr/oper_type+add_deduction"
+    ],
+    [
+      "form",
+      "/anor/mpr/oper_type+add_payout"
+    ],
+    [
+      "view",
+      "/anor/mpr/oper_type_view+accrual"
+    ],
+    [
+      "view",
+      "/anor/mpr/oper_type_view+deduction"
+    ],
+    [
+      "view",
+      "/anor/mpr/oper_type_view+payout"
+    ],
+    [
+      "list",
+      "/anor/mpr/oper_type_list+accrual"
+    ],
+    [
+      "list",
+      "/anor/mpr/oper_type_list+deduction"
+    ],
+    [
+      "list",
+      "/anor/mpr/oper_type_list+payout"
+    ],
+    [
+      "317. Инвентаризации"
+    ],
+    [
+      "Menyu: Склад → Документы → Инвентаризации"
+    ],
+    [
+      "Root: /anor/mkw/stocktaking/stocktaking_list · anor/mkw · 13 forma"
+    ],
+    [
+      "picker",
+      "/anor/mkw/stocktaking/product_list"
+    ],
+    [
+      "picker",
+      "/anor/mr/product/humidity_type_list"
+    ],
+    [
+      "picker",
+      "/anor/mr/product/temperature_type_list"
+    ],
+    [
+      "import",
+      "/anor/mkw/stocktaking/stocktaking_import"
+    ],
+    [
+      "audit",
+      "/anor/mkw/stocktaking/stocktaking_audit_details"
+    ],
+    [
+      "complete",
+      "/anor/mkw/stocktaking/stocktaking_complete"
+    ],
+    [
+      "add",
+      "/anor/mkw/stocktaking/reason+add"
+    ],
+    [
+      "add",
+      "/anor/mkw/stocktaking/stocktaking+add"
+    ],
+    [
+      "add",
+      "/anor/mkw/warehouse_type+add"
+    ],
+    [
+      "edit",
+      "/anor/mkw/stocktaking/stocktaking+edit"
+    ],
+    [
+      "edit",
+      "/anor/mkw/warehouse_type+edit"
+    ],
+    [
+      "view",
+      "/anor/mkw/stocktaking/stocktaking_view"
+    ],
+    [
+      "list",
+      "/anor/mkw/stocktaking/stocktaking_list"
+    ],
+    [
+      "318. Межорг. перемещения: отправка"
+    ],
+    [
+      "Menyu: Склад → Перемещения → Межорг. перемещения: отправка"
+    ],
+    [
+      "Root: /anor/mfm/from_movement_list · anor/mfm · 14 forma"
+    ],
+    [
+      "picker",
+      "/anor/mfm/from_movement_product_list"
+    ],
+    [
+      "picker",
+      "/anor/mfm/from_movement_request_product_list"
+    ],
+    [
+      "picker",
+      "/anor/mfm/movement_request_reason_list"
+    ],
+    [
+      "import",
+      "/anor/mfm/from_movement_import"
+    ],
+    [
+      "import",
+      "/anor/mfm/from_movement_request_import"
+    ],
+    [
+      "audit",
+      "/anor/mfm/from_movement_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mfm/from_movement+add"
+    ],
+    [
+      "add",
+      "/anor/mfm/from_movement_request+add"
+    ],
+    [
+      "add",
+      "/anor/mfm/movement_request_reason+add"
+    ],
+    [
+      "edit",
+      "/anor/mfm/from_movement+edit"
+    ],
+    [
+      "edit",
+      "/anor/mfm/movement_request_reason+edit"
+    ],
+    [
+      "form",
+      "/anor/mfm/change_price_type"
+    ],
+    [
+      "view",
+      "/anor/mfm/from_movement_view"
+    ],
+    [
+      "list",
+      "/anor/mfm/from_movement_list"
+    ],
+    [
+      "319. Настройки системы"
+    ],
+    [
+      "Menyu: Главное → Дополнительное → Настройки системы"
+    ],
+    [
+      "Root: /trade/txs/telegram/menu_list · trade/pref · 15 forma"
+    ],
+    [
+      "form",
+      "/trade/pref/ban_setting"
+    ],
+    [
+      "form",
+      "/trade/pref/call_center_setting"
+    ],
+    [
+      "form",
+      "/trade/pref/deal_setting"
+    ],
+    [
+      "form",
+      "/trade/pref/filial_movement_setting"
+    ],
+    [
+      "form",
+      "/trade/pref/finance_setting"
+    ],
+    [
+      "form",
+      "/trade/pref/integration_setting"
+    ],
+    [
+      "form",
+      "/trade/pref/manufacturing_setting"
+    ],
+    [
+      "form",
+      "/trade/pref/marking_setting"
+    ],
+    [
+      "form",
+      "/trade/pref/merchandising_setting"
+    ],
+    [
+      "form",
+      "/trade/pref/mobile_setting"
+    ],
+    [
+      "form",
+      "/trade/pref/telegram_setting"
+    ],
+    [
+      "form",
+      "/trade/pref/visit_analysis_setting"
+    ],
+    [
+      "form",
+      "/trade/pref/warehouse_setting"
+    ],
+    [
+      "form",
+      "/trade/pref/system_setting"
+    ],
+    [
+      "list",
+      "/trade/txs/telegram/menu_list"
+    ],
+    [
+      "320. Цены"
+    ],
+    [
+      "Menyu: Справочники → Цены"
+    ],
+    [
+      "Root: /anor/mkf/price_type_payment_type_list · anor/mkr · 15 forma"
+    ],
+    [
+      "picker",
+      "/anor/mkr/price_tag_product_list"
+    ],
+    [
+      "import",
+      "/anor/mkf/product_price_import"
+    ],
+    [
+      "attach",
+      "/anor/mfm/price_type_filial_list"
+    ],
+    [
+      "audit",
+      "/anor/mkf/filial_price_type_audit_details"
+    ],
+    [
+      "audit",
+      "/anor/mkf/product_price_audit_details"
+    ],
+    [
+      "audit",
+      "/anor/mkr/price_type_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkr/price_type+add"
+    ],
+    [
+      "edit",
+      "/anor/mkr/price_type+edit"
+    ],
+    [
+      "form",
+      "/anor/mkf/product_price"
+    ],
+    [
+      "form",
+      "/anor/mkr/price_editable"
+    ],
+    [
+      "form",
+      "/anor/mkr/price_tag"
+    ],
+    [
+      "view",
+      "/anor/mkr/price_type_view"
+    ],
+    [
+      "list",
+      "/anor/mkf/price_type_payment_type_list"
+    ],
+    [
+      "list",
+      "/anor/mkr/price_type_list"
+    ],
+    [
+      "list",
+      "/anor/mkr/price_type_list+attach"
+    ],
+    [
+      "321. Поступления ТМЦ на склад"
+    ],
+    [
+      "Menyu: Склад → Документы → Поступления ТМЦ на склад"
+    ],
+    [
+      "Root: /anor/mkw/input/file_list · anor/mkw · 16 forma"
+    ],
+    [
+      "picker",
+      "/anor/mkw/input/file_product_list"
+    ],
+    [
+      "audit",
+      "/anor/mkw/corr_template_audit_details"
+    ],
+    [
+      "audit",
+      "/anor/mkw/input/input_audit_details"
+    ],
+    [
+      "audit",
+      "/anor/mkw/supplier_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkw/input/input+add"
+    ],
+    [
+      "edit",
+      "/anor/mkw/corr_template+edit"
+    ],
+    [
+      "edit",
+      "/anor/mkw/input/input+edit"
+    ],
+    [
+      "edit",
+      "/anor/mkw/supplier+edit"
+    ],
+    [
+      "form",
+      "/anor/mkw/input/file_upload"
+    ],
+    [
+      "form",
+      "/anor/mkw/input/product_file_upload"
+    ],
+    [
+      "form",
+      "/anor/mkw/input/set_input_price"
+    ],
+    [
+      "view",
+      "/anor/mkw/corr_template_view"
+    ],
+    [
+      "view",
+      "/anor/mkw/input/input_view"
+    ],
+    [
+      "view",
+      "/anor/mkw/supplier_view"
+    ],
+    [
+      "list",
+      "/anor/mkw/input/file_list"
+    ],
+    [
+      "list",
+      "/anor/mkw/input/input_list"
+    ],
+    [
+      "322. Закупки"
+    ],
+    [
+      "Menyu: Склад → Документы → Закупки"
+    ],
+    [
+      "Root: /anor/mkw/purchase/file_list · anor/mkw · 19 forma"
+    ],
+    [
+      "picker",
+      "/anor/mkw/purchase/file_product_list"
+    ],
+    [
+      "picker",
+      "/anor/mkw/purchase/product_list"
+    ],
+    [
+      "picker",
+      "/anor/mkw/purchase/purchase_coa_template_list"
+    ],
+    [
+      "import",
+      "/anor/mkw/purchase/purchase_import"
+    ],
+    [
+      "import",
+      "/anor/mkw/purchase/purchase_marking_import"
+    ],
+    [
+      "audit",
+      "/anor/mkw/purchase/purchase_audit_details"
+    ],
+    [
+      "audit",
+      "/anor/mkw/purchase/purchase_coa_template_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mkw/purchase/purchase+add"
+    ],
+    [
+      "add",
+      "/anor/mkw/purchase/purchase_coa_template+add"
+    ],
+    [
+      "edit",
+      "/anor/mkw/purchase/purchase+edit"
+    ],
+    [
+      "edit",
+      "/anor/mkw/purchase/purchase_coa_template+edit"
+    ],
+    [
+      "form",
+      "/anor/mkw/purchase/file_upload"
+    ],
+    [
+      "form",
+      "/anor/mkw/purchase/product_file_upload"
+    ],
+    [
+      "form",
+      "/anor/mkw/purchase/purchase_update"
+    ],
+    [
+      "form",
+      "/anor/mkw/purchase/work_with_aic"
+    ],
+    [
+      "view",
+      "/anor/mkw/purchase/purchase_coa_template_view"
+    ],
+    [
+      "view",
+      "/anor/mkw/purchase/purchase_view"
+    ],
+    [
+      "list",
+      "/anor/mkw/purchase/file_list"
+    ],
+    [
+      "list",
+      "/anor/mkw/purchase/purchase_list"
+    ],
+    [
+      "323. Заказы"
+    ],
+    [
+      "Menyu: Продажа/Склад → Продажа → Заказы"
+    ],
+    [
+      "Root: /anor/mdeal/order/order_list · anor/mdeal · 20 forma"
+    ],
+    [
+      "picker",
+      "/anor/mdeal/order/change_price_type_products"
+    ],
+    [
+      "picker",
+      "/anor/mdeal/order/exchange_product_list"
+    ],
+    [
+      "picker",
+      "/anor/mdeal/order/order_gift_list"
+    ],
+    [
+      "picker",
+      "/anor/mdeal/order/product_list"
+    ],
+    [
+      "picker",
+      "/anor/mdeal/order/product_list_beta"
+    ],
+    [
+      "picker",
+      "/anor/mdeal/order/service_list"
+    ],
+    [
+      "picker",
+      "/anor/mrf/room_client_list"
+    ],
+    [
+      "import",
+      "/anor/mdeal/order/exchange_import"
+    ],
+    [
+      "import",
+      "/anor/mdeal/order/import"
+    ],
+    [
+      "import",
+      "/anor/mdeal/order/order_import"
+    ],
+    [
+      "audit",
+      "/anor/mdeal/order/order_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mdeal/order/order_beta+add"
+    ],
+    [
+      "edit",
+      "/anor/mdeal/order/order_beta+edit"
+    ],
+    [
+      "form",
+      "/anor/mdeal/order/add_retail"
+    ],
+    [
+      "form",
+      "/anor/mdeal/order/change_price_type"
+    ],
+    [
+      "form",
+      "/anor/mdeal/order/order_beta_helper"
+    ],
+    [
+      "form",
+      "/anor/mdeal/order/return"
+    ],
+    [
+      "view",
+      "/anor/mdeal/order/order_view"
+    ],
+    [
+      "list",
+      "/anor/mdeal/order/order_list"
+    ],
+    [
+      "list",
+      "/anor/mr/chat_list"
+    ],
+    [
+      "324. ТМЦ"
+    ],
+    [
+      "Menyu: Справочники → ТМЦ"
+    ],
+    [
+      "Root: /anor/mr/product/inventory_list · anor/mr · 23 forma"
+    ],
+    [
+      "picker",
+      "/anor/mr/product/pallet_type_list"
+    ],
+    [
+      "import",
+      "/anor/mr/product/inventory_import"
+    ],
+    [
+      "import",
+      "/anor/mr/product/inventory_photo_import"
+    ],
+    [
+      "import",
+      "/anor/mrf/filial_inventory_import"
+    ],
+    [
+      "attach",
+      "/anor/mr/product/similar_product_list"
+    ],
+    [
+      "audit",
+      "/anor/mkf/product_price_audit"
+    ],
+    [
+      "audit",
+      "/anor/mr/product/product_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mr/product/box_type+add"
+    ],
+    [
+      "add",
+      "/anor/mr/product/inventory+add"
+    ],
+    [
+      "add",
+      "/anor/mr/product/measure+add"
+    ],
+    [
+      "add",
+      "/anor/mr/product/pallet_type+add"
+    ],
+    [
+      "add",
+      "/anor/mr/product/product_group_type+add"
+    ],
+    [
+      "add",
+      "/anor/mr/sector+add"
+    ],
+    [
+      "edit",
+      "/anor/mr/product/inventory+edit"
+    ],
+    [
+      "edit",
+      "/anor/mr/product/pallet_type+edit"
+    ],
+    [
+      "edit",
+      "/anor/mr/product/producer+edit"
+    ],
+    [
+      "form",
+      "/anor/mfk/product_measurement"
+    ],
+    [
+      "form",
+      "/anor/mr/product/inventory_settings"
+    ],
+    [
+      "form",
+      "/anor/mr/product/product_set_price"
+    ],
+    [
+      "form",
+      "/anor/mrf/inventory_sale_settings"
+    ],
+    [
+      "view",
+      "/anor/mr/product/inventory_view"
+    ],
+    [
+      "list",
+      "/anor/mr/product/inventory_list"
+    ],
+    [
+      "list",
+      "/anor/mr/product/inventory_list+attach"
+    ],
+    [
+      "325. Юридические лица"
+    ],
+    [
+      "Menyu: Справочники → Основное → Юридические лица"
+    ],
+    [
+      "Root: /anor/mr/person/legal_person_list · anor/mr · 28 forma"
+    ],
+    [
+      "picker",
+      "/anor/mr/person/legal_person_type_list"
+    ],
+    [
+      "picker",
+      "/anor/mr/person/natural_person_type_list"
+    ],
+    [
+      "import",
+      "/anor/mr/person/legal_person_contact_import"
+    ],
+    [
+      "import",
+      "/anor/mr/person/legal_person_import"
+    ],
+    [
+      "attach",
+      "/anor/mr/person/legal_person_type_bind_list"
+    ],
+    [
+      "attach",
+      "/anor/mr/person/natural_person_type_bind_list"
+    ],
+    [
+      "audit",
+      "/anor/mr/person/person_audit_details"
+    ],
+    [
+      "audit",
+      "/anor/mr/person/person_group_audit_details"
+    ],
+    [
+      "audit",
+      "/anor/mr/person/person_type_audit_details"
+    ],
+    [
+      "add",
+      "/anor/mr/person/contact_position+add"
+    ],
+    [
+      "add",
+      "/anor/mr/person/legal_person+add"
+    ],
+    [
+      "add",
+      "/anor/mr/person/person_type+add"
+    ],
+    [
+      "edit",
+      "/anor/mr/person/legal_person+edit"
+    ],
+    [
+      "edit",
+      "/anor/mr/person/natural_person+edit"
+    ],
+    [
+      "edit",
+      "/anor/mr/person/person_type+edit"
+    ],
+    [
+      "form",
+      "/anor/mr/person/person_group+edit_legal"
+    ],
+    [
+      "form",
+      "/anor/mr/person/person_group+edit_natural"
+    ],
+    [
+      "form",
+      "/anor/mr/person/set_legal_person_local_code"
+    ],
+    [
+      "form",
+      "/anor/mr/person/set_legal_person_product_code"
+    ],
+    [
+      "form",
+      "/anor/mr/person/set_legal_person_type_order_no"
+    ],
+    [
+      "form",
+      "/anor/mr/person/set_natural_person_type_order_no"
+    ],
+    [
+      "view",
+      "/anor/mr/person/legal_person_view"
+    ],
+    [
+      "view",
+      "/anor/mr/person/person_group_view"
+    ],
+    [
+      "view",
+      "/anor/mr/person/person_type_view"
+    ],
+    [
+      "view",
+      "/core/mvt/visit_view"
+    ],
+    [
+      "dashboard",
+      "/anor/mr/person/person_dashboard"
+    ],
+    [
+      "list",
+      "/anor/mr/person/legal_person_list"
+    ],
+    [
+      "list",
+      "/anor/mr/person/legal_person_list+attach"
+    ]
+  ]
+}
