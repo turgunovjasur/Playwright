@@ -28,20 +28,29 @@ def flow_order_list(page, add=False, find_row=None, search=True, view=False, edi
             row = base.grid(find_row, click=True)
 
     if view:
-        with allure.step("Order List: 'Просмотр' button click"):
-            row.get_by_role("button", name=ORDER_VIEW_BUTTON_NAME).click()
+        with allure.step("Order List: open view"):
+            row.dblclick()
 
     if edit:
         with allure.step("Order List: 'Редактировать' button click"):
+            row.hover()
             row.get_by_role("button", name="Редактировать", exact=True).click()
 
     if status:
         with allure.step("Order List: 'Изменить статус' button click"):
-            row.get_by_role("button", name="Изменить статус", exact=True).click()
+            row.hover()
+            change_status = row.get_by_role("button", name="Изменить статус", exact=True)
+            if change_status.count() > 0:
+                change_status.first.click()
+            else:
+                row.locator("app-status-dropdown .dropdown-toggle, app-status-dropdown button").first.click()
 
             dialog_status(page)
 
-            page.get_by_role("link", name=status).click()
+            overlay = page.locator("[cdkmenu], [role='menu']").filter(visible=True)
+            overlay.get_by_role("menuitem", name=status).or_(
+                page.get_by_role("link", name=status)
+            ).first.click()
             # Smartup confirm matni: "Изменить статус на {status}?" (ilgari "Изменить на ...").
             base.confirm_biruni(f"Изменить статус на {status}?")
             base.wait_for_loader()

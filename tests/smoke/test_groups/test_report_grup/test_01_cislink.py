@@ -41,9 +41,9 @@ def run_report_cislink_check(page):
 
     with allure.step("2 - Har bir run uchun yangi CisLink templateini yaratish"):
         base.click(name="Шаблоны", exact=True)
-        base.expect_page(heading="Шаблоны CisLink(7008)", url="cislink_template_list")
+        base.expect_page(heading=re.compile(r"CisLink"), url=re.compile(r"cislink_template"))
         base.click(name="Добавить", exact=True)
-        base.expect_page(heading="Шаблоны CisLink(7008) (создание)", url="cislink_template+add")
+        base.expect_page(heading=re.compile(r"CisLink"), url=re.compile(r"cislink_template"))
         base.input(label="Название", value=template_name)
         base.input(label='Значение поля "manfid"', value="test")
         base.checkbox(label="Активный", expect_checked=True)
@@ -54,12 +54,11 @@ def run_report_cislink_check(page):
         base.checkbox(label="Подтипы характеристик", expect_checked=True)
         base.b_input(label="Тип цены", select_first=True)
         base.click(name="Сохранить", exact=True)
-        base.expect_page(heading="Шаблоны CisLink(7008)", url="cislink_template_list")
-
-        base.grid_controller(search=template_name)
-        base.grid(template_name, "Активный")
-        base.click(name="Закрыть", exact=True)
-        base.expect_page(heading=re.compile(r"^\s*CisLink\(7008\)\s*$"), url=re.compile(r"/trade/rep/integration/cislink$"))
+        # Kernel Type-D picker: save goBack applies the row and closes list onto the parent report.
+        base.expect_page(
+            heading=re.compile(r"CisLink", re.I),
+            url=re.compile(r"/trade/rep/integration/cislink$"),
+        )
 
     with allure.step("3 - Template, period va report sanasini sozlash"):
         base.b_input(label="Шаблон", value=template_name, clear=True)

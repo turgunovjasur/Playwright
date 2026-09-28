@@ -1,4 +1,5 @@
 import re
+from urllib.parse import urlsplit
 
 from playwright.sync_api import expect
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
@@ -11,6 +12,11 @@ from utils.report_context import record_filial
 
 
 _UNSET = object()
+_LEGACY_GRID_ROOT_RE = re.compile(
+    r"""^(?:b-grid|b-pg-grid)(?:\[name=(['\"])(?P<name>[^'\"]+)\1\])?(?::visible)?$"""
+)
+_LEGACY_PAGE_ROOT_RE = re.compile(r"^b-page(?::visible)?$")
+_ANGULAR_TABLE_SELECTOR = "smt-data-table, smt-local-table, smt-table"
 
 
 def _whitespace_agnostic_pattern(value, *, exact=False):
@@ -55,15 +61,170 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    def _legacy_grid_locator(self, root):
+        """Biruni ``b-grid`` / ``b-pg-grid`` selectorlarini A2 table hostiga map qiladi."""
+        if not isinstance(root, str):
+            return None
+        match = _LEGACY_GRID_ROOT_RE.fullmatch(root.strip())
+        if not match:
+            return None
+        scope = self.page.locator("main").filter(visible=True).first
+        tables = scope.locator(_ANGULAR_TABLE_SELECTOR).filter(visible=True)
+        name = match.group("name")
+        if not name:
+            return tables.first
+        named = scope.locator(
+            f'smt-data-table[smtstoragekey*="{name}"], '
+            f'smt-local-table[smtstoragekey*="{name}"], '
+            f'smt-table[smtstoragekey*="{name}"], '
+            f'smt-data-table[ng-reflect-smt-storage-key*="{name}"], '
+            f'smt-local-table[ng-reflect-smt-storage-key*="{name}"], '
+            f'smt-table[ng-reflect-smt-storage-key*="{name}"]'
+        ).filter(visible=True)
+        return named.or_(tables).first
+
     def _resolve_root(self, root):
         if root is None:
             return self.page
-        return self.page.locator(root) if isinstance(root, str) else root
+        if not isinstance(root, str):
+            return root
+        stripped = root.strip()
+        if _LEGACY_PAGE_ROOT_RE.fullmatch(stripped):
+            return self.page.locator("main").filter(visible=True).first
+        mapped = self._legacy_grid_locator(root)
+        if mapped is not None:
+            return mapped
+        return self.page.locator(root)
+
+    def _row_plus_detail(self, root):
+        """Kernel expandable actions live in sibling ``.smt-detail-row``, not inside the row."""
+        if root is self.page:
+            return root
+        detail = root.locator(
+            "xpath=self::*[contains(concat(' ', normalize-space(@class), ' '), ' smt-data-row ')]"
+            "/following-sibling::*[contains(@class,'smt-detail-row')][1]"
+        )
+        return root.or_(detail)
 
     # ------------------------------------------------------------------------------------------------------------------
 
     def _content_root(self, root):
         return self._resolve_root("main" if root is None else root)
+
+    def _table_host(self, root):
+        """Root ichidagi ``smt-data-table`` / ``smt-local-table`` / ``smt-table`` hosti."""
+        scoped = root.locator(_ANGULAR_TABLE_SELECTOR).filter(visible=True)
+        if scoped.count() > 0:
+            return scoped.first
+        return root
+
+    def status_button(self, entity_id):
+        """Legacy Metronic ``#status-btn-{id}`` or kernel ``app-status-dropdown`` host."""
+        return self.page.locator(f"#status-btn-{entity_id}, app-status-dropdown").first
+
+    def status_row(self, entity_id):
+        """Row that owns the status chip (A2 ``smt-data-row`` or legacy ``tbl-row``)."""
+        chip = self.page.locator(f"#status-btn-{entity_id}, app-status-dropdown").first
+        return self.page.locator(".smt-data-row, .tbl-row").filter(has=chip).first
+
+    def _has_smt_control_label(self, label, root, timeout=0):
+        """True when a visible ``smt-control`` label matches.
+
+        After wizard Next the finish-step controls are not in the DOM yet.
+        Instant ``count()`` then falls through to a table header (``Тип оплаты``
+        is not a grid column) — wait for either a control label or a header.
+        """
+        host = root
+        pat = self._label_pattern(label)
+        labels = host.locator("smt-control label").filter(has_text=pat)
+        if timeout:
+            headers = self._table_host(host).locator(
+                ".smt-grid-header [data-smt-col-key]"
+            ).filter(has_text=pat)
+            try:
+                expect(labels.or_(headers).first).to_be_visible(timeout=timeout)
+            except (AssertionError, PlaywrightTimeoutError):
+                return False
+        return labels.filter(visible=True).count() > 0
+
+    def _table_cell_by_header(self, label, *, index=0, root=None, timeout=10_000):
+        """A2 table header matni (``Название``, ``Кол-во``) ostidagi birinchi row cell.
+
+        Kernel order wizard product grid headerlari ``smt-control`` emas —
+        ``smt-cell-header`` + ``data-smt-col-key``.
+        """
+        host = self._table_host(self._resolve_root(root))
+        headers = host.locator(".smt-grid-header [data-smt-col-key]").filter(
+            has_text=self._label_pattern(label),
+        )
+        expect(headers.nth(index)).to_be_visible(timeout=timeout)
+        key = headers.nth(index).get_attribute("data-smt-col-key")
+        if not key:
+            shown = getattr(label, "pattern", label)
+            raise AssertionError(f"Angular table header key topilmadi: label={shown}")
+        cell = host.locator(f'.smt-data-row [data-smt-col-key="{key}"]').nth(index)
+        expect(cell).to_be_visible(timeout=timeout)
+        return cell
+
+    def _native_field_input(self, host):
+        return host.locator(
+            "xpath=descendant-or-self::*[(self::input or self::textarea) "
+            "and not(@type='checkbox') and not(@type='radio') and not(@type='hidden')]"
+        ).first
+
+    def _named_control_host(self, root, model_name):
+        short_name = model_name.removeprefix("d.")
+        return root.locator(
+            f'[formcontrolname="{model_name}"], [formcontrolname="{short_name}"], '
+            f'[ng-reflect-name="{model_name}"], [ng-reflect-name="{short_name}"], '
+            f'smt-input[name="{short_name}"], [name="{short_name}"]'
+        ).filter(visible=True)
+
+    def _product_search_selects(self, root):
+        return root.locator("smt-data-select").filter(
+            has=self.page.locator("smt-select-trigger input:visible")
+        )
+
+    def _data_select_for_ng_model(self, root, model_name, index=0):
+        named = root.locator(
+            f'smt-data-select[formcontrolname="{model_name}"], '
+            f'smt-data-select[formcontrolname="{model_name.removeprefix("d.")}"], '
+            f'smt-select[formcontrolname="{model_name}"], '
+            f'smt-select[formcontrolname="{model_name.removeprefix("d.")}"]'
+        )
+        if named.count() > 0:
+            return named.nth(index)
+        picks = self._product_search_selects(root)
+        if "selected_bonus_name" in model_name:
+            return picks.nth(1 if picks.count() > 1 else 0)
+        if "selected_rule_name" in model_name:
+            return picks.nth(0)
+        return named.nth(index)
+
+    def _input_el_for_ng_model(self, root, model_name, index=0):
+        named = self._named_control_host(root, model_name)
+        if named.count() > 0:
+            return self._native_field_input(named.nth(index))
+        rule_row = root.locator("div.grid.items-center.pt-2").filter(
+            has=root.locator("smt-input")
+        ).nth(index)
+        rule_inputs = rule_row.locator(
+            "input:not([type='checkbox']):not([type='radio']):not([type='hidden'])"
+        )
+        if model_name == "rule.main_value":
+            return rule_inputs.nth(0)
+        if model_name == "rule.extra_value":
+            return rule_inputs.nth(1)
+        if model_name == "rule.required_count":
+            return rule_inputs.last
+        if model_name == "product.value":
+            bonus_row = root.locator("div.grid.items-center.py-1").filter(
+                has=root.locator("smt-input")
+            ).nth(index)
+            return bonus_row.locator(
+                "input:not([type='checkbox']):not([type='radio']):not([type='hidden'])"
+            ).first
+        return self._native_field_input(named.nth(index))
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -134,8 +295,21 @@ class AngularBasePage:
             index=index,
             timeout=timeout,
         )
-        root = self._resolve_root(root)
+        root = self._row_plus_detail(self._resolve_root(root))
+        overlay_menu = self.page.locator("[cdkmenu], [role='menu']").filter(visible=True)
+        if overlay_menu.count() == 0:
+            self._wait_blocking_overlay_gone()
         target = root.get_by_role(role, name=name, exact=exact)
+        if role == "button":
+            matcher = name if isinstance(name, re.Pattern) else (
+                self._label_pattern(name) if exact else re.compile(re.escape(str(name)))
+            )
+            target = target.or_(root.locator("button, [smt-button]").filter(has_text=matcher))
+            target = target.or_(
+                overlay_menu.get_by_role("menuitem", name=name, exact=exact)
+            ).or_(
+                overlay_menu.locator("button, [cdkmenuitem]").filter(has_text=matcher)
+            )
         if role == "tab":
             matcher = name if isinstance(name, re.Pattern) else (
                 self._label_pattern(name) if exact else re.compile(re.escape(name))
@@ -215,36 +389,51 @@ class AngularBasePage:
             )
 
         if label is not None:
-            control = self._control(label, index=index, root=root)
-            input_el = control.locator(
-                "input:not([type='checkbox']):not([type='radio']):not([type='hidden']), "
-                "textarea"
-            ).first
+            if self._has_smt_control_label(label, root, timeout=10_000):
+                control = self._control(label, index=index, root=root)
+                input_el = control.locator(
+                    "input:not([type='checkbox']):not([type='radio']):not([type='hidden']), "
+                    "textarea"
+                ).first
+            else:
+                cell = self._table_cell_by_header(label, index=index, root=root)
+                input_el = cell.locator(
+                    "input:not([type='checkbox']):not([type='radio']):not([type='hidden']), "
+                    "textarea"
+                ).first
         elif ng_model is not None:
-            model_name = str(ng_model)
-            short_name = model_name.removeprefix("d.")
-            input_el = root.locator(
-                f'[formcontrolname="{model_name}"], [formcontrolname="{short_name}"], '
-                f'[ng-reflect-name="{model_name}"], [ng-reflect-name="{short_name}"]'
-            ).filter(visible=True).nth(index).locator(
-                "xpath=descendant-or-self::*[(self::input or self::textarea) "
-                "and not(@type='checkbox') and not(@type='radio') and not(@type='hidden')]"
-            ).first
+            input_el = self._input_el_for_ng_model(root, str(ng_model), index)
         elif placeholder is not None:
-            input_el = root.get_by_placeholder(placeholder).nth(index)
+            by_ph = root.get_by_placeholder(placeholder)
+            if placeholder == "Выбрать дату":
+                by_ph = by_ph.or_(root.locator("smt-date-picker input")).or_(
+                    root.get_by_placeholder("Выберите дату")
+                ).or_(root.get_by_placeholder("Select a date"))
+            input_el = by_ph.nth(index)
         else:
-            input_el = root.locator(locator).nth(index) if isinstance(locator, str) else locator
+            located = root.locator(locator).nth(index) if isinstance(locator, str) else locator
+            # Legacy tour/IDs often sit on the smt-* host; value lives on the inner input.
+            input_el = self._native_field_input(located)
 
         expect(input_el).to_be_visible(timeout=10_000)
 
         if value is not _UNSET:
-            input_el.click(timeout=10_000)
+            self._wait_blocking_overlay_gone()
+            try:
+                input_el.click(timeout=5_000)
+            except PlaywrightTimeoutError:
+                self._wait_blocking_overlay_gone()
+                input_el.click(force=True, timeout=10_000)
             if clear:
                 input_el.press("ControlOrMeta+A", timeout=10_000)
                 input_el.press("Backspace", timeout=10_000)
             input_el.fill(str(value), timeout=10_000)
-            if press_tab:
+            if press_tab or input_el.locator("xpath=ancestor::smt-input").count():
                 input_el.press("Tab", timeout=10_000)
+            if input_el.locator(
+                "xpath=ancestor::smt-data-select | ancestor::smt-multi-data-select | ancestor::smt-date-picker"
+            ).count():
+                self._dismiss_data_select_overlay()
 
         expected = expect_value
         if expected is _UNSET and value is not _UNSET:
@@ -259,6 +448,76 @@ class AngularBasePage:
         if return_value:
             return input_el.input_value()
         return input_el
+
+    def _dismiss_session_lock(self, timeout=5_000):
+        """Idle warning ``app-session-lock`` intercepts header clicks (aria-label Продолжить)."""
+        host = self.page.locator("app-session-lock")
+        if host.count() == 0:
+            return
+        backdrop = host.locator("button[aria-label]").filter(visible=True).first
+        stay = host.get_by_role("button").filter(
+            has_text=re.compile(r"Продолжить|Continue|Davom ettirish|Stay", re.I)
+        ).filter(visible=True)
+        try:
+            if backdrop.count() > 0:
+                backdrop.click(timeout=timeout, force=True)
+                expect(backdrop).to_have_count(0, timeout=timeout)
+                return
+        except (AssertionError, PlaywrightTimeoutError):
+            pass
+        try:
+            if stay.count() > 0:
+                stay.first.click(timeout=timeout, force=True)
+        except (AssertionError, PlaywrightTimeoutError):
+            pass
+
+    def _wait_blocking_overlay_gone(self, timeout=8_000):
+        """Date-picker / select transparent backdrop qolsa keyingi click ni yopib qo'yadi.
+
+        Dark ``smt-modal`` backdropni Escape bilan yopmaydi — modal ichidagi
+        maydonlar yo'qolib ketadi (currency «Добавить курс»).
+        """
+        backdrop = self.page.locator(
+            ".cdk-overlay-container .cdk-overlay-transparent-backdrop.cdk-overlay-backdrop-showing"
+        )
+        for _ in range(6):
+            if backdrop.count() == 0:
+                return
+            self.page.keyboard.press("Escape")
+            try:
+                expect(backdrop).to_have_count(0, timeout=800)
+                return
+            except (AssertionError, PlaywrightTimeoutError):
+                continue
+
+    def _dismiss_data_select_overlay(self, timeout=8_000):
+        """Typeahead overlay ochilishi (300ms debounce) va spinner tugashini kutib yopadi.
+
+        Fill tugaganda dropdown hali yo'q; keyin spinner pointer-eventlarni yopib
+        keyingi input click ni timeout qiladi (natural_person Имя → Код).
+        """
+        pane = self.page.locator(
+            ".cdk-overlay-container smt-select-dropdown:visible, "
+            ".cdk-overlay-container .cdk-overlay-transparent-backdrop:visible"
+        )
+        spinner = self.page.locator(".cdk-overlay-container .animate-spin:visible")
+        try:
+            expect(pane.first).to_be_visible(timeout=800)
+        except (AssertionError, PlaywrightTimeoutError):
+            return
+        try:
+            expect(spinner).to_have_count(0, timeout=timeout)
+        except (AssertionError, PlaywrightTimeoutError):
+            pass
+        for _ in range(4):
+            if pane.count() == 0:
+                return
+            self.page.keyboard.press("Escape")
+            try:
+                expect(pane).to_have_count(0, timeout=400)
+                return
+            except (AssertionError, PlaywrightTimeoutError):
+                continue
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -305,17 +564,17 @@ class AngularBasePage:
         if label is not None and ng_model is not None:
             raise ValueError("b_input(): label yoki ng_model dan faqat bittasini bering")
         if label is not None:
-            control = self._control(label, index=index, root=root, timeout=timeout)
-            select = control.locator("smt-data-select, smt-select").first
+            self._wait_blocking_overlay_gone()
+            if self._has_smt_control_label(label, root, timeout=timeout):
+                control = self._control(label, index=index, root=root, timeout=timeout)
+                select = control.locator("smt-data-select, smt-select").first
+            else:
+                cell = self._table_cell_by_header(
+                    label, index=index, root=root, timeout=timeout
+                )
+                select = cell.locator("smt-data-select, smt-select").first
         elif ng_model is not None:
-            model_name = str(ng_model)
-            short_name = model_name.removeprefix("d.")
-            select = root.locator(
-                f'smt-data-select[formcontrolname="{model_name}"], '
-                f'smt-data-select[formcontrolname="{short_name}"], '
-                f'smt-select[formcontrolname="{model_name}"], '
-                f'smt-select[formcontrolname="{short_name}"]'
-            ).nth(index)
+            select = self._data_select_for_ng_model(root, str(ng_model), index)
         else:
             raise ValueError("b_input(): label yoki ng_model berilishi kerak")
 
@@ -327,6 +586,8 @@ class AngularBasePage:
         expect(select).to_be_visible(timeout=timeout)
         expect(trigger).to_be_visible(timeout=timeout)
         expect(search).to_be_visible(timeout=timeout)
+        self.page.keyboard.press("Escape")
+        self.page.keyboard.press("Escape")
         dropdown = self.page.locator(
             ".cdk-overlay-container smt-select-dropdown:visible"
         ).last
@@ -352,48 +613,50 @@ class AngularBasePage:
                     search.fill(query, timeout=timeout)
 
             expect(dropdown).to_be_visible(timeout=timeout)
+            expect(dropdown.locator(".animate-spin")).to_have_count(0, timeout=timeout)
             options = dropdown.locator("li:visible")
-            if select_first or has_search_query:
-                option = options.first
+            if option_text and not select_first:
+                expect(options.filter(has_text=str(option_text)).first).to_be_visible(timeout=timeout)
             else:
-                option_matcher = (
-                    re.compile(rf"^\s*{re.escape(option_text)}\s*$")
-                    if exact else re.compile(re.escape(option_text))
-                )
-                option = options.filter(has_text=option_matcher).or_(
-                    options.filter(has=self.page.get_by_text(option_matcher))
-                )
-                if exact:
-                    # Product nomi metadata bilan bitta elementda turishi mumkin.
-                    # Butun row emas, alohida text node ham exact mos keladi.
-                    parts = option_text.split("'")
-                    text_literal = (
-                        "concat(" + ", \"'\", ".join(f"'{part}'" for part in parts) + ")"
-                        if len(parts) > 1 else f"'{option_text}'"
-                    )
-                    option = option.or_(options.filter(has=self.page.locator(
-                        f"xpath=.//*[text()[normalize-space(.)={text_literal}]]"
-                    )))
-                option = option.first
-            expect(option).to_be_visible(timeout=timeout)
-            option.click(timeout=timeout)
-            if dropdown.is_visible():
-                self.page.mouse.click(1, 1)
-            expect(dropdown).to_be_hidden(timeout=timeout)
+                expect(options.first).to_be_visible(timeout=timeout)
+            visible_dd = self.page.locator(".cdk-overlay-container smt-select-dropdown:visible")
+            li = visible_dd.last.locator("li:visible")
+            if option_text and not select_first:
+                li = li.filter(has_text=str(option_text))
+            li.first.click(force=True, timeout=timeout)
+            try:
+                expect(visible_dd).to_have_count(0, timeout=3_000)
+            except AssertionError:
+                self.page.keyboard.press("Escape")
+                try:
+                    expect(visible_dd).to_have_count(0, timeout=2_000)
+                except AssertionError:
+                    search.press("ArrowDown", timeout=timeout)
+                    search.press("Enter", timeout=timeout)
+                    self.page.keyboard.press("Escape")
+                    expect(visible_dd).to_have_count(0, timeout=timeout)
 
         if clear and value is _UNSET and not has_search_query and not select_first:
             search.press("Escape", timeout=timeout)
 
+        add_only_picker = ng_model is not None and (
+            "selected_rule_name" in str(ng_model) or "selected_bonus_name" in str(ng_model)
+        )
         expected = expect_value
         if expected is _UNSET and value is not _UNSET and not select_first and not has_search_query:
             expected = str(value)
         if expected is not _UNSET:
-            if isinstance(expected, str):
-                expected = (
-                    re.compile(rf"^\s*{re.escape(expected)}\s*$")
-                    if exact else re.compile(re.escape(expected))
+            if add_only_picker and isinstance(expected, str):
+                expect(self.page.get_by_text(expected, exact=True).first).to_be_visible(
+                    timeout=timeout
                 )
-            expect(search).to_have_value(expected, timeout=timeout)
+            else:
+                if isinstance(expected, str):
+                    expected = (
+                        re.compile(rf"^\s*{re.escape(expected)}\s*$")
+                        if exact else re.compile(re.escape(expected))
+                    )
+                expect(search).to_have_value(expected, timeout=timeout)
 
         if return_value:
             return search.input_value()
@@ -426,27 +689,19 @@ class AngularBasePage:
         expect(picker).to_be_visible(timeout=timeout)
         expect(trigger).to_be_visible(timeout=timeout)
         expect(input_el).to_be_visible(timeout=timeout)
+        self._wait_blocking_overlay_gone()
 
         expected = resolve_date(date).strftime("%d.%m.%Y")
         if auto_fill:
             expect(input_el).to_have_value(expected, timeout=timeout)
             return input_el
 
-        if date == "today":
-            trigger.click(timeout=timeout)
-            overlay = self.page.locator(
-                ".cdk-overlay-container .cdk-overlay-pane:visible"
-            ).last
-            expect(overlay).to_be_visible(timeout=timeout)
-            today = overlay.get_by_role("button", name="Сегодня", exact=True)
-            expect(today).to_be_visible(timeout=timeout)
-            today.click(timeout=timeout)
-        else:
-            input_el.click(timeout=timeout)
-            input_el.press("ControlOrMeta+A", timeout=timeout)
-            input_el.fill(expected, timeout=timeout)
-            input_el.press("Tab", timeout=timeout)
+        input_el.click(timeout=timeout)
+        input_el.press("ControlOrMeta+A", timeout=timeout)
+        input_el.fill(expected, timeout=timeout)
+        input_el.press("Tab", timeout=timeout)
 
+        self._wait_blocking_overlay_gone()
         expect(input_el).to_have_value(expected, timeout=timeout)
         return input_el
 
@@ -467,15 +722,35 @@ class AngularBasePage:
         visible_label = root.get_by_text(pattern).filter(visible=True).first
         expect(visible_label).to_be_visible(timeout=timeout)
 
-        controls = root.locator("smt-control").filter(
-            has=self.page.locator("label").filter(has_text=pattern)
-        )
         toggle = None
+        # smt-radio-group: option text lives on the wrapping <label>, not smt-control.
+        labeled = root.locator("label").filter(has_text=pattern).filter(visible=True)
         for role_name in roles:
-            candidates = controls.get_by_role(role_name)
+            candidates = labeled.get_by_role(role_name)
             if candidates.count() > index:
                 toggle = candidates.nth(index)
                 break
+
+        controls = root.locator("smt-control").filter(
+            has=self.page.locator("label").filter(has_text=pattern)
+        )
+        if toggle is None:
+            for role_name in roles:
+                candidates = controls.get_by_role(role_name)
+                if candidates.count() > index:
+                    toggle = candidates.nth(index)
+                    break
+
+        if toggle is None:
+            header = visible_label.locator(
+                "xpath=ancestor::*[contains(@class,'custom-card-header')][1]"
+            )
+            if header.count() > 0:
+                for role_name in roles:
+                    nearby = header.get_by_role(role_name)
+                    if nearby.count() > index:
+                        toggle = nearby.nth(index)
+                        break
 
         if toggle is None:
             labels = root.get_by_text(pattern).filter(visible=True)
@@ -508,7 +783,10 @@ class AngularBasePage:
         if role in {"switch", "checkbox", "radio"}:
             current = (toggle.get_attribute("aria-checked") or "").lower() == "true"
             if current != checked:
-                toggle.click()
+                toggle.dispatch_event("pointerdown")
+                toggle.dispatch_event("mousedown")
+                toggle.click(force=True, timeout=timeout)
+                toggle.dispatch_event("pointerup")
             expect(toggle).to_have_attribute(
                 "aria-checked",
                 "true" if checked else "false",
@@ -682,13 +960,34 @@ class AngularBasePage:
             'text',
             timeout=timeout,
         )
-        content = self._content_root(None if root == "b-page" else root)
+        remap_legacy_page = isinstance(root, str) and _LEGACY_PAGE_ROOT_RE.fullmatch(root.strip())
+        content = self._content_root(None if remap_legacy_page else root)
         if content is self.page:
             content = self.page.locator("body")
         expect(content).to_be_visible(timeout=timeout)
         for value in values:
-            if value:
-                expect(content).to_contain_text(value, timeout=timeout)
+            if not value:
+                continue
+            # Kernel *_view keeps model in readonly <input value>, not innerText.
+            # Older Playwright has neither Locator nor Page.get_by_display_value.
+            self.page.wait_for_function(
+                """(value) => {
+                  const matches = (root) => {
+                    if (!root) return false;
+                    if ((root.innerText || '').includes(value)) return true;
+                    for (const el of root.querySelectorAll('input, textarea, select')) {
+                      if ((el.value || '') === value) return true;
+                    }
+                    for (const el of root.querySelectorAll('*')) {
+                      if (el.shadowRoot && matches(el.shadowRoot)) return true;
+                    }
+                    return false;
+                  };
+                  return matches(document.body);
+                }""",
+                arg=value,
+                timeout=timeout,
+            )
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -772,10 +1071,15 @@ class AngularBasePage:
             raise ValueError("multiselect(): label yoki name dan faqat bittasini bering")
         if label is not None:
             control = self._control(label, index=index, root=root, timeout=timeout)
-            select = control.locator("smt-data-select, smt-select").first
+            select = control.locator(
+                "smt-data-select, smt-select, smt-multi-data-select, smt-multi-select"
+            ).first
         elif name is not None:
             select = root.locator(
-                f'smt-data-select[formcontrolname="{name}"], smt-select[formcontrolname="{name}"]'
+                f'smt-data-select[formcontrolname="{name}"], '
+                f'smt-select[formcontrolname="{name}"], '
+                f'smt-multi-data-select[formcontrolname="{name}"], '
+                f'smt-multi-select[formcontrolname="{name}"]'
             ).nth(index)
         else:
             raise ValueError("multiselect(): label yoki name berilishi kerak")
@@ -784,7 +1088,7 @@ class AngularBasePage:
         trigger = select.locator("smt-select-trigger").first
         search = trigger.locator("input").first
         chips = select.locator(
-            "smt-chip:visible, .smt-chip:visible, "
+            "smt-chip:visible, .smt-chip:visible, smt-tag:visible, "
             "[role='option'][aria-selected='true']:visible"
         )
 
@@ -808,7 +1112,9 @@ class AngularBasePage:
 
         selected_values = values_list(value)
         dropdown = self.page.locator(
-            ".cdk-overlay-container smt-select-dropdown:visible"
+            ".cdk-overlay-container smt-select-dropdown:visible, "
+            ".cdk-overlay-container [cdkMenu]:visible, "
+            ".cdk-overlay-container [cdkmenu]:visible"
         ).last
         for option_text in selected_values:
             if not dropdown.is_visible():
@@ -823,9 +1129,26 @@ class AngularBasePage:
                 if exact
                 else re.compile(re.escape(option_text))
             )
-            option = dropdown.locator("li:visible").filter(has_text=matcher).first
+            option = dropdown.get_by_text(matcher).first
             expect(option).to_be_visible(timeout=timeout)
-            option.click(timeout=timeout)
+            # ui-kit multi-data-select uses mousedown.preventDefault, which drops the
+            # browser click after Playwright's real mouse sequence.
+            option.evaluate(
+                """el => {
+                  const target =
+                    el.querySelector('[role="option"], [role="menuitemcheckbox"], [role="menuitem"]') ||
+                    el.querySelector('[class*="cursor-pointer"]') ||
+                    el;
+                  for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) {
+                    target.dispatchEvent(new MouseEvent(type, {
+                      bubbles: true,
+                      cancelable: true,
+                      view: window,
+                      buttons: 1,
+                    }));
+                  }
+                }"""
+            )
 
         expected_values = (
             selected_values
@@ -843,6 +1166,7 @@ class AngularBasePage:
             expect(selected).to_be_visible(timeout=timeout)
 
         if close and value is not _UNSET:
+            self.page.keyboard.press("Escape")
             self.page.keyboard.press("Escape")
         if return_value:
             return [" ".join(text.split()) for text in chips.all_inner_texts() if text.strip()]
@@ -898,12 +1222,15 @@ class AngularBasePage:
         selected = trigger.locator("input:not([type='checkbox']):not([type='radio'])").first
         expect(select).to_be_visible(timeout=timeout)
         expect(trigger).to_be_visible(timeout=timeout)
-        expect(selected).to_be_visible(timeout=timeout)
+        has_search_input = selected.count() > 0 and selected.is_visible()
+        if has_search_input:
+            expect(selected).to_be_visible(timeout=timeout)
 
         if value is not _UNSET:
             option_text = str(value)
+            self._wait_blocking_overlay_gone()
             trigger.click(timeout=timeout)
-            if search_text is not None:
+            if search_text is not None and has_search_input:
                 selected.fill(str(search_text), timeout=timeout)
             dropdown = self.page.locator(
                 ".cdk-overlay-container smt-select-dropdown:visible"
@@ -924,16 +1251,21 @@ class AngularBasePage:
             expect(dropdown).to_be_hidden(timeout=timeout)
 
         expected = expect_value
-        if expected is _UNSET and value is not _UNSET:
-            expected = str(value)
-        if expected is not _UNSET:
-            if isinstance(expected, str):
-                normalized = " ".join(expected.split())
-                body = r"\s+".join(re.escape(part) for part in normalized.split(" "))
-                expected = re.compile(rf"^\s*{body}\s*$" if exact else body)
-            expect(selected).to_have_value(expected, timeout=timeout)
+        if expected is not _UNSET or (value is not _UNSET):
+            if expected is _UNSET:
+                expected = str(value)
+            if has_search_input:
+                if isinstance(expected, str):
+                    normalized = " ".join(expected.split())
+                    body = r"\s+".join(re.escape(part) for part in normalized.split(" "))
+                    expected = re.compile(rf"^\s*{body}\s*$" if exact else body)
+                expect(selected).to_have_value(expected, timeout=timeout)
+            elif isinstance(expected, str):
+                expect(trigger).to_contain_text(expected, timeout=timeout)
         if return_value:
-            return " ".join(selected.input_value().split())
+            if has_search_input:
+                return " ".join(selected.input_value().split())
+            return " ".join(trigger.inner_text().split())
         return select
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -1016,18 +1348,23 @@ class AngularBasePage:
             raise ValueError("expect_page: kamida 'heading' yoki 'url' berilishi kerak")
 
         if url is not None:
-            pattern = url if isinstance(url, re.Pattern) else re.compile(re.escape(url))
+            if isinstance(url, re.Pattern):
+                pattern = url
+            else:
+                pattern = re.compile(re.escape(url).replace(r"\+", r"(?:\+|%2B)"))
             expectation_gate(self.page, "url")
             expect(self.page).to_have_url(pattern, timeout=timeout)
 
-        scope = self._content_root(root)
+        scope = self.page if root is None else self._content_root(root)
         if heading is not None:
             expectation_gate(self.page, "heading")
             role_heading = scope.get_by_role("heading").filter(has_text=heading).first
-            text_heading = scope.get_by_text(
-                heading, exact=not isinstance(heading, re.Pattern)
+            exact_heading = not isinstance(heading, re.Pattern)
+            text_heading = scope.get_by_text(heading, exact=exact_heading).filter(visible=True).first
+            titled = scope.locator("app-form-stack-widget [title], [title]").filter(
+                has_text=heading
             ).filter(visible=True).first
-            target = role_heading.or_(text_heading).first
+            target = role_heading.or_(text_heading).or_(titled).first
             expect(target).to_be_visible(timeout=timeout)
 
         if check_unblocked:
@@ -1074,15 +1411,18 @@ class AngularBasePage:
         if text is None and state is None and checkbox is None:
             raise ValueError("grid(): text, state yoki checkbox dan bittasini bering")
 
-        if root is None or root == "b-grid" or root is self.page:
-            grid = self._content_root(None).locator(
-                "smt-data-table, smt-table"
-            ).filter(visible=True).first
+        if root is None or root is self.page:
+            grid = self._legacy_grid_locator("b-grid")
         else:
             grid = self._resolve_root(root)
 
         rows = grid.locator(".smt-data-row")
-        no_data = grid.get_by_text(re.compile(r"^\s*(нет данных|нет результатов)\s*$", re.IGNORECASE))
+        no_data = grid.get_by_text(
+            re.compile(
+                r"^\s*(нет данных|нет результатов|no data|no results|ничего не найдено)\s*$",
+                re.IGNORECASE,
+            )
+        )
         if return_bool:
             if state == "empty":
                 return no_data.is_visible()
@@ -1113,7 +1453,15 @@ class AngularBasePage:
             expect(toggle).to_be_visible(timeout=10_000)
             self._set_toggle(toggle, True)
         if click:
+            self._wait_blocking_overlay_gone()
             row.click(timeout=10_000)
+            detail = row.locator(
+                "xpath=following-sibling::*[contains(@class,'smt-detail-row')][1]"
+            )
+            try:
+                expect(detail).to_be_visible(timeout=3_000)
+            except AssertionError:
+                pass
         return row
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -1137,6 +1485,7 @@ class AngularBasePage:
         )
         root = self._content_root(None if root == "b-grid-controller" else root)
         if search is not None:
+            self._wait_blocking_overlay_gone()
             field = root.locator("input[type='search']").filter(visible=True).first
             expect(field).to_be_visible(timeout=30_000)
             field.click(timeout=30_000)
@@ -1241,7 +1590,12 @@ class AngularBasePage:
             ).first
             expect(search_option).to_be_visible(timeout=timeout)
             self._set_toggle(search_option.get_by_role("checkbox"), True, timeout=timeout)
-            search_dialog.get_by_role("button", name="Подтвердить", exact=True).filter(visible=True).first.click(timeout=timeout)
+            search_save = search_dialog.get_by_role(
+                "button",
+                name=re.compile(r"^(Сохранить|Подтвердить)$"),
+            ).filter(visible=True).first
+            expect(search_save).to_be_visible(timeout=timeout)
+            search_save.click(timeout=timeout)
             expect(search_dialog).not_to_be_visible(timeout=timeout)
 
         self.wait_for_loader(timeout=timeout)
@@ -1279,9 +1633,13 @@ class AngularBasePage:
             remove_spaces=remove_spaces,
         )
 
-        cells = row.locator(".smt-data-cell")
+        # Direct row children only. Nested [data-smt-col-key] would shift
+        # indices; checkbox column matches legacy tbl-cell index 0.
+        cells = row.locator(":scope > .smt-data-cell")
         if cells.count() == 0:
-            cells = row.locator("[role='cell'], [data-smt-col-key]")
+            cells = row.locator(
+                ":scope > .smt-grid-checkbox-cell, :scope > [data-smt-col-key]"
+            )
         cell = cells.nth(index)
         expect(cell).to_be_visible(timeout=10_000)
         if expect_value is not _UNSET:
@@ -1306,7 +1664,8 @@ class AngularBasePage:
             'navigate_to',
             timeout=timeout,
         )
-        root = self._resolve_root("header")
+        self._dismiss_session_lock()
+        root = self.page.locator("app-header, lib-navigation-menu").first
         tab_button = root.get_by_role("button", name=tab, exact=True).filter(visible=True)
         expect(tab_button).to_have_count(1, timeout=timeout)
         expect(tab_button).to_be_visible(timeout=timeout)
@@ -1346,32 +1705,51 @@ class AngularBasePage:
             timeout=timeout,
         )
         links = [] if page_links is None else [page_links] if isinstance(page_links, str) else list(page_links)
-        header = self._resolve_root("header")
-        tab_button = header.get_by_role("button", name=navbar_tab, exact=True).filter(visible=True)
-        expect(tab_button).to_have_count(1, timeout=timeout)
-        expect(tab_button).to_be_visible(timeout=timeout)
-        tab_button.click(timeout=timeout)
+        # Never bare ``header``: in-page/card headers steal .first and navbar
+        # tabs resolve to count 0 (Возвраты → next Продажа).
+        header = self.page.locator("app-header, lib-navigation-menu").first
+        self._dismiss_session_lock()
+        self.page.keyboard.press("Escape")
+        try:
+            self.page.wait_for_load_state("domcontentloaded", timeout=min(timeout, 5_000))
+        except PlaywrightTimeoutError:
+            pass
+        tab_button = header.get_by_role("button", name=navbar_tab, exact=True)
+        try:
+            expect(tab_button).to_have_count(1, timeout=timeout)
+        except (AssertionError, PlaywrightTimeoutError):
+            tab_button = self.page.locator("app-header").get_by_role(
+                "button", name=navbar_tab, exact=True
+            )
+            expect(tab_button).to_have_count(1, timeout=timeout)
+        tab_button.first.evaluate(
+            "el => el.scrollIntoView({inline: 'center', block: 'nearest'})"
+        )
+        expect(tab_button.first).to_be_visible(timeout=timeout)
+        # SPA still reports the previous form navigation as in-flight; waiting
+        # on that click stalls the megamenu on the old URL.
+        tab_button.first.click(timeout=timeout, no_wait_after=True)
         menu = self.page.locator(
             ".cdk-overlay-container [role='menu']:visible"
         ).last
         expect(menu).to_be_visible(timeout=timeout)
         column = menu
         if menu_column is not None:
-            column_heading = menu.get_by_text(
-                _whitespace_agnostic_pattern(menu_column, exact=True)
-            ).filter(visible=True)
-            expect(column_heading).to_have_count(1, timeout=timeout)
-            # CDK menu guruhini heading orqali scope qilamiz; ustun argumenti
-            # butun menyudan tasodifiy birinchi itemni tanlash uchun tashlanmaydi.
-            column = column_heading.locator(
-                "xpath=ancestor-or-self::*[@role='group' or @role='menuitem' "
-                "or self::section or self::li][1]"
-            )
-            expect(column).to_be_visible(timeout=timeout)
-            if column.get_attribute("aria-haspopup") == "menu":
-                column.click(timeout=timeout)
-                column = self.page.get_by_role("menu").filter(visible=True).last
+            column_name = _whitespace_agnostic_pattern(menu_column, exact=True)
+            # Megamenu ustuni — ``<h3>`` (kernel navigation-menu). Ichidagi
+            # menuitem bilan bir xil nom bo'lsa (Визиты) get_by_text 2 ta match.
+            heading = menu.locator("h3").get_by_text(column_name).filter(visible=True)
+            try:
+                expect(heading).to_have_count(1, timeout=min(timeout, 3_000))
+                column = heading.locator("xpath=ancestor::li[1]")
+            except (AssertionError, PlaywrightTimeoutError):
+                column = menu.get_by_role("menuitem", name=column_name).filter(visible=True)
+                expect(column).to_have_count(1, timeout=timeout)
                 expect(column).to_be_visible(timeout=timeout)
+                if column.get_attribute("aria-haspopup") == "menu":
+                    column.click(timeout=timeout, no_wait_after=True)
+                    column = self.page.get_by_role("menu").filter(visible=True).last
+            expect(column).to_be_visible(timeout=timeout)
         item = column.get_by_role("menuitem", name=menu_item, exact=True).filter(visible=True)
         expect(item).to_have_count(1, timeout=timeout)
         expect(item).to_be_visible(timeout=timeout)
@@ -1384,18 +1762,95 @@ class AngularBasePage:
             ).first
             expect(add_target).to_be_visible(timeout=timeout)
             target = add_target
-        target.click(timeout=timeout)
+        target.click(timeout=timeout, no_wait_after=True)
         self.wait_for_loader(timeout=timeout)
 
         for page_link in links:
-            link = self.page.get_by_role("link").filter(has_text=page_link).filter(visible=True)
-            expect(link).to_have_count(1, timeout=timeout)
-            expect(link).to_be_visible(timeout=timeout)
-            link.click(timeout=timeout)
-            self.wait_for_loader(timeout=timeout)
+            self.click_sibling_page_link(page_link, timeout=timeout)
         return target
 
+    def click_sibling_page_link(self, page_link, timeout=60_000):
+        """Related-pages strip (``lib-page-siblings``), not any page-wide ``<a>``."""
+        host = self.page.locator("lib-page-siblings").filter(visible=True).first
+        try:
+            expect(host).to_be_visible(timeout=timeout)
+        except (AssertionError, PlaywrightTimeoutError) as exc:
+            raise AssertionError(
+                f"page_link='{page_link}' uchun lib-page-siblings topilmadi; "
+                f"url={self.page.url}"
+            ) from exc
+
+        # Prefer the sibling ``<a>`` (smt-button may expose link+button roles).
+        link = host.locator(":scope ul > li > a").filter(
+            has_text=re.compile(rf"^{re.escape(page_link)}$")
+        )
+        try:
+            expect(link.first).to_be_visible(timeout=min(timeout, 5_000))
+        except (AssertionError, PlaywrightTimeoutError):
+            link = host.get_by_role("link", name=page_link, exact=True)
+            if link.count() == 0:
+                link = host.get_by_role("button", name=page_link, exact=True)
+        if link.count() > 1:
+            current = urlsplit(self.page.url).path.rstrip("/")
+            picked = None
+            for i in range(link.count()):
+                href = link.nth(i).get_attribute("href") or ""
+                href_path = urlsplit(href).path.rstrip("/")
+                if href_path and href_path != current:
+                    picked = link.nth(i)
+                    break
+            link = picked or link.last
+        try:
+            expect(link).to_have_count(1, timeout=timeout)
+        except (AssertionError, PlaywrightTimeoutError) as exc:
+            raise AssertionError(
+                f"page_link='{page_link}' siblings ichida yagona emas; "
+                f"url={self.page.url}"
+            ) from exc
+        href = link.get_attribute("href") or ""
+        # Overflow-clipped siblings: Playwright force-click hits the wrong point.
+        link.evaluate("el => el.click()")
+        self.wait_for_loader(timeout=timeout)
+        href_path = urlsplit(href).path.strip("/")
+        if href_path:
+            try:
+                self.page.wait_for_url(
+                    re.compile(re.escape(href_path)),
+                    timeout=min(timeout, 15_000),
+                )
+            except PlaywrightTimeoutError:
+                pass
+
     # ------------------------------------------------------------------------------------------------------------------
+
+    def _open_filial_list(self, timeout):
+        """Kernel/A2 header filial pickerini ochadi."""
+        root = self._resolve_root("header")
+        trigger = root.locator(
+            'button[data-project-filial-trigger], '
+            'button[data-testid*="project-filial"]'
+        ).or_(
+            root.get_by_role(
+                "button",
+                name=re.compile(r"^\s*(?:TRADE|SFA)\b", re.IGNORECASE),
+            )
+        ).filter(visible=True).first
+        expect(trigger).to_be_visible(timeout=timeout)
+        trigger.click(timeout=timeout)
+        filial_list = self.page.get_by_test_id(
+            "shell-project-filial--filial-list"
+        )
+        expect(filial_list).to_be_visible(timeout=timeout)
+        return trigger, filial_list
+
+    def list_filials(self, timeout=30_000):
+        """Filial option matnlarini o'qiydi, joriy filialni o'zgartirmaydi."""
+        self._validate_options("list_filials", timeout=timeout)
+        _trigger, filial_list = self._open_filial_list(timeout)
+        names = filial_list.get_by_role("option").all_inner_texts()
+        self.page.keyboard.press("Escape")
+        expect(filial_list).to_be_hidden(timeout=timeout)
+        return names
 
     def switch_filial(
         self,
@@ -1415,23 +1870,7 @@ class AngularBasePage:
         if not first_filial and name is None:
             raise ValueError("switch_filial(): name yoki first_filial=True berilishi kerak")
 
-        root = self._resolve_root("header")
-        trigger = root.locator(
-            'button[data-project-filial-trigger], '
-            'button[data-testid*="project-filial"]'
-        ).or_(
-            root.get_by_role(
-                "button",
-                name=re.compile(r"^\s*(?:TRADE|SFA)\b", re.IGNORECASE),
-            )
-        ).filter(visible=True).first
-
-        expect(trigger).to_be_visible(timeout=timeout)
-        trigger.click(timeout=timeout)
-        filial_list = self.page.get_by_test_id(
-            "shell-project-filial--filial-list"
-        )
-        expect(filial_list).to_be_visible(timeout=timeout)
+        trigger, filial_list = self._open_filial_list(timeout)
         target_name = name
         if first_filial:
             target_name = first_non_admin_filial(
@@ -1468,6 +1907,7 @@ class AngularBasePage:
         expect(button).to_be_visible(timeout=10_000)
         button.click(timeout=10_000)
         expect(confirm).to_be_hidden(timeout=10_000)
+        self._wait_blocking_overlay_gone()
 
     # ------------------------------------------------------------------------------------------------------------------
 

@@ -260,7 +260,6 @@ HEAD profil → operatsion filial (1 ta)
     User trace: Главное → Основное → Операционный дашборд
 """
 
-import os
 import time
 
 import allure
@@ -269,10 +268,10 @@ from playwright.sync_api import Error as PlaywrightError
 
 from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.test_forms.monitoring.monitor import FormMonitor
+from tests.smoke.test_forms.monitoring.checks.url import angular_app_url
 from tests.smoke.test_forms.monitoring.navigation import first_operational_filial, run_form_cases
 from tests.smoke.test_forms.monitoring.suite_runner import OPERATIONAL_PLACEHOLDER, build_suite_inventory
 from utils.base_pages.angular_base_page import AngularBasePage
-from utils.base_pages.base_page import BasePage
 
 
 pytestmark = [
@@ -469,11 +468,11 @@ def run_a2_angular_forms(page, *, progress_test_id, terminal_reporter=None, chec
                 )
                 return
 
-            operation = "Legacy shellni 'Администрирование' filialiga o'tkazish"
+            operation = "A2 shellni 'Администрирование' filialiga o'tkazish"
             started_at = time.monotonic()
             try:
                 with allure.step(f"Suite precondition | {operation}"):
-                    BasePage(page).switch_filial(name="Администрирование")
+                    AngularBasePage(page).switch_filial(name="Администрирование")
             except (AssertionError, PlaywrightError) as exc:
                 monitor.record_precondition_failure(
                     operation,
@@ -504,9 +503,11 @@ def run_a2_angular_forms(page, *, progress_test_id, terminal_reporter=None, chec
             started_at = time.monotonic()
             try:
                 with allure.step(f"Suite precondition | {operation}"):
-                    company_url = os.environ["COMPANY_URL"]
                     page.goto(
-                        f"{company_url}/a2/trade/intro/dashboard",
+                        angular_app_url(
+                            "trade/intro/dashboard",
+                            current_url=page.url,
+                        ),
                         wait_until="domcontentloaded",
                         timeout=30_000,
                     )

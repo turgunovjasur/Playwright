@@ -4,9 +4,13 @@ import re
 
 import allure
 
-from tests.smoke.test_action.flow_action.flow_action import fill_action_scope, open_action_form
+from tests.smoke.test_action.flow_action.flow_action import (
+    existing_action_id,
+    fill_action_scope,
+    open_action_form,
+)
 from tests.smoke.flows.flow_authorization import authorization
-from utils.base_pages.base_page import BasePage
+from utils.base_pages.auto_base_page import AutoBasePage
 from utils.data_store import save_data
 
 
@@ -27,7 +31,7 @@ def run_amount_discount(page, code):
     7. ID ustunini yoqish va saqlangan aksiyani ro'yxatda tekshirish.
     8. Keyingi Visit ssenariylari uchun aksiya ma'lumotlarini saqlash.
     """
-    base = BasePage(page)
+    base = AutoBasePage(page)
     action_name = f"action-amount-discount-pw{code}"
     action_code = f"c_aad_pw{code}"
     product_name = f"product-pw{code}"
@@ -35,6 +39,28 @@ def run_amount_discount(page, code):
     price_type_name = f"Price Type UZB-pw{code}"
     start_date = base.date()
     end_date = base.date(days=30)
+
+    existing_id = existing_action_id(page, action_name, "Сумма", start_date, end_date)
+    if existing_id:
+        save_data(
+            "action_amount_discount",
+            {
+                "action_id": existing_id,
+                "name": action_name,
+                "code": action_code,
+                "calc_kind": "Сумма",
+                "rule_kind": "Обычный",
+                "threshold": "100000",
+                "bonus_kind": "Скидка",
+                "bonus_value": "5",
+                "product_name": product_name,
+                "room_name": room_name,
+                "price_type_name": price_type_name,
+                "start_date": start_date,
+                "end_date": end_date,
+            },
+        )
+        return
 
     with allure.step("1 - Aksiya yaratish formasini ochish"):
         open_action_form(page)
@@ -104,5 +130,5 @@ def run_amount_discount(page, code):
 def test_amount_discount(page, code):
     with allure.step("User profil bilan setup filialiga kirish"):
         authorization(page, who="user", code=code)
-        BasePage(page).switch_filial(name=f"filial-pw{code}")
+        AutoBasePage(page).switch_filial(name=f"filial-pw{code}")
     run_amount_discount(page, code)

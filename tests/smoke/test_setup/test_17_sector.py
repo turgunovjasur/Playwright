@@ -25,6 +25,9 @@ def run_sector(page, code):
     with allure.step("2 - TMC to'plamlari ro'yxatini ochish"):
         base.click(name="Наборы ТМЦ", role="link")
         base.expect_page(heading="Наборы ТМЦ")
+        base.grid_controller(search=sector_name)
+        if base.grid(sector_name, return_bool=True):
+            return
 
     with allure.step("3 - Yangi to'plam formasini ochish va to'ldirish"):
         base.click(name="Создать")

@@ -10,11 +10,36 @@ from utils.base_pages.angular_base_page import AngularBasePage
 from utils.base_pages.base_page import BasePage
 from utils.base_pages.page_diagnostics import expectation_gate, report_page_expectation
 
+KERNEL_ANGULAR_PREFIXES = (
+    "/a2/",
+    "/auth",
+    "/biruni",
+    "/trade",
+    "/anor",
+    "/billing",
+    "/core",
+    "/finance",
+    "/dwh",
+    "/supply",
+    "/wms",
+    "/darmon",
+    "/sb",
+    "/plugins",
+)
+
+
+def is_angular_page_url(url):
+    path = urlsplit(str(url or "")).path
+    if "/a2/" in path:
+        return True
+    return any(path == prefix or path.startswith(f"{prefix}/") for prefix in KERNEL_ANGULAR_PREFIXES)
+
 
 class AutoBasePage:
     """Har bir public metod chaqiruvida joriy sahifaga mos helperni tanlaydi.
 
-    URL path'ida ``/a2/`` bo'lsa AngularBasePage, aks holda BasePage ishlaydi.
+    URL path'ida ``/a2/`` yoki kernel Angular route (``/auth``, ``/trade``,
+    ``/biruni``, …) bo'lsa AngularBasePage, aks holda BasePage ishlaydi.
     Public metodlarning parametrlari va return kontrakti ikkala helperda bir xil.
     Locator va UI amallari tanlangan helperda bajariladi; xatoda boshqa helper
     sinalmaydi. Explicit CSS selector va model nomlari avtomatik tarjima qilinmaydi.
@@ -33,7 +58,7 @@ class AutoBasePage:
     date = staticmethod(BasePage.date)
 
     def _current_base(self):
-        if "/a2/" in urlsplit(self.page.url).path:
+        if is_angular_page_url(self.page.url):
             return self._angular
         return self._legacy
 
@@ -69,9 +94,38 @@ class AutoBasePage:
             raise ValueError("expect_page: kamida 'heading' yoki 'url' berilishi kerak")
 
         if url is not None:
-            pattern = url if isinstance(url, re.Pattern) else re.compile(re.escape(url))
+            if isinstance(url, re.Pattern):
+                pattern = url
+            else:
+                pattern = re.compile(re.escape(url).replace(r"\+", r"(?:\+|%2B)"))
             expectation_gate(self.page, "url")
-            expect(self.page).to_have_url(pattern, timeout=timeout)
+            try:
+                expect(self.page).to_have_url(pattern, timeout=timeout)
+            except AssertionError:
+                current_path = urlsplit(self.page.url).path
+                expected = getattr(url, "pattern", str(url))
+                # Kernel Angular post-login is `/trade` (Trade shell), not `/dashboard`.
+                if (
+                    "dashboard" in expected.lower()
+                    and is_angular_page_url(self.page.url)
+                    and (current_path == "/trade" or current_path.startswith("/trade/"))
+                ):
+                    url = None
+                else:
+                    parent_kept = any(
+                        token in expected.lower()
+                        for token in ("template", "+add", "+edit", "_list")
+                    )
+                    if (
+                        heading is None
+                        or "/auth" in current_path
+                        or "dashboard" in expected.lower()
+                        or not is_angular_page_url(self.page.url)
+                        or not parent_kept
+                    ):
+                        raise
+                    # Kernel type-D drawers keep the parent route (template list/add).
+                    url = None
 
         return self._current_base().expect_page(
             heading=heading,

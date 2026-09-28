@@ -2,7 +2,7 @@ import allure
 from faker import Faker
 
 from tests.smoke.flows.flow_authorization import authorization
-from utils.data_store import save_data
+from utils.data_store import load_data, save_data
 from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Legal Person")]
@@ -36,6 +36,23 @@ def run_legal_person(page, code):
     with allure.step("2 - Yuridik shaxslar ro'yxatiga o'tish"):
         base.navigate_to(tab="Справочники", name="Юридические лица")
         base.expect_page(heading="Юридические лица", url="legal_person_list")
+        base.grid_controller(search=legal_code)
+        already = base.grid(legal_code, return_bool=True)
+
+    if already:
+        stored_name = load_data("legal_person_name") or legal_name
+        with allure.step("5 - Mavjud yuridik shaxsni tekshirish"):
+            base.grid(legal_code, click=True)
+            base.click(name="Просмотреть")
+            base.expect_page(heading="Юридическое лицо (просмотр)", url="legal_person_view")
+            base.text(legal_code, "Активный")
+        with allure.step("7 - View formasini yopib, ro'yxatga qaytish"):
+            base.click(name="Закрыть", exact=True)
+            base.expect_page(heading="Юридические лица", url="legal_person_list")
+        with allure.step("8 - Muhim ma'lumotlarni data storega saqlash"):
+            save_data("legal_person_code", legal_code)
+            save_data("legal_person_name", stored_name)
+        return
 
     with allure.step("3 - Yangi yuridik shaxs formasini to'ldirish"):
         base.click(name="Создать")

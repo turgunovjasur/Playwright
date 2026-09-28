@@ -32,6 +32,25 @@ def run_filial(page, code):
     with allure.step("1 - Tashkilotlar ro'yxatiga o'tish"):
         base.navigate_to(tab="Главное", name="Организации")
         base.expect_page(heading="Организации")
+        base.grid_controller(search=filial_name)
+        already = base.grid(filial_name, return_bool=True)
+
+    if already:
+        with allure.step("5 - Mavjud filialni tekshirish"):
+            base.grid(filial_name, click=True)
+            base.click(name="Просмотреть")
+            base.expect_page(heading="Организация (просмотр)", url="filial_view?filial_id=")
+            filial_id = query_int_from_url(page.url, "filial_id")
+        with allure.step("6 - View formasini yopib, ro'yxatga qaytish"):
+            base.click(name="Закрыть", exact=True)
+            base.expect_page(heading="Организации")
+        with allure.step("7 - Muhim ma'lumotlarni data storega saqlash"):
+            save_data("filial_id", filial_id)
+            save_data("filial_name", filial_name)
+            save_data("filial_currency", filial_currency)
+            save_data("filial_legal_person_code", legal_person_code)
+            save_data("filial_legal_person_name", legal_person_name)
+        return
 
     with allure.step("2 - Yangi tashkilot formasini to'ldirish"):
         base.click(name="Создать")

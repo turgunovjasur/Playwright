@@ -31,6 +31,22 @@ def run_price_type_uzb(page, code, logger):
     with allure.step("2 - Narxlar ro'yxatiga o'tish"):
         base.navigate_to(tab="Справочники", name="Цены")
         base.expect_page(heading="Цены")
+        base.grid_controller(search=price_type_name)
+        already = base.grid(price_type_name, return_bool=True)
+
+    if already:
+        with allure.step("5 - Mavjud narx turidan UZB IDni olish"):
+            save_data("price_type_name_UZB", price_type_name)
+            base.grid(price_type_name, click=True)
+            base.click(name="Просмотр", exact=True)
+            base.expect_page(heading="Цена (просмотр)", url="price_type_view?price_type_id=")
+            save_data("price_type_id_uzb", query_int_from_url(page.url, "price_type_id"))
+        with allure.step("6 - View formasini yopib, narx turlari ro'yxatiga qaytish"):
+            base.click(name="Закрыть", exact=True)
+            if "price_type_list" not in page.url:
+                base.navigate_to(tab="Справочники", name="Цены")
+            base.expect_page(heading="Цены")
+        return
 
     with allure.step("3 - Yangi narx turi formasini to'ldirish"):
         base.click(name="Создать")
@@ -38,7 +54,7 @@ def run_price_type_uzb(page, code, logger):
         base.input(label="Код", value=price_type_code)
         base.input(label="Название", value=price_type_name)
         base.multiselect(label="Рабочие зоны", value=room_name)
-        base.b_input(label="Валюта", value="Узбекский сум", clear=True)
+        base.b_input(label="Валюта", value="Узбекский сум", clear=True, server_search=True)
         base.radio(label="Цена продажи", expect_checked=True)
 
     with allure.step("4 - Saqlash va ro'yxatda tekshirish"):
@@ -57,6 +73,8 @@ def run_price_type_uzb(page, code, logger):
 
     with allure.step("6 - View formasini yopib, narx turlari ro'yxatiga qaytish"):
         base.click(name="Закрыть", exact=True)
+        if "price_type_list" not in page.url:
+            base.navigate_to(tab="Справочники", name="Цены")
         base.expect_page(heading="Цены", url="price_type_list")
 
 # ----------------------------------------------------------------------------------------------------------------------

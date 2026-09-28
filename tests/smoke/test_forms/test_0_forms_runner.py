@@ -15,13 +15,14 @@ Forms run buyrug'i:
 ./.venv/bin/pytest -q -s --maxfail=0 tests/smoke/test_forms/test_0_forms_runner.py
 ```
 
-Joriy inventory snapshotida Allure'da 344 ta aktiv forma alohida PASSED/FAILED
-test, registry bo'yicha 15 ta intentional skip esa alohida SKIPPED test sifatida
+Joriy inventory snapshotida Allure'da 339 ta aktiv forma alohida PASSED/FAILED
+test, registry bo'yicha 20 ta intentional skip esa alohida SKIPPED test sifatida
 ko'rinadi.
 ``--maxfail=0`` bir nechta forma failed bo'lsa ham qolgan formalar davom
 etishini explicit kafolatlaydi.
 """
 
+import os
 import time
 
 import allure
@@ -141,7 +142,24 @@ def build_form_params():
     return tuple(params)
 
 
-FORM_CASES = build_form_params()
+def _form_cases_from_env(cases):
+    """Optional slice: SMARTUP_FORMS_MIN / SMARTUP_FORMS_MAX (inclusive global_number)."""
+    raw_min = os.environ.get("SMARTUP_FORMS_MIN", "").strip()
+    raw_max = os.environ.get("SMARTUP_FORMS_MAX", "").strip()
+    if not raw_min and not raw_max:
+        return cases
+    min_n = int(raw_min) if raw_min else 1
+    max_n = int(raw_max) if raw_max else 10_000
+    kept = []
+    for param in cases:
+        form_case = param.values[0]
+        n = int(form_case["global_number"])
+        if min_n <= n <= max_n:
+            kept.append(param)
+    return tuple(kept)
+
+
+FORM_CASES = _form_cases_from_env(build_form_params())
 
 
 @pytest.fixture(scope="module")

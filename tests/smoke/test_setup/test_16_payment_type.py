@@ -34,15 +34,19 @@ def run_payment_type(page):
         base.expect_page(heading="Тип оплат (прикрепление)")
 
     with allure.step("4 - Barcha to'lov turlarini tanlash va ulash"):
-        base.grid(checkbox="all")
-        base.click(name="Прикрепить")
-        base.confirm_biruni("Прикрепить типы оплат в количестве 4?")
         base.wait_for_loader()
-        base.grid(state="empty")
-
-    with allure.step("5 - Biriktirish sahifasini yopib, ro'yxatga qaytish"):
-        base.click(name="Закрыть")
-        base.expect_page(heading="Типы оплат")
+        if base.grid(state="empty", return_bool=True):
+            base.click(name="Закрыть")
+            base.expect_page(heading="Типы оплат")
+        else:
+            base.grid(checkbox="all")
+            base.click(name="Прикрепить")
+            base.confirm_biruni("Прикрепить типы оплат в количестве 4?")
+            base.wait_for_loader()
+            base.grid(state="empty")
+            with allure.step("5 - Biriktirish sahifasini yopib, ro'yxatga qaytish"):
+                base.click(name="Закрыть")
+                base.expect_page(heading="Типы оплат")
 
     with allure.step("6 - To'lov turlarini ro'yxatda tekshirish"):
         base.grid("Наличные деньги")

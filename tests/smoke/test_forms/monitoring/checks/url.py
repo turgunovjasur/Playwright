@@ -4,25 +4,47 @@ from __future__ import annotations
 
 import os
 import time
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
+from utils.base_pages.auto_base_page import is_angular_page_url
 
 DEFAULT_URL_TIMEOUT = 15_000
 EXPECTED_URL_NOT_REACHED = "EXPECTED_URL_NOT_REACHED"
 SHELL_NOT_DETECTED = "SHELL_NOT_DETECTED"
 
 
+def _angular_path_prefix(url):
+    """Kernel ng serve yo'li yoki packaged `/a2/` deploy prefiksi."""
+    path = urlsplit(str(url or "")).path
+    if "/a2/" in path or path.rstrip("/") == "/a2":
+        return "/a2"
+    return ""
+
+
+def angular_app_url(expected_path, *, current_url=""):
+    """Kernel yoki `/a2/` deploy uchun to'g'ridan-to'g'ri forma URL."""
+    expected = normalize_expected_path(expected_path)
+    base_url = os.environ["COMPANY_URL"].rstrip("/")
+    prefix = _angular_path_prefix(current_url)
+    return f"{base_url}{prefix}/{expected}"
+
+
 def canonical_form_path(url):
-    """Legacy token/query va A2 prefiksini olib, forma pathini qaytaradi."""
+    """Legacy token/query va A2/kernel prefiksini olib, forma pathini qaytaradi."""
     parsed = urlsplit(str(url or ""))
     fragment = parsed.fragment.lstrip("/")
     if fragment.startswith("!"):
         parts = fragment.split("/", 1)
         fragment = parts[1] if len(parts) == 2 else ""
-    if not fragment and "/a2/" in parsed.path:
-        fragment = parsed.path.split("/a2/", 1)[1]
+    if not fragment:
+        path = parsed.path
+        if "/a2/" in path:
+            fragment = path.split("/a2/", 1)[1]
+        else:
+            fragment = path.lstrip("/")
     return fragment.split("?", 1)[0].strip("/")
 
 
@@ -33,7 +55,7 @@ def normalize_expected_path(expected_path):
 def detect_shell(url):
     """Actual browser URLidan destination shellni aniqlaydi."""
     actual_url = str(url or "")
-    if "/a2/" in actual_url:
+    if is_angular_page_url(actual_url):
         return "a2"
     fragment = urlsplit(actual_url).fragment.lstrip("/")
     if fragment.startswith("!"):
@@ -42,7 +64,10 @@ def detect_shell(url):
 
 
 def _url_contains_path(url, expected_path):
-    return bool(expected_path) and expected_path in str(url or "")
+    if not expected_path:
+        return False
+    raw = str(url or "")
+    return expected_path in raw or expected_path in unquote(raw)
 
 
 def _wait_for_expected_path(page, expected_path, *, timeout):
@@ -60,7 +85,7 @@ def build_direct_form_url(current_url, expected_path, *, shell):
     expected = normalize_expected_path(expected_path)
     base_url = os.environ["COMPANY_URL"]
     if str(shell or "").strip().lower() == "a2":
-        return f"{base_url}/a2/{expected}"
+        return angular_app_url(expected, current_url=current_url)
 
     fragment = urlsplit(str(current_url or "")).fragment.lstrip("/")
     token = fragment.split("/", 1)[0]

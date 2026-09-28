@@ -28,6 +28,18 @@ def run_robot(page, code):
     with allure.step("1 - Xodimlar ro'yxatiga o'tish"):
         base.navigate_to(tab="Справочники", name="Штат")
         base.expect_page(heading="Штат")
+        already = base.grid(robot_name, return_bool=True)
+
+    if already:
+        with allure.step("5 - Mavjud robot IDni olish va saqlash"):
+            base.grid(robot_name, click=True)
+            base.click(name="Просмотреть", exact=True)
+            base.expect_page(heading="Штат (просмотр)", url="robot_view?robot_id=")
+            save_data("robot_id", query_int_from_url(page.url, "robot_id"))
+        with allure.step("6 - View formasini yopib, ro'yxatga qaytish"):
+            base.click(name="Закрыть", exact=True)
+            base.expect_page(heading="Штат", url="robot_list")
+        return
 
     with allure.step("2 - Yangi xodim formasini to'ldirish"):
         base.click(name="Создать")

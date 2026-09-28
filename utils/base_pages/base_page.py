@@ -541,7 +541,10 @@ class BasePage:
             raise ValueError("expect_page: kamida 'heading' yoki 'url' berilishi kerak")
 
         if url is not None:
-            pattern = url if isinstance(url, re.Pattern) else re.compile(re.escape(url))
+            if isinstance(url, re.Pattern):
+                pattern = url
+            else:
+                pattern = re.compile(re.escape(url).replace(r"\+", r"(?:\+|%2B)"))
             expectation_gate(self.page, "url")
             try:
                 expect(self.page).to_have_url(pattern, timeout=timeout)
@@ -753,6 +756,16 @@ class BasePage:
         if click:
             row.click(timeout=10_000)
         return row
+
+    def status_button(self, entity_id):
+        """Metronic status cell ``#status-btn-{id}``."""
+        return self.page.locator(f"#status-btn-{entity_id}")
+
+    def status_row(self, entity_id):
+        """Grid row that owns ``#status-btn-{id}``."""
+        return self.status_button(entity_id).locator(
+            "xpath=ancestor::div[contains(@class, 'tbl-row')][1]"
+        )
 
     # ------------------------------------------------------------------------------------------------------------------
 

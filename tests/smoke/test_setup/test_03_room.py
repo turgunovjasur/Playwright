@@ -25,6 +25,18 @@ def run_room(page, code):
         base.switch_filial(name=f"filial-pw{code}")
         base.navigate_to(tab="Справочники", name="Рабочие зоны")
         base.expect_page(heading="Рабочие зоны")
+        already = base.grid(room_name, return_bool=True)
+
+    if already:
+        with allure.step("4 - Mavjud room IDni olish va saqlash"):
+            base.grid(room_name, click=True)
+            base.click(name="Просмотреть", exact=True)
+            base.expect_page(heading="Рабочая зона (просмотр)", url="room_view?room_id=")
+            save_data("room_id", query_int_from_url(page.url, "room_id"))
+        with allure.step("5 - View formasini yopib, ro'yxatga qaytish"):
+            base.click(name="Закрыть", exact=True)
+            base.expect_page(heading="Рабочие зоны", url="room_list")
+        return
 
     with allure.step("2 - Yangi ish zonasi formasini to'ldirish"):
         base.click(name="Создать")

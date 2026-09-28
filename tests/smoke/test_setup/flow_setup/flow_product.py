@@ -3,6 +3,12 @@ import allure
 from utils.base_pages.auto_base_page import AutoBasePage
 
 
+def _ensure_inventory_list(base, page):
+    if "inventory_list" not in page.url:
+        base.navigate_to(tab="Справочники", name="ТМЦ")
+    base.expect_page(heading="ТМЦ")
+
+
 def create_product_with_price(
     page,
     *,
@@ -19,24 +25,28 @@ def create_product_with_price(
     with allure.step(f"1 - {price_label} TMC ro'yxatini ochish"):
         base.navigate_to(tab="Справочники", name="ТМЦ")
         base.expect_page(heading="ТМЦ")
-
-    with allure.step(f"2 - {price_label} TMC yaratish formasini ochish va to'ldirish"):
-        base.click(name="Создать")
-        base.expect_page(heading="ТМЦ (создание)")
-        base.input(label="Код", value=product_code)
-        base.input(label="Название", value=product_name)
-        base.b_input(label="Ед. изм.", value="шт", search_text="")
-        base.multiselect(label="Наборы ТМЦ", expect_value=sector_name)
-        base.checkbox(label="Активный", expect_checked=True)
-        base.checkbox(label="Товар", checked=True)
-
-    with allure.step(f"3 - {price_label} TMCni saqlash va ro'yxatda tekshirish"):
-        base.click(name="Сохранить", exact=True)
-        base.expect_page(heading="ТМЦ")
         base.grid_controller(search=product_code)
-        base.grid(product_code, product_name)
+        already = base.grid(product_code, return_bool=True)
+
+    if not already:
+        with allure.step(f"2 - {price_label} TMC yaratish formasini ochish va to'ldirish"):
+            base.click(name="Создать")
+            base.expect_page(heading="ТМЦ (создание)")
+            base.input(label="Код", value=product_code)
+            base.input(label="Название", value=product_name)
+            base.b_input(label="Ед. изм.", value="шт", search_text="")
+            base.multiselect(label="Наборы ТМЦ", expect_value=sector_name)
+            base.checkbox(label="Активный", expect_checked=True)
+            base.checkbox(label="Товар", checked=True)
+
+        with allure.step(f"3 - {price_label} TMCni saqlash va ro'yxatda tekshirish"):
+            base.click(name="Сохранить", exact=True)
+            _ensure_inventory_list(base, page)
+            base.grid_controller(search=product_code)
+            base.grid(product_code, product_name)
 
     with allure.step(f"4 - {price_label} TMC view formasini ochish va ID olish"):
+        base.grid_controller(search=product_code)
         base.grid(product_code, product_name, click=True)
         base.click(name="Просмотреть")
         base.expect_page(heading="ТМЦ (просмотр)", url="inventory_view?product_id=")
@@ -44,8 +54,11 @@ def create_product_with_price(
         product_view_url = page.url
 
     with allure.step(f"5 - {price_label} TMC view formasini yopish"):
-        base.click(name="Закрыть", exact=True)
-        base.expect_page(heading="ТМЦ")
+        try:
+            base.click(name="Закрыть", exact=True)
+        except Exception:
+            pass
+        _ensure_inventory_list(base, page)
 
     with allure.step(f"6 - {price_label} TMC narx formasini ochish"):
         base.grid(product_code, product_name, click=True)
@@ -53,10 +66,11 @@ def create_product_with_price(
         base.expect_page(heading="ТМЦ (установка цен)")
 
     with allure.step(f"7 - {price_label} narxni saqlash va TMCni ro'yxatda tekshirish"):
-        base.input(label=price_type_name, value=price)
+        price_row = base.grid(price_type_name)
+        base.input(price_row.locator("input:visible").first, price)
         base.click(name="Сохранить", exact=True)
         base.confirm_biruni(expected_text="Сохранить?")
-        base.expect_page(heading="ТМЦ")
+        _ensure_inventory_list(base, page)
         base.grid_controller(search=product_code)
         base.grid(product_code, product_name)
 

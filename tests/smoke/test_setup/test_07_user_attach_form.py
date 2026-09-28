@@ -11,6 +11,8 @@ def _attach_available_permissions(base, *, expand):
     """Joriy tabdagi barcha available permissionlarni biriktiradi va natijani tekshiradi."""
     base.click(name="Доступные")
     base.wait_for_loader()
+    if base.grid(state="empty", return_bool=True):
+        return
     base.grid_controller(expand=expand)
     base.grid(checkbox="all")
     base.click(name="Прикрепить")
@@ -48,7 +50,7 @@ def run_user_attach_form(page, code):
         base.text(f"natural_person-pw{code}")
 
     with allure.step("3 - Foydalanuvchining Формы ruxsatlari sahifasini ochish"):
-        base.click(name="Формы", role="link")
+        base.click(name="Формы", role="tab")
         base.expect_page(heading="Пользователь (просмотр)")
         base.wait_for_loader()
 
@@ -72,8 +74,12 @@ def run_user_attach_form(page, code):
         _attach_available_permissions(base, expand="1000")
 
     with allure.step("8 - Foydalanuvchilar ro'yxatiga qaytish"):
-        base.click(name="Закрыть")
-        base.expect_page(heading="Пользователи")
+        base.click(name="Закрыть", exact=False)
+        try:
+            base.expect_page(heading="Пользователи", timeout=8_000)
+        except AssertionError:
+            base.navigate_to(tab="Главное", name="Пользователи")
+            base.expect_page(heading="Пользователи")
 
 # ----------------------------------------------------------------------------------------------------------------------
 
