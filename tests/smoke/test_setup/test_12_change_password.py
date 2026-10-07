@@ -17,7 +17,7 @@ def run_change_password(page, code):
     """Testcase: foydalanuvchi parolini "Пароль (изменение)" formasida tasdiqlash.
 
     1. user-pw{code} sifatida kirib, majburiy parol o'zgartirish formasi ochilishini tekshirish.
-    2. Login ortidan ochilgan e'lon oynasi bo'lsa yopib, forma ochiq qolishini tekshirish.
+    2. Umumiy login handleri e'lonni yopganini va parol formasi to'silmaganini tekshirish.
     3. Текущий/Новый/Подтверждение парол maydonlarini to'ldirib "Подтвердить" bilan tasdiqlash.
     4. Password-change sessiyasini davom ettirmasdan, user bilan yangidan login qilib dashboardni tekshirish.
 
@@ -33,11 +33,8 @@ def run_change_password(page, code):
         base.expect_page(url="change_password")
         base.text(root=".alert-icon")
 
-    with allure.step("2 - Parol formasini to'sgan e'lon oynasini yopish"):
-        announcement = page.locator(".announcement_widget")
-        if announcement.is_visible():
-            announcement.locator(".announcement_dismiss").click()
-            expect(announcement).to_be_hidden()
+    with allure.step("2 - Parol formasi e'lon bilan to'silmaganini tekshirish"):
+        expect(page.locator(".announcement_widget")).to_be_hidden()
 
     with allure.step("3 - Yangi parol kiritish va tasdiqlash"):
         base.input(label="Текущий пароль", value=user_password)

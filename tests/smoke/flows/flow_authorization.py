@@ -1,6 +1,9 @@
 import os
 import re
 
+import allure
+from playwright.sync_api import expect
+
 from utils.base_pages.base_page import BasePage
 from utils.base_pages.page_reporting import capture_filial
 from utils.data_store import load_data
@@ -16,6 +19,14 @@ def current_company_code():
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+def _dismiss_announcement(announcement):
+    """Login ortidan ko'ringan e'lonni yopib, navigatsiyani ochadi."""
+    with allure.step("Login ortidan ochilgan e'lon oynasini yopish"):
+        announcement.locator(".announcement_dismiss").click(timeout=10_000)
+        expect(announcement).to_be_hidden(timeout=10_000)
+
+# ----------------------------------------------------------------------------------------------------------------------
+
 def login(page, email=None, password=None, *, profile=None):
     email = email or f"admin@{current_company_code()}"
     password = password or os.environ["COMPANY_PASSWORD"]
@@ -24,6 +35,11 @@ def login(page, email=None, password=None, *, profile=None):
     profile = profile or ("admin" if account == "admin" else "user" if account.startswith("user-pw") else "custom")
     match = re.fullmatch(r"user-pw(\d+)", account)
     start_login(page, server=company_url, company=company if profile != "head" else "", profile=profile, login=email, password=password, code=match.group(1) if match else None)
+
+    # E'lon login javobidan keyin kechroq ochilishi ham mumkin.
+    announcement = page.locator(".announcement_widget")
+    page.remove_locator_handler(announcement)
+    page.add_locator_handler(announcement, _dismiss_announcement)
 
     page.goto(f"{company_url}/login.html")
 
