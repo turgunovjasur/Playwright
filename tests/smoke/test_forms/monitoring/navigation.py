@@ -174,8 +174,9 @@ def open_create_dropdown_form(
         page_links=links,
     )
     with allure.step(f"Navigatsiya | Yo'l: {track}"):
+        is_a2 = "/a2/" in page.url
         group = (
-            page.locator(".btn-group:visible")
+            page.locator("smt-dropdown-button:visible" if is_a2 else ".btn-group:visible")
             .filter(
                 has=page.get_by_role(
                     "button",
@@ -193,12 +194,20 @@ def open_create_dropdown_form(
                 f"url={page.url}"
             ) from exc
 
-        toggle = group.locator("button.dropdown-toggle")
+        toggle = group.locator(
+            'button[aria-haspopup="menu"]' if is_a2 else "button.dropdown-toggle"
+        )
         expect(toggle).to_have_count(1, timeout=FORM_TIMEOUT)
         expect(toggle).to_be_visible(timeout=FORM_TIMEOUT)
         toggle.click()
 
-        action_link = group.get_by_role("link", name=action, exact=True)
+        if is_a2:
+            menu = page.get_by_role("menu").filter(visible=True)
+            expect(menu).to_have_count(1, timeout=FORM_TIMEOUT)
+            expect(menu).to_be_visible(timeout=FORM_TIMEOUT)
+            action_link = menu.get_by_role("menuitem", name=action, exact=True)
+        else:
+            action_link = group.get_by_role("link", name=action, exact=True)
         try:
             expect(action_link).to_have_count(1, timeout=FORM_TIMEOUT)
             expect(action_link).to_be_visible(timeout=FORM_TIMEOUT)

@@ -28,7 +28,8 @@ def run_warehouse(page):
         base.grid("Основной склад", click=True)
         base.click(name="Просмотреть", exact=True)
         base.expect_page(heading="Склад (просмотр)", url="warehouse_view?warehouse_id=")
-        base.text("Основной склад", "Активный")
+        base.form_view(label="Название", expect_value="Основной склад")
+        base.form_view(label="Статус", expect_value="Активный")
 
     with allure.step("3 - Warehouse IDni olish va saqlash"):
         save_data("warehouse_id", query_int_from_url(page.url, "warehouse_id"))

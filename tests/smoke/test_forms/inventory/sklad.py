@@ -13,6 +13,7 @@ A2_REPORT_FORMS = [
     {
         "menu_column": "Отчеты",
         "menu_item": "Конструктор отчетов по запросам на закуп",
+        "title": "Конструктор отчетов по запросам на закупку",
         "path": "anor/rep/mbi/mkw/purchase_request",
         "shell": "a2",
     },
