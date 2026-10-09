@@ -126,7 +126,7 @@ ADMIN profil → operatsion filial (25 ta)
     User trace: Склад → Отчеты → Конструктор отчетов по закупкам
 
 25. ✅ YOZILGAN | direct | ``anor/rep/mbi/mkw/purchase_request``
-    Title: Конструктор отчетов по запросам на закуп
+    Title: Конструктор отчетов по запросам на закупку
     User trace: Склад → Отчеты → Конструктор отчетов по запросам на закуп
 
 26. ✅ YOZILGAN | direct | ``anor/rep/mbi/mkw/writeoff``
@@ -351,6 +351,7 @@ OPERATIONAL_A2_FORMS = [
         "navbar_tab": "Склад",
         "menu_column": "Отчеты",
         "menu_item": "Конструктор отчетов по запросам на закуп",
+        "title": "Конструктор отчетов по запросам на закупку",
         "path": "anor/rep/mbi/mkw/purchase_request",
     },
     {
