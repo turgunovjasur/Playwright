@@ -775,9 +775,12 @@ class AngularBasePage:
             raise ValueError("multiselect(): label yoki name dan faqat bittasini bering")
         if label is not None:
             control = self._control(label, index=index, root=root, timeout=timeout)
-            select = control.locator("smt-data-select, smt-select").first
+            select = control.locator(
+                "smt-multi-data-select, smt-data-select, smt-select"
+            ).first
         elif name is not None:
             select = root.locator(
+                f'smt-multi-data-select[formcontrolname="{name}"], '
                 f'smt-data-select[formcontrolname="{name}"], smt-select[formcontrolname="{name}"]'
             ).nth(index)
         else:
