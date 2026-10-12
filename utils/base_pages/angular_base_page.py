@@ -790,7 +790,7 @@ class AngularBasePage:
         trigger = select.locator("smt-select-trigger").first
         search = trigger.locator("input").first
         chips = select.locator(
-            "smt-chip:visible, .smt-chip:visible, "
+            "smt-tag:visible, smt-chip:visible, .smt-chip:visible, "
             "[role='option'][aria-selected='true']:visible"
         )
 
@@ -806,6 +806,7 @@ class AngularBasePage:
 
         if clear:
             clear_buttons = select.locator(
+                'smt-tag button[smt-tag-close-x]:visible, '
                 'button[aria-label*="Очист"]:visible, button[aria-label*="Clear"]:visible'
             )
             for _ in range(clear_buttons.count()):
@@ -814,7 +815,8 @@ class AngularBasePage:
 
         selected_values = values_list(value)
         dropdown = self.page.locator(
-            ".cdk-overlay-container smt-select-dropdown:visible"
+            ".cdk-overlay-container smt-select-dropdown:visible, "
+            ".cdk-overlay-container [role='menu']:visible"
         ).last
         for option_text in selected_values:
             if not dropdown.is_visible():
@@ -849,7 +851,11 @@ class AngularBasePage:
             expect(selected).to_be_visible(timeout=timeout)
 
         if close and value is not _UNSET:
-            self.page.keyboard.press("Escape")
+            if dropdown.is_visible() and dropdown.get_attribute("role") == "menu":
+                dropdown.press("Escape")
+            else:
+                self.page.keyboard.press("Escape")
+            expect(dropdown).to_be_hidden(timeout=timeout)
         if return_value:
             return [" ".join(text.split()) for text in chips.all_inner_texts() if text.strip()]
         return select
