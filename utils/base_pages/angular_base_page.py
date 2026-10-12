@@ -480,17 +480,20 @@ class AngularBasePage:
         if toggle is None:
             labels = root.get_by_text(pattern).filter(visible=True)
             matched = []
-            for role_name in roles:
-                for label_index in range(labels.count()):
-                    label_item = labels.nth(label_index)
-                    container = label_item.locator(
-                        f"xpath=ancestor::*[.//*[@role='{role_name}']][1]"
-                    )
-                    if container.count() == 0:
-                        continue
-                    role_control = container.get_by_role(role_name).first
-                    if role_control.count() > 0:
-                        matched.append(role_control)
+            role_condition = " or ".join(f"@role='{role_name}'" for role_name in roles)
+            role_selector = ", ".join(f"[role='{role_name}']" for role_name in roles)
+            for label_index in range(labels.count()):
+                label_item = labels.nth(label_index)
+                # Checkbox va switchni birga qidirib, labelga eng yaqin
+                # konteynerni tanla; uzoqdagi grid checkboxiga chiqib ketma.
+                container = label_item.locator(
+                    f"xpath=ancestor::*[.//*[{role_condition}]][1]"
+                )
+                if container.count() == 0:
+                    continue
+                role_control = container.locator(role_selector).filter(visible=True).first
+                if role_control.count() > 0:
+                    matched.append(role_control)
             if index >= len(matched):
                 shown = getattr(label, "pattern", label)
                 raise AssertionError(
