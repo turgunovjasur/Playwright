@@ -42,7 +42,9 @@ def detect_shell(url):
 
 
 def _url_contains_path(url, expected_path):
-    return bool(expected_path) and expected_path in unquote(str(url or ""))
+    # URI escaping changes the representation, not the route (e.g. + → %2B).
+    # unquote keeps literal + intact; unquote_plus would turn it into a space.
+    return bool(expected_path) and unquote(expected_path) in unquote(str(url or ""))
 
 
 def _wait_for_expected_path(page, expected_path, *, timeout):

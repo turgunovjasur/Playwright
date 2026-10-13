@@ -84,15 +84,21 @@ class BasePage:
 
     def click(
         self,
-        name,
+        name=None,
         *,
+        locator=None,
         role="button",
         exact=False,
         index=0,
         root=None,
         timeout=10_000,
     ):
-        """Semantic role va accessible name orqali elementni topib bosadi.
+        """Elementni semantic role/name yoki locator orqali topib bosadi.
+
+        ``name`` yoki ``locator``dan aynan bittasi beriladi. ``locator`` CSS
+        selector yoki tayyor Locator bo'lishi mumkin. ``root`` name/selector
+        qidiruvini cheklaydi; tayyor Locator o'z scope'idan foydalanadi.
+        ``index`` mos elementlardan N-chisini tanlaydi.
 
         Styled radio inputlar ko'rinadigan label/span ostida qolishi mumkin;
         radio tanlash uchun ``radio(label, click=True)`` ishlatiladi.
@@ -103,8 +109,13 @@ class BasePage:
             index=index,
             timeout=timeout,
         )
-        root = self._resolve_root(root)
-        target = root.get_by_role(role, name=name, exact=exact).nth(index)
+        if (name is not None) + (locator is not None) != 1:
+            raise ValueError("click(): name yoki locator dan aynan bittasini bering")
+        if locator is not None:
+            target = self._resolve_root(root).locator(locator) if isinstance(locator, str) else locator
+        else:
+            target = self._resolve_root(root).get_by_role(role, name=name, exact=exact)
+        target = target.nth(index)
         expect(target).to_be_visible(timeout=timeout)
         target.click(timeout=timeout)
         return target
@@ -1061,6 +1072,7 @@ class BasePage:
         expect_value=_UNSET,
         return_value=False,
         clear=False,
+        select_first=False,
         index=0,
         close=True,
         exact=True,
@@ -1078,6 +1090,8 @@ class BasePage:
           - expect_value="Админ" yoki ro'yxat: selected chiplarni tekshiradi
           - return_value=True: tanlangan chip matnlarini list qilib qaytaradi
           - clear=True: mavjud tanlovlarning barchasini tozalaydi
+          - select_first=True: qidiruvni tozalab, birinchi ko'rinadigan variantni
+            tanlaydi va chipini tekshiradi; value bilan birga berilmaydi
 
         Single-select `select_b_input`/`b_input` dan farqi (Штат formasida
         MCP bilan tasdiqlangan, 2026-06-30):
@@ -1093,11 +1107,14 @@ class BasePage:
             'multiselect',
             return_value=return_value,
             clear=clear,
+            select_first=select_first,
             index=index,
             close=close,
             exact=exact,
             timeout=timeout,
         )
+        if select_first and value is not _UNSET:
+            raise ValueError("multiselect(): select_first va value birga berilmaydi")
         root = self._resolve_root(root)
         if label is not None and name is not None:
             raise ValueError("multiselect(): label yoki name dan faqat bittasini bering")
@@ -1139,16 +1156,24 @@ class BasePage:
             expect(option).to_be_visible(timeout=timeout)
             option.click(timeout=timeout)
 
+        if select_first:
+            search.click(timeout=timeout)
+            search.fill("", timeout=timeout)
+            option = b_input.locator(".hint:visible .hint-item:visible").first
+            expect(option).to_be_visible(timeout=timeout)
+            selected_values = [" ".join(option.inner_text(timeout=timeout).split())]
+            option.click(timeout=timeout)
+
         expected_values = (
             selected_values
-            if expect_value is _UNSET and value is not _UNSET
+            if expect_value is _UNSET and (value is not _UNSET or select_first)
             else values_list(expect_value)
         )
         for option_text in expected_values:
             selected = chips.get_by_text(option_text, exact=exact).first
             expect(selected).to_be_visible(timeout=timeout)
 
-        if close and value is not _UNSET:
+        if close and (value is not _UNSET or select_first):
             search.press("Escape", timeout=timeout)
         if return_value:
             return [" ".join(text.split()) for text in chips.all_inner_texts() if text.strip()]

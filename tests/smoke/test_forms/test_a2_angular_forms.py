@@ -91,7 +91,7 @@ ADMIN profil → operatsion filial (25 ta)
 16. ⏸ VAQTINCHA SKIP | direct | ``trade/tdeal/commercial_dashboard``
     Title: Коммерческий дашборд
     User trace: Продажа → Отчеты по продажам → Коммерческий дашборд
-    Skip sababi: foydalanuvchi xabariga ko'ra forma endi mavjud emas va server xatoligi bermoqda.
+    Sabab: foydalanuvchi qarori bilan chiqarilgan; joriy filial menyusida band yo'q.
 
 17. ✅ YOZILGAN | direct | ``anor/rep/mbi/mkcs/operation``
     Title: Конструктор отчетов по финансам

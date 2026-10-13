@@ -115,15 +115,21 @@ class AngularBasePage:
 
     def click(
         self,
-        name,
+        name=None,
         *,
+        locator=None,
         role="button",
         exact=False,
         index=0,
         root=None,
         timeout=10_000,
     ):
-        """A2 elementni semantic role/name bo'yicha topib bosadi.
+        """A2 elementni semantic role/name yoki locator orqali topib bosadi.
+
+        ``name`` yoki ``locator``dan aynan bittasi beriladi. ``locator`` CSS
+        selector yoki tayyor Locator bo'lishi mumkin. ``root`` name/selector
+        qidiruvini cheklaydi; tayyor Locator o'z scope'idan foydalanadi.
+        ``index`` mos elementlardan N-chisini tanlaydi.
 
         Styled radio inputlar ko'rinadigan label/span ostida qolishi mumkin;
         radio tanlash uchun ``radio(label, click=True)`` ishlatiladi.
@@ -134,17 +140,22 @@ class AngularBasePage:
             index=index,
             timeout=timeout,
         )
-        root = self._resolve_root(root)
-        target = root.get_by_role(role, name=name, exact=exact)
-        if role == "tab":
-            matcher = name if isinstance(name, re.Pattern) else (
-                self._label_pattern(name) if exact else re.compile(re.escape(name))
-            )
-            smt_tab = root.locator("smt-tab-button:not([role='tab'])").filter(
-                has_text=matcher,
-                has_not=self.page.get_by_role("tab"),
-            )
-            target = target.or_(smt_tab)
+        if (name is not None) + (locator is not None) != 1:
+            raise ValueError("click(): name yoki locator dan aynan bittasini bering")
+        if locator is not None:
+            target = self._resolve_root(root).locator(locator) if isinstance(locator, str) else locator
+        else:
+            root = self._resolve_root(root)
+            target = root.get_by_role(role, name=name, exact=exact)
+            if role == "tab":
+                matcher = name if isinstance(name, re.Pattern) else (
+                    self._label_pattern(name) if exact else re.compile(re.escape(name))
+                )
+                smt_tab = root.locator("smt-tab-button:not([role='tab'])").filter(
+                    has_text=matcher,
+                    has_not=self.page.get_by_role("tab"),
+                )
+                target = target.or_(smt_tab)
         target = target.nth(index)
         expect(target).to_be_visible(timeout=timeout)
         target.click(timeout=timeout)
@@ -480,20 +491,20 @@ class AngularBasePage:
         if toggle is None:
             labels = root.get_by_text(pattern).filter(visible=True)
             matched = []
-            role_condition = " or ".join(f"@role='{role_name}'" for role_name in roles)
-            role_selector = ", ".join(f"[role='{role_name}']" for role_name in roles)
+            role_predicate = " or ".join(f"@role='{role_name}'" for role_name in roles)
             for label_index in range(labels.count()):
                 label_item = labels.nth(label_index)
-                # Checkbox va switchni birga qidirib, labelga eng yaqin
-                # konteynerni tanla; uzoqdagi grid checkboxiga chiqib ketma.
-                container = label_item.locator(
-                    f"xpath=ancestor::*[.//*[{role_condition}]][1]"
-                )
+                # Choose the nearest control container across all supported roles.
+                # Searching checkbox first can reach a different card's grid.
+                container = label_item.locator(f"xpath=ancestor::*[.//*[{role_predicate}]][1]")
                 if container.count() == 0:
                     continue
-                role_control = container.locator(role_selector).filter(visible=True).first
+                role_control = container.get_by_role(roles[0])
+                for role_name in roles[1:]:
+                    role_control = role_control.or_(container.get_by_role(role_name))
+                role_control = role_control.filter(visible=True)
                 if role_control.count() > 0:
-                    matched.append(role_control)
+                    matched.append(role_control.first)
             if index >= len(matched):
                 shown = getattr(label, "pattern", label)
                 raise AssertionError(
@@ -754,45 +765,46 @@ class AngularBasePage:
         expect_value=_UNSET,
         return_value=False,
         clear=False,
+        select_first=False,
         index=0,
         close=True,
         exact=True,
         timeout=10_000,
         root=None,
     ):
-        """A2 multi-select componentini canonical API bilan boshqaradi."""
+        """A2 multi-select componentini canonical API bilan boshqaradi.
+
+        select_first=True qidiruvni tozalab birinchi ko'rinadigan variantni
+        tanlaydi va chipini tekshiradi; value bilan birga berilmaydi.
+        return_value=True tanlangan chip matnlarini ro'yxat qilib qaytaradi.
+        """
         self._validate_options(
             'multiselect',
             return_value=return_value,
             clear=clear,
+            select_first=select_first,
             index=index,
             close=close,
             exact=exact,
             timeout=timeout,
         )
+        if select_first and value is not _UNSET:
+            raise ValueError("multiselect(): select_first va value birga berilmaydi")
         root = self._resolve_root(root)
         if label is not None and name is not None:
             raise ValueError("multiselect(): label yoki name dan faqat bittasini bering")
         if label is not None:
             control = self._control(label, index=index, root=root, timeout=timeout)
-            select = control.locator(
-                "smt-multi-data-select, smt-data-select, smt-select"
-            ).first
+            select = control.locator("smt-multi-data-select").first
         elif name is not None:
-            select = root.locator(
-                f'smt-multi-data-select[formcontrolname="{name}"], '
-                f'smt-data-select[formcontrolname="{name}"], smt-select[formcontrolname="{name}"]'
-            ).nth(index)
+            select = root.locator(f'smt-multi-data-select[formcontrolname="{name}"]').nth(index)
         else:
             raise ValueError("multiselect(): label yoki name berilishi kerak")
 
         expect(select).to_be_visible(timeout=timeout)
         trigger = select.locator("smt-select-trigger").first
         search = trigger.locator("input").first
-        chips = select.locator(
-            "smt-tag:visible, smt-chip:visible, .smt-chip:visible, "
-            "[role='option'][aria-selected='true']:visible"
-        )
+        chips = select.locator("smt-tag:visible")
 
         def values_list(values):
             if values is _UNSET:
@@ -805,39 +817,71 @@ class AngularBasePage:
                 return [str(values)]
 
         if clear:
-            clear_buttons = select.locator(
-                'smt-tag button[smt-tag-close-x]:visible, '
-                'button[aria-label*="Очист"]:visible, button[aria-label*="Clear"]:visible'
-            )
+            clear_buttons = chips.get_by_role("button", name="Remove this tag", exact=True)
             for _ in range(clear_buttons.count()):
                 clear_buttons.first.click(timeout=timeout)
             expect(chips).to_have_count(0, timeout=timeout)
 
         selected_values = values_list(value)
-        dropdown = self.page.locator(
-            ".cdk-overlay-container smt-select-dropdown:visible, "
-            ".cdk-overlay-container [role='menu']:visible"
-        ).last
-        for option_text in selected_values:
-            if not dropdown.is_visible():
-                trigger.click(timeout=timeout)
+        menu_trigger = select.locator('[role="button"][aria-haspopup="menu"]').first
+        key_field = select.get_attribute("smtkeyfield")
+        display_field = select.get_attribute("smtdisplayfield") or "name"
+        dropdown = None
+
+        def query_finished(request, query):
+            if request.method != "POST" or not request.post_data:
+                return False
+            try:
+                payload = request.post_data_json
+            except (ValueError, TypeError):
+                return False
+            if not isinstance(payload, dict) or not isinstance(payload.get("p"), dict):
+                return False
+            params = payload["p"]
+            expected_filter = [display_field, "esearch", f"%{query}%"] if query else []
+            return key_field in params.get("column", []) and params.get("filter") == expected_filter
+
+        def search_dropdown(query):
+            current_query = search.input_value()
+            if menu_trigger.get_attribute("aria-expanded") != "true":
+                with self.page.expect_event("requestfinished", predicate=lambda request: query_finished(request, current_query), timeout=timeout):
+                    trigger.click(timeout=timeout)
+            menu_id = menu_trigger.get_attribute("aria-controls")
+            if not menu_id:
+                raise AssertionError("A2 multiselect dropdownining aria-controls atributi topilmadi")
+            menu = self.page.locator(f'.cdk-overlay-container [id="{menu_id}"]')
+            expect(menu).to_be_visible(timeout=timeout)
             expect(search).to_be_visible(timeout=timeout)
-            search.press("ControlOrMeta+A", timeout=timeout)
-            search.press("Backspace", timeout=timeout)
-            search.fill(option_text, timeout=timeout)
-            expect(dropdown).to_be_visible(timeout=timeout)
+            if current_query != query:
+                # The old options remain visible while the debounced search loads.
+                # Wait for this field's exact query before clicking any option.
+                with self.page.expect_event("requestfinished", predicate=lambda request: query_finished(request, query), timeout=timeout):
+                    search.fill(query, timeout=timeout)
+            expect(menu.get_by_text(re.compile(r"^\s*(?:Загрузка\.\.\.|Ищем результаты)\s*$")).filter(visible=True).first).to_be_hidden(timeout=timeout)
+            expect(search).to_have_value(query, timeout=timeout)
+            return menu
+
+        for option_text in selected_values:
             matcher = (
                 re.compile(rf"^\s*{re.escape(option_text)}\s*$")
                 if exact
                 else re.compile(re.escape(option_text))
             )
-            option = dropdown.locator("li:visible").filter(has_text=matcher).first
+            dropdown = search_dropdown(option_text)
+            option = dropdown.get_by_role("menuitemcheckbox", name=matcher).first
             expect(option).to_be_visible(timeout=timeout)
+            option.click(timeout=timeout)
+
+        if select_first:
+            dropdown = search_dropdown("")
+            option = dropdown.get_by_role("menuitemcheckbox").first
+            expect(option).to_be_visible(timeout=timeout)
+            selected_values = [" ".join(option.inner_text(timeout=timeout).split())]
             option.click(timeout=timeout)
 
         expected_values = (
             selected_values
-            if expect_value is _UNSET and value is not _UNSET
+            if expect_value is _UNSET and (value is not _UNSET or select_first)
             else values_list(expect_value)
         )
         for option_text in expected_values:
@@ -850,11 +894,11 @@ class AngularBasePage:
             ).first
             expect(selected).to_be_visible(timeout=timeout)
 
-        if close and value is not _UNSET:
-            if dropdown.is_visible() and dropdown.get_attribute("role") == "menu":
-                dropdown.press("Escape")
-            else:
-                self.page.keyboard.press("Escape")
+        if close and dropdown is not None and dropdown.is_visible():
+            close_target = dropdown.get_by_role("menuitemcheckbox").first
+            if close_target.count() == 0:
+                close_target = dropdown
+            close_target.press("Escape", timeout=timeout)
             expect(dropdown).to_be_hidden(timeout=timeout)
         if return_value:
             return [" ".join(text.split()) for text in chips.all_inner_texts() if text.strip()]
@@ -1253,7 +1297,7 @@ class AngularBasePage:
             ).first
             expect(search_option).to_be_visible(timeout=timeout)
             self._set_toggle(search_option.get_by_role("checkbox"), True, timeout=timeout)
-            search_dialog.get_by_role("button", name="Подтвердить", exact=True).filter(visible=True).first.click(timeout=timeout)
+            search_dialog.get_by_role("button", name="Сохранить", exact=True).filter(visible=True).first.click(timeout=timeout)
             expect(search_dialog).not_to_be_visible(timeout=timeout)
 
         self.wait_for_loader(timeout=timeout)

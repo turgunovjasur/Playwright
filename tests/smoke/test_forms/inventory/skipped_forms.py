@@ -11,26 +11,8 @@ QLIK_BETA_SKIP_REASON = (
     "'Дашборд по продажам (БЕТА)' foydalanuvchi qarori bilan vaqtincha "
     "chiqarilgan: joriy muhitda Qlik litsenziyasi yo'q."
 )
-REMOVED_DASHBOARD_SKIP_REASON = (
-    "Foydalanuvchi xabariga ko'ra forma endi mavjud emas va server xatoligi "
-    "bermoqda; foydalanuvchi qarori bilan aktiv test rejasidan chiqarilgan."
-)
 
 SKIPPED_FORMS = [
-    {
-        "name": "Коммерческий дашборд",
-        "navbar_tab": "Продажа",
-        "menu_item": "Коммерческий дашборд",
-        "path": "trade/tdeal/commercial_dashboard",
-        "reason": REMOVED_DASHBOARD_SKIP_REASON,
-    },
-    {
-        "name": "Дашборд по MML",
-        "navbar_tab": "Справочники",
-        "menu_item": "Минимальные обязательные ассортименты",
-        "path": "anor/mcg/mml_dashboard",
-        "reason": REMOVED_DASHBOARD_SKIP_REASON,
-    },
     {
         "name": "Продавцы",
         "navbar_tab": "Справочники",
@@ -114,6 +96,36 @@ SKIPPED_FORMS = [
         "menu_item": "Дашборд по продажам (БЕТА)",
         "path": "trade/tdeal/qlik_sales_dashboard",
         "reason": QLIK_BETA_SKIP_REASON,
+    },
+    {
+        "name": "Настройки сервисов доставки",
+        "navbar_tab": "Главное",
+        "menu_item": "Настройки системы",
+        "path": "trade/txs/delivery_service_setting",
+        "reason": (
+            "Foydalanuvchi qarori bilan vaqtincha chiqarilgan: joriy muhitda "
+            "forma backend so'rovlari HTTP 401 qaytaradi."
+        ),
+    },
+    {
+        "name": "Коммерческий дашборд",
+        "navbar_tab": "Продажа",
+        "menu_item": "Коммерческий дашборд",
+        "path": "trade/tdeal/commercial_dashboard",
+        "reason": (
+            "Foydalanuvchi qarori bilan vaqtincha chiqarilgan: joriy "
+            "operatsion filial menyusida forma bandi yo'q."
+        ),
+    },
+    {
+        "name": "Дашборд по MML",
+        "navbar_tab": "Справочники",
+        "menu_item": "Минимальные обязательные ассортименты",
+        "path": "anor/mcg/mml_dashboard",
+        "reason": (
+            "Foydalanuvchi qarori bilan vaqtincha chiqarilgan: MML ro'yxatida "
+            "dashboard havolasi yo'q."
+        ),
     },
 ]
 
