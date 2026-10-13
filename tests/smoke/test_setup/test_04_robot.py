@@ -17,7 +17,7 @@ def run_robot(page, code):
     3. ATS rolini "Админ" qilib belgilab, Рабочая зона sifatida room-pw{code} ni
        biriktirish va "Активный" statusini tekshirish.
     4. Saqlab, ro'yxatda xodim nomi va kodi ko'rinishini tekshirish.
-    5. View formasini ochib, robot IDni data_store ga saqlash.
+    5. View formasida nom, kod, status, rol va ish zonasini tekshirib, robot IDni data_store ga saqlash.
     6. View formasini yopib, ro'yxatga qaytish.
     """
     base = AutoBasePage(page)
@@ -48,7 +48,11 @@ def run_robot(page, code):
     with allure.step("5 - View formasidan robot IDni olish va saqlash"):
         base.click(name="Просмотреть", exact=True)
         base.expect_page(heading="Штат (просмотр)", url="robot_view?robot_id=")
-        base.text(robot_name, robot_code, "Активный")
+        base.form_view(label="Название", expect_value=robot_name)
+        base.form_view(label="Код", expect_value=robot_code)
+        base.form_view(label="Статус", expect_value="Активный")
+        base.form_view(label="Роли", expect_value="Админ")
+        base.form_view(label="Рабочие зоны", expect_value=room_name)
         save_data("robot_id", query_int_from_url(page.url, "robot_id"))
 
     with allure.step("6 - View formasini yopib, ro'yxatga qaytish"):

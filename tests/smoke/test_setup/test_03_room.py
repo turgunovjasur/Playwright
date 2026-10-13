@@ -14,7 +14,7 @@ def run_room(page, code):
     1. filial-pw{code} ga o'tib, Справочники -> Рабочие зоны ro'yxatini ochish.
     2. "Создать" -> code (c_rm_pw{code}) va nom (room-pw{code}) ni kiritish.
     3. Saqlab, ro'yxatda room nomi va kodi ko'rinishini tekshirish.
-    4. View formasini ochib, room IDni data_store ga saqlash.
+    4. View formasida nom, kod va aktiv statusni tekshirib, room IDni data_store ga saqlash.
     5. View formasini yopib, ro'yxatga qaytish.
     """
     base = AutoBasePage(page)
@@ -42,7 +42,9 @@ def run_room(page, code):
     with allure.step("4 - View formasidan room IDni olish va saqlash"):
         base.click(name="Просмотреть", exact=True)
         base.expect_page(heading="Рабочая зона (просмотр)", url="room_view?room_id=")
-        base.text(room_name, room_code, "Активный")
+        base.form_view(label="Название", expect_value=room_name)
+        base.form_view(label="Код", expect_value=room_code)
+        base.form_view(label="Статус", expect_value="Активный")
         save_data("room_id", query_int_from_url(page.url, "room_id"))
 
     with allure.step("5 - View formasini yopib, ro'yxatga qaytish"):

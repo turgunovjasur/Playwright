@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import time
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
@@ -23,11 +23,11 @@ def canonical_form_path(url):
         fragment = parts[1] if len(parts) == 2 else ""
     if not fragment and "/a2/" in parsed.path:
         fragment = parsed.path.split("/a2/", 1)[1]
-    return fragment.split("?", 1)[0].strip("/")
+    return unquote(fragment.split("?", 1)[0]).strip("/")
 
 
 def normalize_expected_path(expected_path):
-    return str(expected_path or "").split("?", 1)[0].strip("/")
+    return unquote(str(expected_path or "").split("?", 1)[0]).strip("/")
 
 
 def detect_shell(url):
@@ -42,7 +42,9 @@ def detect_shell(url):
 
 
 def _url_contains_path(url, expected_path):
-    return bool(expected_path) and expected_path in str(url or "")
+    # URI escaping changes the representation, not the route (e.g. + → %2B).
+    # unquote keeps literal + intact; unquote_plus would turn it into a space.
+    return bool(expected_path) and unquote(expected_path) in unquote(str(url or ""))
 
 
 def _wait_for_expected_path(page, expected_path, *, timeout):

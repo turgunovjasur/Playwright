@@ -97,6 +97,36 @@ SKIPPED_FORMS = [
         "path": "trade/tdeal/qlik_sales_dashboard",
         "reason": QLIK_BETA_SKIP_REASON,
     },
+    {
+        "name": "Настройки сервисов доставки",
+        "navbar_tab": "Главное",
+        "menu_item": "Настройки системы",
+        "path": "trade/txs/delivery_service_setting",
+        "reason": (
+            "Foydalanuvchi qarori bilan vaqtincha chiqarilgan: joriy muhitda "
+            "forma backend so'rovlari HTTP 401 qaytaradi."
+        ),
+    },
+    {
+        "name": "Коммерческий дашборд",
+        "navbar_tab": "Продажа",
+        "menu_item": "Коммерческий дашборд",
+        "path": "trade/tdeal/commercial_dashboard",
+        "reason": (
+            "Foydalanuvchi qarori bilan vaqtincha chiqarilgan: joriy "
+            "operatsion filial menyusida forma bandi yo'q."
+        ),
+    },
+    {
+        "name": "Дашборд по MML",
+        "navbar_tab": "Справочники",
+        "menu_item": "Минимальные обязательные ассортименты",
+        "path": "anor/mcg/mml_dashboard",
+        "reason": (
+            "Foydalanuvchi qarori bilan vaqtincha chiqarilgan: MML ro'yxatida "
+            "dashboard havolasi yo'q."
+        ),
+    },
 ]
 
 SKIPPED_FORM_KEYS = frozenset(

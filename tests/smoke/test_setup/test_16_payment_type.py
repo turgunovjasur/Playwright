@@ -14,7 +14,7 @@ def run_payment_type(page):
     1. Справочники -> Цены ro'yxatini ochish.
     2. Типы оплат ro'yxatini ochish.
     3. Тип оплат (прикрепление) sahifasini ochish.
-    4. Barcha mavjud to'lov turlarini tanlab ulash va available grid bo'shligini tekshirish.
+    4. Biriktirilmagan to'lov turlari bo'lsa ularni ulash va available grid bo'shligini tekshirish.
     5. Прикрепление sahifasini yopib, Типы оплат ro'yxatiga qaytish.
     6. Company ro'yxatida 4 ta to'lov turi ko'rinishini tekshirish.
     7. Grid setting orqali ИД ustuni va qidiruvini yoqish.
@@ -34,10 +34,12 @@ def run_payment_type(page):
         base.expect_page(heading="Тип оплат (прикрепление)")
 
     with allure.step("4 - Barcha to'lov turlarini tanlash va ulash"):
-        base.grid(checkbox="all")
-        base.click(name="Прикрепить")
-        base.confirm_biruni("Прикрепить типы оплат в количестве 4?")
         base.wait_for_loader()
+        if not base.grid(state="empty", return_bool=True):
+            base.grid(checkbox="all")
+            base.click(name="Прикрепить")
+            base.confirm_biruni("Прикрепить типы оплат в количестве 4?")
+            base.wait_for_loader()
         base.grid(state="empty")
 
     with allure.step("5 - Biriktirish sahifasini yopib, ro'yxatga qaytish"):
