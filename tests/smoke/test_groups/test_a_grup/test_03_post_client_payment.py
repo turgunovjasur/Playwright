@@ -1,3 +1,5 @@
+import re
+
 import allure
 import pytest
 
@@ -41,7 +43,7 @@ def run_post_client_payment(page, code):
 
     with allure.step("2 - Yangi client payment formasini ochish"):
         base.click(name="Создать")
-        base.expect_page(heading="Оплата от клиента / Создание", url="cashin+add")
+        base.expect_page(heading="Оплата от клиента / Создание", url=re.compile(r"cashin(?:\+|%2[bB])add(?:[?#]|$)"))
 
     with allure.step("3 - Client payment maydonlarini to'ldirish"):
         base.b_input(label="Клиент", value=client)
@@ -54,7 +56,7 @@ def run_post_client_payment(page, code):
     with allure.step("4 - Paymentni Провести qilish"):
         base.click(name="Провести")
         base.confirm_biruni(expected_text="Провести?")
-        base.expect_page(heading="Оплата от клиента / Создание", url="cashin+add")
+        base.expect_page(heading="Оплата от клиента / Создание", url=re.compile(r"cashin(?:\+|%2[bB])add(?:[?#]|$)"))
 
     with allure.step("5 - Debt va prepayment settlementda tekshiriladi"):
         base.navigate_to(tab="Продажа", name="Взаиморасчеты с клиентами")

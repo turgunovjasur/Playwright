@@ -35,7 +35,7 @@ def run_import_product(page, user_page, code):
 
     with allure.step("2 - Yaratish formasidan birinchi ko'ringan to'plamni aniqlash"):
         user_base.click(name="Создать", exact=True)
-        user_base.expect_page(heading="ТМЦ (создание)", url="inventory+add")
+        user_base.expect_page(heading="ТМЦ (создание)", url=re.compile(r"inventory(?:\+|%2[bB])add(?:[?#]|$)"))
         sector = user_base.multiselect(label="Наборы ТМЦ", clear=True, select_first=True, return_value=True)[0]
 
     with allure.step("3 - Mahsulot yaratmasdan listga qaytish"):
@@ -70,7 +70,7 @@ def run_import_product(page, user_page, code):
     with allure.step("6 - ТМЦ import formasini ochish"):
         admin_base.click(locator="button.dropdown-toggle", root='.btn-group:has(button:text-is("Создать"))')
         admin_base.click(name="Импорт", role="link", exact=True)
-        admin_base.expect_page(heading="ТМЦ (импорт)")
+        admin_base.expect_page(heading="ТМЦ (импорт)", url="anor/mr/product/inventory_import")
 
     with allure.step("7 - Import mappingi va boshlang'ich qatorni tekshirish"):
         admin_base.click(name="Настройка", exact=True)
@@ -140,7 +140,7 @@ def run_import_product(page, user_page, code):
         admin_base.click(name="Загрузить и сохранить", exact=True)
         admin_base.confirm_biruni(expected_text="Вы действительно хотите загрузить и сохранить")
         admin_base.wait_for_loader()
-        admin_base.expect_page(heading="ТМЦ (импорт)")
+        admin_base.expect_page(heading="ТМЦ (импорт)", url="anor/mr/product/inventory_import")
         admin_base.grid(state="empty", root='b-pg-grid[name="products"]')
         admin_base.grid(state="empty", root='b-pg-grid[name="error_messages"]')
 
@@ -153,18 +153,18 @@ def run_import_product(page, user_page, code):
 
     with allure.step("13 - Наборы ТМЦ listini ochish"):
         admin_base.click(name="Наборы ТМЦ", role="link", exact=True)
-        admin_base.expect_page(heading="Наборы ТМЦ")
+        admin_base.expect_page(heading="Наборы ТМЦ", url="anor/mr/sector_list")
         admin_base.grid_controller(search=sector)
 
     with allure.step("14 - Tanlangan to'plamga biriktirish formasini ochish"):
         admin_base.grid(sector, click=True)
         admin_base.click(name="Прикрепить", exact=True)
-        admin_base.expect_page(heading="Прикрепленные ТМЦ")
+        admin_base.expect_page(heading="Прикрепленные ТМЦ", url="anor/mr/sector_product_list")
 
     for product in products:
         with allure.step(f"15 - {product['name']}: Доступные ichidan biriktirish"):
             admin_base.click(name="Доступные", exact=True)
-            admin_base.expect_page(heading="Доступные ТМЦ")
+            admin_base.expect_page(heading="Доступные ТМЦ")  # navigation: same-url - Available tab updates the sector product grid on the same page.
             admin_base.grid_controller(search=product["code"], root="b-grid-controller:visible")
             admin_base.grid(product["code"], product["name"], root='b-grid[name="inventories"]', click=True)
             admin_base.click(name="Прикрепить", exact=True)
@@ -172,7 +172,7 @@ def run_import_product(page, user_page, code):
             admin_base.wait_for_loader()
         with allure.step(f"16 - {product['name']}: biriktirilganini tekshirish"):
             admin_base.click(name="Прикрепленные", exact=True)
-            admin_base.expect_page(heading="Прикрепленные ТМЦ")
+            admin_base.expect_page(heading="Прикрепленные ТМЦ")  # navigation: same-url - Attached tab updates the sector product grid on the same page.
             admin_base.grid_controller(search=product["code"], root="b-grid-controller:visible")
             admin_base.grid(product["code"], product["name"], root='b-grid[name="inventories"]')
 
@@ -203,12 +203,12 @@ def run_import_product(page, user_page, code):
                 )
         with allure.step(f"21 - {product['name']}: Изменить orqali birlik/to'plamni o'qish"):
             user_base.click(name="Изменить", exact=True)
-            user_base.expect_page(heading="ТМЦ (изменение)")
+            user_base.expect_page(heading="ТМЦ (изменение)", url=re.compile(r"anor/mr/product/inventory(?:\+|%2[bB])edit(?:[?#]|$)"))
             user_base.b_input(label="Ед. изм.", expect_value=product["measure"])
             user_base.multiselect(label="Наборы ТМЦ", expect_value=product["sector"])
         with allure.step(f"22 - {product['name']}: o'zgartirishsiz viewga qaytish"):
             user_base.click(name="Закрыть", exact=True)
-            user_base.expect_page(heading="ТМЦ (просмотр)")
+            user_base.expect_page(heading="ТМЦ (просмотр)", url="inventory_view?product_id=")
         with allure.step(f"23 - {product['name']}: listga qaytish"):
             user_base.click(name="Закрыть", exact=True)
             user_base.expect_page(heading="ТМЦ", url="inventory_list")

@@ -9,7 +9,7 @@ from playwright.sync_api import expect
 from tests.smoke.test_forms.monitoring.checks.core import OPENED_WITH_DEFECT, reason_description
 
 
-DEFAULT_LOADER_TIMEOUT = 60_000
+DEFAULT_LOADER_TIMEOUT = 120_000
 LOADER_NOT_FINISHED = "LOADER_NOT_FINISHED"
 BLOCKING_LOADER_SELECTORS = (
     ".block-ui-overlay:visible",

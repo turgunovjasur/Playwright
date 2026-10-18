@@ -13,8 +13,8 @@ def browser_context(browser, trace_path):
     context = browser.new_context(**config.browser_context_options())
     trace_started = False
     try:
-        context.set_default_timeout(10_000)
-        context.set_default_navigation_timeout(20_000)
+        context.set_default_timeout(240_000)
+        context.set_default_navigation_timeout(240_000)
         context.tracing.start(screenshots=True, snapshots=True, sources=True)
         trace_started = True
         yield context

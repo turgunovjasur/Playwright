@@ -44,7 +44,7 @@ def run_report_saleswork_check(page):
         base.click(name="Шаблоны", exact=True)
         base.expect_page(heading="Шаблоны SalesWorks", url="saleswork_template_list")
         base.click(name="Создать", exact=True)
-        base.expect_page(heading="Шаблон Saleswork (Создание)", url="saleswork_template+add")
+        base.expect_page(heading="Шаблон Saleswork (Создание)", url=re.compile(r"saleswork_template(?:\+|%2[bB])add(?:[?#]|$)"))
         base.input(label="Название", value=template_name)
         base.b_input(label="Продуктовое направление", value="Группа")
         base.checkbox(label="Активный", expect_checked=True)

@@ -1,0 +1,32 @@
+name: Validate page navigation
+
+on:
+  pull_request:
+    paths:
+      - "tests/**/*.py"
+      - "scripts/validate_page_navigation.py"
+      - ".github/workflows/validate-page-navigation.yml"
+  push:
+    paths:
+      - "tests/**/*.py"
+      - "scripts/validate_page_navigation.py"
+      - ".github/workflows/validate-page-navigation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  navigation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Validate page navigation
+        run: python scripts/validate_page_navigation.py

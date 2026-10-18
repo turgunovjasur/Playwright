@@ -1,3 +1,5 @@
+import re
+
 import allure
 
 from tests.smoke.flows.flow_authorization import authorization
@@ -23,15 +25,15 @@ def run_payment_type(page):
     base = AutoBasePage(page)
     with allure.step("1 - Narxlar ro'yxatini ochish"):
         base.navigate_to(tab="Справочники", name="Цены")
-        base.expect_page(heading="Цены")
+        base.expect_page(heading="Цены", url="anor/mkr/price_type_list")
 
     with allure.step("2 - To'lov turlari ro'yxatini ochish"):
         base.click(name="Типы оплат", role="link")
-        base.expect_page(heading="Типы оплат")
+        base.expect_page(heading="Типы оплат", url="anor/mkr/payment_type_list")
 
     with allure.step("3 - To'lov turlarini biriktirish sahifasini ochish"):
         base.click(name="Прикрепление")
-        base.expect_page(heading="Тип оплат (прикрепление)")
+        base.expect_page(heading="Тип оплат (прикрепление)", url=re.compile(r"anor/mkr/payment_type_list(?:\+|%2[bB])attach(?:[?#]|$)"))
 
     with allure.step("4 - Barcha to'lov turlarini tanlash va ulash"):
         base.wait_for_loader()
@@ -44,7 +46,7 @@ def run_payment_type(page):
 
     with allure.step("5 - Biriktirish sahifasini yopib, ro'yxatga qaytish"):
         base.click(name="Закрыть")
-        base.expect_page(heading="Типы оплат")
+        base.expect_page(heading="Типы оплат", url="anor/mkr/payment_type_list")
 
     with allure.step("6 - To'lov turlarini ro'yxatda tekshirish"):
         base.grid("Наличные деньги")

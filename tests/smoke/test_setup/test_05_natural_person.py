@@ -47,7 +47,7 @@ def run_natural_person(page, code):
     open_natural_person_view(page, person_name, step_name="5 - Jismoniy shaxs view formasini ochish")
 
     with allure.step("6 - View formasida nom va statusni tekshirish"):
-        base.text(person_name, "Активный")
+        base.text(person_name, "Активный", include_input_values=True)
 
     with allure.step("7 - User person IDni olish va saqlash"):
         save_data("user_person_id", query_int_from_url(page.url, "person_id"))

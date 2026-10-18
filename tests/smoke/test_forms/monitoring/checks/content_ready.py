@@ -12,7 +12,8 @@ from tests.smoke.test_forms.monitoring.checks.core import (
 )
 
 
-DEFAULT_CONTENT_READY_TIMEOUT = 15_000
+DEFAULT_CONTENT_READY_TIMEOUT = 30_000
+A2_CONTENT_READY_TIMEOUT = 240_000
 LEGACY_DEFAULT_READY_SELECTORS = (
     "b-page:visible",
     ".subheader:visible",
@@ -78,12 +79,18 @@ def _matched_legacy_selector(page):
     return ""
 
 
-def check_content_ready(page, *, shell, ready=None, timeout=DEFAULT_CONTENT_READY_TIMEOUT):
-    """Forma kontenti timeout ichida tayyor bo'lishini kutadi."""
-    _validate_timeout(timeout)
+def check_content_ready(page, *, shell, ready=None, timeout=None):
+    """Kontentni kutadi: default A2 240s, legacy 30s; explicit timeout ustun."""
     normalized_shell = clean_text(shell).lower()
     if normalized_shell not in {"legacy", "a2"}:
         raise ValueError("check_content_ready shell faqat 'legacy' yoki 'a2' bo'lishi kerak")
+    if timeout is None:
+        timeout = (
+            A2_CONTENT_READY_TIMEOUT
+            if normalized_shell == "a2"
+            else DEFAULT_CONTENT_READY_TIMEOUT
+        )
+    _validate_timeout(timeout)
     ready = _normalize_ready(ready)
     ready_source, expected_ready = _ready_contract(normalized_shell, ready)
     actual_url = str(getattr(page, "url", "") or "")

@@ -78,6 +78,28 @@ Smartup reference ownershipi:
 - Escalation kerak bo'lsa xavfsiz, qayta ishlatiladigan `prefix_rule` taklif qil.
 - Uzun inline Python o'rniga workspace scriptidan foydalan.
 
+### AutoBasePage va base-page API tasdig'i
+
+Status: user-reported
+Verified: 2026-10-14
+Source: user — testlardagi takroriy legacy/A2 shartlarini tuzatish va qoidani eslab qolish buyrug'i
+
+- Migratsiyaga mos test/flow UI primitive'ini `AutoBasePage` orqali chaqiradi.
+  Mos metod ikkala base-page'da mavjud va kerakli kontraktni bajarsa, testda
+  URLga qarab `BasePage`/`AngularBasePage`ni yoki turli UI metodlarini tanlama.
+- Mos metod, bir shell implementatsiyasi yoki kerakli kontrakt yetishmasa,
+  foydalanuvchiga qaysi harakat va qaysi implementation yetishmasligini,
+  taklif qilinayotgan API va ta'sirlangan consumerlarni ko'rsat.
+  Faqat foydalanuvchining aniq tasdig'idan keyin base-page metodini qo'sh
+  yoki uning kontraktini kengaytir. Umumiy `testlarni tuzat` buyrug'i yangi
+  base-page API uchun tasdiq hisoblanmaydi.
+- Yetishmayotgan API'ni yashirish uchun testga yangi shell URL sharti,
+  raw locator fallbacki yoki local primitive wrapper qo'shma. Mavjud
+  shartni tekshirilmagan umumiy chaqiruvga almashtirma; qolgan gapni hisobotda ayt.
+- Expected route, URLdan entity ID olish, joriy sahifaga qayta kirishni
+  oldini olish va diagnostik shell/resource klassifikatsiyasi UI dispatch emas.
+  Bitta shellni ataylab tekshiradigan suite ham alohida scope hisoblanadi.
+
 ## Artifact Lifecycle
 
 - Durable bilim/qoidani faqat `skills/`dagi bitta ownerda saqla.

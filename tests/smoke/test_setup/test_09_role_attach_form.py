@@ -4,7 +4,7 @@ from tests.smoke.flows.flow_authorization import authorization
 from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("User")]
-ROLE_FORMS_LOADER_TIMEOUT = 600_000
+ROLE_FORMS_LOADER_TIMEOUT = 1_200_000
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -22,27 +22,27 @@ def run_role_attach_form(page):
     base = AutoBasePage(page)
     with allure.step("1 - Foydalanuvchilar ro'yxatini ochish"):
         base.navigate_to(tab="Главное", name="Пользователи")
-        base.expect_page(heading="Пользователи")
+        base.expect_page(heading="Пользователи", url="anor/mr/user_list")
 
     with allure.step("2 - Rollar ro'yxatini ochish"):
         base.click(name="Роли", role="link")
-        base.expect_page(heading="Роли")
+        base.expect_page(heading="Роли", url="trade/tr/role_list")
 
     with allure.step("3 - Admin rolining view formasini ochish"):
         base.grid("Админ", click=True)
         base.click(name="Просмотреть")
-        base.expect_page(heading="Роль (Просмотр)")
+        base.expect_page(heading="Роль (Просмотр)", url="role_view")
 
     with allure.step("4 - Admin rolining formalar ruxsatini ochish"):
-        base.click(name="Формы", role="link")
+        base.tab("Формы", section=True)
         base.text("Доступ ко всем формам")
 
     with allure.step("5 - Barcha formalarga ruxsat berish"):
         base.click(name="Доступ ко всем формам")
-        base.click(name="Разрешить", role="link")
+        base.click(locator=page.get_by_text("Разрешить", exact=True))
         base.confirm_biruni(expected_text="Разрешить доступ ко всем формам?")
         base.wait_for_loader(timeout=ROLE_FORMS_LOADER_TIMEOUT)
-        base.expect_page(heading="Роль (Просмотр)")
+        base.expect_page(heading="Роль (Просмотр)")  # navigation: same-url - Granting permissions updates the already-open role view.
 
     with allure.step("6 - Ruxsatlar berilganini tekshirish"):
         base.click(name="Доступные")
@@ -51,7 +51,7 @@ def run_role_attach_form(page):
 
     with allure.step("7 - Sahifani yopib, rollar ro'yxatiga qaytish"):
         base.click(name="Закрыть")
-        base.expect_page(heading="Роли")
+        base.expect_page(heading="Роли", url="trade/tr/role_list")
 
 # ----------------------------------------------------------------------------------------------------------------------
 

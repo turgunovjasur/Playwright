@@ -1,3 +1,5 @@
+import re
+
 import allure
 
 from tests.smoke.flows.flow_authorization import authorization
@@ -29,42 +31,43 @@ def run_attach_license(page, code, logger):
 
     base.switch_filial(name="Администрирование")
     base.navigate_to(tab="Главное", name="Лицензии")
-    base.expect_page(heading="Лицензии")
+    base.expect_page(heading="Лицензии", url="biruni/kl/license_list")
 
     with allure.step("1 - Litsenziyalar va hujjatlar bo'limini ochish"):
-        base.click(name="Лицензии и документы", role="link")
+        base.tab("Лицензии и документы", section=True)
         base.text("Лицензии и документы")
 
     with allure.step("2 - ERP users litsenziyasining foydalanuvchilar sahifasini ochish"):
         base.grid("ERP users", click=True)
         base.click(name="Прикрепить пользователей")
-        base.expect_page(heading="Прикрепленные пользователи")
+        base.expect_page(heading=re.compile(r"^\s*(?:Прикрепленные пользователи|Пользователи прикрепленные к лицензии)\s*$"), url="biruni/kl/license_user_list")
+        base.wait_for_loader()
 
     with allure.step("3 - Mavjud foydalanuvchilarni tozalash"):
-        if not base.grid(state="empty", return_bool=True, root='b-grid[name="table"]'):
+        if not base.grid(state="empty", return_bool=True):
             base.grid(checkbox="all")
             base.click(name="Открепить")
-            base.confirm_biruni("Открепить пользователей в количестве")
+            base.confirm_biruni(re.compile(r"Открепить пользователей в количестве|Detach \d+ user\(s\)\?"))
             base.wait_for_loader()
-        base.grid(state="empty", root='b-grid[name="table"]')
+        base.grid(state="empty")
 
     with allure.step("4 - Mavjud foydalanuvchilar sahifasini ochish"):
         base.click(name="Доступные")
-        base.expect_page(heading="Доступные пользователи")
+        base.expect_page(heading=re.compile(r"^\s*(?:Доступные пользователи|Пользователи прикрепленные к лицензии)\s*$"))  # navigation: same-url - Available tab updates users inside the open license-user page.
         base.wait_for_loader()
 
     with allure.step("5 - Foydalanuvchini litsenziyaga ulash"):
-        # Bu sahifada 2 ta b-grid-controller bor: yashirin (table_license grid) va ko'rinadigan(table grid = mavjud userlar)
-        base.grid_controller(search=f"natural_person-pw{code}", root="b-grid-controller:visible")
-        base.grid(f"natural_person-pw{code}", root='b-grid[name="table"]', click=True)
+        base.grid_controller(search=f"natural_person-pw{code}")
+        base.grid(f"natural_person-pw{code}", click=True)
         base.click(name="Прикрепить")
-        base.confirm_biruni("Прикрепить пользователя")
+        base.confirm_biruni(re.compile(r"Прикрепить (?:пользователя|форму)"))
         base.wait_for_loader()
-        base.expect_page(heading="Доступные пользователи")
+        base.grid(state="empty")
+        base.expect_page(heading=re.compile(r"^\s*(?:Доступные пользователи|Пользователи прикрепленные к лицензии)\s*$"))  # navigation: same-url - Attaching a user refreshes the current available-users tab.
 
     with allure.step("6 - Oynani yopib, biriktirilgan foydalanuvchilarga qaytish"):
         base.click(name="Закрыть")
-        base.expect_page(heading="Лицензии")
+        base.expect_page(heading="Лицензии", url="biruni/kl/license_list")
 
 # ----------------------------------------------------------------------------------------------------------------------
 

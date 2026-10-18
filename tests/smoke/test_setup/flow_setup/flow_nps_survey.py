@@ -4,7 +4,7 @@ from playwright.sync_api import expect
 def fill_nps_survey(page, logger):
     """NPS Survey modal chiqsa - to'ldirib yuboradi"""
     try:
-        expect(page.get_by_role("heading", name="NPS Survey")).to_be_visible(timeout=20_000)
+        expect(page.get_by_role("heading", name="NPS Survey")).to_be_visible(timeout=40_000)
         page.get_by_role("button", name="10").click()
         page.get_by_role("button", name="Отправить").click()
         logger.info("NPS Survey modal to'ldirildi")

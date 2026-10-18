@@ -53,6 +53,8 @@ def <nomi>(page: Page, **kwargs) -> None:
   [ui-patterns.md](../smartup-guide/references/ui-patterns.md#page-object-tanlash)da.
 - Mavjud page-object primitive'ini raw locator yoki local wrapper bilan
   takrorlama. Raw locator faqat mos helper bo'lmagan maxsus action uchun qoladi.
+- Shell shartlari va yetishmayotgan base-page API uchun
+  [AutoBasePage tasdiq qoidasi](../project-guide/SKILL.md#autobasepage-va-base-page-api-tasdigi)ga amal qil.
 - Holatni page-object asserti yoki Playwright `expect()` bilan tekshir; Python
   `assert` bilan UI holatini tekshirma.
 - Flow faqat UI harakatlarni bajarsin — ma'lumot saqlash/o'qish test ichida qolsin

@@ -49,7 +49,7 @@ def run_offset_client_balance(page, code):
     with allure.step("2 - Взаиморасчет modalini ochib defaultlarni tekshirish"):
         base.click(name="Взаиморасчет", exact=True)
         modal = page.get_by_role("dialog").filter(has=page.get_by_role("heading", name="Взаиморасчет", exact=True))
-        base.expect_page(heading="Взаиморасчет", root=modal)
+        base.expect_page(heading="Взаиморасчет", root=modal)  # navigation: same-url - Offset dialog opens inside the current settlement page.
         base.input(placeholder="Выбрать дату", expect_value=base.date(), root=modal)
         for label in (
             "с учетом консигнации",

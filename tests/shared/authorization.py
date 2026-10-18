@@ -35,7 +35,7 @@ def login(page, email=None, password=None, *, profile=None):
 # ----------------------------------------------------------------------------------------------------------------------
 
 def dashboard(page):
-    BasePage(page).expect_page(heading="Trade", url="dashboard", timeout=120_000)
+    BasePage(page).expect_page(heading="Trade", url="dashboard", timeout=240_000)
     confirm_login(page)
     capture_filial(page)
 

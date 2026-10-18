@@ -120,6 +120,7 @@ Setup formalar:
 - [login.md](references/forms/login.md) — Login sahifasi
 
 Biznes formalar:
+- [supplier.md](references/forms/supplier.md) — A2 supplier CRUD, row amallari, TМЦ biriktirish va purchase-tab xatosi
 - [visit-list.md](references/forms/visit-list.md) — A2 vizitlar ro'yxati, ID ustuni va web verification
 - [order-list.md](references/forms/order-list.md) — Order ro'yxati, row selection va action tugmalari
 - [order-add.md](references/forms/order-add.md) — Order yaratish

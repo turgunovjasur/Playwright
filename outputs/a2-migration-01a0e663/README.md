@@ -2,9 +2,14 @@
 
 `a2-internal-tracker.xlsx` — formalar, testcase'lar, test urinishlari va
 muammolarni yuritish uchun ichki ishchi jadval. Hozir u Google Sheets'dagi
-`Not given` varag'ining 1009 forma yo'li bilan to'ldirilgan. Barcha ichki
-statuslar `not_tested`; testcase, run, muammo va nashr tarixi hozircha bo'sh.
+`Not given` varag'ining 1009 forma yo'li bilan to'ldirilgan. Supplier pilotidan
+keyin 1003 route `not_tested`, 2 route `failed`, 4 route `needs_review`.
+22 testcase, 24 manual urinish va 1 ochiq muammo bor; nashr tarixi bo'sh.
 Bu fayl testlarni yoki Google Sheets sinxronizatsiyasini o'zi bajarmaydi.
+
+Pilot hisoboti: [supplier-20260928.md](supplier-20260928.md). Natijalar va
+bog'lanishlarning mashina o'qiydigan nusxasi: [supplier-20260928.json](supplier-20260928.json).
+Avtotest `written_not_run`; manual natijalar pytest natijasi deb hisoblanmaydi.
 
 ## Varaqlar va bog'lanishlar
 

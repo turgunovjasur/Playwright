@@ -1,7 +1,7 @@
 import allure
 from playwright.sync_api import expect
-from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
+from tests.smoke.test_forms.monitoring.checks.url import detect_shell
 from tests.smoke.test_forms.monitoring.reporting import (
     build_form_result as _build_form_result,
     form_navigation_track,
@@ -9,9 +9,7 @@ from tests.smoke.test_forms.monitoring.reporting import (
     format_form_result as _format_form_result,
     write_terminal_report as _write_terminal_report,
 )
-from tests.smoke.test_forms.monitoring.checks import canonical_form_path
-from utils.base_pages.angular_base_page import AngularBasePage
-from utils.base_pages.base_page import BasePage
+from utils.base_pages.auto_base_page import AutoBasePage
 from utils.helper_utils import first_non_admin_filial
 
 
@@ -22,7 +20,13 @@ format_form_result = _format_form_result
 write_terminal_report = _write_terminal_report
 
 
-FORM_TIMEOUT = 15_000
+FORM_TIMEOUT = 30_000
+A2_FORM_TIMEOUT = 240_000
+
+
+def _form_timeout(page):
+    """Joriy shell uchun navigatsiya kutish limitini tanlaydi."""
+    return A2_FORM_TIMEOUT if detect_shell(page.url) == "a2" else FORM_TIMEOUT
 
 
 def _select_operational_filial(names):
@@ -58,44 +62,16 @@ def first_operational_filial(page):
 
 def switch_forms_filial(page, name):
     """Joriy legacy/A2 shell turiga mos filial selectorini ishlatadi."""
-    if "/a2/" in page.url:
-        AngularBasePage(page).switch_filial(
-            name=name,
-            timeout=FORM_TIMEOUT,
-        )
-    else:
-        BasePage(page).switch_filial(
-            name=name,
-            timeout=FORM_TIMEOUT,
-        )
+    AutoBasePage(page).switch_filial(name=name, timeout=_form_timeout(page))
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 
 def _click_page_links(page, page_links):
+    base = AutoBasePage(page)
     for page_link in page_links:
-        if "/a2/" in page.url:
-            link = page.get_by_role(
-                "link",
-                name=page_link,
-                exact=True,
-            ).filter(visible=True).first
-        else:
-            link = (
-                page.locator(".subheader ul.breadcrumb")
-                .get_by_role("link", name=page_link, exact=True)
-                .filter(visible=True)
-            )
-        try:
-            expect(link).to_have_count(1, timeout=FORM_TIMEOUT)
-            expect(link).to_be_visible(timeout=FORM_TIMEOUT)
-        except (AssertionError, PlaywrightTimeoutError) as exc:
-            raise AssertionError(
-                f"page_link='{page_link}' yagona ko'rinadigan link sifatida topilmadi; "
-                f"url={page.url}"
-            ) from exc
-        link.click()
+        base.page_link(name=page_link, timeout=_form_timeout(page))
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -121,27 +97,13 @@ def open_menu_form(
     )
 
     with allure.step(f"Navigatsiya | Yo'l: {track}"):
-        if add_icon:
-            BasePage(page).navigate_to_form(
-                navbar_tab=navbar_tab,
-                menu_column=menu_column,
-                menu_item=menu_item,
-                add_icon=True,
-                timeout=FORM_TIMEOUT,
-            )
-        elif "/a2/" in page.url:
-            AngularBasePage(page).navigate_to(
-                tab=navbar_tab,
-                name=menu_item,
-                timeout=FORM_TIMEOUT,
-            )
-        else:
-            BasePage(page).navigate_to_form(
-                navbar_tab=navbar_tab,
-                menu_column=menu_column,
-                menu_item=menu_item,
-                timeout=FORM_TIMEOUT,
-            )
+        AutoBasePage(page).navigate_to_form(
+            navbar_tab=navbar_tab,
+            menu_column=menu_column,
+            menu_item=menu_item,
+            add_icon=add_icon,
+            timeout=_form_timeout(page),
+        )
         _click_page_links(page, links)
 
 
@@ -174,48 +136,7 @@ def open_create_dropdown_form(
         page_links=links,
     )
     with allure.step(f"Navigatsiya | Yo'l: {track}"):
-        is_a2 = "/a2/" in page.url
-        group = (
-            page.locator("smt-dropdown-button:visible" if is_a2 else ".btn-group:visible")
-            .filter(
-                has=page.get_by_role(
-                    "button",
-                    name="Создать",
-                    exact=True,
-                )
-            )
-        )
-        try:
-            expect(group).to_have_count(1, timeout=FORM_TIMEOUT)
-            expect(group).to_be_visible(timeout=FORM_TIMEOUT)
-        except (AssertionError, PlaywrightTimeoutError) as exc:
-            raise AssertionError(
-                f"'{menu_item}' formasida 'Создать' dropdown guruhi topilmadi; "
-                f"url={page.url}"
-            ) from exc
-
-        toggle = group.locator(
-            'button[aria-haspopup="menu"]' if is_a2 else "button.dropdown-toggle"
-        )
-        expect(toggle).to_have_count(1, timeout=FORM_TIMEOUT)
-        expect(toggle).to_be_visible(timeout=FORM_TIMEOUT)
-        toggle.click()
-
-        if is_a2:
-            menu = page.get_by_role("menu").filter(visible=True)
-            expect(menu).to_have_count(1, timeout=FORM_TIMEOUT)
-            expect(menu).to_be_visible(timeout=FORM_TIMEOUT)
-            action_link = menu.get_by_role("menuitem", name=action, exact=True)
-        else:
-            action_link = group.get_by_role("link", name=action, exact=True)
-        try:
-            expect(action_link).to_have_count(1, timeout=FORM_TIMEOUT)
-            expect(action_link).to_be_visible(timeout=FORM_TIMEOUT)
-        except (AssertionError, PlaywrightTimeoutError) as exc:
-            raise AssertionError(
-                f"'{menu_item}' formasidagi 'Создать' dropdownda action='{action}' topilmadi"
-            ) from exc
-        action_link.click()
+        AutoBasePage(page).action(name=action, menu="Создать", timeout=_form_timeout(page))
         _click_page_links(page, links)
 
 

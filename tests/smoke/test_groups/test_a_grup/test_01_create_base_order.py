@@ -70,7 +70,7 @@ def run_create_base_order(page, code):
         base.navigate_to(tab="Продажа", name="Заказы")
         base.expect_page(heading="Заказы", url="order_list")
         flow_order_list(page, add=True)
-        base.expect_page(heading="Заказ (создание)", url="order+add")
+        base.expect_page(heading="Заказ (создание)", url=re.compile(r"order(?:\+|%2[bB])add(?:[?#]|$)"))
 
     with allure.step("3 - Setup baseline auto-fill qiymatlarini tekshirish"):
         deal_time, delivery_date = auto_filled_order_dates(page)

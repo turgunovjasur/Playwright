@@ -1,3 +1,5 @@
+import re
+
 import allure
 
 from tests.smoke.flows.flow_authorization import authorization
@@ -27,11 +29,11 @@ def run_robot(page, code):
 
     with allure.step("1 - Xodimlar ro'yxatiga o'tish"):
         base.navigate_to(tab="Справочники", name="Штат")
-        base.expect_page(heading="Штат")
+        base.expect_page(heading="Штат", url="anor/mrf/robot_list")
 
     with allure.step("2 - Yangi xodim formasini to'ldirish"):
         base.click(name="Создать")
-        base.expect_page(heading="Штат (создание)")
+        base.expect_page(heading="Штат (создание)", url=re.compile(r"anor/mrf/robot(?:\+|%2[bB])add(?:[?#]|$)"))
         base.input(label="Код", value=robot_code)
         base.input(label="Название", value=robot_name)
 
@@ -42,7 +44,7 @@ def run_robot(page, code):
 
     with allure.step("4 - Saqlash va ro'yxatda tekshirish"):
         base.click(name="Сохранить", exact=True)
-        base.expect_page(heading="Штат")
+        base.expect_page(heading="Штат", url="anor/mrf/robot_list")
         base.grid(robot_name, robot_code, click=True)
 
     with allure.step("5 - View formasidan robot IDni olish va saqlash"):

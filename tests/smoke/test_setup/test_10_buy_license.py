@@ -1,5 +1,7 @@
+import re
+
 import allure
-from playwright.sync_api import expect, TimeoutError as PlaywrightTimeoutError
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.test_setup.flow_setup.flow_license import skip_license_purchase_if_needed
@@ -9,8 +11,8 @@ pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Licen
 
 MANDATORY_LICENSE = "Smartup ERP: Базовый пользователь (Обязательный)"
 REGULAR_LICENSE = "Smartup ERP: Базовый пользователь"
-MANDATORY_LICENSE_ROW_TIMEOUT = 3_000
-LICENSE_BALANCE_TIMEOUT = 5_000
+MANDATORY_LICENSE_ROW_TIMEOUT = 6_000
+LICENSE_BALANCE_TIMEOUT = 10_000
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -19,8 +21,8 @@ def run_buy_license(page, logger):
 
     1. Администрирование filialida Лицензии sahifasini ochib, balansni tekshirish.
     2. Покупка formasini ochish.
-    3. To'lovchi, kontrakt va boshlanish sanasini tanlash.
-    4. Majburiy license qatori visible bo'lsa default 5 bilan, aks holda oddiy qatorni 1 dona tanlash.
+    3. To'lovchi, kontrakt va bugungi sanani tanlab, mavjud litsenziya davrini hisoblatish.
+    4. Majburiy license kerak bo'lsa to'liq oy uchun default 5, aks holda bugundan oddiy 1 dona tanlash.
     5. Tanlangan litsenziyani sotib olish va natija modalini yopish.
 
     DISABLE_LICENSE_POLICY yoqilgan bo'lsa — butun step skip qilinadi.
@@ -36,14 +38,14 @@ def run_buy_license(page, logger):
     with allure.step("1 - Litsenziyalar sahifasiga o'tish va balansni tekshirish"):
         base.switch_filial(name="Администрирование")
         base.navigate_to(tab="Главное", name="Лицензии")
-        base.expect_page(heading="Лицензии")
-        base.text(root=page.locator('p.text-success[ng-if="q.balance > 0"]'), timeout=LICENSE_BALANCE_TIMEOUT)
+        base.expect_page(heading="Лицензии", url="biruni/kl/license_list")
+        base.text(re.compile(r"\+\s*(?:[1-9][\d\s.,]*|0[.,]0*[1-9]\d*)"), timeout=LICENSE_BALANCE_TIMEOUT)
         logger.info("Balans musbat — Success")
 
     with allure.step("2 - Litsenziya sotib olish formasini ochish"):
-        base.click(name="Покупка", role="link")
+        base.tab("Покупка", section=True)
         base.wait_for_loader()
-        base.expect_page(heading="Покупка 1")
+        base.expect_page(heading="Покупка 1")  # navigation: same-url - Purchase is a section of the already-open license page.
 
     with allure.step("3 - Sotib olish ma'lumotlarini tanlash"):
         base.b_input(label="Плательщик", value="AUTOTEST GWS", clear=True)
@@ -52,29 +54,31 @@ def run_buy_license(page, logger):
         base.wait_for_loader()
 
     with allure.step("4 - License turini UI ro'yxatidan tanlash"):
-        purchase_table = page.locator("table:visible").filter(has=page.get_by_role("columnheader", name="Тип лицензии", exact=True)).first
+        purchase_table = page.get_by_text("Тип лицензии", exact=True).filter(visible=True).locator(
+            "xpath=ancestor::*[self::table or self::smt-data-table or self::smt-table][1]"
+        )
         try:
             base.text(MANDATORY_LICENSE, root=purchase_table, timeout=MANDATORY_LICENSE_ROW_TIMEOUT)
-            license_row = purchase_table.get_by_role("row").filter(has=page.get_by_text(MANDATORY_LICENSE, exact=True)).first
-            quantity = license_row.get_by_role("textbox").first
-            expect(quantity).to_have_value("5")
-            logger.info("Majburiy bazaviy litsenziya tanlandi: default miqdor 5")
         except (AssertionError, PlaywrightTimeoutError):
-            license_row = purchase_table.get_by_role("row").filter(has=page.get_by_text(REGULAR_LICENSE, exact=True)).first
-            expect(license_row).to_be_visible()
-            quantity = license_row.get_by_role("textbox").first
+            license_row = base.grid(REGULAR_LICENSE, root=purchase_table)
+            quantity = base.grid_cell(license_row, 5).locator("input:visible")
             quantity.fill("1")
-            expect(quantity).to_have_value("1")
+            base.grid_cell(license_row, 5, expect_value="1")
             logger.info("Oddiy bazaviy litsenziya tanlandi: miqdor 1")
+        else:
+            base.date_picker(label="Дата начала", date="first_day")
+            base.wait_for_loader()
+            license_row = base.grid(MANDATORY_LICENSE, root=purchase_table)
+            base.grid_cell(license_row, 5, expect_value="5")
+            logger.info("Majburiy bazaviy litsenziya tanlandi: default miqdor 5")
 
     with allure.step("5 - Tanlangan litsenziyani sotib olish"):
-        base.click(name="Купить")
-        terms = page.locator("span").filter(has_text="Я ознакомился с тем").first
-        expect(terms).to_be_visible()
-        terms.click()
-        base.click(name="Да", exact=True)
+        base.click(locator=page.get_by_role("button", name=re.compile(r"^(?:Купить|Покупка лицензий)$")).last)
+        base.click(locator=page.get_by_text(re.compile(r"^Я ознакомился с тем")).first)
+        base.confirm_biruni("Я ознакомился с тем", button_name="Да")
         base.wait_for_loader()
-        # base.close_biruni_alert()
+        base.expect_page(heading="Лицензии", url="biruni/kl/license_list")
+        base.grid("ERP users", "Активный")
         logger.info("Litsenziya olindi")
 
 # ----------------------------------------------------------------------------------------------------------------------

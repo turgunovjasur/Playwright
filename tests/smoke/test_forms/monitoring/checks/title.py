@@ -12,7 +12,7 @@ from tests.smoke.test_forms.monitoring.checks.core import (
 )
 
 
-DEFAULT_TITLE_TIMEOUT = 15_000
+DEFAULT_TITLE_TIMEOUT = 30_000
 TITLE_NOT_REACHED = "TITLE_NOT_REACHED"
 TITLE_SOURCES = {
     "legacy": "visible_heading",

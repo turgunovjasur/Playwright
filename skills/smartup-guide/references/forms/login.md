@@ -71,7 +71,7 @@ Tags: login, auth, license, 401, diagnostics, allure, telegram
 Status: code-confirmed
 Verified: 2026-07-30
 Source: `tests/smoke/smoke_reporting.py`, `tests/smoke/conftest.py`,
-`scripts/analyze_test_result.py`, `scripts/telegram_progress.py`
+`scripts/analyze_test_result.py`, `telegram_bot/telegram_progress.py`
 - Har smoke page faqat Smartup bilan bir origin'dagi birinchi HTTP `401`ni
   test kesimida saqlaydi; keyingi test boshlanishidan oldin holat tozalanadi.
 - Failure xabari request method + querysiz path, HTTP status, faqat xavfsiz

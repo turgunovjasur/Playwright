@@ -52,7 +52,7 @@ def run_report_spot_check(page):
         base.click(name="Шаблоны", exact=True)
         base.expect_page(heading="Шаблоны Spot2D", url="spot_template_list")
         base.click(name="Добавить", exact=True)
-        base.expect_page(heading="Шаблон Spot2D (создание)", url="spot_template+add")
+        base.expect_page(heading="Шаблон Spot2D (создание)", url=re.compile(r"spot_template(?:\+|%2[bB])add(?:[?#]|$)"))
         base.input(label="Название", value=template_name)
         base.b_input(label="Продуктовое направление", value="Группа")
         base.checkbox(label="Подтипы характеристик", expect_checked=True)

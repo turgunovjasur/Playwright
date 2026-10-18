@@ -1,3 +1,5 @@
+import re
+
 import allure
 from faker import Faker
 
@@ -39,7 +41,7 @@ def run_legal_person(page, code):
 
     with allure.step("3 - Yangi yuridik shaxs formasini to'ldirish"):
         base.click(name="Создать")
-        base.expect_page(heading="Юридическое лицо (создание)")
+        base.expect_page(heading="Юридическое лицо (создание)", url=re.compile(r"anor/mr/person/legal_person(?:\+|%2[bB])add(?:[?#]|$)"))
         base.input(label="Код", value=legal_code)
         base.input(label="Полное название", value=legal_name)
         base.checkbox(label="Статус", expect_checked=True)
@@ -47,7 +49,7 @@ def run_legal_person(page, code):
     with allure.step("4 - Saqlash va ro'yxatga qaytishni tasdiqlash"):
         base.click(name="Сохранить", exact=True)
         base.confirm_biruni("Сохранить")
-        base.expect_page(heading="Юридические лица")
+        base.expect_page(heading="Юридические лица", url="anor/mr/person/legal_person_list")
 
     with allure.step("5 - Ro'yxatda yaratilgan yuridik shaxsni tekshirish"):
         base.grid_controller(search=legal_code)
@@ -56,7 +58,7 @@ def run_legal_person(page, code):
     with allure.step("6 - Yuridik shaxs view formasini ochish va tekshirish"):
         base.click(name="Просмотреть")
         base.expect_page(heading="Юридическое лицо (просмотр)", url="legal_person_view")
-        base.text(legal_code, legal_name, "Активный")
+        base.text(legal_code, legal_name, "Активный", include_input_values=True)
 
     with allure.step("7 - View formasini yopib, ro'yxatga qaytish"):
         base.click(name="Закрыть", exact=True)

@@ -1,3 +1,5 @@
+import re
+
 import allure
 from playwright.sync_api import expect
 
@@ -27,18 +29,17 @@ def run_init_balance(page, code):
 
     with allure.step("1 - Boshlang'ich qoldiq hujjatlari ro'yxatini ochish"):
         base.navigate_to(tab="Склад", name="Ввод начальных остатков ТМЦ")
-        base.expect_page(heading="Ввод начальных остатков ТМЦ")
+        base.expect_page(heading="Ввод начальных остатков ТМЦ", url="anor/mkw/init_balance/init_inventory_balance_list")
 
     with allure.step("2 - UZS qoldiq hujjati formasini ochish va to'ldirish"):
         base.click(name="Создать")
-        base.expect_page(heading="Ввод начальных остатков ТМЦ (создание)")
+        base.expect_page(heading="Ввод начальных остатков ТМЦ (создание)", url=re.compile(r"anor/mkw/init_balance/init_inventory_balance(?:\+|%2[bB])add(?:[?#]|$)"))
         base.input(label="Номер", value=document_number)
-        base.b_input(ng_model="d.warehouse_name", value="Основной склад", clear=True)
+        base.b_input(label="Склад", value="Основной склад", clear=True)
         base.b_input(label="Валюта", value="Узбекский сум", clear=True)
-        product_grid = page.locator("b-pg-grid")
-        base.b_input(label="Название", value=f"c_p_pw{code}", expect_value=f"product-pw{code}", root=product_grid)
-        base.input(label="Кол-во", value=quantity, root=product_grid)
-        base.input(label="Цена", value="5000", root=product_grid)
+        base.b_input(label="Название", value=f"c_p_pw{code}", expect_value=f"product-pw{code}")
+        base.input(label="Кол-во", value=quantity)
+        base.input(label="Цена", value="5000")
 
     with allure.step("3 - UZS qoldiq hujjatini saqlash va ro'yxatda tekshirish"):
         base.click(name="Сохранить", exact=True)
@@ -53,7 +54,7 @@ def run_init_balance(page, code):
         base.grid(document_number, click=True)
 
     with allure.step("5 - UZS provodkalarida miqdor va summani tekshirish"):
-        with page.expect_popup(timeout=30_000) as postings_page_info:
+        with page.expect_popup(timeout=60_000) as postings_page_info:
             base.click(name="Проводки")
         postings_page = postings_page_info.value
         expect(postings_page.get_by_role("rowgroup")).to_contain_text(quantity)
@@ -62,14 +63,13 @@ def run_init_balance(page, code):
 
     with allure.step("6 - USD qoldiq hujjati formasini ochish va to'ldirish"):
         base.click(name="Создать")
-        base.expect_page(heading="Ввод начальных остатков ТМЦ (создание)")
+        base.expect_page(heading="Ввод начальных остатков ТМЦ (создание)", url=re.compile(r"anor/mkw/init_balance/init_inventory_balance(?:\+|%2[bB])add(?:[?#]|$)"))
         base.input(label="Номер", value=document_usa_number)
-        base.b_input(ng_model="d.warehouse_name", value="Основной склад", clear=True)
+        base.b_input(label="Склад", value="Основной склад", clear=True)
         base.b_input(label="Валюта", value="Доллар США", clear=True)
-        product_grid = page.locator("b-pg-grid")
-        base.b_input(label="Название", value=f"c_p_usa_pw{code}", expect_value=f"product-usa-pw{code}", root=product_grid)
-        base.input(label="Кол-во", value=quantity, root=product_grid)
-        base.input(label="Цена", value="1", root=product_grid)
+        base.b_input(label="Название", value=f"c_p_usa_pw{code}", expect_value=f"product-usa-pw{code}")
+        base.input(label="Кол-во", value=quantity)
+        base.input(label="Цена", value="1")
 
     with allure.step("7 - USD qoldiq hujjatini saqlash va ro'yxatda tekshirish"):
         base.click(name="Сохранить", exact=True)

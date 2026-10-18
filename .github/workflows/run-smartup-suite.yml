@@ -51,6 +51,9 @@ jobs:
           python-version: "3.13"
           cache: pip
 
+      - name: Validate page navigation
+        run: python scripts/validate_page_navigation.py
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:

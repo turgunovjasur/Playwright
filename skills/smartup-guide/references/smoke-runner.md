@@ -37,7 +37,7 @@ Source: `scripts/run_tests.py`; `tests/smoke/test_setup/test_0_setup_runner.py`;
 `tests/smoke/test_forms/test_04_finansy_forms.py`;
 `tests/smoke/test_forms/test_05_spravochniki_forms.py`; `tests/smoke/conftest.py`;
 `.github/workflows/daily-smoke.yml`; `.github/workflows/run-smartup-suite.yml`;
-`scripts/telegram_ci_bot.py`
+`telegram_bot/telegram_ci_bot.py`
 - CI scheduling va dispatchning canonical owneri
   [telegram-ci.md](../../maintain-test-infra/references/telegram-ci.md#current-architecture).
   Workflowda cron yo'q; `suite=all` dispatchi `setup-smoke`, `group-report`

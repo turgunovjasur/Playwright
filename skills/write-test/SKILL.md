@@ -48,6 +48,8 @@ test execution va run summary `run-smoke` ownerligida qoladi.
   `BasePage`/`AngularBasePage`ni tanlaydi; explicit DOM primitive'lari alohida
   qoladi. [Page-object kontrakti](../smartup-guide/references/ui-patterns.md#page-object-tanlash)ga amal qil.
 - Mavjud page-object helperi bo'lsa raw locator/local wrapper yozma.
+- Shell shartlari va yetishmayotgan base-page API uchun
+  [AutoBasePage tasdiq qoidasi](../project-guide/SKILL.md#autobasepage-va-base-page-api-tasdigi)ga amal qil.
 - Har testda `pytestmark`, `@allure.title`, raqamlangan docstring qadamlar va
   mos `allure.step`lar bo'lsin.
 - Har bir yangi page/form/modal ochilishi alohida `with allure.step(...)`

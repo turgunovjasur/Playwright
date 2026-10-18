@@ -1,3 +1,5 @@
+import re
+
 import allure
 
 from tests.smoke.flows.flow_authorization import authorization
@@ -30,11 +32,11 @@ def run_price_type_uzb(page, code, logger):
 
     with allure.step("2 - Narxlar ro'yxatiga o'tish"):
         base.navigate_to(tab="Справочники", name="Цены")
-        base.expect_page(heading="Цены")
+        base.expect_page(heading="Цены", url="anor/mkr/price_type_list")
 
     with allure.step("3 - Yangi narx turi formasini to'ldirish"):
         base.click(name="Создать")
-        base.expect_page(heading="Цена (создание)")
+        base.expect_page(heading="Цена (создание)", url=re.compile(r"anor/mkr/price_type(?:\+|%2[bB])add(?:[?#]|$)"))
         base.input(label="Код", value=price_type_code)
         base.input(label="Название", value=price_type_name)
         base.multiselect(label="Рабочие зоны", value=room_name)
@@ -43,7 +45,7 @@ def run_price_type_uzb(page, code, logger):
 
     with allure.step("4 - Saqlash va ro'yxatda tekshirish"):
         base.click(name="Сохранить", exact=True)
-        base.expect_page(heading="Цены")
+        base.expect_page(heading="Цены", url="anor/mkr/price_type_list")
         base.grid_controller(search=price_type_name)
         base.grid(price_type_name, click=True)
         save_data("price_type_name_UZB", price_type_name)
@@ -51,7 +53,7 @@ def run_price_type_uzb(page, code, logger):
     with allure.step("5 - View formasidan UZB price type IDni olish va saqlash"):
         base.click(name="Просмотр", exact=True)
         base.expect_page(heading="Цена (просмотр)", url="price_type_view?price_type_id=")
-        base.text(price_type_name, price_type_code, "Активный")
+        base.text(price_type_name, price_type_code, "Активный", include_input_values=True)
         save_data("price_type_id_uzb", query_int_from_url(page.url, "price_type_id"))
 
     with allure.step("6 - View formasini yopib, narx turlari ro'yxatiga qaytish"):

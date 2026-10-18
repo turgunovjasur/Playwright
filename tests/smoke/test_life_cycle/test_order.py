@@ -21,6 +21,7 @@ def run_order_basic(page, code):
 
     with allure.step("Navigate To: Order Page"):
         base.navigate_to(tab="Продажа", name="Заказы")
+        base.expect_page(heading="Заказы", url="order_list")
 
     with allure.step("Order List: Add Button"):
         flow_order_list(page, add=True)

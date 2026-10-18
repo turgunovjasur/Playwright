@@ -589,7 +589,7 @@ Source: user; `tests/smoke/test_forms/test_0_forms_runner.py`; `tests/smoke/test
 
 ### User-reported: form CRUD coverage smoke testlarda kengaytiriladi
 Status: user-reported
-Verified: pending
+Verified: 2026-09-28
 Source: user
 
 - Alohida universal `test_crud_forms` mexanizmi yoki CRUD FormMonitor
@@ -606,6 +606,26 @@ Source: user
   bir xil formani ochadi. Smoke coverage'da asosiy user trace sifatida
   listdagi `Создать` tugmasi afzal; `+` ikonka secondary navigation
   hisoblanadi.
+- Migratsiya tekshiruvining birligi bitta mantiqiy forma guruhi: list,
+  add, view va edit bir lifecycle ichida tekshiriladi. Faqat listning
+  ochilishi guruhning funksional `passed` natijasi emas.
+- Har guruhda majburiy checklist: add'dagi input/select/switch va zarur
+  elementlarni aniqlash; qiymat kiritib save; yaratilgan yozuvni listda
+  tekshirish; view qiymatlarini solishtirish; edit + save va qayta o'qish;
+  tanlangan row uchun ko'ringan barcha biznes actionlarini ishlatish;
+  search va filter; single va multiple selection actionlari; delete.
+- Action natijasi faqat tugma bosilgani bilan tasdiqlanmaydi: destination,
+  saqlangan qiymat, status o'zgarishi, attachment yoki yozuv yo'qolishi kabi
+  kutilgan natija tekshiriladi. Single/multiple amallar uchun testcase o'zi
+  yetarli test record yaratadi; delete faqat shu testcase yaratgan recordlarda.
+- Formada mavjud bo'lmagan amal `N/A` sababi bilan, precondition yoki ruxsat
+  yetishmagan amal `blocked`, bajarilmagan qadam `not_run` deb ajratiladi.
+  Bajarilgan testcase, actual result, dalil va xatolar ichki hisobda saqlanadi;
+  avtotest yozilgani bilan uning run natijasi alohida qayd qilinadi.
+- A2 migratsiya ishida umumiy Google Sheets statuslari ishning eng oxiridagi
+  reviewdan so'ng yangilanadi. Ichki natijalar tekshiruv davomida yuritiladi;
+  tashqi jadvalga yozishdan oldin joriy path/status qayta o'qilib, boshqalarning
+  o'zgarishi bilan konflikt bo'lsa o'sha katak yozilmaydi.
 
 ### Forms leaf raqami Smartup navbar tartibiga mos
 Status: code-confirmed

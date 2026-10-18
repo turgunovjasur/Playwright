@@ -1,6 +1,7 @@
 """TMZ-1: barcha qadamlar shu test faylida; runner uchun run_* entry pointlar."""
 
 import os
+import re
 from pathlib import Path
 
 import allure
@@ -35,7 +36,7 @@ def run_product_full(page, code):
 
     with allure.step("3 - ТМЦ yaratish formasini ochish"):
         base.click(name="Создать", exact=True)
-        base.expect_page(heading="ТМЦ (создание)", url="inventory+add")
+        base.expect_page(heading="ТМЦ (создание)", url=re.compile(r"inventory(?:\+|%2[bB])add(?:[?#]|$)"))
 
     with allure.step("4 - Nom, kod, dona, Товар, birinchi to'plam va vazn/hajm"):
         base.input(label="Название", value=f"TMZ-1-{code}")
@@ -75,13 +76,13 @@ def run_product_full(page, code):
 
     with allure.step("9 - Изменить formasida birlik/to'plamni o'qish"):
         base.click(name="Изменить", exact=True)
-        base.expect_page(heading="ТМЦ (изменение)")
+        base.expect_page(heading="ТМЦ (изменение)", url=re.compile(r"anor/mr/product/inventory(?:\+|%2[bB])edit(?:[?#]|$)"))
         base.b_input(label="Ед. изм.", expect_value="шт")
         base.multiselect(label="Наборы ТМЦ", expect_value=sector)
 
     with allure.step("10 - O'zgartirishsiz viewga qaytish"):
         base.click(name="Закрыть", exact=True)
-        base.expect_page(heading="ТМЦ (просмотр)")
+        base.expect_page(heading="ТМЦ (просмотр)", url="inventory_view?product_id=")
 
     with allure.step("11 - View'dan listga qaytish"):
         base.click(name="Закрыть", exact=True)
@@ -91,7 +92,7 @@ def run_product_full(page, code):
         base.grid_controller(search=f"tmz-1-{code}")
         base.grid(f"tmz-1-{code}", f"TMZ-1-{code}", click=True)
         base.click(name="Установить цены", exact=True)
-        base.expect_page(heading="ТМЦ (установка цен)")
+        base.expect_page(heading="ТМЦ (установка цен)", url="anor/mr/product/product_set_price")
         base.text(f"TMZ-1-{code}")
 
     with allure.step("13 - UZS va USD narxlarini kiritish"):
@@ -107,7 +108,7 @@ def run_product_full(page, code):
         base.grid_controller(search=f"tmz-1-{code}")
         base.grid(f"tmz-1-{code}", f"TMZ-1-{code}", click=True)
         base.click(name="Установить цены", exact=True)
-        base.expect_page(heading="ТМЦ (установка цен)")
+        base.expect_page(heading="ТМЦ (установка цен)", url="anor/mr/product/product_set_price")
         base.text(f"TMZ-1-{code}")
         base.input(label=f"Price Type UZB-pw{code}", expect_value="5000")
         base.input(label=f"Price Type USA-pw{code}", expect_value="5")

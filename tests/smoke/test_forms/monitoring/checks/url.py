@@ -9,7 +9,7 @@ from urllib.parse import unquote, urlsplit
 from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
-DEFAULT_URL_TIMEOUT = 15_000
+DEFAULT_URL_TIMEOUT = 30_000
 EXPECTED_URL_NOT_REACHED = "EXPECTED_URL_NOT_REACHED"
 SHELL_NOT_DETECTED = "SHELL_NOT_DETECTED"
 

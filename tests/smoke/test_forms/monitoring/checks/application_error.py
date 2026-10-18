@@ -8,7 +8,7 @@ from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from tests.smoke.test_forms.monitoring.checks.core import OPENED_WITH_DEFECT, clean_text, reason_description
 
 
-DEFAULT_APPLICATION_ERROR_TIMEOUT = 1_200
+DEFAULT_APPLICATION_ERROR_TIMEOUT = 2_400
 HARD_ERROR_SELECTORS = (
     "#biruniAlertExtended:visible",
     "#biruniAlert:visible",
@@ -44,7 +44,7 @@ def _matched_error(page, selectors):
         if not locator.is_visible():
             continue
         try:
-            error_text = clean_text(locator.inner_text(timeout=500))
+            error_text = clean_text(locator.inner_text(timeout=1000))
         except PlaywrightError:
             error_text = ""
         return selector, error_text
@@ -108,7 +108,7 @@ def check_application_error(page, *, shell, timeout=DEFAULT_APPLICATION_ERROR_TI
     }
 
 
-def dismiss_application_error(page, check_result, *, timeout=2_000):
+def dismiss_application_error(page, check_result, *, timeout=4_000):
     """Screenshotdan keyin faqat ma'lum Biruni error modalini yopishga urinadi."""
     _positive_timeout(timeout, name="dismiss_application_error timeout")
     matched_selector = str((check_result or {}).get("matched_selector") or "")

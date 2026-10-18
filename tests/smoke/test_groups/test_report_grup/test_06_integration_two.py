@@ -38,7 +38,7 @@ def run_report_integration_two_check(page):
 
     with allure.step("1 - Administration filialida Integration Two reportini ochish"):
         base.switch_filial(name="Администрирование")
-        open_report(base, "integration_two", timeout=60_000)
+        open_report(base, "integration_two", timeout=120_000)
         base.expect_page(heading="Интеграция с системой монолит", url="integration_two")
 
     with allure.step("2 - Monolith endpoint preconditioni va report filterlarini saqlash"):

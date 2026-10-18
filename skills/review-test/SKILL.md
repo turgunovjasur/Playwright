@@ -41,6 +41,8 @@ Bir turga tegishli qoidani boshqa turga xato sifatida qo'llama.
 - [ ] `logger` xato loglash uchun to'g'ri ishlatilgan
 
 ### 4. BasePage-first (majburiy)
+- [ ] Test/flowdagi UI shell dispatchi va yetishmayotgan API
+  [AutoBasePage tasdiq qoidasi](../project-guide/SKILL.md#autobasepage-va-base-page-api-tasdigi) bo'yicha tekshirilgan
 - [ ] `AutoBasePage` yoki sahifaga mos explicit `BasePage`/`AngularBasePage`
   ishlatilgan; importlar `utils.base_pages`dan. URL bo'yicha dispatchni
   selector fallbacki bilan aralashtirish deb hisoblama

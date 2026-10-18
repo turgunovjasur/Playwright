@@ -1,4 +1,5 @@
 import os
+import re
 
 import allure
 
@@ -30,35 +31,35 @@ def run_user(page, code):
     base = AutoBasePage(page)
     with allure.step("1 - Foydalanuvchilar ro'yxatiga o'tish"):
         base.navigate_to(tab="Главное", name="Пользователи")
-        base.expect_page(heading="Пользователи")
+        base.expect_page(heading="Пользователи", url="anor/mr/user_list")
 
     with allure.step("2 - Yangi foydalanuvchi formasini to'ldirish"):
         base.click(name="Создать")
-        base.expect_page(heading="Пользователь (создание)")
+        base.expect_page(heading="Пользователь (создание)", url=re.compile(r"anor/mr/user(?:\+|%2[bB])add(?:[?#]|$)"))
         base.input(label="Логин", value=f"user-pw{code}")
         base.input(label="Пароль", value=user_password)
         base.b_input(label="Физическое лицо", value=f"natural_person-pw{code}")
-        base.b_input(label="Штат", value=f"robot-pw{code}")
+        base.multiselect(label="Штат", value=f"robot-pw{code}")
         base.form_view(label="Роли", expect_value="Админ")
         base.checkbox(label="Статус", expect_checked=True)
 
     with allure.step("3 - Saqlash va ro'yxatda tekshirish"):
         base.click(name="Сохранить", exact=True)
-        base.expect_page(heading="Пользователи")
+        base.expect_page(heading="Пользователи", url="anor/mr/user_list")
         user_email = f"user-pw{code}@{current_company_code()}"
         base.grid(f"natural_person-pw{code}", user_email, "Активный", click=True)
 
     with allure.step("4 - Foydalanuvchi view formasini ochish va tekshirish"):
         base.click(name="Просмотреть")
         base.expect_page(heading="Пользователь (просмотр)", url="user_view?user_id=")
-        base.text(f"natural_person-pw{code}", user_email, "Активный")
+        base.text(f"natural_person-pw{code}", user_email, "Активный", include_input_values=True)
 
     with allure.step("5 - User IDni olish va saqlash"):
         save_data("user_id", query_int_from_url(page.url, "user_id"))
 
     with allure.step("6 - View formasini yopib, ro'yxatga qaytish"):
         base.click(name="Закрыть")
-        base.expect_page(heading="Пользователи")
+        base.expect_page(heading="Пользователи", url="anor/mr/user_list")
 
 # ----------------------------------------------------------------------------------------------------------------------
 

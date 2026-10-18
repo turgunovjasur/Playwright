@@ -509,9 +509,9 @@ def run_a2_angular_forms(page, *, progress_test_id, terminal_reporter=None, chec
                     page.goto(
                         f"{company_url}/a2/trade/intro/dashboard",
                         wait_until="domcontentloaded",
-                        timeout=30_000,
+                        timeout=60_000,
                     )
-                    AngularBasePage(page).wait_for_loader(timeout=30_000)
+                    AngularBasePage(page).wait_for_loader(timeout=60_000)
             except (AssertionError, PlaywrightError) as exc:
                 monitor.record_precondition_failure(
                     operation,

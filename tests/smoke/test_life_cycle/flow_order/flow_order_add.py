@@ -49,7 +49,7 @@ def flow_order_main_page(
     next_page=True,
 ):
     base = AutoBasePage(page)
-    base.expect_page(heading="Заказ (создание)", url="order+add")
+    base.expect_page(heading="Заказ (создание)", url=re.compile(r"order(?:\+|%2[bB])add(?:[?#]|$)"))
 
     if check_form:
         with allure.step("Main Page: Auto fill bo'lganini tekshirish"):

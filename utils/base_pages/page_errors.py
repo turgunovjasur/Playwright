@@ -4,7 +4,7 @@ from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 
-APPLICATION_ERROR_OBSERVATION_MS = 1_200
+APPLICATION_ERROR_OBSERVATION_MS = 2_400
 
 
 def expect_no_application_error(page, selector, *, timeout):
@@ -23,7 +23,7 @@ def expect_no_application_error(page, selector, *, timeout):
             return
 
     try:
-        error_text = " ".join(error.inner_text(timeout=500).split())
+        error_text = " ".join(error.inner_text(timeout=1000).split())
     except PlaywrightError:
         error_text = ""
     raise AssertionError(

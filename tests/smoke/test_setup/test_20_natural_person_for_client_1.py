@@ -44,7 +44,7 @@ def run_natural_person_for_client_1(page, code):
     open_natural_person_view(page, person_name, step_name="5 - Jismoniy shaxs view formasini ochish")
 
     with allure.step("6 - View formasida nom va statusni tekshirish"):
-        base.text(person_name, "Активный")
+        base.text(person_name, "Активный", include_input_values=True)
 
     with allure.step("7 - Client person IDni olish va saqlash"):
         save_data("client_person_id", query_int_from_url(page.url, "person_id"))
@@ -53,7 +53,7 @@ def run_natural_person_for_client_1(page, code):
 
     with allure.step("9 - Mijozlar ro'yxatida ko'rinishini tekshirish"):
         base.navigate_to(tab="Справочники", name="Клиенты")
-        base.expect_page(heading="Клиенты")
+        base.expect_page(heading="Клиенты", url="anor/mrf/client_list")
         base.grid_controller(search=person_name)
         base.grid(person_name)
 

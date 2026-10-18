@@ -43,7 +43,7 @@ def run_report_cislink_check(page):
         base.click(name="Шаблоны", exact=True)
         base.expect_page(heading="Шаблоны CisLink(7008)", url="cislink_template_list")
         base.click(name="Добавить", exact=True)
-        base.expect_page(heading="Шаблоны CisLink(7008) (создание)", url="cislink_template+add")
+        base.expect_page(heading="Шаблоны CisLink(7008) (создание)", url=re.compile(r"cislink_template(?:\+|%2[bB])add(?:[?#]|$)"))
         base.input(label="Название", value=template_name)
         base.input(label='Значение поля "manfid"', value="test")
         base.checkbox(label="Активный", expect_checked=True)

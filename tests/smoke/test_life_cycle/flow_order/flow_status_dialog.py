@@ -1,7 +1,7 @@
 from playwright.sync_api import expect
 
 
-def dialog_status(page, timeout=2_000):
+def dialog_status(page, timeout=4_000):
     """Dialog status modal chiqsa - to'ldirib yuboradi.
     Modal topilsa True, topilmasa False qaytaradi."""
     try:

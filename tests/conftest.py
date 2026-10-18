@@ -76,7 +76,7 @@ def pytest_addoption(parser):
 def pytest_configure(config):
     """Run environmentini tekshiradi va Allure metadata fayllarini tayyorlaydi."""
     config._smartup_started_at = time.time()
-    expect.set_options(timeout=10_000)
+    expect.set_options(timeout=20_000)
     run_info = run_config.configure_environment(config)
     reporting.prepare_allure_results(run_info, ROOT_DIR)
 

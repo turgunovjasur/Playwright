@@ -1,10 +1,12 @@
 """10 dona mahsulot xaridiga 10% chegirma beruvchi aksiya yaratish."""
 
+import re
+
 import allure
 
 from tests.smoke.test_action.flow_action.flow_action import fill_action_scope, open_action_form
 from tests.smoke.flows.flow_authorization import authorization
-from utils.base_pages.base_page import BasePage
+from utils.base_pages.auto_base_page import AutoBasePage
 from utils.data_store import save_data
 
 
@@ -25,7 +27,7 @@ def run_quantity_discount(page, code):
     7. ID ustunini yoqish va saqlangan aksiyani ro'yxatda tekshirish.
     8. Keyingi Visit ssenariylari uchun aksiya ma'lumotlarini saqlash.
     """
-    base = BasePage(page)
+    base = AutoBasePage(page)
     action_name = f"action-quantity-discount-pw{code}"
     action_code = f"c_aqd_pw{code}"
     product_name = f"product-pw{code}"
@@ -43,7 +45,7 @@ def run_quantity_discount(page, code):
 
     with allure.step("3 - Shartlar bosqichiga o'tish"):
         base.click(name="Далее", exact=True)
-        base.expect_page(heading="Условия", url="anor/mcg/action+add")
+        base.expect_page(heading="Условия", url=re.compile(r"anor/mcg/action(?:\+|%2[bB])add(?:[?#]|$)"))
         base.ui_select(label="Тип условия", expect_value="Обычный")
 
     with allure.step("4 - Обычный shart va 10 chegarasini belgilash"):
@@ -102,5 +104,5 @@ def run_quantity_discount(page, code):
 def test_quantity_discount(page, code):
     with allure.step("User profil bilan setup filialiga kirish"):
         authorization(page, who="user", code=code)
-        BasePage(page).switch_filial(name=f"filial-pw{code}")
+        AutoBasePage(page).switch_filial(name=f"filial-pw{code}")
     run_quantity_discount(page, code)

@@ -11,6 +11,7 @@ from dotenv import dotenv_values
 
 from report_lifecycle import generate_report, generate_test_summary, show_trace
 from smoke_environment import CREATED_COMPANY_PASSWORD, check_requiremants
+from validate_page_navigation import main as validate_page_navigation
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -186,6 +187,8 @@ def parse_args():
 
 def main():
     args, pytest_extra = parse_args()
+    if validate_page_navigation([]):
+        return 2
     env = os.environ.copy()
     local_dotenv_exists = load_local_dotenv(env)
 

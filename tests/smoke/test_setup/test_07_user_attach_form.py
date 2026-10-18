@@ -30,7 +30,7 @@ def run_user_attach_form(page, code):
     5. Отчеты tab: barcha mavjud hisobotlarni ulash.
     6. Накладные tab: barcha mavjud nakladnaylarni ulash.
     7. Внешние системы tab: barcha mavjud tashqi tizimlarni ulash.
-    8. Sahifani yopib, Пользователи ro'yxatiga qaytishni tekshirish.
+    8. Главное -> Пользователи orqali ro'yxatga qaytishni tekshirish.
 
     Setup zanjirida sahifa allaqachon filial-pw{code} da; standalone debug uchun filialga
     o'tish test_user_attach_form wrapper'ida bajariladi.
@@ -39,17 +39,17 @@ def run_user_attach_form(page, code):
 
     with allure.step("1 - Foydalanuvchilar ro'yxatini ochish"):
         base.navigate_to(tab="Главное", name="Пользователи")
-        base.expect_page(heading="Пользователи")
+        base.expect_page(heading="Пользователи", url="anor/mr/user_list")
 
     with allure.step("2 - Foydalanuvchi view sahifasini ochish"):
         base.grid(f"natural_person-pw{code}", click=True)
         base.click(name="Просмотреть")
-        base.expect_page(heading="Пользователь (просмотр)")
-        base.text(f"natural_person-pw{code}")
+        base.expect_page(heading="Пользователь (просмотр)", url="user_view")
+        base.text(f"natural_person-pw{code}", include_input_values=True)
 
     with allure.step("3 - Foydalanuvchining Формы ruxsatlari sahifasini ochish"):
-        base.click(name="Формы", role="link")
-        base.expect_page(heading="Пользователь (просмотр)")
+        base.tab("Формы", section=True)
+        base.expect_page(heading="Пользователь (просмотр)")  # navigation: same-url - Forms section belongs to the already-open user view.
         base.wait_for_loader()
 
     with allure.step("4 - Формы ulash"):
@@ -72,8 +72,8 @@ def run_user_attach_form(page, code):
         _attach_available_permissions(base, expand="1000")
 
     with allure.step("8 - Foydalanuvchilar ro'yxatiga qaytish"):
-        base.click(name="Закрыть")
-        base.expect_page(heading="Пользователи")
+        base.navigate_to(tab="Главное", name="Пользователи")
+        base.expect_page(heading="Пользователи", url="anor/mr/user_list")
 
 # ----------------------------------------------------------------------------------------------------------------------
 

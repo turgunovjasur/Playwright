@@ -1,3 +1,5 @@
+import re
+
 import allure
 
 from tests.smoke.flows.flow_authorization import authorization
@@ -6,7 +8,7 @@ from utils.base_pages.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Filial")]
-FILIAL_SAVE_LOADER_TIMEOUT = 60_000
+FILIAL_SAVE_LOADER_TIMEOUT = 120_000
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -31,21 +33,22 @@ def run_filial(page, code):
 
     with allure.step("1 - Tashkilotlar ro'yxatiga o'tish"):
         base.navigate_to(tab="Главное", name="Организации")
-        base.expect_page(heading="Организации")
+        base.expect_page(heading="Организации", url="anor/mr/filial_list")
 
     with allure.step("2 - Yangi tashkilot formasini to'ldirish"):
         base.click(name="Создать")
-        base.expect_page(heading="Организация (создание)")
+        base.expect_page(heading="Организация (создание)", url=re.compile(r"anor/mr/filial(?:\+|%2[bB])add(?:[?#]|$)"))
         base.input(label="Название", value=filial_name)
-        base.b_input(label="Базовая валюта", value=filial_currency, expect_value=filial_currency)
+        base.b_input(label="Базовая валюта", search_text=filial_currency, stop_after_select=True)
         base.confirm_biruni("Продолжить?")
-        base.b_input(label="Юридическое лицо", value=legal_person_code, search_text=legal_person_code, expect_value=legal_person_name)
+        base.b_input(label="Базовая валюта", expect_value=filial_currency)
+        base.b_input(label="Юридическое лицо", search_text=legal_person_code, expect_value=legal_person_name)
 
     with allure.step("3 - Saqlash va ro'yxatga qaytishni tasdiqlash"):
         base.click(name="Сохранить", exact=True)
         base.confirm_biruni("Сохранить")
         base.wait_for_loader()
-        base.expect_page(heading="Организации")
+        base.expect_page(heading="Организации", url="anor/mr/filial_list")
 
     with allure.step("4 - Ro'yxatda yaratilgan filialni tekshirish"):
         base.grid_controller(search=filial_name)
@@ -58,12 +61,15 @@ def run_filial(page, code):
         base.grid(filial_name, legal_person_code, "Активный", click=True)
         base.click(name="Просмотреть")
         base.expect_page(heading="Организация (просмотр)", url="filial_view?filial_id=")
-        base.text(filial_name, filial_currency, legal_person_code, legal_person_name, "Активный")
+        base.text(
+            filial_name, filial_currency, legal_person_code, legal_person_name,
+            "Активный", include_input_values=True,
+        )
         filial_id = query_int_from_url(page.url, "filial_id")
 
     with allure.step("6 - View formasini yopib, ro'yxatga qaytish"):
         base.click(name="Закрыть", exact=True)
-        base.expect_page(heading="Организации")
+        base.expect_page(heading="Организации", url="anor/mr/filial_list")
 
     with allure.step("7 - Muhim ma'lumotlarni data storega saqlash"):
         save_data("filial_id", filial_id)

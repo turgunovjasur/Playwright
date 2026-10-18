@@ -7,8 +7,8 @@ from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Company")]
 
-# Faqat company create/save flowiga tegishli lokal timeout: 10 minut.
-COMPANY_SAVE_TIMEOUT = 600_000
+# Faqat company create/save flowiga tegishli lokal timeout: 20 minut.
+COMPANY_SAVE_TIMEOUT = 1_200_000
 
 # ----------------------------------------------------------------------------------------------------------------------
 

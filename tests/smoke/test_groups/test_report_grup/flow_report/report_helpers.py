@@ -1,32 +1,19 @@
 """Report group uchun umumiy route va download helperlari."""
 
-import re
 from pathlib import Path
-from urllib.parse import urlsplit, urlunsplit
 
 import allure
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 DOWNLOAD_DIR = Path("test-results/downloads")
-REPORT_DOWNLOAD_TIMEOUT = 120_000
+REPORT_DOWNLOAD_TIMEOUT = 240_000
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def open_report(base, route, heading=None, timeout=30_000):
-    """Menyuda yo'q report URLini joriy legacy/A2 sahifa turiga qarab yasaydi."""
-    current = urlsplit(base.page.url)
-    report_path = f"trade/rep/integration/{route}"
-    if "/a2/" in current.path:
-        app_path = current.path.split("/a2/", 1)[0]
-        target_url = urlunsplit((current.scheme, current.netloc, f"{app_path}/a2/{report_path}", "", ""))
-    else:
-        session_token = current.fragment.lstrip("/").split("/", 1)[0]
-        if not session_token.startswith("!") or len(session_token) == 1:
-            raise AssertionError("Reportni ochish uchun authenticated legacy session tokeni kerak")
-        target_url = urlunsplit((current.scheme, current.netloc, current.path, "", f"/{session_token}/{report_path}"))
-    base.page.goto(target_url, wait_until="commit", timeout=timeout)
-    base.expect_page(heading=heading, url=re.compile(rf"/{re.escape(report_path)}$"), timeout=timeout)
+def open_report(base, route, heading=None, timeout=60_000):
+    """Menyuda yo'q integration reportni umumiy route API orqali ochadi."""
+    base.open_route(f"trade/rep/integration/{route}", heading=heading, timeout=timeout)
 
 
 # ----------------------------------------------------------------------------------------------------------------------

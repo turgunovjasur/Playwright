@@ -21,7 +21,6 @@ from tests.smoke.test_forms.monitoring.cases import (
 from tests.smoke.test_forms.monitoring.checks import (
     CHECK_NAMES,
     DEFAULT_APPLICATION_ERROR_TIMEOUT,
-    DEFAULT_CONTENT_READY_TIMEOUT,
     DEFAULT_LOADER_TIMEOUT,
     DEFAULT_TITLE_TIMEOUT,
     DEFAULT_URL_TIMEOUT,
@@ -98,7 +97,7 @@ class FormMonitor:
         url_timeout=DEFAULT_URL_TIMEOUT,
         loader_timeout=DEFAULT_LOADER_TIMEOUT,
         application_error_timeout=DEFAULT_APPLICATION_ERROR_TIMEOUT,
-        content_ready_timeout=DEFAULT_CONTENT_READY_TIMEOUT,
+        content_ready_timeout=None,
         title_timeout=DEFAULT_TITLE_TIMEOUT,
         try_direct_url=True,
     ):
@@ -120,12 +119,12 @@ class FormMonitor:
             or application_error_timeout <= 0
         ):
             raise ValueError("FormMonitor application_error_timeout musbat int bo'lishi kerak")
-        if (
+        if content_ready_timeout is not None and (
             not isinstance(content_ready_timeout, int)
             or isinstance(content_ready_timeout, bool)
             or content_ready_timeout <= 0
         ):
-            raise ValueError("FormMonitor content_ready_timeout musbat int bo'lishi kerak")
+            raise ValueError("FormMonitor content_ready_timeout None yoki musbat int bo'lishi kerak")
         if (
             not isinstance(title_timeout, int)
             or isinstance(title_timeout, bool)
@@ -137,6 +136,7 @@ class FormMonitor:
         self.url_timeout = url_timeout
         self.loader_timeout = loader_timeout
         self.application_error_timeout = application_error_timeout
+        # None shellga mos defaultni check_content_ready ichida tanlaydi.
         self.content_ready_timeout = content_ready_timeout
         self.title_timeout = title_timeout
         self.try_direct_url = try_direct_url

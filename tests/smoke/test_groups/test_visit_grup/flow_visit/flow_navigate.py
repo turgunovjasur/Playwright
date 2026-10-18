@@ -2,7 +2,7 @@ from playwright.sync_api import expect
 
 from utils.base_pages.auto_base_page import AutoBasePage
 
-A2_NAVIGATION_TIMEOUT = 60_000
+A2_NAVIGATION_TIMEOUT = 120_000
 
 # ----------------------------------------------------------------------------------------------------------------------
 

@@ -48,7 +48,7 @@ def run_currency(page, logger):
     with allure.step("5 - Manual kurs qo'shish modalini ochish"):
         base.click(name="Установить курс", exact=True)
         modal = page.get_by_role("dialog")
-        base.expect_page(heading="Добавить курс", root=modal)
+        base.expect_page(heading="Добавить курс", root=modal)  # navigation: same-url - Exchange-rate dialog opens inside the currency view.
 
     with allure.step("6 - Manual kursni kiritib saqlash"):
         base.date_picker(label="Дата курса", date="today", auto_fill=True, root=modal)
