@@ -38,6 +38,10 @@ def _lookup_query_finished(request, query, key_field):
     params = payload["p"]
     if key_field not in params.get("column", []):
         return False
+    data = payload.get("d")
+    # Custom lookups (for example, cashin clients) send the query separately.
+    if isinstance(data, dict) and "search_value" in data:
+        return data["search_value"] == query
     filters = [params.get("filter", [])]
     search_values = []
     while filters:
@@ -118,6 +122,12 @@ class AngularBasePage:
             has=self.page.locator("label").filter(has_text=label_pattern, visible=True),
             visible=True,
         )
+        # Compact action rule/bonus selectors use a sibling span as their label.
+        inline_controls = root.locator("div:has(> smt-select)").filter(
+            has=self.page.locator("span").filter(has_text=label_pattern, visible=True),
+            visible=True,
+        )
+        controls = controls.or_(inline_controls)
         # Route/title can change while the old read-only list is still visible.
         # Its header is not a field: only editable table rows qualify here.
         editable_tables = root.locator("smt-table").filter(
@@ -134,8 +144,8 @@ class AngularBasePage:
         expect(candidate).to_be_visible(timeout=timeout)
         # Read from the resolved candidate; count()/is_visible() snapshots can
         # disappear between renders and permanently choose the wrong branch.
-        kind = candidate.evaluate("element => element.localName", timeout=timeout)
-        if kind != "smt-control":
+        is_header = candidate.evaluate("element => element.hasAttribute('data-smt-col-key')", timeout=timeout)
+        if is_header:
             header = headers.nth(index)
             expect(header).to_be_visible(timeout=timeout)
             key = header.get_attribute("data-smt-col-key")
@@ -414,6 +424,7 @@ class AngularBasePage:
         value=_UNSET,
         *,
         ng_model=None,
+        placeholder=None,
         expect_value=_UNSET,
         return_value=False,
         search_text=None,
@@ -455,8 +466,8 @@ class AngularBasePage:
         if stop_after_select and return_value:
             raise ValueError("b_input(): stop_after_select va return_value birga berilmaydi")
         root = self._resolve_root(root)
-        if label is not None and ng_model is not None:
-            raise ValueError("b_input(): label yoki ng_model dan faqat bittasini bering")
+        if sum(source is not None for source in (label, ng_model, placeholder)) != 1:
+            raise ValueError("b_input(): label, ng_model yoki placeholder dan aynan bittasini bering")
         if label is not None:
             control = self._control(label, index=index, root=root, timeout=timeout)
             select = control.locator("smt-data-select, smt-select").first
@@ -470,7 +481,9 @@ class AngularBasePage:
                 f'smt-select[formcontrolname="{short_name}"]'
             ).nth(index)
         else:
-            raise ValueError("b_input(): label yoki ng_model berilishi kerak")
+            select = root.get_by_placeholder(placeholder, exact=True).nth(index).locator(
+                "xpath=ancestor::*[self::smt-data-select or self::smt-select][1]"
+            )
 
         trigger = select.locator("smt-select-trigger").first
         search = trigger.locator(
@@ -643,6 +656,15 @@ class AngularBasePage:
         pattern = self._label_pattern(label)
         visible_label = root.get_by_text(pattern).filter(visible=True).first
         expect(visible_label).to_be_visible(timeout=timeout)
+
+        # A radio group can contain several labels in one smt-control. Match
+        # the option's accessible name before falling back to its container.
+        for role_name in roles:
+            named = root.get_by_role(role_name, name=pattern)
+            if named.count() > index:
+                toggle = named.nth(index)
+                expect(toggle).to_be_visible(timeout=timeout)
+                return toggle
 
         controls = root.locator("smt-control").filter(
             has=self.page.locator("label").filter(has_text=pattern)
@@ -1061,12 +1083,19 @@ class AngularBasePage:
             ).first
             expect(selected).to_be_visible(timeout=timeout)
 
-        if close and dropdown is not None and dropdown.is_visible():
-            close_target = dropdown.get_by_role("menuitemcheckbox").first
-            if close_target.count() == 0:
-                close_target = dropdown
-            close_target.press("Escape", timeout=timeout)
-            expect(dropdown).to_be_hidden(timeout=timeout)
+        if close and dropdown is not None:
+            # Selection can recreate the menu (for example, action rooms).
+            # Resolve its current ID instead of checking the detached menu.
+            menu_id = menu_trigger.get_attribute("aria-controls")
+            if menu_id:
+                dropdown = self.page.locator(f'.cdk-overlay-container [id="{menu_id}"]')
+            if dropdown.is_visible():
+                close_target = dropdown.get_by_role("menuitemcheckbox").first
+                if close_target.count() == 0:
+                    close_target = dropdown
+                close_target.press("Escape", timeout=timeout)
+                expect(dropdown).to_be_hidden(timeout=timeout)
+            expect(menu_trigger).not_to_have_attribute("aria-expanded", "true", timeout=timeout)
         if return_value:
             return [" ".join(text.split()) for text in chips.all_inner_texts() if text.strip()]
         return select
@@ -1121,7 +1150,12 @@ class AngularBasePage:
         selected = trigger.locator("input:not([type='checkbox']):not([type='radio'])").first
         expect(select).to_be_visible(timeout=timeout)
         expect(trigger).to_be_visible(timeout=timeout)
+        searchable = selected.count() > 0
+        if not searchable:
+            selected = trigger.locator("span.truncate").first
         expect(selected).to_be_visible(timeout=timeout)
+        if search_text is not None and not searchable:
+            raise ValueError("ui_select(): search_text qidiruv inputi mavjud select uchun beriladi")
 
         if value is not _UNSET:
             option_text = str(value)
@@ -1154,9 +1188,13 @@ class AngularBasePage:
                 normalized = " ".join(expected.split())
                 body = r"\s+".join(re.escape(part) for part in normalized.split(" "))
                 expected = re.compile(rf"^\s*{body}\s*$" if exact else body)
-            expect(selected).to_have_value(expected, timeout=timeout)
+            if searchable:
+                expect(selected).to_have_value(expected, timeout=timeout)
+            else:
+                expect(selected).to_have_text(expected, timeout=timeout)
         if return_value:
-            return " ".join(selected.input_value().split())
+            actual = selected.input_value() if searchable else selected.inner_text()
+            return " ".join(actual.split())
         return select
 
     # ------------------------------------------------------------------------------------------------------------------

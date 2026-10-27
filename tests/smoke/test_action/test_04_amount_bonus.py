@@ -5,7 +5,7 @@ from pathlib import Path
 
 import allure
 
-from tests.smoke.test_action.flow_action.flow_action import fill_action_scope, open_action_form
+from tests.smoke.test_action.flow_action.flow_action import fill_action_scope, open_action_form, select_action_product
 from tests.smoke.flows.flow_authorization import authorization
 from utils.base_pages.auto_base_page import AutoBasePage
 from utils.data_store import save_data
@@ -54,20 +54,17 @@ def run_amount_bonus(page, code):
     with allure.step("4 - Обычный shart va 100000 chegarasini belgilash"):
         base.checkbox(label="Ассортимент", expect_checked=False)
         base.ui_select(label="Тип условия", value="Обычный")
-        # Legacy shart mahsuloti qidiruvida alohida field label yo'q.
-        base.b_input(ng_model="d['selected_rule_name_' + condition_index + rule_index]", value=product_name)
-        # Jadval sarlavhalari bitta qatorda; label resolver birinchi inputga tushadi.
-        base.input(ng_model="rule.main_value", value="100000")
-        base.input(ng_model="rule.extra_value", expect_value="")
-        base.input(ng_model="rule.required_count", value="1")
+        select_action_product(page, product_name=product_name, index=0)
+        base.input(label="Мин. значение", value="100000")
+        base.input(label="Макс. значение", expect_value="")
+        base.input(label="МТКП", value="1")
 
     with allure.step("5 - 1 dona bonusni belgilash"):
         base.ui_select(label="Тип бонуса", value="Кол-во")
-        # Bonus mahsuloti qidiruvida ham label yo'q; live DOM modeli ishlatiladi.
-        base.b_input(ng_model="d['selected_bonus_name_' + condition_index + bonus_index]", value=product_name)
-        base.input(ng_model="product.value", value="1")
+        select_action_product(page, product_name=product_name, index=1)
+        base.input(label="Значение", value="1")
         base.ui_select(label="Тип условия", expect_value="Обычный")
-        base.input(ng_model="rule.main_value", expect_value="100000")
+        base.input(label="Мин. значение", expect_value="100000")
 
     with allure.step("6 - Aksiyani saqlash va ro'yxatga qaytish"):
         base.click(name="Завершить", exact=True)

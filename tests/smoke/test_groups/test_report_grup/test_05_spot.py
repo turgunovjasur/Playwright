@@ -40,24 +40,24 @@ def run_report_spot_check(page):
         base.date_picker(label="Дата окончания периода", date="yesterday")
 
     with allure.step("2 - Settings VAT va optional flag defaultlarini tekshirish"):
-        base.click(name="Настройки", exact=True)
+        base.click(name=re.compile(r"^Настройк[аи]$"), exact=True)
         base.checkbox(label="Разделить по дням (файл receive)", expect_checked=False)
         base.checkbox(label="Дублировать Код клиента ERP (ID#ID)", expect_checked=False)
         base.radio(label="Системный ввод НДС(%)", expect_checked=True)
         base.radio(label="Ручной ввод НДС(%)", expect_checked=False)
-        base.text("Сброс настроек")
+        base.text("Сброс настроек", root=page)
         base.click(name="Закрыть", exact=True)
 
     with allure.step("3 - Har bir run uchun yangi Spot2D templateini yaratish"):
         base.click(name="Шаблоны", exact=True)
-        base.expect_page(heading="Шаблоны Spot2D", url="spot_template_list")
+        base.expect_page(heading="Шаблоны Spot2D", root=page)  # navigation: same-url - A2 opens the template list in a drawer.
         base.click(name="Добавить", exact=True)
-        base.expect_page(heading="Шаблон Spot2D (создание)", url=re.compile(r"spot_template(?:\+|%2[bB])add(?:[?#]|$)"))
+        base.expect_page(heading="Шаблон Spot2D (создание)", root=page)  # navigation: same-url - A2 opens creation in a nested drawer.
         base.input(label="Название", value=template_name)
         base.b_input(label="Продуктовое направление", value="Группа")
         base.checkbox(label="Подтипы характеристик", expect_checked=True)
-        base.checkbox(label="Активный", expect_checked=True)
-        base.text("Файл : delivery", "Файл : stocks", "Файл : clients", "Файл : receive", "Файл : warehouse", root="b-page:visible")
+        base.checkbox(label="Активный", expect_checked=True, root=page.get_by_role("main").last)
+        base.text("Файл : delivery", "Файл : stocks", "Файл : clients", "Файл : receive", "Файл : warehouse", root=page)
         base.click(name="Сохранить", exact=True)
         base.expect_page(heading=re.compile(r"^\s*Spot2D\(\d+\)\s*$"), url="spot")
 

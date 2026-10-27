@@ -490,7 +490,13 @@ tugagach, uning natijasidan qat'i nazar ishlaydi. Telegram bot manual menyusi
 Smoke va Forms targetlarini taklif qiladi; Reportni GitHub Actions UI'dan
 alohida manual dispatch qilish mumkin.
 
-Code tanlovi `.env` dagi yagona `NEW_CODE` flagi bilan boshqariladi: `NEW_CODE=1` yangi 6 xonali code yaratadi, `NEW_CODE=0` esa `test-results/data/data_store.json` dagi mavjud code ni ishlatadi.
+`NEW_CODE` faqat tanlangan setup testlariga ta'sir qiladi: `NEW_CODE=1` yangi
+6 xonali code yaratadi, `NEW_CODE=0` saqlangan code'ni ishlatadi. Setup tanlanmagan
+group, Forms, regression case va boshqa testlar `.env`da `NEW_CODE=1` qolgan
+bo'lsa ham `test-results/data/data_store.json`dagi code'ni oladi. Setup + group
+bitta run'da bajarilsa, shu setup yaratgan bitta code ishlatiladi. `-k`, `-m`
+yoki node ID tanlovi bilan setup chiqarib tashlansa ham saqlangan code olinadi.
+Baseline'da code yo'q bo'lsa, yangi code yaratilmasdan aniq xato beriladi.
 
 Company tanlovi faqat `COMPANY_CODE` bilan boshqariladi:
 
@@ -500,7 +506,7 @@ Company tanlovi faqat `COMPANY_CODE` bilan boshqariladi:
   shu kompaniyada ishlaydi.
 
 `0` orqali eski kompaniyani JSONdan tanlash rejimi yo'q. Alohida group run
-uchun yaratilgan kompaniyaning haqiqiy kodini va `NEW_CODE=0` bering.
+uchun yaratilgan kompaniyaning haqiqiy kodini bering; code avtomatik baseline'dan olinadi.
 
 ### <a id="pytest-orqali-debug"></a>Pytest Orqali Debug
 
@@ -638,10 +644,11 @@ python scripts/run_tests.py regression-products
 python scripts/run_tests.py setup-regression-products
 ```
 
-`regression-products` mavjud company va `NEW_CODE=0` bilan oldingi core setupni
-ishlatadi. `regression` va `setup-regression-products` yangi core setup + mahsulot runnerini
+`regression-products` mavjud company bilan oldingi core setupni ishlatadi;
+`NEW_CODE` qiymatini almashtirish talab qilinmaydi. `regression` va
+`setup-regression-products` yangi core setup + mahsulot runnerini
 bitta pytest sessiyasida bajaradi; lokal `.env` bo'lsa `NEW_CODE=1` shu faylda
-beriladi. Domain-only run yangi code yoki mos code/filial baseline bo'lmasa
+beriladi. Domain-only run mos code/filial baseline bo'lmasa
 browser ochishdan oldin bloklanadi. Runner va uning standalone leaflarini
 birga tanlash ham bloklanadi; CLI target faqat runnerni tanlaydi.
 Asosiy runner bilan alohida setup/products runnerlarini birga tanlash ham

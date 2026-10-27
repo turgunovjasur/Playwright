@@ -43,9 +43,11 @@ def run_report_integration_two_check(page):
 
     with allure.step("2 - Monolith endpoint preconditioni va report filterlarini saqlash"):
         base.click(name="Настройки", exact=True)
-        base.input(label="User", value=123)
-        base.input(label="URL", value="https://qa-assistant.uz/")
-        base.b_input(label="Тип цены", clear=True, select_first=True)
+        base.input(label="User", expect_value=re.compile(r"\S"))
+        base.input(label="URL", expect_value=re.compile(r"^https?://\S+$"))
+        if not base.b_input(label="Тип цены", return_value=True):
+            base.b_input(label="Тип цены", select_first=True)
+        base.b_input(label="Тип цены", expect_value=re.compile(r"\S"))
         base.input(label="Ед. измерения (количество)", expect_value="шт", value="шт")
         base.input(label="Ед. измерения (блок)", expect_value="шт", value="шт")
 
@@ -56,15 +58,17 @@ def run_report_integration_two_check(page):
 
         base.b_input(label="Характеристика ТМЦ", value="Группа", clear=True)
         base.checkbox(label="Подтипы характеристик ТМЦ", expect_checked=True)
+        base.b_input(label="Характеристики юридических лиц", value="Группа", clear=True)
+        if not base.b_input(label="Подтипы характеристик", return_value=True):
+            base.b_input(label="Подтипы характеристик", select_first=True)
+        base.b_input(label="Подтипы характеристик", expect_value=re.compile(r"\S"))
         base.click(name="Сохранить", exact=True)
+        base.click(name="Закрыть", exact=True)
         base.expect_page(heading="Интеграция с системой монолит", url="integration_two")
 
     with allure.step("4 - Import order XML downloadini tekshirish"):
         base.radio(label="Импорт заказа", click=True, expect_checked=True)
         generate_and_verify_download(base, "Генерировать", None, f"integration_two_import_order_pw{run_suffix}.xml", expected_suffix=".xml")
-
-    with allure.step("close_biruni_alert"):
-        base.close_biruni_alert()
 
     with allure.step("5 - Export order error modalini yopib davom etish"):
         base.radio(label="Экспорт заказа", click=True, expect_checked=True)
@@ -86,7 +90,7 @@ def run_report_integration_two_check(page):
         base.radio(label="Экспорт приходов", click=True, expect_checked=True)
         base.date_picker(label="Начало периода", date="today")
         base.date_picker(label="Конец периода", date="today")
-        base.b_input(label="Исключение по организациям (только для экспорта приходов)", select_first=True)
+        base.multiselect(label="Исключение по организациям (только для экспорта приходов)", select_first=True)
         generate_and_verify_download(base, "Генерировать", None, f"integration_two_export_input_pw{run_suffix}.xml", expected_suffix=".xml")
 
     with allure.step("9 - Export internal movement XML downloadini tekshirish"):

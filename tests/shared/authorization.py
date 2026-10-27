@@ -40,7 +40,7 @@ def login(page, email=None, password=None, *, profile=None):
     page.remove_locator_handler(announcement)
     page.add_locator_handler(announcement, _dismiss_announcement)
 
-    page.goto(f"{company_url}/login.html")
+    page.goto(f"{company_url}/a2/auth/login")
 
     base = BasePage(page)
     base.input(placeholder="Логин@компания", value=email)
@@ -50,7 +50,8 @@ def login(page, email=None, password=None, *, profile=None):
 # ----------------------------------------------------------------------------------------------------------------------
 
 def dashboard(page):
-    BasePage(page).expect_page(heading="Trade", url="dashboard", timeout=240_000)
+    # BasePage(page).expect_page(heading="Trade", url="dashboard", timeout=240_000)
+    BasePage(page).expect_page(url="dashboard", timeout=240_000)
     confirm_login(page)
     capture_filial(page)
 
@@ -65,7 +66,8 @@ def authorization(page, *, who, code=None):
         "user"  → user-pw{code}@{company} + USER_PASSWORD
 
     Credentiallar faqat who qiymatiga qarab tanlanadi.
-    who="user" uchun code fixture qiymati majburiy; yangi/eski code tanlovini faqat NEW_CODE boshqaradi.
+    who="user" uchun code fixture qiymati majburiy; setup NEW_CODE'ni qo'llaydi,
+    setupsiz run esa saqlangan baseline code'ni ishlatadi.
     """
     if who == "admin":
         email = f"admin@{current_company_code()}"

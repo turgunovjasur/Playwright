@@ -1,4 +1,4 @@
-"""Asosiy pytest runner: avval setup, keyin mahsulot regression caselari.
+"""Asosiy pytest runner: setup, mahsulotlar va mustaqil Order ssenariylari.
 
 PyCharm'da faylni pytest bilan Run qilish mumkin. Alohida runnerlardagi
 testlar qayta ishlatiladi: fixture, parametr va Allure title'lari saqlanadi.
@@ -7,6 +7,7 @@ Har case alohida pytest item; ichma-ich pytest yoki subprocess run yo'q.
 
 from tests.regression.test_setup import test_0_setup_runner as setup_runner
 from tests.regression.test_products import test_0_products_runner as products_runner
+from tests.regression.test_orders import test_0_orders_runner as orders_runner
 
 
 class Test01Setup:
@@ -44,3 +45,12 @@ class Test02Products:
 
     test_01_tmz_1 = staticmethod(products_runner.test_01_tmz_1)
     test_02_import_tmz = staticmethod(products_runner.test_02_import_tmz)
+
+
+# Class aliaslari Order runnerdagi fixture, title va story markerlarini saqlaydi.
+# Tartib report uchun; Order case'lari products case'lari natijasini ishlatmaydi.
+Test03OrderEditing = orders_runner.Test01OrderEditing
+Test04ProductSelection = orders_runner.Test02ProductSelection
+Test05OrderStatuses = orders_runner.Test03OrderStatuses
+Test06Promotions = orders_runner.Test04Promotions
+Test07SettlementAndReports = orders_runner.Test05SettlementAndReports

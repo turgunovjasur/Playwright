@@ -1541,6 +1541,7 @@ class BasePage:
         value=_UNSET,
         *,
         ng_model=None,
+        placeholder=None,
         expect_value=_UNSET,
         return_value=False,
         search_text=None,
@@ -1554,7 +1555,7 @@ class BasePage:
         root=None,
         timeout=20_000,
     ):
-        """Legacy b-inputni label/model orqali tanlaydi yoki tekshiradi.
+        """Legacy b-inputni label/model/placeholder orqali tanlaydi yoki tekshiradi.
 
         ``select_first=True`` qidiruvga hech narsa yozmasdan ochilgan ro'yxatdagi
         birinchi optionni tanlaydi. Non-empty ``search_text`` inputga yoziladi
@@ -1582,14 +1583,16 @@ class BasePage:
         if stop_after_select and return_value:
             raise ValueError("b_input(): stop_after_select va return_value birga berilmaydi")
         root = self._resolve_root(root)
-        if label is not None and ng_model is not None:
-            raise ValueError("b_input(): label yoki ng_model dan faqat bittasini bering")
+        if sum(source is not None for source in (label, ng_model, placeholder)) != 1:
+            raise ValueError("b_input(): label, ng_model yoki placeholder dan aynan bittasini bering")
         if label is not None:
             b_input = self._field_locator_by_label(label, index=index, root=root, target="b-input", timeout=timeout)
         elif ng_model is not None:
             b_input = root.locator(f'b-input:has(input[ng-model="{ng_model}"])').nth(index)
         else:
-            raise ValueError("b_input(): label yoki ng_model berilishi kerak")
+            b_input = root.get_by_placeholder(placeholder, exact=True).nth(index).locator(
+                "xpath=ancestor::b-input[1]"
+            )
 
         search = b_input.locator("input[placeholder]").first
         expect(search).to_be_visible(timeout=timeout)

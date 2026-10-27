@@ -19,6 +19,10 @@ from utils.report_context import begin_test, end_test
 ROOT_DIR = run_config.ROOT_DIR
 TRACE_DIR = reporting.TRACE_DIR
 
+# API has its own config/options and HTTP-only lifecycle. Run it separately
+# with -c tests/api/pytest.ini; do not include it in the default UI collection.
+collect_ignore = ["api"]
+
 # CLI/environment precedence avvalgidek: lokal .env ustun.
 run_config.load_local_dotenv()
 
@@ -37,8 +41,8 @@ def pytest_addoption(parser):
         action="store_true",
         default=False,
         help=(
-            "Yangi 6 xonali code yaratadi; berilmasa data_store.json dagi "
-            "mavjud code ishlatiladi"
+            "Setup tanlangan bo'lsa yangi 6 xonali code yaratadi; setupsiz "
+            "testlar har doim data_store.json dagi mavjud code ni ishlatadi"
         ),
     )
     smartup.addoption("--url", default="", help="Majburiy server URL")
@@ -215,9 +219,22 @@ def page(session_browser, request):
 
 
 @pytest.fixture(scope="session")
-def code():
-    """Yangi 6 xonali code yaratadi yoki saqlangan `code` qiymatini qaytaradi."""
-    if run_config.env_flag("NEW_CODE"):
+def code(request):
+    """Setup NEW_CODE'ni qo'llaydi; setupsiz run saqlangan code'ni oladi.
+
+    Final tanlov tekshiriladi: -k/-m/node ID orqali setup chiqarib tashlansa
+    yangi code yaratilmaydi. Setup + group run bitta session code'ni bo'lishadi.
+    """
+    setup_dirs = (ROOT_DIR / "tests/smoke/test_setup", ROOT_DIR / "tests/regression/test_setup")
+    setup_selected = any(
+        "code" in item.fixturenames and (
+            item.get_closest_marker("user_setup") is not None
+            or item.get_closest_marker("regression_setup") is not None
+            or any(Path(str(item.path)).is_relative_to(directory) for directory in setup_dirs)
+        )
+        for item in request.session.items
+    )
+    if setup_selected and run_config.env_flag("NEW_CODE"):
         return str(random.randint(100000, 999999))
 
     saved = load_data_file().get("code")
@@ -225,8 +242,8 @@ def code():
         return saved
 
     pytest.exit(
-        "Yakka test uchun saqlangan 'code' topilmadi. "
-        "Avval test_0_setup_runner ni ishga tushiring."
+        "test-results/data/data_store.json ichida saqlangan 'code' topilmadi. "
+        "Avval setupni bajaring yoki API setup baseline'ni umumiy data_store.json ga ko'chiring."
     )
 
 

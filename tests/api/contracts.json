@@ -1,0 +1,668 @@
+{
+  "legal_person": {
+    "endpoint": "anor/mr/person/legal_person+add$save",
+    "payload": {
+      "name": "legal_person-pw{code}",
+      "state": "A",
+      "code": "c_l_p_pw{code}",
+      "allow_owner": "N",
+      "is_supplier": "N",
+      "is_client": "N",
+      "details": {},
+      "telegram_users": [],
+      "person_types": [],
+      "bank_accounts": [],
+      "contacts": [],
+      "contracts": [],
+      "files": [],
+      "addresses": [],
+      "activity_ids": []
+    },
+    "source_request_index": 135
+  },
+  "filial": {
+    "endpoint": "anor/mr/filial+add$save",
+    "payload": {
+      "filial_id": "{legal_person_id}",
+      "name": "filial-pw{code}",
+      "state": "A",
+      "vat_enabled": "N",
+      "excise_enabled": "N",
+      "base_currency_id": "{currency_id_uzb}"
+    },
+    "source_request_index": 231
+  },
+  "room": {
+    "endpoint": "anor/mrf/room+add:save",
+    "payload": {
+      "-project_code": "trade",
+      "-filial_id": "{filial_id}",
+      "room_type_id": null,
+      "code": "c_rm_pw{code}",
+      "name": "room-pw{code}",
+      "room_kind": "D",
+      "order_no": null,
+      "state": "A",
+      "project_codes": []
+    },
+    "source_request_index": 461
+  },
+  "robot": {
+    "endpoint": "anor/mrf/robot+add:save",
+    "payload": {
+      "-project_code": "trade",
+      "-filial_id": "{filial_id}",
+      "code": "c_rb_pw{code}",
+      "name": "robot-pw{code}",
+      "person_id": null,
+      "state": "A",
+      "tracking_enabled": "N",
+      "manager_id": null,
+      "room_ids": [
+        "{room_id}"
+      ],
+      "role_ids": [
+        "{role_id}"
+      ]
+    },
+    "source_request_index": 501
+  },
+  "natural_person": {
+    "endpoint": "anor/mr/person/natural_person+add$save",
+    "payload": {
+      "-project_code": "trade",
+      "-filial_id": "{filial_id}",
+      "gender": "M",
+      "state": "A",
+      "regions": [],
+      "last_name": null,
+      "first_name": "natural_person-pw{code}",
+      "middle_name": null,
+      "code": "c_n_p_pw{code}",
+      "birthday": null,
+      "passport_number": null,
+      "passport_series": null,
+      "passport_digits": null,
+      "region_id": null,
+      "address": null,
+      "post_address": null,
+      "legal_person_id": null,
+      "legal_person_name": null,
+      "responsible_person_id": null,
+      "responsible_person_name": null,
+      "tin": null,
+      "latlng": null,
+      "telegram": null,
+      "email": null,
+      "web": null,
+      "note": null,
+      "rooms": [],
+      "person_type_id": {},
+      "person_type_name": {},
+      "files": [],
+      "contracts": [],
+      "addresses": [],
+      "telegram_users": [],
+      "bank_accounts": [],
+      "photo_sha": null,
+      "is_supplier": "N",
+      "is_client": "N",
+      "is_employee": "N",
+      "room_ids": [],
+      "delivery_working_days": null,
+      "delivery_time_window_start": null,
+      "delivery_time_window_end": null
+    },
+    "source_request_index": 539
+  },
+  "user": {
+    "endpoint": "anor/mr/user+add:save",
+    "payload": {
+      "user_id": "{user_person_id}",
+      "name": "natural_person-pw{code}",
+      "login": "user-pw{code}",
+      "password": "{user_password}",
+      "state": "A",
+      "photo_sha": "",
+      "gender": "M",
+      "email": "",
+      "code": "c_n_p_pw{code}",
+      "role_id": [],
+      "robot_id": [
+        "{robot_id}"
+      ]
+    },
+    "source_request_index": 683
+  },
+  "change_password": {
+    "endpoint": "biruni/md/change_password:save",
+    "payload": {
+      "current_password": "{user_password}",
+      "new_password": "{user_password}",
+      "rewritten_password": "{user_password}"
+    },
+    "source_request_index": 1191
+  },
+  "price_type_uzb": {
+    "endpoint": "anor/mkr/price_type+add:save",
+    "payload": {
+      "name": "Price Type UZB-pw{code}",
+      "currency_id": "{currency_id_uzb}",
+      "with_card": "N",
+      "state": "A",
+      "code": "c_p_t_uzb_pw{code}",
+      "price_type_kind": "S",
+      "room_ids": [
+        "{room_id}"
+      ]
+    },
+    "source_request_index": 1326
+  },
+  "price_type_usa": {
+    "endpoint": "anor/mkr/price_type+add:save",
+    "payload": {
+      "name": "Price Type USA-pw{code}",
+      "currency_id": "{currency_id}",
+      "with_card": "N",
+      "state": "A",
+      "code": "c_p_t_usa_pw{code}",
+      "price_type_kind": "S",
+      "room_ids": [
+        "{room_id}"
+      ]
+    },
+    "source_request_index": 1378
+  },
+  "currency_rate": {
+    "endpoint": "anor/mk/currency_view$add_rate",
+    "payload": {
+      "-project_code": "trade",
+      "-filial_id": "{filial_id}",
+      "currency_id": "{currency_id}",
+      "rate_date": "{today}",
+      "rate": "10000"
+    },
+    "source_request_index": 1501
+  },
+  "sector": {
+    "endpoint": "anor/mr/sector+add:save",
+    "payload": {
+      "name": "sector-pw{code}",
+      "state": "A",
+      "code": "c_s_pw{code}",
+      "room_ids": [
+        "{room_id}"
+      ]
+    },
+    "source_request_index": 1833
+  },
+  "product": {
+    "endpoint": "anor/mr/product/inventory+add$save",
+    "payload": {
+      "name": "product-pw{code}",
+      "measure_id": "{measure_id}",
+      "state": "A",
+      "code": "c_p_pw{code}",
+      "group_type_id": {},
+      "photos": [],
+      "barcodes": [],
+      "files": [],
+      "sector_id": [
+        "{sector_id}"
+      ],
+      "inventory_kinds": [
+        "G"
+      ],
+      "supplier_id": [],
+      "marking_measures": [],
+      "gtins": [],
+      "breakage_id": [],
+      "comment_id": []
+    },
+    "source_request_index": 1864
+  },
+  "product_usa": {
+    "endpoint": "anor/mr/product/inventory+add$save",
+    "payload": {
+      "name": "product-usa-pw{code}",
+      "measure_id": "{measure_id}",
+      "state": "A",
+      "code": "c_p_usa_pw{code}",
+      "group_type_id": {},
+      "photos": [],
+      "barcodes": [],
+      "files": [],
+      "sector_id": [
+        "{sector_id}"
+      ],
+      "inventory_kinds": [
+        "G"
+      ],
+      "supplier_id": [],
+      "marking_measures": [],
+      "gtins": [],
+      "breakage_id": [],
+      "comment_id": []
+    },
+    "source_request_index": 2006
+  },
+  "natural_client": {
+    "endpoint": "anor/mr/person/natural_person+add$save",
+    "payload": {
+      "-project_code": "trade",
+      "-filial_id": "{filial_id}",
+      "gender": "M",
+      "state": "A",
+      "regions": [],
+      "last_name": null,
+      "first_name": "natural_client-pw{code}",
+      "middle_name": null,
+      "code": "c_n_c_pw{code}",
+      "birthday": null,
+      "passport_number": null,
+      "passport_series": null,
+      "passport_digits": null,
+      "region_id": null,
+      "address": null,
+      "post_address": null,
+      "legal_person_id": null,
+      "legal_person_name": null,
+      "responsible_person_id": null,
+      "responsible_person_name": null,
+      "tin": null,
+      "latlng": null,
+      "telegram": null,
+      "email": null,
+      "web": null,
+      "note": null,
+      "rooms": [],
+      "person_type_id": {},
+      "person_type_name": {},
+      "files": [],
+      "contracts": [],
+      "addresses": [],
+      "telegram_users": [],
+      "bank_accounts": [],
+      "photo_sha": null,
+      "is_supplier": "N",
+      "is_client": "Y",
+      "is_employee": "N",
+      "room_ids": [],
+      "delivery_working_days": null,
+      "delivery_time_window_start": null,
+      "delivery_time_window_end": null
+    },
+    "source_request_index": 2211
+  },
+  "init_balance_uzb": {
+    "endpoint": "anor/mkw/init_balance/init_inventory_balance+add$save",
+    "payload": {
+      "balance_date": "{now}",
+      "currency_id": "{currency_id_uzb}",
+      "balance_number": "{code}",
+      "warehouse_id": "{warehouse_id}",
+      "posted": "N",
+      "items": [
+        {
+          "product_id": "{product_id}",
+          "price": "5000",
+          "on_balance": "Y",
+          "quantity": 100,
+          "inventory_kind": "G"
+        }
+      ]
+    },
+    "source_request_index": 2677
+  },
+  "init_balance_usa": {
+    "endpoint": "anor/mkw/init_balance/init_inventory_balance+add$save",
+    "payload": {
+      "balance_date": "{now}",
+      "currency_id": "{currency_id}",
+      "balance_number": "1{code}",
+      "warehouse_id": "{warehouse_id}",
+      "posted": "N",
+      "items": [
+        {
+          "product_id": "{product_id_usa}",
+          "price": "1",
+          "on_balance": "Y",
+          "quantity": 100,
+          "inventory_kind": "G"
+        }
+      ]
+    },
+    "source_request_index": 2718
+  },
+  "quantity_discount": {
+    "endpoint": "anor/mcg/action+add$save",
+    "payload": {
+      "name": "action-quantity-discount-pw{code}",
+      "start_date": "{today}",
+      "end_date": "{end_date}",
+      "bonus_warehouse_id": "{warehouse_id}",
+      "code": "c_aqd_pw{code}",
+      "state": "A",
+      "calc_kind": "Q",
+      "weight_kind": "",
+      "condition_operator": "M",
+      "order_limit_kind": "N",
+      "with_period_limit": "N",
+      "with_period_calc": "N",
+      "forced": "N",
+      "fields": {
+        "filled_field_id": "",
+        "dynamic_fields": []
+      },
+      "calc_level": "1",
+      "conditions": [
+        {
+          "rules": [
+            {
+              "rule_kind": "S",
+              "calc_kind": "",
+              "weight_kind": "",
+              "required_count": 1,
+              "product_ids": [
+                "{product_id}"
+              ],
+              "inventory_kinds": [
+                "G"
+              ],
+              "main_value": "10"
+            }
+          ],
+          "bonuses": [
+            {
+              "bonus_kind": "D",
+              "products": [
+                {
+                  "product_id": "{product_id}",
+                  "inventory_kind": "G",
+                  "value": "10",
+                  "max_value": ""
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "bonus_limits": [],
+      "person_types": [],
+      "price_type_id": [
+        "{price_type_id_uzb}"
+      ],
+      "warehouse_id": [],
+      "payment_type_id": [],
+      "room_ids": [
+        "{room_id}"
+      ]
+    },
+    "source_request_index": 2930
+  },
+  "quantity_bonus": {
+    "endpoint": "anor/mcg/action+add$save",
+    "payload": {
+      "name": "action-quantity-bonus-pw{code}",
+      "start_date": "{today}",
+      "end_date": "{end_date}",
+      "bonus_warehouse_id": "{warehouse_id}",
+      "code": "c_aqb_pw{code}",
+      "state": "A",
+      "calc_kind": "Q",
+      "weight_kind": "",
+      "condition_operator": "M",
+      "order_limit_kind": "N",
+      "with_period_limit": "N",
+      "with_period_calc": "N",
+      "forced": "N",
+      "fields": {
+        "filled_field_id": "",
+        "dynamic_fields": []
+      },
+      "calc_level": "1",
+      "conditions": [
+        {
+          "rules": [
+            {
+              "rule_kind": "S",
+              "calc_kind": "",
+              "weight_kind": "",
+              "required_count": 1,
+              "product_ids": [
+                "{product_id}"
+              ],
+              "inventory_kinds": [
+                "G"
+              ],
+              "main_value": "10"
+            }
+          ],
+          "bonuses": [
+            {
+              "bonus_kind": "Q",
+              "products": [
+                {
+                  "product_id": "{product_id}",
+                  "inventory_kind": "G",
+                  "value": "1",
+                  "max_value": ""
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "bonus_limits": [],
+      "person_types": [],
+      "price_type_id": [
+        "{price_type_id_uzb}"
+      ],
+      "warehouse_id": [],
+      "payment_type_id": [],
+      "room_ids": [
+        "{room_id}"
+      ]
+    },
+    "source_request_index": 2977
+  },
+  "amount_discount": {
+    "endpoint": "anor/mcg/action+add$save",
+    "payload": {
+      "name": "action-amount-discount-pw{code}",
+      "start_date": "{today}",
+      "end_date": "{end_date}",
+      "bonus_warehouse_id": "{warehouse_id}",
+      "code": "c_aad_pw{code}",
+      "state": "A",
+      "calc_kind": "A",
+      "weight_kind": "",
+      "condition_operator": "M",
+      "order_limit_kind": "N",
+      "with_period_limit": "N",
+      "with_period_calc": "N",
+      "forced": "N",
+      "fields": {
+        "filled_field_id": "",
+        "dynamic_fields": []
+      },
+      "calc_level": "1",
+      "conditions": [
+        {
+          "rules": [
+            {
+              "rule_kind": "S",
+              "calc_kind": "",
+              "weight_kind": "",
+              "required_count": 1,
+              "product_ids": [
+                "{product_id}"
+              ],
+              "inventory_kinds": [
+                "G"
+              ],
+              "main_value": "100000"
+            }
+          ],
+          "bonuses": [
+            {
+              "bonus_kind": "D",
+              "products": [
+                {
+                  "product_id": "{product_id}",
+                  "inventory_kind": "G",
+                  "value": "5",
+                  "max_value": ""
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "bonus_limits": [],
+      "person_types": [],
+      "price_type_id": [
+        "{price_type_id_uzb}"
+      ],
+      "warehouse_id": [],
+      "payment_type_id": [],
+      "room_ids": [
+        "{room_id}"
+      ]
+    },
+    "source_request_index": 3014
+  },
+  "amount_bonus": {
+    "endpoint": "anor/mcg/action+add$save",
+    "payload": {
+      "name": "action-amount-bonus-pw{code}",
+      "start_date": "{today}",
+      "end_date": "{end_date}",
+      "bonus_warehouse_id": "{warehouse_id}",
+      "code": "c_aab_pw{code}",
+      "state": "A",
+      "calc_kind": "A",
+      "weight_kind": "",
+      "condition_operator": "M",
+      "order_limit_kind": "N",
+      "with_period_limit": "N",
+      "with_period_calc": "N",
+      "forced": "N",
+      "fields": {
+        "filled_field_id": "",
+        "dynamic_fields": []
+      },
+      "calc_level": "1",
+      "conditions": [
+        {
+          "rules": [
+            {
+              "rule_kind": "S",
+              "calc_kind": "",
+              "weight_kind": "",
+              "required_count": 1,
+              "product_ids": [
+                "{product_id}"
+              ],
+              "inventory_kinds": [
+                "G"
+              ],
+              "main_value": "100000"
+            }
+          ],
+          "bonuses": [
+            {
+              "bonus_kind": "Q",
+              "products": [
+                {
+                  "product_id": "{product_id}",
+                  "inventory_kind": "G",
+                  "value": "1",
+                  "max_value": ""
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "bonus_limits": [],
+      "person_types": [],
+      "price_type_id": [
+        "{price_type_id_uzb}"
+      ],
+      "warehouse_id": [],
+      "payment_type_id": [],
+      "room_ids": [
+        "{room_id}"
+      ]
+    },
+    "source_request_index": 3051
+  },
+  "cyclic_bonus": {
+    "endpoint": "anor/mcg/action+add$save",
+    "payload": {
+      "name": "action-cyclic-bonus-pw{code}",
+      "start_date": "{today}",
+      "end_date": "{end_date}",
+      "bonus_warehouse_id": "{warehouse_id}",
+      "code": "c_acb_pw{code}",
+      "state": "A",
+      "calc_kind": "Q",
+      "weight_kind": "",
+      "condition_operator": "M",
+      "order_limit_kind": "N",
+      "with_period_limit": "N",
+      "with_period_calc": "N",
+      "forced": "N",
+      "fields": {
+        "filled_field_id": "",
+        "dynamic_fields": []
+      },
+      "calc_level": "1",
+      "conditions": [
+        {
+          "rules": [
+            {
+              "rule_kind": "C",
+              "calc_kind": "",
+              "weight_kind": "",
+              "required_count": 1,
+              "product_ids": [
+                "{product_id}"
+              ],
+              "inventory_kinds": [
+                "G"
+              ],
+              "main_value": "10",
+              "extra_value": ""
+            }
+          ],
+          "bonuses": [
+            {
+              "bonus_kind": "Q",
+              "products": [
+                {
+                  "product_id": "{product_id}",
+                  "inventory_kind": "G",
+                  "value": "1",
+                  "max_value": ""
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "bonus_limits": [],
+      "person_types": [],
+      "price_type_id": [
+        "{price_type_id_uzb}"
+      ],
+      "warehouse_id": [],
+      "payment_type_id": [],
+      "room_ids": [
+        "{room_id}"
+      ]
+    },
+    "source_request_index": 3088
+  }
+}

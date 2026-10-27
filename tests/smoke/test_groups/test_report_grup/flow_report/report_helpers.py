@@ -1,6 +1,7 @@
 """Report group uchun umumiy route va download helperlari."""
 
 from pathlib import Path
+import xml.etree.ElementTree as ET
 
 import allure
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
@@ -19,7 +20,7 @@ def open_report(base, route, heading=None, timeout=60_000):
 # ----------------------------------------------------------------------------------------------------------------------
 
 def generate_and_verify_download(base, button_name, expected_prefix, save_name, timeout=REPORT_DOWNLOAD_TIMEOUT, expected_suffix=None):
-    """Named tugmadagi download nomi va fayl bo'sh emasligini tekshiradi."""
+    """Download nomi, hajmi va XML bo'lsa haqiqiy XML kontentini tekshiradi."""
     if expected_prefix is None and expected_suffix is None:
         raise ValueError("Download uchun expected_prefix yoki expected_suffix berilishi kerak")
     DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -51,4 +52,15 @@ def generate_and_verify_download(base, button_name, expected_prefix, save_name, 
     allure.attach(str(size), name=f"{save_name}-size", attachment_type=allure.attachment_type.TEXT)
     if size <= 0:
         raise AssertionError(f"{save_name} bo'sh (0 bytes)")
+    if expected_suffix is not None and expected_suffix.lower() == ".xml":
+        try:
+            xml_root = ET.parse(target).getroot().tag
+        except ET.ParseError as exc:
+            raise AssertionError(f"{save_name}: yuklangan fayl yaroqli XML emas") from exc
+        allure.attach(xml_root, name=f"{save_name}-xml-root", attachment_type=allure.attachment_type.TEXT)
+        if xml_root.rsplit("}", 1)[-1].lower() == "html":
+            raise AssertionError(
+                f"{save_name}: XML o'rniga HTML sahifa yuklandi; "
+                "integratsiya endpointi va server javobini tekshiring"
+            )
     return suggested

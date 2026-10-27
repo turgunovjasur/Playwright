@@ -23,7 +23,6 @@ from tests.smoke.test_forms.monitoring.checks import (
     DEFAULT_APPLICATION_ERROR_TIMEOUT,
     DEFAULT_LOADER_TIMEOUT,
     DEFAULT_TITLE_TIMEOUT,
-    DEFAULT_URL_TIMEOUT,
     HARD_ERROR_SELECTORS,
     NOT_CHECKED,
     NOT_OPENED,
@@ -94,7 +93,7 @@ class FormMonitor:
         skipped_cases=None,
         checks=None,
         diagnostics=None,
-        url_timeout=DEFAULT_URL_TIMEOUT,
+        url_timeout=None,
         loader_timeout=DEFAULT_LOADER_TIMEOUT,
         application_error_timeout=DEFAULT_APPLICATION_ERROR_TIMEOUT,
         content_ready_timeout=None,
@@ -109,8 +108,12 @@ class FormMonitor:
         self.progress_runner = progress_runner
         self.progress_test_id = progress_test_id
         self.enabled_checks = normalize_enabled_names(checks)
-        if not isinstance(url_timeout, int) or isinstance(url_timeout, bool) or url_timeout <= 0:
-            raise ValueError("FormMonitor url_timeout musbat int bo'lishi kerak")
+        if url_timeout is not None and (
+            not isinstance(url_timeout, int)
+            or isinstance(url_timeout, bool)
+            or url_timeout <= 0
+        ):
+            raise ValueError("FormMonitor url_timeout None yoki musbat int bo'lishi kerak")
         if not isinstance(loader_timeout, int) or isinstance(loader_timeout, bool) or loader_timeout <= 0:
             raise ValueError("FormMonitor loader_timeout musbat int bo'lishi kerak")
         if (

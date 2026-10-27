@@ -31,6 +31,7 @@ A2_ANGULAR_FORMS_PATH = "tests/smoke/test_forms/test_a2_angular_forms.py"
 REGRESSION_RUNNER_PATH = "tests/regression/test_0_regression_runner.py"
 REGRESSION_SETUP_PATH = "tests/regression/test_setup/test_0_setup_runner.py"
 REGRESSION_PRODUCTS_PATH = "tests/regression/test_products/test_0_products_runner.py"
+REGRESSION_ORDERS_PATH = "tests/regression/test_orders/test_0_orders_runner.py"
 
 TARGETS = {
     "all": (
@@ -46,6 +47,8 @@ TARGETS = {
     "regression-setup": (REGRESSION_SETUP_PATH, "--new-code"),
     "regression-products": (REGRESSION_PRODUCTS_PATH, ""),
     "setup-regression-products": ((REGRESSION_SETUP_PATH, REGRESSION_PRODUCTS_PATH), "--new-code"),
+    "regression-orders": (REGRESSION_ORDERS_PATH, ""),
+    "setup-regression-orders": ((REGRESSION_SETUP_PATH, REGRESSION_ORDERS_PATH), "--new-code"),
     "setup-group-0": (
         (
             "tests/smoke/test_setup/test_0_setup_runner.py",
@@ -97,23 +100,18 @@ TARGETS = {
     "forms": (FORMS_RUNNER_PATH, ""),
 }
 
-GROUP_ONLY_CODE_TARGETS = {
+GROUP_ONLY_TARGETS = {
     "groups",
     "group-0",
     "group-visit",
+    "group-report",
+    "forms",
 }
 
 
 def env_flag(env, name):
     """1/0 environment flagida faqat `1` bo'lsa `True` qaytaradi."""
     return env.get(name, "0") == "1"
-
-
-def new_code_enabled(env, *, local_dotenv_exists, pytest_extra):
-    """Joriy precedence bo'yicha pytest yangi session code yaratishini aniqlaydi."""
-    if local_dotenv_exists:
-        return env_flag(env, "NEW_CODE")
-    return env_flag(env, "NEW_CODE") or "--new-code" in pytest_extra
 
 
 def load_local_dotenv(env):
@@ -158,7 +156,8 @@ def parse_args():
             "Default: all. CI uchun: setup-smoke yoki forms. Debug uchun: setup, "
             "setup-smoke, setup-group-0, setup-visit, setup-report, setup-a2-admin, "
             "company, groups, group-0, group-visit, group-report, "
-            "forms, regression, regression-setup, regression-products, setup-regression-products yoki pytest target path."
+            "forms, regression, regression-setup, regression-products, setup-regression-products, "
+            "regression-orders, setup-regression-orders yoki pytest target path."
         ),
     )
     parser.add_argument("--url", help="Server URL; lokal .env bo'lsa COMPANY_URL ishlatiladi.")
@@ -223,30 +222,12 @@ def main():
     env["COMPANY_URL"] = company_url_arg
     if args.clean_results:
         env["CLEAN_ALLURE_RESULTS"] = "1"
-    group_only_targets = {*GROUP_ONLY_CODE_TARGETS, "group-report", "forms"}
-    if args.target == "regression-products" and (create_company or new_code_enabled(env, local_dotenv_exists=local_dotenv_exists, pytest_extra=pytest_extra)):
-        print("regression-products mavjud muhitni talab qiladi: COMPANY_CODE mavjud company, NEW_CODE=0. Yangi muhit uchun setup-regression-products targetini ishlating.", file=sys.stderr)
+    if args.target in {"regression-products", "regression-orders"} and create_company:
+        print(f"{args.target} mavjud company va saqlangan setup baseline'ni talab qiladi. Yangi muhit uchun setup-{args.target} targetini ishlating.", file=sys.stderr)
         return 2
-    if create_company and args.target in group_only_targets:
+    if create_company and args.target in GROUP_ONLY_TARGETS:
         print(
             "COMPANY_CODE=1 group-only targetlar bilan ishlamaydi; all, setup yoki company ishlating",
-            file=sys.stderr,
-        )
-        return 2
-    if (
-        args.target in GROUP_ONLY_CODE_TARGETS
-        and new_code_enabled(
-            env,
-            local_dotenv_exists=local_dotenv_exists,
-            pytest_extra=pytest_extra,
-        )
-    ):
-        print(
-            "NEW_CODE=1 group-only target bilan ishlamaydi: yangi code uchun "
-            "setup user hali yaratilmagan. .env da NEW_CODE=0 qilib joriy "
-            "setup baseline'ni ishlating yoki setup bilan bir sessiyada "
-            "ishlaydigan targetni tanlang (Group-0 uchun: setup-group-0; "
-            "Visit uchun: setup-visit).",
             file=sys.stderr,
         )
         return 2

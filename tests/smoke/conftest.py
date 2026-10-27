@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from tests.smoke import smoke_reporting
+from tests.smoke.setup_errors import SetupDependencyReadyError
 
 SMOKE_DIR = Path(__file__).resolve().parent
 _USER_SETUP_FAILED = False
@@ -70,7 +71,9 @@ def pytest_runtest_makereport(item, call):
     outcome = yield
     report = outcome.get_result()
     if report.failed:
-        if smoke_reporting.is_user_setup(item):
+        if smoke_reporting.is_user_setup(item) and not (
+            call.excinfo and isinstance(call.excinfo.value, SetupDependencyReadyError)
+        ):
             _USER_SETUP_FAILED = _USER_SETUP_FAILED or item.nodeid
 
         group_name = smoke_reporting.smoke_group_name(item)

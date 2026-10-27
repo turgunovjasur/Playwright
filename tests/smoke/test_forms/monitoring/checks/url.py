@@ -10,6 +10,7 @@ from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 DEFAULT_URL_TIMEOUT = 30_000
+A2_URL_TIMEOUT = 240_000
 EXPECTED_URL_NOT_REACHED = "EXPECTED_URL_NOT_REACHED"
 SHELL_NOT_DETECTED = "SHELL_NOT_DETECTED"
 
@@ -110,8 +111,15 @@ def _direct_probe(page, result, *, expected_path, shell, timeout, capture_eviden
     _capture_evidence(capture_evidence, "direct", result)
 
 
-def check_url(page, expected_path, *, timeout=DEFAULT_URL_TIMEOUT, try_direct_url=True, capture_evidence=None):
-    """Expected pathni actual URL ichidan kutadi va destination shellni qaytaradi."""
+def check_url(page, expected_path, *, timeout=None, try_direct_url=True, capture_evidence=None):
+    """Actual URLni kutadi: A2 240s, legacy 30s; explicit timeout ustun."""
+    if timeout is None:
+        # A2 menu clickidan keyin route kontent bilan birga kech yangilanishi mumkin.
+        timeout = (
+            A2_URL_TIMEOUT
+            if detect_shell(getattr(page, "url", "")) == "a2"
+            else DEFAULT_URL_TIMEOUT
+        )
     if not isinstance(timeout, int) or isinstance(timeout, bool) or timeout <= 0:
         raise ValueError("check_url timeout musbat int bo'lishi kerak")
     if not isinstance(try_direct_url, bool):

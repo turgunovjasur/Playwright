@@ -42,7 +42,7 @@ def run_report_saleswork_check(page):
 
     with allure.step("2 - Har bir run uchun yangi SalesWork templateini yaratish"):
         base.click(name="Шаблоны", exact=True)
-        base.expect_page(heading="Шаблоны SalesWorks", url="saleswork_template_list")
+        base.expect_page(heading="Шаблоны SalesWorks", root=page)  # navigation: same-url - A2 opens the template list in a drawer.
         base.click(name="Создать", exact=True)
         base.expect_page(heading="Шаблон Saleswork (Создание)", url=re.compile(r"saleswork_template(?:\+|%2[bB])add(?:[?#]|$)"))
         base.input(label="Название", value=template_name)
@@ -50,7 +50,7 @@ def run_report_saleswork_check(page):
         base.checkbox(label="Активный", expect_checked=True)
         base.checkbox(label="Подтипы характеристик", expect_checked=True)
         base.radio(label="MarevenFoodCentral", expect_checked=True)
-        base.radio(label="Kimberly-Clark", expect_checked=False)
+        base.radio(label="KimberlyClark", expect_checked=False)
         base.checkbox(label="ParentCompanies", expect_checked=True)
         base.checkbox(label="Outlets", expect_checked=True)
         base.checkbox(label="ArchivedStocks", expect_checked=True)

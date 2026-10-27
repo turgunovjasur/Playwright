@@ -1,5 +1,4 @@
 import allure
-from playwright.sync_api import expect
 
 from tests.smoke.test_forms.monitoring.checks.url import detect_shell
 from tests.smoke.test_forms.monitoring.reporting import (
@@ -11,6 +10,7 @@ from tests.smoke.test_forms.monitoring.reporting import (
 )
 from utils.base_pages.auto_base_page import AutoBasePage
 from utils.helper_utils import first_non_admin_filial
+from utils.report_context import page_context
 
 
 # Reporting helperlari oldingi consumerlar uchun shu moduldan re-export qilinadi.
@@ -35,26 +35,13 @@ def _select_operational_filial(names):
 
 
 def first_operational_filial(page):
-    """Legacy filial ro'yxatidan birinchi operatsion filial nomini oladi."""
-    locations = (
-        page.locator(".header-logo.custom-dropdown:visible")
-        .filter(has=page.locator(".dropdown-locations-custom"))
-        .first
+    """Birinchi operatsion filialga o'tib, UI'da tasdiqlangan nomini oladi."""
+    AutoBasePage(page).switch_filial(
+        first_filial=True,
+        timeout=_form_timeout(page),
     )
-    trigger = locations.locator(".dropdown-locations-custom")
-    expect(trigger).to_be_visible(timeout=FORM_TIMEOUT)
-    trigger.click(timeout=FORM_TIMEOUT)
-
-    menu = locations.locator(".dropdown-menu")
-    expect(menu).to_be_visible(timeout=FORM_TIMEOUT)
-    filial_list = menu.locator(".filial-list")
-    expect(filial_list).to_be_visible(timeout=FORM_TIMEOUT)
-    names = filial_list.get_by_role("link").all_inner_texts()
-
-    trigger.click(timeout=FORM_TIMEOUT)
-    expect(menu).to_be_hidden(timeout=FORM_TIMEOUT)
-
-    return _select_operational_filial(names)
+    # Ikkala switch_filial implementationi ham nomni UI assertionidan so'ng yozadi.
+    return _select_operational_filial([page_context(page).get("filial", "")])
 
 
 # ----------------------------------------------------------------------------------------------------------------------

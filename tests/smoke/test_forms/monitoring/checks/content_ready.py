@@ -14,6 +14,7 @@ from tests.smoke.test_forms.monitoring.checks.core import (
 
 DEFAULT_CONTENT_READY_TIMEOUT = 30_000
 A2_CONTENT_READY_TIMEOUT = 240_000
+INITIAL_DOCUMENT_CONTENT_READY_TIMEOUT = 240_000
 LEGACY_DEFAULT_READY_SELECTORS = (
     "b-page:visible",
     ".subheader:visible",
@@ -80,16 +81,19 @@ def _matched_legacy_selector(page):
 
 
 def check_content_ready(page, *, shell, ready=None, timeout=None):
-    """Kontentni kutadi: default A2 240s, legacy 30s; explicit timeout ustun."""
+    """A2/yuklanayotgan hujjat 240s, tayyor legacy 30s; explicit timeout ustun."""
     normalized_shell = clean_text(shell).lower()
     if normalized_shell not in {"legacy", "a2"}:
         raise ValueError("check_content_ready shell faqat 'legacy' yoki 'a2' bo'lishi kerak")
     if timeout is None:
-        timeout = (
-            A2_CONTENT_READY_TIMEOUT
-            if normalized_shell == "a2"
-            else DEFAULT_CONTENT_READY_TIMEOUT
-        )
+        if normalized_shell == "a2":
+            timeout = A2_CONTENT_READY_TIMEOUT
+        elif page.evaluate("document.readyState") != "complete":
+            # A2 -> legacy o'tishda URL tayyor, ammo CSS/JS hali yuklanayotgan
+            # bo'lishi mumkin. Iliq legacy navigatsiya uchun 30s saqlanadi.
+            timeout = INITIAL_DOCUMENT_CONTENT_READY_TIMEOUT
+        else:
+            timeout = DEFAULT_CONTENT_READY_TIMEOUT
     _validate_timeout(timeout)
     ready = _normalize_ready(ready)
     ready_source, expected_ready = _ready_contract(normalized_shell, ready)
