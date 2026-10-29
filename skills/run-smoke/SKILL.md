@@ -27,6 +27,23 @@ Source: user
   verification commandi test execution ruxsati emas. Faqat userning aynan
   `run qil` buyrug'i execution authoritysi bo'ladi.
 
+### Lokal run vaqtida test CI'ni to'xtatish
+Status: user-reported
+Verified: 2026-10-29
+Source: user — lokal test run vaqtida CI'ni to'xtatish va qoidani eslab qolish buyrug'i
+
+- Lokal UI yoki API test runidan oldin shu test muhitidan foydalanadigan CI
+  workflow holatini tekshir. Active va queued test runlarini to'xtatib,
+  yakunlanganini tasdiqla; shundan keyin lokal testni boshlagin.
+- Lokal run davomida scheduled/manual CI qayta boshlanmasligini ta'minla:
+  tegishli test workflow'ni vaqtincha disable qilish mumkin. Uning oldingi
+  holatini saqla; run tugagach faqat o'zing vaqtincha to'xtatgan workflow'ni
+  avvalgi holatiga qaytar. Oldindan disabled workflow'ni yoqma.
+- Test muhitini ishlatmaydigan lint/validation workflowlariga tegma. CI'ni
+  to'xtatish yoki holatini tekshirish imkoni bo'lmasa, parallel runni boshlamay,
+  aniq to'siqni foydalanuvchiga bildir.
+- Yakuniy javobda CI'ning tiklangan yoki hali to'xtatilgan holatini ayt.
+
 ## Qaysi buyruqni ishlating
 
 ### Barcha smoke testlar (to'liq run):

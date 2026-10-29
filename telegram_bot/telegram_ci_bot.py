@@ -16,7 +16,7 @@ from .bot_client import TelegramClient
 from .bot_state import ActiveRunStore, PendingStore
 from .github_api import GitHubActionsClient
 from .handlers import handle_callback, handle_message
-from .scheduler import HourlyScheduler, dispatch_hourly_slot
+from .scheduler import DailyScheduler, dispatch_daily_slot
 from .telegram_ci_settings import ConfigError, load_config
 
 
@@ -34,24 +34,24 @@ def main():
     pending_stop_store = PendingStore()
     dispatch_lock = threading.Lock()
 
-    hourly_scheduler = HourlyScheduler(
-        config.hourly_schedule,
-        dispatch_slot=lambda slot: dispatch_hourly_slot(github, active_store, dispatch_lock, config.hourly_schedule, slot),
+    daily_scheduler = DailyScheduler(
+        config.daily_schedule,
+        dispatch_slot=lambda slot: dispatch_daily_slot(github, active_store, dispatch_lock, config.daily_schedule, slot),
     )
-    if config.hourly_schedule.enabled:
-        threading.Thread(target=hourly_scheduler.run_forever, daemon=True).start()
+    if config.daily_schedule.enabled:
+        threading.Thread(target=daily_scheduler.run_forever, daemon=True).start()
 
     offset = None
     print(f"Telegram CI bot started for {config.repository}/{config.workflow} on {config.ref}")
-    if config.hourly_schedule.enabled:
+    if config.daily_schedule.enabled:
         print(
-            "Hourly scheduler enabled: "
-            f"minute={config.hourly_schedule.minute:02d} "
-            f"timezone={config.hourly_schedule.timezone_name} "
-            f"suite=all server={config.hourly_schedule.server_key}"
+            "Daily scheduler enabled: "
+            f"time={config.daily_schedule.hour:02d}:{config.daily_schedule.minute:02d} "
+            f"timezone={config.daily_schedule.timezone_name} "
+            f"suite=all server={config.daily_schedule.server_key}"
         )
     else:
-        print("Hourly scheduler disabled; bot manual trigger rejimida.")
+        print("Daily scheduler disabled; bot manual trigger rejimida.")
 
     while True:
         try:

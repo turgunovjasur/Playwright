@@ -1,6 +1,6 @@
 # Telegram CI bot
 
-Telegram bot, soatlik scheduler va CI xabarlariga tegishli kod shu papkada.
+Telegram bot, kunlik scheduler va CI xabarlariga tegishli kod shu papkada.
 
 | Fayl | Vazifasi |
 | --- | --- |
@@ -10,7 +10,7 @@ Telegram bot, soatlik scheduler va CI xabarlariga tegishli kod shu papkada.
 | `bot_client.py` | Bot uchun Telegram metodlari, cooldown va bounded retry |
 | `github_api.py` | GitHub Actions dispatch, status, artifact va cancel API |
 | `handlers.py`, `runs.py` | Bot buyruqlari, parol tekshiruvi, manual run va monitoring |
-| `scheduler.py` | Soatlik jadval va band runni tekshirish |
+| `scheduler.py` | Kunlik jadval (02:00, Asia/Tashkent) va band runni tekshirish |
 | `bot_messages.py`, `bot_delivery.py` | Bot dialoglari va vaqtinchalik xabarlarni boshqarish |
 | `messages.py`, `progress_details.py` | CI progress/final xabarlari, Forms va failure tafsilotlari |
 | `metrics.py`, `formatting.py` | Hisoblar, vaqt va matn formatlash |

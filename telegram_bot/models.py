@@ -72,12 +72,13 @@ class BotConfig:
     ref: str
     servers: dict[str, str]
     allowed_server_keys: set[str]
-    hourly_schedule: HourlyScheduleConfig
+    daily_schedule: DailyScheduleConfig
 
 
 @dataclass(frozen=True)
-class HourlyScheduleConfig:
+class DailyScheduleConfig:
     enabled: bool
+    hour: int
     minute: int
     timezone_name: str
     server_key: str

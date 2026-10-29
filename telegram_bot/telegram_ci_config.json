@@ -9,7 +9,8 @@
     "app3": "https://app3.greenwhite.uz/xtrade"
   },
   "schedule": {
-    "minute": 17,
+    "hour": 2,
+    "minute": 0,
     "timezone": "Asia/Tashkent",
     "server": "smartup"
   }

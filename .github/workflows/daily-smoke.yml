@@ -1,4 +1,4 @@
-name: Hourly Smoke, Report and Forms Tests
+name: Daily Smoke, Report and Forms Tests
 
 on:
   workflow_dispatch:

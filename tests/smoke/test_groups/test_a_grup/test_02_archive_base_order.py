@@ -1,8 +1,11 @@
+import re
+
 import allure
 import pytest
 from playwright.sync_api import expect
 
 from tests.smoke.flows.flow_authorization import authorization
+from tests.smoke.test_groups.test_a_grup.flow_settlement.flow_settlement import settlement_columns
 from utils.data_store import load_data
 from utils.base_pages.auto_base_page import AutoBasePage
 
@@ -39,32 +42,34 @@ def run_archive_base_order(page, code):
     with allure.step("1 - Saqlangan order ID bo'yicha order listini ochish"):
         base.navigate_to(tab="Продажа", name="Заказы")
         base.expect_page(heading="Заказы", url="order_list")
-        status_button = page.locator(f"#status-btn-{order_id}")
-        order_row = status_button.locator("xpath=ancestor::div[contains(@class, 'tbl-row')][1]")
-        base.text(client, "7 000", "Новый", root=order_row)
+        base.grid_setting(menu_name="Настройка таблицы", field_name="ИД заказа", search_name="Клиент")
+        base.grid_controller(search=client)
+        order_matcher = re.compile(rf"(?<!\d){re.escape(order_id)}(?!\d)")
+        order_row = base.grid(order_matcher, client, "7 000", "Новый")
 
     with allure.step("2 - Aynan shu orderni Архив statusiga o'tkazish"):
-        status_button.locator(".dropdown-toggle").click()
-        base.click(name="Архив", root=status_button)
+        base.click(name="Изменить статус", exact=True, root=order_row)
+        base.click(name="Архив", role="menuitem", exact=True)
         base.confirm_biruni(expected_text="Изменить статус на Архив?")
         base.expect_page(heading="Заказы", url="order_list")
-        expect(page.locator(f"#status-btn-{order_id}")).to_have_count(0)
+        expect(order_row).to_have_count(0)
 
     with allure.step("3 - Взаиморасчеты с клиентами sahifasini ochish"):
         base.navigate_to(tab="Продажа", name="Взаиморасчеты с клиентами")
         base.expect_page(heading="Взаиморасчеты с клиентами", url="offset_list")
+        columns = settlement_columns(page)
         base.grid_controller(search=client)
-        row = base.grid(client, root="b-grid:visible", click=True)
-        base.grid_cell(row, 1, expect_value=client)
-        base.grid_cell(row, 2, expect_value="Узбекский сум")
-        base.grid_cell(row, 3, expect_value=expected_debt, remove_spaces=True)
-        base.grid_cell(row, 4, expect_value=expected_prepayment, remove_spaces=True)
-        base.grid_cell(row, 5, expect_value=expected_order, remove_spaces=True)
-        base.grid_cell(row, 6, expect_value=expected_reserved_prepayment, remove_spaces=True)
-        base.grid_cell(row, 7, expect_value=expected_balance, remove_spaces=True)
+        row = base.grid(client, click=True)
+        base.grid_cell(row, columns["client"], expect_value=client)
+        base.grid_cell(row, columns["currency"], expect_value="Узбекский сум")
+        base.grid_cell(row, columns["debt"], expect_value=expected_debt, remove_spaces=True)
+        base.grid_cell(row, columns["prepayment"], expect_value=expected_prepayment, remove_spaces=True)
+        base.grid_cell(row, columns["order"], expect_value=expected_order, remove_spaces=True)
+        base.grid_cell(row, columns["reserved_prepayment"], expect_value=expected_reserved_prepayment, remove_spaces=True)
+        base.grid_cell(row, columns["balance"], expect_value=expected_balance, remove_spaces=True)
 
     with allure.step("4 - Debt detailda archive orderni tekshirish"):
-        base.click(name="Детали", exact=True, root=row)
+        base.click(name="Детали", exact=True)
         base.expect_page(heading="Детали задолженности", url="offset_detail_list")
         base.grid(order_id, client, "7 000", "Архив")
         base.click(name="Закрыть", exact=True)

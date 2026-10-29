@@ -9,7 +9,7 @@ import json
 import os
 
 from .environment import env_value
-from .models import BotConfig, HourlyScheduleConfig
+from .models import BotConfig, DailyScheduleConfig
 
 
 CONFIG_PATH = Path(__file__).with_name("telegram_ci_config.json")
@@ -28,7 +28,8 @@ def env_required(name, *fallbacks):
     raise ConfigError(f"Required environment variable is missing: {names}")
 
 
-def load_hourly_schedule_config(schedule):
+def load_daily_schedule_config(schedule):
+    # Keep the deployed enable flag compatible; the JSON defines the daily time.
     enabled_value = env_value("HOURLY_SCHEDULE_ENABLED", "0").lower()
     if enabled_value in {"1", "true", "yes", "on"}:
         enabled = True
@@ -37,8 +38,9 @@ def load_hourly_schedule_config(schedule):
     else:
         raise ConfigError("HOURLY_SCHEDULE_ENABLED must be boolean")
 
-    return HourlyScheduleConfig(
+    return DailyScheduleConfig(
         enabled=enabled,
+        hour=schedule["hour"],
         minute=schedule["minute"],
         timezone_name=schedule["timezone"],
         server_key=schedule["server"],
@@ -60,7 +62,7 @@ def load_config():
         ref=public["github"]["ref"],
         servers=public["servers"],
         allowed_server_keys=set(public["servers"]),
-        hourly_schedule=load_hourly_schedule_config(public["schedule"]),
+        daily_schedule=load_daily_schedule_config(public["schedule"]),
     )
 
 
@@ -99,6 +101,8 @@ def load_public_config():
             raise ConfigError(f"telegram_ci_config.json: servers.{key} toza HTTPS URL bo'lishi kerak")
 
     schedule = config["schedule"]
+    if type(schedule.get("hour")) is not int or not 0 <= schedule["hour"] <= 23:
+        raise ConfigError("telegram_ci_config.json: schedule.hour 0..23 oralig'idagi butun son bo'lishi kerak")
     if type(schedule.get("minute")) is not int or not 0 <= schedule["minute"] <= 59:
         raise ConfigError("telegram_ci_config.json: schedule.minute 0..59 oralig'idagi butun son bo'lishi kerak")
     timezone_name = schedule.get("timezone")

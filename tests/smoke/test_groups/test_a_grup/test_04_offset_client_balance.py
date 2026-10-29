@@ -2,6 +2,7 @@ import allure
 import pytest
 
 from tests.smoke.flows.flow_authorization import authorization
+from tests.smoke.test_groups.test_a_grup.flow_settlement.flow_settlement import settlement_columns
 from utils.data_store import load_data
 from utils.base_pages.auto_base_page import AutoBasePage
 
@@ -36,15 +37,16 @@ def run_offset_client_balance(page, code):
     with allure.step("1 - Client debt va prepaymentini settlementda tekshirish"):
         base.navigate_to(tab="Продажа", name="Взаиморасчеты с клиентами")
         base.expect_page(heading="Взаиморасчеты с клиентами", url="offset_list")
+        columns = settlement_columns(page)
         base.grid_controller(search=client)
-        row = base.grid(client, root="b-grid:visible")
-        base.grid_cell(row, 1, expect_value=client)
-        base.grid_cell(row, 2, expect_value="Узбекский сум")
-        base.grid_cell(row, 3, expect_value=debt_before_offset, remove_spaces=True)
-        base.grid_cell(row, 4, expect_value=prepayment_before_offset, remove_spaces=True)
-        base.grid_cell(row, 5, expect_value=expected_order, remove_spaces=True)
-        base.grid_cell(row, 6, expect_value=expected_reserved_prepayment, remove_spaces=True)
-        base.grid_cell(row, 7, expect_value=expected_balance, remove_spaces=True)
+        row = base.grid(client)
+        base.grid_cell(row, columns["client"], expect_value=client)
+        base.grid_cell(row, columns["currency"], expect_value="Узбекский сум")
+        base.grid_cell(row, columns["debt"], expect_value=debt_before_offset, remove_spaces=True)
+        base.grid_cell(row, columns["prepayment"], expect_value=prepayment_before_offset, remove_spaces=True)
+        base.grid_cell(row, columns["order"], expect_value=expected_order, remove_spaces=True)
+        base.grid_cell(row, columns["reserved_prepayment"], expect_value=expected_reserved_prepayment, remove_spaces=True)
+        base.grid_cell(row, columns["balance"], expect_value=expected_balance, remove_spaces=True)
 
     with allure.step("2 - Взаиморасчет modalini ochib defaultlarni tekshirish"):
         base.click(name="Взаиморасчет", exact=True)
@@ -69,25 +71,25 @@ def run_offset_client_balance(page, code):
         base.grid_controller(search=client)
         expected_values = (expected_debt, expected_prepayment, expected_order, expected_reserved_prepayment, expected_balance)
         if any(expected_values):
-            row = base.grid(client, root="b-grid:visible")
-            base.grid_cell(row, 1, expect_value=client)
-            base.grid_cell(row, 2, expect_value="Узбекский сум")
-            base.grid_cell(row, 3, expect_value=expected_debt, remove_spaces=True)
-            base.grid_cell(row, 4, expect_value=expected_prepayment, remove_spaces=True)
-            base.grid_cell(row, 5, expect_value=expected_order, remove_spaces=True)
-            base.grid_cell(row, 6, expect_value=expected_reserved_prepayment, remove_spaces=True)
-            base.grid_cell(row, 7, expect_value=expected_balance, remove_spaces=True)
-        elif base.grid(client, root="b-grid:visible", return_bool=True):
-            row = base.grid(client, root="b-grid:visible")
-            base.grid_cell(row, 1, expect_value=client)
-            base.grid_cell(row, 2, expect_value="Узбекский сум")
-            base.grid_cell(row, 3, expect_value=0, remove_spaces=True)
-            base.grid_cell(row, 4, expect_value=0, remove_spaces=True)
-            base.grid_cell(row, 5, expect_value=0, remove_spaces=True)
-            base.grid_cell(row, 6, expect_value=0, remove_spaces=True)
-            base.grid_cell(row, 7, expect_value=0, remove_spaces=True)
+            row = base.grid(client)
+            base.grid_cell(row, columns["client"], expect_value=client)
+            base.grid_cell(row, columns["currency"], expect_value="Узбекский сум")
+            base.grid_cell(row, columns["debt"], expect_value=expected_debt, remove_spaces=True)
+            base.grid_cell(row, columns["prepayment"], expect_value=expected_prepayment, remove_spaces=True)
+            base.grid_cell(row, columns["order"], expect_value=expected_order, remove_spaces=True)
+            base.grid_cell(row, columns["reserved_prepayment"], expect_value=expected_reserved_prepayment, remove_spaces=True)
+            base.grid_cell(row, columns["balance"], expect_value=expected_balance, remove_spaces=True)
+        elif base.grid(client, return_bool=True):
+            row = base.grid(client)
+            base.grid_cell(row, columns["client"], expect_value=client)
+            base.grid_cell(row, columns["currency"], expect_value="Узбекский сум")
+            base.grid_cell(row, columns["debt"], expect_value=0, remove_spaces=True)
+            base.grid_cell(row, columns["prepayment"], expect_value=0, remove_spaces=True)
+            base.grid_cell(row, columns["order"], expect_value=0, remove_spaces=True)
+            base.grid_cell(row, columns["reserved_prepayment"], expect_value=0, remove_spaces=True)
+            base.grid_cell(row, columns["balance"], expect_value=0, remove_spaces=True)
         else:
-            base.grid(root="b-grid:visible", state="empty")
+            base.grid(state="empty")
 
 
 # ----------------------------------------------------------------------------------------------------------------------

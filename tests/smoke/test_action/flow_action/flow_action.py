@@ -67,6 +67,6 @@ def select_action_product(page, *, product_name, index):
                 placeholder="Поиск...", value=product_name, index=index, stop_after_select=True,
             )
         expect(search).to_have_value("")
-        backdrop = page.locator(".cdk-overlay-container .cdk-overlay-backdrop")
-        base.click(locator=backdrop)
-        expect(backdrop).to_be_hidden()
+        # Product lookup reopens without a backdrop; dismiss it outside the search.
+        base.click(name=re.compile(r"^Уровень\s+1$"), role="heading")
+        expect(page.locator(".cdk-overlay-container smt-select-dropdown:visible")).to_have_count(0)

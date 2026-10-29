@@ -41,16 +41,16 @@ database yoki boshqa project volume/networklariga ulanmaydi.
 - Playwright botni deploy, restart yoki rollback qilish boshqa Compose
   projectlarni restart qilishni talab qilmaydi.
 
-## Har soatlik scheduler
+## Kunlik scheduler
 
-Production hourly scheduling authoritysi GitHub cron emas, shu
-`playwright-ci-bot` containeridir. Bot har soat `Asia/Tashkent` vaqti bilan
-`HH:17`da `daily-smoke.yml` workflowiga `suite=all`, `server=smartup` dispatch
+Production scheduling authoritysi GitHub cron emas, shu
+`playwright-ci-bot` containeridir. Bot har kuni `Asia/Tashkent` vaqti bilan
+`02:00`da `daily-smoke.yml` workflowiga `suite=all`, `server=smartup` dispatch
 yuboradi.
 
 `all` bitta workflow run ichida Smoke va Reportni parallel boshlaydi; Forms
 Smoke tugagach ishlaydi. Active workflow mavjud bo‘lsa joriy slot skip qilinadi.
-Container `HH:17` vaqtida ishlamagan bo‘lsa, o‘tkazib yuborilgan slot keyin
+Container `02:00` vaqtida ishlamagan bo‘lsa, o‘tkazib yuborilgan slot keyin
 qoplanmaydi.
 
 Scheduler faqat server `.env`ida yoqiladi:
@@ -58,6 +58,10 @@ Scheduler faqat server `.env`ida yoqiladi:
 ```dotenv
 HOURLY_SCHEDULE_ENABLED=1
 ```
+
+`HOURLY_SCHEDULE_ENABLED` nomi mavjud server sozlamalariga moslik uchun
+saqlangan; u endi kunlik jadvalni yoqadi. JSON'dagi `schedule.hour=2` va
+`schedule.minute=0` ishga tushish vaqtini belgilaydi.
 
 GitHub repository/workflow/ref, ruxsat etilgan serverlar va jadval tafsilotlari
 bot yonidagi `telegram_bot/telegram_ci_config.json`da saqlanadi. Bot, `stop_ci_runs.py`
@@ -77,7 +81,7 @@ kerak; faqat `restart` yangi image yaratmaydi. CI joblari o'z checkoutidagi
 JSON'ni ishlatadi. JSON'ga token, API key va parol yozilmaydi.
 
 Rollbackda `HOURLY_SCHEDULE_ENABLED=0` qilinib faqat Playwright containeri
-recreate qilinadi. GitHub `schedule` triggeri qayta tiklanmaguncha hourly run
+recreate qilinadi. GitHub `schedule` triggeri qayta tiklanmaguncha scheduled run
 bo‘lmaydi; server scheduler va GitHub cron bir vaqtda yoqilmaydi.
 
 ## Operator buyruqlari

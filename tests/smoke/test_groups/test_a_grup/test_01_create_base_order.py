@@ -4,8 +4,8 @@ import allure
 import pytest
 
 from tests.smoke.flows.flow_authorization import authorization
-from tests.smoke.test_life_cycle.flow_order.flow_order_add import auto_filled_order_dates
 from tests.smoke.test_life_cycle.flow_order.flow_order_list import flow_order_list
+from tests.smoke.test_groups.test_a_grup.flow_settlement.flow_settlement import settlement_columns
 from utils.data_store import save_data
 from utils.base_pages.auto_base_page import AutoBasePage
 
@@ -41,21 +41,22 @@ def run_create_base_order(page, code):
     with allure.step("1 - Clientning boshlang'ich settlement summalarini saqlash"):
         base.navigate_to(tab="Продажа", name="Взаиморасчеты с клиентами")
         base.expect_page(heading="Взаиморасчеты с клиентами", url="offset_list")
+        columns = settlement_columns(page)
         base.grid_controller(search=client)
 
-        if base.grid(client, root="b-grid:visible", return_bool=True):
-            row = base.grid(client, root="b-grid:visible")
-            base.grid_cell(row, 1, expect_value=client)
-            base.grid_cell(row, 2, expect_value="Узбекский сум")
+        if base.grid(client, return_bool=True):
+            row = base.grid(client)
+            base.grid_cell(row, columns["client"], expect_value=client)
+            base.grid_cell(row, columns["currency"], expect_value="Узбекский сум")
             baseline = {
-                "debt": int(base.grid_cell(row, 3, return_value=True, remove_spaces=True)),
-                "prepayment": int(base.grid_cell(row, 4, return_value=True, remove_spaces=True)),
-                "order": int(base.grid_cell(row, 5, return_value=True, remove_spaces=True)),
-                "reserved_prepayment": int(base.grid_cell(row, 6, return_value=True, remove_spaces=True)),
-                "balance": int(base.grid_cell(row, 7, return_value=True, remove_spaces=True)),
+                "debt": int(base.grid_cell(row, columns["debt"], return_value=True, remove_spaces=True)),
+                "prepayment": int(base.grid_cell(row, columns["prepayment"], return_value=True, remove_spaces=True)),
+                "order": int(base.grid_cell(row, columns["order"], return_value=True, remove_spaces=True)),
+                "reserved_prepayment": int(base.grid_cell(row, columns["reserved_prepayment"], return_value=True, remove_spaces=True)),
+                "balance": int(base.grid_cell(row, columns["balance"], return_value=True, remove_spaces=True)),
             }
         else:
-            base.grid(root="b-grid:visible", state="empty")
+            base.grid(state="empty")
             baseline = {
                 "debt": 0,
                 "prepayment": 0,
@@ -73,7 +74,14 @@ def run_create_base_order(page, code):
         base.expect_page(heading="Заказ (создание)", url=re.compile(r"order(?:\+|%2[bB])add(?:[?#]|$)"))
 
     with allure.step("3 - Setup baseline auto-fill qiymatlarini tekshirish"):
-        deal_time, delivery_date = auto_filled_order_dates(page)
+        deal_time = base.input(
+            label="Дата заказа",
+            expect_value=re.compile(rf"^{re.escape(base.date())} \d{{2}}:\d{{2}}$"),
+            return_value=True,
+        ).strip()
+        delivery_date = base.input(
+            label="Дата отгрузки", expect_value=base.date(), return_value=True,
+        ).strip()
         base.b_input(label="Рабочая зона", expect_value=room)
         base.b_input(label="Штат", expect_value=robot)
         base.form_view(label="Торговый представитель", expect_value=representative)
@@ -81,11 +89,11 @@ def run_create_base_order(page, code):
         base.click(name="Далее")
 
     with allure.step("4 - Setup mahsuloti va hisob qiymatlarini tekshirish"):
-        product_grid = 'b-pg-grid[name="goods_items"]'
-        base.b_input(label="Название", value=product, root=product_grid)
-        base.text("Основной склад", price_type, "7 000", root=product_grid)
-        base.input(label="Кол-во", value="1", expect_value="1", root=product_grid)
-        base.text(product, "7 000", root=product_grid)
+        base.b_input(label="Название", value=product)
+        base.text("Основной склад", price_type, "7 000")
+        base.input(label="Кол-во", value="1", expect_value="1")
+        base.b_input(label="Название", expect_value=product)
+        base.text("7 000")
         base.click(name="Далее")
 
     with allure.step("5 - Final summaryni tekshirib orderni saqlash"):
@@ -97,15 +105,18 @@ def run_create_base_order(page, code):
         base.form_view(label="Штат", expect_value=robot)
         base.form_view(label="Дата заказа", expect_value=deal_time)
         base.form_view(label="Дата отгрузки", expect_value=delivery_date)
-        base.grid(product, "1", "7 000", root='b-pg-grid[name="goods_items_view"]')
+        base.grid(product, "1", "7 000")
         base.click(name="Сохранить")
         base.confirm_biruni(expected_text="Сохранить?")
         base.expect_page(heading="Заказы", url="order_list")
 
     with allure.step("6 - Yaratilgan orderni listda tekshirib view formasini ochish"):
         base.grid_controller(search=client)
-        base.grid(client, "7 000", "Новый")
-        flow_order_list(page, find_row=client, search=False, view=True)
+        created_order = re.compile(
+            rf"(?=.*{re.escape(client)})(?=.*{re.escape(deal_time)}).*", re.DOTALL
+        )
+        base.grid(created_order, "7 000", "Новый", click=True)
+        base.click(name=re.compile(r"^Просмотр(?:еть)?$"))
         base.expect_page(heading="Заказ / Просмотр", url="order_view")
 
     with allure.step("7 - Order viewdagi asosiy qiymatlarni tekshirish"):
@@ -117,7 +128,7 @@ def run_create_base_order(page, code):
         base.form_view(label="Штат", expect_value=robot)
         base.form_view(label="Клиент", expect_value=client)
         base.form_view(label="Тип оплаты", expect_value="Наличные деньги")
-        base.grid(product, "1", "7 000", root='b-pg-grid[name="goods_items_view"]')
+        base.grid(product, "1", "7 000")
         save_data("group_0_order_id", order_id)
         base.click(name="Закрыть", exact=True)
         base.expect_page(heading="Заказы", url="order_list")
