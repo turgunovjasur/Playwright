@@ -9,6 +9,8 @@ from pathlib import Path
 
 from dotenv import dotenv_values
 
+from api_setup_bridge import record_setup_success, select_api_baseline
+
 from report_lifecycle import generate_report, generate_test_summary, show_trace
 from smoke_environment import CREATED_COMPANY_PASSWORD, check_requiremants
 from validate_page_navigation import main as validate_page_navigation
@@ -42,6 +44,7 @@ TARGETS = {
         ),
         "--new-code",
     ),
+    "api-setup": ("tests/api/setup/test_0_setup_runner.py", "--new-code"),
     "setup": ("tests/smoke/test_setup/test_0_setup_runner.py", "--new-code"),
     "regression": (REGRESSION_RUNNER_PATH, "--new-code"),
     "regression-setup": (REGRESSION_SETUP_PATH, "--new-code"),
@@ -153,7 +156,7 @@ def parse_args():
         nargs="?",
         default="all",
         help=(
-            "Default: all. CI uchun: setup-smoke yoki forms. Debug uchun: setup, "
+            "Default: all. CI uchun: setup-smoke yoki forms. Debug uchun: api-setup, setup, "
             "setup-smoke, setup-group-0, setup-visit, setup-report, setup-a2-admin, "
             "company, groups, group-0, group-visit, group-report, "
             "forms, regression, regression-setup, regression-products, setup-regression-products, "
@@ -180,6 +183,7 @@ def parse_args():
         help="Yangi toza Allure report boshlaydi; --clean-results eski alias sifatida ishlaydi.",
     )
     parser.add_argument("--show-trace", action="store_true", help="Oxirgi Playwright trace viewerini ochadi.")
+    parser.add_argument("--use-api-baseline", action="store_true", help="regression-orders/products uchun to‘liq o‘tgan API setup baseline’ni tanlaydi; eskisini zaxiralaydi.")
     parser.add_argument("--dry-run", action="store_true", help="Commandni ko'rsatadi, lekin ishga tushirmaydi.")
     return parser.parse_known_args()
 
@@ -278,10 +282,25 @@ def main():
     if create_company:
         env["COMPANY_PASSWORD"] = CREATED_COMPANY_PASSWORD
 
+    if args.use_api_baseline and args.target not in {"regression-orders", "regression-products"}:
+        print("--use-api-baseline faqat setupsiz regression-orders/products targetlariga tegishli", file=sys.stderr)
+        return 2
+    if args.use_api_baseline and not args.dry_run:
+        try:
+            select_api_baseline(ROOT, env)
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            print(f"API baseline tanlanmadi: {error}", file=sys.stderr)
+            return 2
+
     targets, code_mode = TARGETS.get(args.target, (args.target, ""))
     if isinstance(targets, str):
         targets = (targets,)
     pytest_command = [sys.executable, "-m", "pytest", *targets]
+    if args.target == "api-setup":
+        pytest_command.extend(["-c", "tests/api/pytest.ini", "--junitxml=test-results/api/setup-runner.xml"])
+        if not args.dry_run:
+            # Oldingi muvaffaqiyat yangi, qisman runni yashirmasligi kerak.
+            (ROOT / "test-results/api/setup-success.json").unlink(missing_ok=True)
 
     if code_mode:
         pytest_command.append(code_mode)
@@ -310,6 +329,16 @@ def main():
 
     run_started_at = time.time()
     test_exit = run(pytest_command, env, dry_run=args.dry_run)
+
+    if args.target == "api-setup":
+        if test_exit == 0 and not args.dry_run:
+            try:
+                record_setup_success(ROOT, env, started_at=run_started_at)
+            except (OSError, ValueError, KeyError, TypeError) as error:
+                print(f"API setup baseline tasdiqlanmadi: {error}", file=sys.stderr)
+                return 2
+        print("API natijalari: test-results/api/allure-results; baseline: test-results/api/data_store.json")
+        return test_exit
 
     generate_test_summary(
         ROOT,
