@@ -33,7 +33,7 @@ def test_002_stock(catalog_order, catalog_data, regression_case_dir):
     run_prepare_stock(catalog_order, catalog_data, regression_case_dir, "statuses")
 
 @order_report_case
-@pytest.mark.order_requires('test_001_prices')
+@pytest.mark.order_requires()
 def test_00_prepare_client(business_baseline, workflow_data, regression_case_dir):
     run_prepare_status_client(business_baseline, workflow_data, regression_case_dir)
 

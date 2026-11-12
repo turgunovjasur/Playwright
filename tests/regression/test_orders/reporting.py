@@ -549,21 +549,8 @@ def prepare_presentation(source, target, *, started_at_ms=None):
         selected.append((path, data))
     context = None
     if target.name != "allure-results":
-        # Count blocked dependents for both rounds before filtering the Allure rows.
+        # Retain every attempt. A blocked retry must not hide the original FAIL.
         context = _run_context(source, (data for _, data in selected))
-        blocked_retries = {
-            (data["fullName"], data["historyId"]) for _, data in selected
-            if data.get("historyId") and _blocked_before_retry_body(source, data)
-        }
-        visible = []
-        for path, data in selected:
-            if (_attempt_number(data) == 1
-                    and (data["fullName"], data.get("historyId")) in blocked_retries):
-                # Keep the latest SKIP and its blocker. Both raw records stay intact.
-                (target / path.name).unlink(missing_ok=True)
-            else:
-                visible.append((path, data))
-        selected = visible
     identities = {data["uuid"] for _, data in selected}
     for path in source.glob("*-container.json"):
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -586,8 +573,7 @@ def prepare_presentation(source, target, *, started_at_ms=None):
     if target.name != "allure-results":
         from tests.regression.test_orders.run_overview import reconcile_results
         reconcile_results(target, target.parent)
-        # Refresh statuses after ledger reconciliation while preserving the hidden
-        # first attempt of a dependency-blocked retry in the attempt explanation.
+        # Refresh statuses after ledger reconciliation, retaining both attempts.
         reconciled = [json.loads(p.read_text(encoding="utf-8")) for p in target.glob("*-result.json")]
         current_attempts, current_impact = _run_context(target, reconciled)
         attempts, impact = context
@@ -679,7 +665,7 @@ def _run_context(directory, results):
         name = result.get("fullName", "")
         number = _attempt_number(result)
         phase = _phase_evidence(directory, result)
-        state = phase.get("status") if phase.get("status") in {"interrupted", "not_run"} else result.get("status")
+        state = phase.get("status") or result.get("status")
         attempts[name][number] = STATUS_NAMES.get(state, "noma’lum")
         if result.get("status") != "skipped":
             continue

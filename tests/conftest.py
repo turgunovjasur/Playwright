@@ -32,6 +32,10 @@ def pytest_addoption(parser):
     """Smartup uchun CLI optionlarini pytestga ro'yxatdan o'tkazadi."""
     smartup = parser.getgroup("smartup")
     smartup.addoption(
+        "--order-retries", type=int, choices=(0, 1), default=1,
+        help="Order pilot testlari uchun darhol retry soni: 0 yoki 1 (SCN-003)",
+    )
+    smartup.addoption(
         "--headless",
         action="store_true",
         default=False,

@@ -48,13 +48,13 @@ def test_00_prepare_client(business_baseline, workflow_data, regression_case_dir
 
 
 @order_report_case
-@pytest.mark.order_requires("test_002_stock", "test_00_prepare_client")
+@pytest.mark.order_requires('test_00_prepare_client')
 def test_01_post_advance(workflow_order):
     run_post_advance(workflow_order)
 
 
 @order_report_case
-@pytest.mark.order_requires("test_01_post_advance")
+@pytest.mark.order_requires('test_002_stock', 'test_01_post_advance')
 def test_02_archive_after_advance(workflow_order):
     run_archive_after_advance(workflow_order)
 

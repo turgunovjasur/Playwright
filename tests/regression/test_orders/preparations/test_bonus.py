@@ -4,6 +4,7 @@ import allure
 import pytest
 
 from tests.regression.test_orders.preparations.bonus import prepare_business_promotions
+from tests.regression.test_orders.preparations.resources import resource_status
 
 
 pytestmark = [
@@ -21,8 +22,15 @@ def run_business_setup(business_baseline, business_promotions):
     3. Saqlangan bonus sharti va mahsulotini serverdan qayta o'qish.
     4. Faqat muvaffaqiyatli setup ma'lumotlarini UI testlarga uzatish.
     """
-    business_promotions.clear()
-    business_promotions.update(prepare_business_promotions(business_baseline))
+    resource_status(business_promotions, "bonus", "process")
+    try:
+        prepared = prepare_business_promotions(business_baseline)
+    except Exception:
+        resource_status(business_promotions, "bonus", "failed")
+        raise
+    readiness = {**business_promotions.get("ready", {}), **prepared.get("ready", {})}
+    business_promotions.update(prepared)
+    business_promotions["ready"] = readiness
 
 
 @allure.title("OB-00: Setup mahsulotlari uchun boshqa mahsulot bonusini tayyorlash")

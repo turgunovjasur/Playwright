@@ -23,25 +23,25 @@ def test_00_prepare_product(business_baseline, product_limit_data, regression_ca
 
 
 @order_report_case
-@pytest.mark.order_requires('test_00_prepare_product')
+@pytest.mark.order_requires()
 def test_01_prepare_client(business_baseline, product_limit_data, regression_case_dir):
     run_prepare_client(business_baseline, product_limit_data, regression_case_dir)
 
 
 @order_report_case
-@pytest.mark.order_requires('test_01_prepare_client')
+@pytest.mark.order_requires('test_00_prepare_product', 'test_01_prepare_client')
 def test_02_prepare_stock(product_limit_order, regression_case_dir):
     run_prepare_stock(product_limit_order, regression_case_dir)
 
 
 @order_report_case
-@pytest.mark.order_requires('test_02_prepare_stock')
+@pytest.mark.order_requires('test_00_prepare_product', 'test_01_prepare_client')
 def test_03_prepare_limit(product_limit_order, regression_case_dir):
     run_prepare_limit(product_limit_order, regression_case_dir)
 
 
 @order_report_case
-@pytest.mark.order_requires('test_03_prepare_limit')
+@pytest.mark.order_requires('test_02_prepare_stock', 'test_03_prepare_limit')
 def test_04_first_order_six(product_limit_order, regression_case_dir):
     run_create_limit_order(product_limit_order, regression_case_dir,
                            key="first", quantity=6, reserved_before=0, reserved_after=6)

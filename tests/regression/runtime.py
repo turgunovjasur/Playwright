@@ -62,6 +62,8 @@ def finalize_run(directory, exit_code, *, stop_signal=None):
     """Child tugagach qolgan process caselarni interrupted deb belgilash."""
     completed = _now()
     counts = {}
+    attempts = {}
+    attempt_counts = {}
     unfinished = []
     errors = []
     for path in sorted(directory.glob("*/attempt-*/result.json")):
@@ -74,9 +76,16 @@ def finalize_run(directory, exit_code, *, stop_signal=None):
                 _write_json(path, result)
                 unfinished.append(str(path.relative_to(directory)))
             status = result.get("status", "unknown")
-            counts[status] = counts.get(status, 0) + 1
+            attempt_counts[status] = attempt_counts.get(status, 0) + 1
+            attempts.setdefault(result["nodeid"], []).append((path, result))
         except (OSError, ValueError, TypeError) as error:
             errors.append({"path": str(path.relative_to(directory)), "error_type": type(error).__name__})
+    from tests.regression.retry.planning import final_result
+    for entries in attempts.values():
+        entries.sort(key=lambda entry: entry[1].get("attempt", 1))
+        _, result = final_result(entries)
+        status = result.get("status", "unknown")
+        counts[status] = counts.get(status, 0) + 1
     interrupted = bool(stop_signal or unfinished or counts.get("interrupted") or exit_code in (-2, -15, 130, 143))
     status = ("interrupted" if interrupted else
               "failed" if exit_code or counts.get("failed") or errors else
@@ -84,7 +93,8 @@ def finalize_run(directory, exit_code, *, stop_signal=None):
     path = directory / "run.json"
     run = json.loads(path.read_text(encoding="utf-8"))
     run.update(status=status, exit_code=exit_code, completed_at_utc=completed,
-               case_status_counts=counts, interrupted_cases=unfinished)
+               case_status_counts=counts, attempt_status_counts=attempt_counts,
+               interrupted_cases=unfinished)
     if stop_signal:
         run["stop_signal"] = stop_signal
     if errors:

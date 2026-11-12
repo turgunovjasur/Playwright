@@ -1,5 +1,6 @@
 """Order guruhlarini to'liq va runnerda yozilgan tartibda bajarish."""
 from pathlib import Path
+import os
 
 import pytest
 
@@ -56,8 +57,6 @@ def validate_and_order(config, items, initial):
         if path != ROOT / runner:
             raise pytest.UsageError("Order guruhi uchun noma'lum runner fayli")
         groups[group] = item.module
-    if set(groups) == set(GROUP_NAMES):
-        config.option.maxfail = 1
     ordered = []
     if any(group in VERIFICATION_RUNNERS for group in groups) and len(groups) != 1:
         raise pytest.UsageError("Boshqariladigan uzilish verification runneri oddiy suite bilan aralashtirilmaydi")
@@ -87,7 +86,6 @@ def validate_and_order(config, items, initial):
     config._order_environment_block = None
     config._order_phases = {}
     earlier_by_group = {}
-    preparations_by_group = {}
     business_started = set()
     for item in ordered:
         group = item.get_closest_marker("order_group").args[0]
@@ -107,23 +105,35 @@ def validate_and_order(config, items, initial):
             spec = SPECS.get((group, item.name))
             if not spec or spec[1] not in {"Tayyorlov", "Biznes testi"}:
                 raise pytest.UsageError(f"{item.nodeid}: tayyorlov yoki biznes turi belgilanmagan")
-            preparations = preparations_by_group.setdefault(group, [])
             if spec[1] == "Tayyorlov":
                 if group in business_started:
                     raise pytest.UsageError(f"{item.nodeid}: tayyorlov biznes testlaridan oldin turishi kerak")
-                preparations.append(item.nodeid)
             else:
                 business_started.add(group)
-                required = [*preparations, *required]
         # The first attempt and the retry manifest share the same prerequisites.
         item._order_required_steps = tuple(dict.fromkeys(required))
         earlier[item.name] = item.nodeid
 
+    config._order_requirements = {item.nodeid: item._order_required_steps for item in ordered}
+
     from tests.regression.retry.planning import record_collection, apply_retry
+    config._order_immediate_policy = (
+        not any(group in VERIFICATION_RUNNERS for group in groups)
+        and not os.environ.get("ORDER_RETRY_PLAN")
+        and not os.environ.get("ORDER_RESUME_RUN")
+    )
     record_collection(config, items)
     apply_retry(config, items)
     from tests.regression.resume import apply_resume
     apply_resume(config, items)
+    if config._order_immediate_policy and not config.option.collectonly:
+        from tests.regression.runtime import run_directory
+        from tests.regression.retry.state import read, write
+        directory = run_directory(config)
+        run = read(directory / "run.json")
+        run.update(immediate_retry=True, retry_limit=config.getoption("order_retries", 1),
+                   retry_pilot="payments", maxfail=config.option.maxfail)
+        write(directory / "run.json", run)
 
 
 def check_previous_steps(item):
@@ -160,3 +170,17 @@ def record_step(item, report, call):
             config._order_environment_block = (item.nodeid, str(failure))
     if report.when == "teardown" and all(phases.get(key) == "passed" for key in ("setup", "call", "teardown")):
         config._order_passed.add(item.nodeid)
+        config._order_blocked_by.pop(item.nodeid, None)
+        journal = getattr(item, "_retry_journal", None)
+        if journal:
+            contracts = getattr(config, "_order_preparation_contracts", None)
+            if contracts is None:
+                contracts = config._order_preparation_contracts = {}
+            from copy import deepcopy
+            previous = deepcopy(journal.source.get("contracts", {}))
+            previous.update(journal.data.get("contracts", {}))
+            operations = {**journal.source.get("operations", {}), **journal.data.get("operations", {})}
+            contracts[item.nodeid] = {
+                key: {**contract, "entity_id": operations.get(key, {}).get("entity_id")}
+                for key, contract in previous.items()
+            }

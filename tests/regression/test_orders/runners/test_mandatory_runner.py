@@ -32,31 +32,31 @@ def test_002_stock(catalog_order, catalog_data, regression_case_dir):
     run_prepare_stock(catalog_order, catalog_data, regression_case_dir, "mandatory")
 
 @order_report_case
-@pytest.mark.order_requires('test_001_prices')
+@pytest.mark.order_requires('test_000_catalog')
 def test_00_prepare_prices(business_baseline, mandatory_data, regression_case_dir):
     run_prepare_mandatory_prices(business_baseline, mandatory_data, regression_case_dir)
 
 
 @order_report_case
-@pytest.mark.order_requires('test_001_prices', 'test_00_prepare_prices')
+@pytest.mark.order_requires('test_00_prepare_prices')
 def test_01_prepare_bank_action(business_baseline, mandatory_data, regression_case_dir):
     run_prepare_action(business_baseline, mandatory_data, regression_case_dir, 'bank')
 
 
 @order_report_case
-@pytest.mark.order_requires('test_001_prices', 'test_01_prepare_bank_action')
+@pytest.mark.order_requires('test_00_prepare_prices')
 def test_02_prepare_terminal_action(business_baseline, mandatory_data, regression_case_dir):
     run_prepare_action(business_baseline, mandatory_data, regression_case_dir, 'terminal')
 
 
 @order_report_case
-@pytest.mark.order_requires('test_002_stock', 'test_02_prepare_terminal_action')
+@pytest.mark.order_requires('test_002_stock', 'test_01_prepare_bank_action')
 def test_03_bank_matching(mandatory_order):
     run_pair(mandatory_order, 'bank', 'bank', 'bank')
 
 
 @order_report_case
-@pytest.mark.order_requires('test_002_stock', 'test_02_prepare_terminal_action')
+@pytest.mark.order_requires('test_002_stock', 'test_01_prepare_bank_action', 'test_02_prepare_terminal_action')
 def test_04_terminal_wrong_price(mandatory_order):
     run_pair(mandatory_order, 'bank', 'terminal', None)
 
@@ -68,24 +68,24 @@ def test_05_terminal_matching(mandatory_order):
 
 
 @order_report_case
-@pytest.mark.order_requires('test_002_stock', 'test_02_prepare_terminal_action')
+@pytest.mark.order_requires('test_002_stock', 'test_01_prepare_bank_action', 'test_02_prepare_terminal_action')
 def test_06_bank_wrong_price(mandatory_order):
     run_pair(mandatory_order, 'terminal', 'bank', None)
 
 
 @order_report_case
-@pytest.mark.order_requires('test_002_stock', 'test_02_prepare_terminal_action')
+@pytest.mark.order_requires('test_002_stock', 'test_01_prepare_bank_action', 'test_02_prepare_terminal_action')
 def test_07_payment_change(mandatory_order):
     run_payment_change(mandatory_order)
 
 
 @order_report_case
-@pytest.mark.order_requires('test_002_stock', 'test_02_prepare_terminal_action')
+@pytest.mark.order_requires('test_002_stock', 'test_01_prepare_bank_action')
 def test_08_quantity_threshold(mandatory_order):
     run_threshold(mandatory_order)
 
 
 @order_report_case
-@pytest.mark.order_requires('test_002_stock', 'test_02_prepare_terminal_action')
+@pytest.mark.order_requires('test_002_stock', 'test_01_prepare_bank_action', 'test_02_prepare_terminal_action')
 def test_09_price_change(mandatory_order):
     run_price_change(mandatory_order)

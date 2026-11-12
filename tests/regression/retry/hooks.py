@@ -9,7 +9,8 @@ from tests.regression.retry.state import ACTIVE, Journal, snapshot, write
 def start(item):
     directory = case_directory(item)
     plan = getattr(item.config, "_retry_plan", {})
-    journal = Journal(item, directory, plan.get("journals", {}).get(item.nodeid))
+    source = getattr(item, "_order_inline_source", None) or plan.get("journals", {}).get(item.nodeid)
+    journal = Journal(item, directory, source)
     item._retry_journal = journal
     item._retry_before = snapshot(item)
     return ACTIVE.set(journal)
@@ -35,8 +36,14 @@ def check_retry(item):
 
 def attach_attempt(request):
     plan = getattr(request.config, "_retry_plan", {})
-    label = "2 — suite tugagach bir martalik retry" if plan else "1 — dastlabki urinish"
+    inline = getattr(request.node, "_order_inline_source", None)
+    label = ("2 — shu testning darhol qayta urinishi" if inline else
+             "2 — suite tugagach bir martalik retry" if plan else "1 — dastlabki urinish")
     allure.dynamic.parameter("Urinish", label, excluded=True)
+    if inline:
+        allure.attach("Faqat yiqilgan test boshidan bajariladi. Avvalgi identity va yozish jurnali "
+                      "saqlanadi; tasdiqlanmagan to‘lov yoki yozish takrorlanmaydi.",
+                      "Qayta urinish manbasi", allure.attachment_type.TEXT)
     if plan:
         allure.attach(
             "Manba run: " + plan["source_run"] + "\nOldingi PASS testlar qayta bajarilmadi. "

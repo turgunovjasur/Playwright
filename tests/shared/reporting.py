@@ -320,7 +320,10 @@ def record_test_report(item, report, call, data_path):
             reset_auth_diagnostics(item)
         except Exception as error:
             reporting_warning(item.nodeid, "Authorization diagnostikasini tozalash", error)
-        finish_progress(item, **result)
+        # Immediate Order retries decide whether this is a terminal result only
+        # after teardown. Their protocol emits the final progress event itself.
+        if not getattr(item.config, "_order_immediate_policy", False):
+            finish_progress(item, **result)
 
 
 def report_message(report):

@@ -32,7 +32,7 @@ def test_002_stock(catalog_order, catalog_data, regression_case_dir):
     run_prepare_stock(catalog_order, catalog_data, regression_case_dir, "manual_discounts")
 
 @order_report_case
-@pytest.mark.order_requires('test_001_prices')
+@pytest.mark.order_requires()
 def test_00_prepare_client(business_baseline,workflow_data,regression_case_dir):
     run_discount_client(business_baseline,workflow_data,regression_case_dir)
 
@@ -42,7 +42,7 @@ def test_01_prepare_promotions(business_baseline,workflow_data):
     run_workflow_promotions(business_baseline,workflow_data)
 
 @order_report_case
-@pytest.mark.order_requires('test_001_prices')
+@pytest.mark.order_requires()
 def test_02_prepare_margin(order_page,business_baseline,workflow_data,regression_case_dir):
     run_prepare_margin(order_page,business_baseline,workflow_data,regression_case_dir)
 

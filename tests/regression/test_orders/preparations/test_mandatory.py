@@ -15,6 +15,7 @@ import pytest
 from tests.api.client import APIError, positive_id, require_fields
 from tests.api.promotion import verify_promotion
 from tests.api.state import CONTRACTS
+from tests.regression.test_orders.preparations.resources import resource_ready, resource_status
 from tests.regression.test_orders.auth_recovery import RegressionSetupState
 
 pytestmark = [pytest.mark.regression, pytest.mark.order_positive, allure.feature('Majburiy aksiyalar')]
@@ -32,8 +33,10 @@ def run_prepare_prices(baseline, data, directory):
     2. Ikkita yangi UZS narx turi yaratish va xonaga ulanganini tekshirish.
     3. Faqat yangi narx turlariga 7 000 narx qo'yish; eski narxlar saqlanadi.
     """
-    data.clear()
-    data.update(status='process', run_id=uuid4("mandatory_setup").hex[:12], url=baseline['url'], filial_id=str(baseline['filial_id']), prices={}, actions={}, retention='retained')
+    data.update(status='process', run_id=uuid4("mandatory_setup").hex[:12], url=baseline['url'], filial_id=str(baseline['filial_id']), retention='retained')
+    data.setdefault('prices', {})
+    data.setdefault('actions', {})
+    resource_status(data, 'prices', 'process')
     state = RegressionSetupState(directory / 'state.json', deepcopy(baseline))
     try:
         api = state.user()
@@ -72,8 +75,10 @@ def run_prepare_prices(baseline, data, directory):
         if {str(row['price_type_id']) for row in attached} != expected_ids:
             raise APIError('Xona narx bog‘lanishlari eski ro‘yxat + ikkita yangi narxga teng emas')
         data['status'] = 'prices_ready'
+        resource_status(data, 'prices', 'passed')
     except Exception as error:
         data.update(status='failed', error_type=type(error).__name__)
+        resource_status(data, 'prices', 'failed')
         raise
     finally:
         _persist(data, directory)
@@ -85,8 +90,11 @@ def run_prepare_action(baseline, data, directory, kind):
     """1. Yangi narx va to'lov juftligiga A10→B1 majburiy aksiya yaratish.
     2. Saved qoida, bonus, forced va price/payment/room identitylarini tekshirish.
     """
-    if data.get('status') not in {'prices_ready', 'bank_ready'}:
-        raise APIError('Majburiy aksiya uchun oldingi tayyorlov yakunlanmagan')
+    if kind not in {'bank', 'terminal'}:
+        raise ValueError('Noma’lum majburiy aksiya turi')
+    if not resource_ready(data, 'prices'):
+        raise APIError('Majburiy aksiya uchun narx/to‘lov tayyorlovi yakunlanmagan')
+    resource_status(data, kind + '_action', 'process')
     state = RegressionSetupState(directory / 'state.json', deepcopy(baseline))
     try:
         api = state.user()
@@ -111,9 +119,11 @@ def run_prepare_action(baseline, data, directory, kind):
             for field, expected in (('price_types', payload['price_type_id']), ('payment_types', payload['payment_type_id']), ('rooms', payload['room_ids'])):
                 if {str(row[0]) for row in model[field]} != {str(value) for value in expected}:
                     raise APIError(f'Majburiy aksiya {field} bog‘lanishi expectedga mos emas')
-            data['status'] = 'bank_ready' if kind == 'bank' else 'passed'
+            resource_status(data, kind + '_action', 'passed')
+            data['status'] = 'passed' if all(resource_ready(data, key + '_action') for key in ('bank', 'terminal')) else 'actions_partial'
     except Exception as error:
         data.update(status='failed', error_type=type(error).__name__)
+        resource_status(data, kind + '_action', 'failed')
         raise
     finally:
         _persist(data, directory)

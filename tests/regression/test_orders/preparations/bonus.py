@@ -15,6 +15,7 @@ import allure
 from tests.api.client import APIError, positive_id, require_fields
 from tests.api.promotion import verify_promotion
 from tests.api.state import CONTRACTS
+from tests.regression.test_orders.preparations.resources import resource_status
 from tests.regression.test_orders.auth_recovery import RegressionSetupState
 
 
@@ -47,7 +48,7 @@ def prepare_business_promotions(baseline):
     run_directory.mkdir(parents=True, exist_ok=False)
     state = RegressionSetupState(run_directory / "state.json", deepcopy(baseline))
     metadata = {
-        "status": "process", "run_id": run_id, "code": str(baseline["code"]),
+        "status": "process", "ready": {"bonus": "process"}, "run_id": run_id, "code": str(baseline["code"]),
         "url": baseline["url"], "company_code": baseline["company_code"],
         "filial_id": str(baseline["filial_id"]), "room_id": str(baseline["room_id"]),
         "warehouse_id": str(baseline["warehouse_id"]),
@@ -118,12 +119,14 @@ def prepare_business_promotions(baseline):
 
         with allure.step("4 - Tekshirilgan bonus ma’lumotlarini guruhga uzatish"):
             metadata["status"] = "passed"
+            resource_status(metadata, "bonus", "passed")
             persist()
             allure.attach(json.dumps(metadata, ensure_ascii=False, indent=2),
                           "Order biznes setup ma'lumotlari", allure.attachment_type.JSON)
         return metadata
     except Exception as error:
         metadata["status"] = "failed"
+        resource_status(metadata, "bonus", "failed")
         metadata["error_type"] = type(error).__name__
         persist()
         raise

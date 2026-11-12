@@ -41,13 +41,13 @@ def test_002_stock(catalog_order, catalog_data, regression_case_dir):
     run_prepare_stock(catalog_order, catalog_data, regression_case_dir, "two_warehouses")
 
 @order_report_case
-@pytest.mark.order_requires('test_001_prices')
+@pytest.mark.order_requires()
 def test_00_prepare_client(business_baseline, workflow_data, regression_case_dir):
     run_prepare_two_warehouse_client(business_baseline, workflow_data, regression_case_dir)
 
 
 @order_report_case
-@pytest.mark.order_requires('test_001_prices', 'test_00_prepare_client')
+@pytest.mark.order_requires('test_00_prepare_client')
 def test_01_prepare_warehouses(workflow_order, regression_case_dir):
     run_prepare_two_warehouses(workflow_order, regression_case_dir)
 

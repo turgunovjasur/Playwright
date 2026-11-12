@@ -32,37 +32,37 @@ def test_002_stock(catalog_order, catalog_data, regression_case_dir):
     run_prepare_stock(catalog_order, catalog_data, regression_case_dir, "bonus_limit")
 
 @order_report_case
-@pytest.mark.order_requires('test_001_prices')
+@pytest.mark.order_requires('test_000_catalog')
 def test_00_prepare_price(business_baseline, bonus_limit_data, regression_case_dir):
     run_prepare_price(business_baseline, bonus_limit_data, regression_case_dir)
 
 
 @order_report_case
-@pytest.mark.order_requires('test_001_prices', 'test_00_prepare_price')
+@pytest.mark.order_requires()
 def test_01_prepare_first_client(business_baseline, bonus_limit_data, regression_case_dir):
     run_prepare_client(business_baseline, bonus_limit_data, regression_case_dir, "first")
 
 
 @order_report_case
-@pytest.mark.order_requires('test_001_prices', 'test_00_prepare_price')
+@pytest.mark.order_requires()
 def test_02_prepare_second_client(business_baseline, bonus_limit_data, regression_case_dir):
     run_prepare_client(business_baseline, bonus_limit_data, regression_case_dir, "second")
 
 
 @order_report_case
-@pytest.mark.order_requires('test_001_prices', 'test_01_prepare_first_client', 'test_02_prepare_second_client')
+@pytest.mark.order_requires('test_00_prepare_price')
 def test_03_prepare_action(business_baseline, bonus_limit_data, regression_case_dir):
     run_prepare_action(business_baseline, bonus_limit_data, regression_case_dir)
 
 
 @order_report_case
-@pytest.mark.order_requires('test_002_stock', 'test_03_prepare_action')
+@pytest.mark.order_requires('test_002_stock', 'test_03_prepare_action', 'test_01_prepare_first_client')
 def test_04_first_client_uses_bonus(first_limit_order, regression_case_dir):
     run_quota_order(first_limit_order, regression_case_dir, key="first", quantity=10, used_before=0, used_after=1, bonus_expected=True, status="Новый", initial_stock=True)
 
 
 @order_report_case
-@pytest.mark.order_requires('test_002_stock', 'test_04_first_client_uses_bonus')
+@pytest.mark.order_requires('test_04_first_client_uses_bonus', 'test_02_prepare_second_client')
 def test_05_second_client_uses_remaining(second_limit_order, regression_case_dir):
     run_quota_order(second_limit_order, regression_case_dir, key="second", quantity=20, used_before=1, used_after=2, bonus_expected=True, status="Новый")
 
@@ -80,7 +80,7 @@ def test_07_second_client_exhausted(second_limit_order, regression_case_dir):
 
 
 @order_report_case
-@pytest.mark.order_requires('test_002_stock', 'test_06_first_client_exhausted', 'test_07_second_client_exhausted')
+@pytest.mark.order_requires('test_05_second_client_uses_remaining')
 def test_08_cancel_releases_limit(first_limit_order, regression_case_dir):
     run_release_limit(first_limit_order, regression_case_dir)
 

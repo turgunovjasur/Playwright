@@ -42,7 +42,7 @@ def test_00_prepare_promotions(business_baseline, business_promotions):
 
 
 @order_report_case
-@pytest.mark.order_requires('test_001_prices', 'test_00_prepare_promotions')
+@pytest.mark.order_requires('test_001_prices')
 def test_00a_prepare_discount(business_baseline, business_promotions, regression_case_dir):
     run_prepare_quantity_discount(business_baseline, business_promotions, regression_case_dir)
 
@@ -56,13 +56,13 @@ def test_01_quantity_discount(promoted_order):
 
 @pytest.mark.order_positive
 @order_report_case
-@pytest.mark.order_requires('test_002_stock', 'test_00a_prepare_discount')
+@pytest.mark.order_requires('test_002_stock', 'test_00_prepare_promotions', 'test_00a_prepare_discount')
 def test_02_other_product_bonus(promoted_order):
     run_other_product_bonus(promoted_order)
 
 
 @pytest.mark.order_positive
 @order_report_case
-@pytest.mark.order_requires('test_002_stock', 'test_00a_prepare_discount')
+@pytest.mark.order_requires('test_002_stock', 'test_00_prepare_promotions', 'test_00a_prepare_discount')
 def test_03_bonus_and_discount(promoted_order):
     run_bonus_and_discount(promoted_order)

@@ -6,9 +6,10 @@ from tests.regression.retry.state import stable_uuid as uuid4
 import allure
 import pytest
 
-from tests.api.client import APIError, positive_id, require_fields
+from tests.api.client import positive_id, require_fields
 from tests.api.promotion import verify_promotion
 from tests.api.state import CONTRACTS
+from tests.regression.test_orders.preparations.resources import resource_status
 from tests.regression.test_orders.auth_recovery import RegressionSetupState
 
 pytestmark = [pytest.mark.regression, pytest.mark.order_positive,
@@ -17,14 +18,13 @@ pytestmark = [pytest.mark.regression, pytest.mark.order_positive,
 
 
 def run_prepare_quantity_discount(baseline, promotions, directory):
-    """1. Shu guruhning bonus tayyorlovi tugaganini tekshirish.
+    """1. Shu guruhning mahsulot va narx tayyorlovidan foydalanish.
     2. 10 dona xaridga 10% ixtiyoriy chegirma yaratish.
     3. ID, muddat, shart va chegirma mahsulotini qayta o‘qish.
     4. Natijani faqat shu guruhga uzatish; umumiy baseline o‘zgarmaydi.
     """
-    if promotions.get("status") != "passed" or not promotions.get("bonus", {}).get("action_id"):
-        raise APIError("Oldin shu guruhning bonus tayyorlovini yakunlang")
-    promotions["status"] = "process"
+    resource_status(promotions, "discount", "process")
+    promotions.setdefault("unit_price", "7000")
     state = RegressionSetupState(directory / "discount-state.json", deepcopy(baseline))
     run_id = uuid4("discount_action").hex[:12]
     path = directory / "discount-setup.json"
@@ -63,10 +63,10 @@ def run_prepare_quantity_discount(baseline, promotions, directory):
             model = api.model("anor/mcg/action+edit", action_id=discount["action_id"])
             require_fields(model, forced="N")
         with allure.step("3 - Tekshirilgan chegirmani shu guruhning orderlariga uzatish"):
-            promotions["status"] = "passed"
+            resource_status(promotions, "discount", "passed")
             persist()
     except Exception as error:
-        promotions["status"] = "failed"
+        resource_status(promotions, "discount", "failed")
         promotions["error_type"] = type(error).__name__
         persist()
         raise

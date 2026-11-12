@@ -15,6 +15,7 @@ from utils.base_pages.auto_base_page import AutoBasePage
 
 from tests.api.client import APIError, positive_id, require_fields
 from tests.api.state import CONTRACTS
+from tests.regression.test_orders.preparations.resources import resource_ready, resource_status
 from tests.regression.test_orders.auth_recovery import RegressionSetupState
 from tests.regression.test_orders.preparations.clients import prepare_order_client
 from tests.regression.test_orders.flows.stock import read_stock
@@ -34,7 +35,9 @@ def run_prepare_product(baseline, data, directory):
 
     Limit baseline mahsulotiga qo‘yilmaydi: boshqa guruh orderlari ta’sir qilmaydi.
     """
-    data.update(status="process", run_id=uuid4("product_limit_setup").hex[:12], orders={}, retention="retained",
+    data.setdefault("orders", {})
+    resource_status(data, "product", "process")
+    data.update(status="process", run_id=uuid4("product_limit_setup").hex[:12], retention="retained",
                 date=datetime.now(ZoneInfo("Asia/Tashkent")).strftime("%d.%m.%Y"))
     state = RegressionSetupState(directory / "product-limit-state.json", deepcopy(baseline))
     try:
@@ -62,8 +65,10 @@ def run_prepare_product(baseline, data, directory):
             if len(rows) != 1 or Decimal(str(rows[0][5])) != Decimal("7000"):
                 raise APIError("TMZ limiti mahsulotining saqlangan narxi 7000 emas")
             data["status"] = "product_ready"
+            resource_status(data, "product", "passed")
     except Exception:
         data["status"] = "failed"
+        resource_status(data, "product", "failed")
         raise
     finally:
         persist(data, directory)
@@ -73,8 +78,6 @@ def run_prepare_product(baseline, data, directory):
 
 def run_prepare_client(baseline, data, directory):
     """1. Own klient. 2. Saved identity. 3. Mavjud roomga additive attachment."""
-    if data.get("status") != "product_ready":
-        raise APIError("Avval TMZ limiti mahsuloti tayyorlanishi kerak")
     data["client"] = prepare_order_client(baseline, purpose="product-limit", kind="shared", directory=directory)
     data["status"] = "client_ready"
     persist(data, directory)
@@ -83,8 +86,9 @@ def run_prepare_client(baseline, data, directory):
 def run_prepare_stock(case, directory):
     """1. Test mahsulotidan 20 dona kirim. 2. Kirimni post qilish. 3. UI 20/0/20."""
     data = case.workflow
-    if data.get("status") != "client_ready":
+    if not resource_ready(data, "product") or data.get("client", {}).get("status") != "passed":
         raise APIError("Ombor tayyorlovidan oldin own mahsulot va klient kerak")
+    resource_status(data, "stock", "process")
     state = RegressionSetupState(directory / "product-limit-stock-state.json", deepcopy(case.baseline))
     try:
         api = state.user()
@@ -116,8 +120,10 @@ def run_prepare_stock(case, directory):
                        {"physical": Decimal(20), "booked": Decimal(0), "available": Decimal(20)}, stock)
             data["stock_before"] = {key: str(value) for key, value in stock.items()}
             data["status"] = "stock_ready"
+            resource_status(data, "stock", "passed")
     except Exception:
         data["status"] = "failed"
+        resource_status(data, "stock", "failed")
         raise
     finally:
         persist(data, directory)
@@ -128,8 +134,9 @@ def run_prepare_stock(case, directory):
 def run_prepare_limit(case, directory):
     """1. Xona+kunlik limit10. 2. Own SKU. 3. UI Save va qayta ochish."""
     data, page, base = case.workflow, case.page, AutoBasePage(case.page)
-    if data.get("status") != "stock_ready":
-        raise APIError("Avval test mahsulotining ombor qoldig‘i tayyorlanishi kerak")
+    if not resource_ready(data, "product"):
+        raise APIError("Avval TMZ limiti mahsuloti tayyorlanishi kerak")
+    resource_status(data, "limit", "process")
     name = f"Order daily limit10-pw{case.code}-{data['run_id']}"
     route = "anor/mcg/order_product_limit/order_product_limit"
     state = RegressionSetupState(directory / "limit-state.json", deepcopy(case.baseline))
@@ -172,8 +179,10 @@ def run_prepare_limit(case, directory):
             persist(data, directory)
         verify_saved_limit(case)
         data["status"] = "passed"
+        resource_status(data, "limit", "passed")
     except Exception as error:
         data.update(status="failed", error_type=type(error).__name__)
+        resource_status(data, "limit", "failed")
         raise
     finally:
         persist(data, directory)

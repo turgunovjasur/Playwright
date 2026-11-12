@@ -3,7 +3,7 @@ import shutil
 import sys
 
 from tests.regression.runtime import new_run_id, prepare_run, finalize_run
-from tests.regression.retry.planning import build_plan, results, passed
+from tests.regression.retry.planning import build_plan, attempt_results, final_result, passed
 from tests.regression.retry.state import read, write
 
 
@@ -58,38 +58,50 @@ def combined_results(directory, retry_directory):
             if path.name.endswith("-result.json"):
                 value = read(dest)
                 params = value.setdefault("parameters", [])
-                params[:] = [p for p in params if p.get("name") != "Urinish"]
-                params.append({"name": "Urinish", "value": f"{attempt} — " + ("dastlabki" if attempt == 1 else "qayta urinish"), "excluded": True})
+                recorded = next((p for p in params if p.get("name") == "Urinish"), None)
+                # Inline attempts already carry their own number. A legacy child
+                # process is round two even though its local case directory is 01.
+                if attempt == 2 or recorded is None:
+                    params[:] = [p for p in params if p.get("name") != "Urinish"]
+                    params.append({"name": "Urinish", "value": f"{attempt} — " + ("dastlabki" if attempt == 1 else "qayta urinish"), "excluded": True})
                 # Status, UUID, historyId, timings and original failure remain unchanged.
                 write(dest, value)
     return target
 
 
 def summarize(directory, retry_directory):
-    first = results(directory)
-    second = results(retry_directory) if retry_directory else {}
+    first = attempt_results(directory)
+    second = attempt_results(retry_directory) if retry_directory else {}
     original_run = read(directory / "run.json")
     retry_run = read(retry_directory / "run.json") if retry_directory else None
     cases, counts = [], {}
-    for node, (_, original) in first.items():
-        retried = second.get(node, (None, None))[1]
-        final = retried or original
+    for node, original_attempts in first.items():
+        attempts = original_attempts + second.get(node, [])
+        original = attempts[0][1]
+        retried = attempts[-1][1] if len(attempts) > 1 else None
+        _, final = final_result(attempts)
         state = final["status"]
         counts[state] = counts.get(state, 0) + 1
         cases.append({"nodeid": node, "initial": original["status"],
                       "retry": retried["status"] if retried else None, "final": state,
-                      "recovered": not passed(original) and bool(retried and passed(retried))})
+                      "recovered": not passed(original) and passed(final),
+                      "attempts": [{"number": number, "status": value.get("status"),
+                                    "result": str(path), "blocked_by": value.get("blocked_by", "")}
+                                   for number, (path, value) in enumerate(attempts, 1)]})
     manifest_path = directory / "retry-manifest.json"
     manifest = read(manifest_path) if manifest_path.is_file() else {}
     expected = {row["nodeid"] for row in manifest.get("cases", [])}
     not_run = sorted(expected - first.keys())
     recovered_all = not not_run and bool(first) and all(row["final"] == "passed" for row in cases)
-    infrastructure_error = original_run.get("exit_code") not in (0, 1) or (
-        retry_run and retry_run.get("exit_code") not in (0, 1))
-    exit_code = 0 if recovered_all and not infrastructure_error else 1
+    infrastructure_exit = next((run.get("exit_code") for run in (original_run, retry_run)
+                                if run and run.get("exit_code") not in (0, 1, None)), None)
+    exit_code = infrastructure_exit if infrastructure_exit is not None else (0 if recovered_all else 1)
     write(directory / "suite-outcome.json", {
         "initial_run": directory.name, "retry_run": retry_directory.name if retry_directory else None,
-        "retry_rounds": 1 if retry_directory else 0, "final_counts": counts,
+        "retry_rounds": 1 if retry_directory or any(len(rows) > 1 for rows in first.values()) else 0,
+        "retry_mode": "suite" if retry_directory else "immediate" if any(len(rows) > 1 for rows in first.values()) else "none",
+        "final_counts": counts,
+        "recovered_count": sum(row["recovered"] for row in cases),
         "exit_code": exit_code, "cases": cases, "not_run": not_run,
         "note": "Original run.json o‘zgarmaydi; Allure’da dastlabki xato va retry natijasi saqlanadi.",
     })

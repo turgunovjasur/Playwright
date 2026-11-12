@@ -2,6 +2,7 @@
 import allure
 from tests.regression.test_orders.preparations.clients import prepare_order_client
 from tests.regression.test_orders.preparations.bonus import prepare_business_promotions
+from tests.regression.test_orders.preparations.resources import resource_status
 
 
 def run_returns_client(baseline, data, directory):
@@ -21,4 +22,13 @@ def run_discount_client(baseline, data, directory):
 
 def run_workflow_promotions(baseline, data):
     """1. Guruh uchun ixtiyoriy bonus yaratish. 2. Saqlangan shart va bonusni tekshirish."""
-    data["promotions"] = prepare_business_promotions(baseline)
+    promotions = data.setdefault("promotions", {})
+    resource_status(promotions, "bonus", "process")
+    try:
+        prepared = prepare_business_promotions(baseline)
+    except Exception:
+        resource_status(promotions, "bonus", "failed")
+        raise
+    readiness = {**promotions.get("ready", {}), **prepared.get("ready", {})}
+    promotions.update(prepared)
+    promotions["ready"] = readiness

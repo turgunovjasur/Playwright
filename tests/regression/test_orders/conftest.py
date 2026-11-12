@@ -13,6 +13,7 @@ from scripts.api_setup_bridge import select_api_baseline, validate_api_baseline
 from tests.regression.environment import RegressionEnvironmentError
 from tests.regression.test_orders.reporting import GROUP_FEATURES, order_report_title
 from tests.regression.test_orders.models import OrderContext, _json_value
+from tests.regression.test_orders.preparations.resources import resource_ready
 from tests.regression.test_orders.auth_recovery import order_session_recovery
 from tests.regression.session_recovery import bind_lookup_context, bind_grid_settings_context
 from utils.data_store import load_data_file
@@ -196,9 +197,10 @@ def _base_promotions(baseline):
     return {"unit_price": "7000"}
 
 
-def _require_bonus(promotions):
-    if promotions.get("status") != "passed":
-        pytest.skip("BLOCKED: bonus tayyorlovi bajarilmagan yoki muvaffaqiyatsiz; test_bonus kerak")
+def _require_resources(data, names):
+    missing = [name for name in names if not resource_ready(data, name)]
+    if missing:
+        pytest.skip("BLOCKED: zarur resurs tayyor emas: " + ", ".join(missing))
 
 
 def _require_client(clients, key):
@@ -225,7 +227,8 @@ def catalog_order(order_user_page, business_baseline, regression_case_dir, reque
 @pytest.fixture
 def promoted_order(order_user_page, business_baseline, business_promotions,
                    regression_case_dir, request):
-    _require_bonus(business_promotions)
+    required = ("discount",) if request.node.name == "test_01_quantity_discount" else ("bonus", "discount")
+    _require_resources(business_promotions, required)
     with _context(order_user_page, business_baseline, business_promotions,
                   regression_case_dir, request.node) as case:
         yield case
@@ -243,7 +246,7 @@ def ordinary_payment_order(order_user_page, business_baseline, payment_clients,
 @pytest.fixture
 def promoted_payment_order(order_user_page, business_baseline, business_promotions,
                            payment_clients, regression_case_dir, request):
-    _require_bonus(business_promotions)
+    _require_resources(business_promotions, ("bonus", "discount"))
     client = _require_client(payment_clients, "promoted")
     with _context(order_user_page, business_baseline, business_promotions,
                   regression_case_dir, request.node, client=client) as case:
@@ -270,7 +273,8 @@ def pytest_runtest_makereport(item, call):
     outcome = yield
     record_step(item, outcome.get_result(), call)
     group = item.get_closest_marker("order_group")
-    if (call.when == "call" and getattr(item.config, "_retry_plan", None)
+    if (call.when == "call" and (getattr(item.config, "_retry_plan", None)
+                               or getattr(item, "_order_inline_source", None))
             and group and group.args[0] in GROUP_FEATURES):
         allure.dynamic.title(order_report_title(group.args[0], item.name, rerun=True))
 
@@ -283,8 +287,13 @@ def mandatory_data(request):
 
 @pytest.fixture
 def mandatory_order(order_user_page, business_baseline, mandatory_data, regression_case_dir, request):
-    if mandatory_data.get("status") != "passed":
-        pytest.skip("BLOCKED: majburiy aksiya tayyorlovi yakunlanmagan")
+    required = ["prices"]
+    dependencies = {node.rsplit("::", 1)[-1] for node in request.node._order_required_steps}
+    for test, resource in (("test_01_prepare_bank_action", "bank_action"),
+                           ("test_02_prepare_terminal_action", "terminal_action")):
+        if test in dependencies:
+            required.append(resource)
+    _require_resources(mandatory_data, required)
     with _context(order_user_page, business_baseline, mandatory_data, regression_case_dir, request.node) as case:
         yield case
 
@@ -297,8 +306,7 @@ def bonus_limit_data(request):
 
 @contextmanager
 def _limit_context(page, baseline, data, directory, node, client_kind):
-    if data.get("status") != "passed":
-        pytest.skip("BLOCKED: umumiy bonus limiti tayyorlovi yakunlanmagan")
+    _require_resources(data, ("price", "bonus"))
     client = data["clients"][client_kind]
     if client.get("status") != "passed":
         pytest.skip("BLOCKED: bonus limiti klienti tekshirilmagan")
@@ -352,8 +360,7 @@ def mixed_promotions_data(request):
 
 @pytest.fixture
 def mixed_order(order_user_page, business_baseline, mixed_promotions_data, regression_case_dir, request):
-    if mixed_promotions_data.get("status") != "passed":
-        pytest.skip("BLOCKED: majburiy va ixtiyoriy aksiya tayyorlanmagan")
+    _require_resources(mixed_promotions_data, ("price", "bonus", "discount"))
     with _context(order_user_page, business_baseline, mixed_promotions_data, regression_case_dir, request.node) as case:
         case.price_type = mixed_promotions_data["prices"]["mixed"]["name"]
         case.checkpoint()
@@ -376,7 +383,8 @@ def product_limit_order(order_user_page, business_baseline, api_business_baselin
     if plan:
         plan.verify_baseline(api_business_baseline)
     client = product_limit_data.get("client", {})
-    if client.get("status") != "passed" or not product_limit_data.get("product"):
+    if (client.get("status") != "passed" or not product_limit_data.get("product")
+            or (not plan and not resource_ready(product_limit_data, "product"))):
         pytest.skip("BLOCKED: TMZ limiti mahsulot va klient tayyorlovi bajarilmagan")
     baseline = {**business_baseline, "product_id": product_limit_data["product"]["id"]}
     with _context(order_user_page, baseline, {"unit_price": "7000"}, regression_case_dir, request.node, client=client) as case:
@@ -407,6 +415,30 @@ def pytest_runtest_protocol(item, nextitem):
         yield
     finally:
         finish(item, token)
+
+
+@pytest.hookimpl(tryfirst=True, specname="pytest_runtest_protocol")
+def pytest_order_attempt_protocol(item, nextitem):
+    from tests.regression.retry.immediate import execute_protocol
+    return execute_protocol(item, nextitem)
+
+
+@pytest.hookimpl(hookwrapper=True, tryfirst=True)
+def pytest_runtest_teardown(item, nextitem):
+    from tests.regression.retry.immediate import finish_teardown
+    yield from finish_teardown(item)
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtestloop(session):
+    from tests.regression.retry.immediate import run_loop
+    return run_loop(session)
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_report_teststatus(report, config):
+    if report.outcome == "rerun":
+        return "rerun", "R", "RETRY"
 
 
 @pytest.fixture(autouse=True)

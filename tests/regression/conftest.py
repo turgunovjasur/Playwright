@@ -186,7 +186,8 @@ def pytest_sessionfinish(session, exitstatus):
                 prepare_presentation(results, directory / "allure-results",
                                      started_at_ms=session.config._smartup_started_at * 1000)
                 retry_directory = None
-                if run["status"] != "interrupted" and session.config.option.maxfail != 1:
+                if (not getattr(session.config, "_order_immediate_policy", False)
+                        and run["status"] != "interrupted" and session.config.option.maxfail != 1):
                     environment = {**os.environ, "SMARTUP_RUNNER": "1"}
                     try:
                         retry_directory = retry_after_suite(directory, environment, run_pytest)

@@ -45,19 +45,19 @@ def test_00_prepare_promotions(business_baseline, business_promotions):
 
 
 @order_report_case
-@pytest.mark.order_requires('test_001_prices', 'test_00_prepare_promotions')
+@pytest.mark.order_requires('test_001_prices')
 def test_00a_prepare_discount(business_baseline, business_promotions, regression_case_dir):
     run_prepare_quantity_discount(business_baseline, business_promotions, regression_case_dir)
 
 
 @order_report_case
-@pytest.mark.order_requires('test_001_prices')
+@pytest.mark.order_requires()
 def test_01_prepare_ordinary_client(business_baseline, payment_clients, regression_case_dir):
     run_ordinary_payment_client(business_baseline, payment_clients, regression_case_dir)
 
 
 @order_report_case
-@pytest.mark.order_requires('test_001_prices')
+@pytest.mark.order_requires()
 def test_02_prepare_promoted_client(business_baseline, payment_clients, regression_case_dir):
     run_promoted_payment_client(business_baseline, payment_clients, regression_case_dir)
 
@@ -69,6 +69,6 @@ def test_03_partial_full_payment(ordinary_payment_order):
 
 
 @order_report_case
-@pytest.mark.order_requires('test_002_stock', 'test_00a_prepare_discount', 'test_02_prepare_promoted_client')
+@pytest.mark.order_requires('test_002_stock', 'test_00_prepare_promotions', 'test_00a_prepare_discount', 'test_02_prepare_promoted_client')
 def test_04_promoted_order_payment(promoted_payment_order):
     run_promoted_order_payment(promoted_payment_order)

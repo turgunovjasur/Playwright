@@ -25,14 +25,40 @@ def record_collection(config, items):
     })
 
 
-def results(directory):
+def attempt_results(directory):
+    """Return every immutable attempt, ordered within each testcase."""
     found = {}
-    for path in directory.glob("*/attempt-*/result.json"):
+    for path in sorted(Path(directory).glob("*/attempt-*/result.json")):
         value = read(path)
-        if value["nodeid"] in found:
-            raise ValueError("Bitta run ichida bir testcase uchun bir nechta result bor")
-        found[value["nodeid"]] = (path, value)
+        number = value.get("attempt", 1)
+        if type(number) is not int or number < 1 or path.parent.name != f"attempt-{number:02d}":
+            raise ValueError("Test urinish raqami dalil papkasiga mos emas")
+        attempts = found.setdefault(value["nodeid"], [])
+        if any(previous[1].get("attempt", 1) == number for previous in attempts):
+            raise ValueError("Bitta testcase urinishining takroriy result fayli bor")
+        attempts.append((path, value))
+    for attempts in found.values():
+        attempts.sort(key=lambda entry: entry[1].get("attempt", 1))
     return found
+
+
+def final_result(attempts):
+    """A completed retry can recover a failure; an unexecuted retry cannot."""
+    path, latest = attempts[-1]
+    if latest.get("status") == "process":
+        return path, {**latest, "status": "interrupted"}
+    if latest.get("status") == "skipped":
+        failed = next((entry for entry in reversed(attempts[:-1])
+                       if entry[1].get("status") == "failed"), None)
+        if failed:
+            return failed[0], {**failed[1], "retry_status": "skipped",
+                               "retry_blocked_by": latest.get("blocked_by", "")}
+    return path, latest
+
+
+def results(directory):
+    """One authoritative outcome per test, while raw attempts remain intact."""
+    return {node: final_result(attempts) for node, attempts in attempt_results(directory).items()}
 
 
 def passed(result):
@@ -73,6 +99,10 @@ def build_plan(directory, *, saved_order_resume=False):
         plan["reason"] = "To‘xtatilgan run yoki qayta urinishdan yana retry boshlanmaydi"
         return plan
     manifest = read(directory / "retry-manifest.json")
+    if not saved_order_resume and (run.get("immediate_retry") or manifest.get("retry_policy") == "immediate"
+            or any(len(attempts) > 1 for attempts in attempt_results(directory).values())):
+        plan["reason"] = "Test ichidagi retry siyosatidan keyin suite retry qayta boshlanmaydi"
+        return plan
     plan["source_hash"] = manifest["source_hash"]
     plan["day"] = manifest["day"]
     plan["baseline_signature"] = manifest.get("baseline_signature")

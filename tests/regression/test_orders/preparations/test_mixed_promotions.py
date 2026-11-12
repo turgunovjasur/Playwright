@@ -10,6 +10,7 @@ import pytest
 from tests.api.client import APIError, positive_id, require_fields
 from tests.api.promotion import verify_promotion
 from tests.api.state import CONTRACTS
+from tests.regression.test_orders.preparations.resources import resource_ready, resource_status
 from tests.regression.test_orders.auth_recovery import RegressionSetupState
 
 pytestmark = [pytest.mark.regression, pytest.mark.order_positive,
@@ -28,10 +29,10 @@ def run_prepare_price(baseline, data, directory):
     2. Guruh uchun yangi UZS narx turini yaratish va 7 000 belgilash.
     3. Saqlangan yangi narx, room membership va oldingi qiymatlarni tekshirish.
     """
-    data.clear()
     data.update(status="process", run_id=uuid4("mixed_promotions_setup").hex[:12], prices={}, payments={},
                 unit_price="7000", url=baseline["url"], filial_id=str(baseline["filial_id"]),
                 retention="retained")
+    resource_status(data, "price", "process")
     state = RegressionSetupState(directory / "state.json", deepcopy(baseline))
     try:
         api = state.user()
@@ -68,8 +69,10 @@ def run_prepare_price(baseline, data, directory):
             if {str(row["price_type_id"]) for row in attached} != before_ids | {identity}:
                 raise APIError("Room narx bog‘lanishlari oldingi ro‘yxat + yangi narxga teng emas")
             data["status"] = "price_ready"
+            resource_status(data, "price", "passed")
     except Exception as error:
         data.update(status="failed", error_type=type(error).__name__)
+        resource_status(data, "price", "failed")
         raise
     finally:
         _persist(data, directory)
@@ -77,9 +80,10 @@ def run_prepare_price(baseline, data, directory):
         state.close()
 
 
-def _prepare_action(baseline, data, directory, *, kind, expected_status):
-    if data.get("status") != expected_status:
-        raise APIError("Mixed aksiya uchun oldingi tayyorlov muvaffaqiyatli tugashi kerak")
+def _prepare_action(baseline, data, directory, *, kind):
+    if not resource_ready(data, "price"):
+        raise APIError("Mixed aksiya uchun narx/to‘lov tayyorlovi tugashi kerak")
+    resource_status(data, kind, "process")
     state = RegressionSetupState(directory / "state.json", deepcopy(baseline))
     contract = "quantity_bonus" if kind == "bonus" else "quantity_discount"
     forced, reward = ("Y", "1") if kind == "bonus" else ("N", "10")
@@ -110,9 +114,11 @@ def _prepare_action(baseline, data, directory, *, kind, expected_status):
                                     ("payment_types", payload["payment_type_id"]), ("rooms", payload["room_ids"])):
                 if {str(row[0]) for row in model[field]} != {str(value) for value in expected}:
                     raise APIError(f"Mixed aksiya {field} bog‘lanishi noto‘g‘ri")
-            data["status"] = "bonus_ready" if kind == "bonus" else "passed"
+            resource_status(data, kind, "passed")
+            data["status"] = "passed" if all(resource_ready(data, key) for key in ("bonus", "discount")) else "actions_partial"
     except Exception as error:
         data.update(status="failed", error_type=type(error).__name__)
+        resource_status(data, kind, "failed")
         raise
     finally:
         _persist(data, directory)
@@ -122,9 +128,9 @@ def _prepare_action(baseline, data, directory, *, kind, expected_status):
 
 def run_prepare_mandatory_bonus(baseline, data, directory):
     """1. Yangi narx tayyor. 2. A10 → B1 majburiy aksiyani yaratish va qayta o‘qish."""
-    _prepare_action(baseline, data, directory, kind="bonus", expected_status="price_ready")
+    _prepare_action(baseline, data, directory, kind="bonus")
 
 
 def run_prepare_optional_discount(baseline, data, directory):
-    """1. Majburiy bonus tayyor. 2. A10 → 10% ixtiyoriy aksiyani yaratish va qayta o‘qish."""
-    _prepare_action(baseline, data, directory, kind="discount", expected_status="bonus_ready")
+    """1. Guruh narxi tayyor. 2. A10 → 10% ixtiyoriy aksiyani yaratish va qayta o‘qish."""
+    _prepare_action(baseline, data, directory, kind="discount")

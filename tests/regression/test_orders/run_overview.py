@@ -39,17 +39,22 @@ def reconcile_results(directory, run_directory):
     retry_id = outcome.get("retry_run")
     if retry_id and Path(retry_id).name == retry_id:
         sources[2] = run_directory.parent / retry_id
-    ledgers, nodes, latest = {}, {}, {}
-    for attempt, source in sources.items():
+    ledgers, nodes, latest, attempts_by_node = {}, {}, {}, {}
+    from tests.regression.retry.planning import final_result
+    for round_number, source in sources.items():
         for path in sorted(source.glob("*/attempt-*/result.json")):
             phase = _read(path)
             node = phase.get("nodeid")
             if not node:
                 continue
+            attempt = round_number if round_number == 2 else phase.get("attempt", 1)
             name = _fullname(node)
             ledgers[name, attempt] = (phase, path.parent)
             nodes[name] = node
-            latest[node] = "interrupted" if phase.get("status") == "process" else phase.get("status", "unknown")
+            attempts_by_node.setdefault(node, []).append((attempt, path, phase))
+    for node, attempts in attempts_by_node.items():
+        attempts.sort(key=lambda entry: entry[0])
+        latest[node] = final_result([(path, phase) for _, path, phase in attempts])[1].get("status", "unknown")
     manifest = _read(run_directory / "retry-manifest.json")
     for case in manifest.get("cases", []):
         nodes[_fullname(case["nodeid"])] = case["nodeid"]
@@ -127,6 +132,17 @@ def reconcile_results(directory, run_directory):
             elif state == "skipped" and value.get("status") == "passed":
                 value["status"] = "skipped"
                 value.setdefault("statusDetails", {})["message"] = "Yakuniy faza natijasi SKIPPED; to‘liq PASS tasdiqlanmagan."
+            if state == "skipped" and attempt > 1 and latest.get(node) == "failed":
+                # Allure chooses the latest retry as the headline. Preserve the
+                # failed testcase headline when retry never executed its body.
+                value["status"] = "broken"
+                value.setdefault("statusDetails", {})["message"] = (
+                    "Retry bajarilmadi; dastlabki FAIL saqlanadi. "
+                    + str(phase.get("blocked_by") or "Retry SKIPPED bilan tugadi.")
+                )
+                value.setdefault("parameters", []).append({
+                    "name": "Ijro holati", "value": "RETRY SKIPPED — FINAL FAILED", "excluded": True,
+                })
             attachments = value.setdefault("attachments", [])
             attachments[:] = [a for a in attachments if a.get("name") != "Order fazalari natijasi"]
             filename = f"{value['uuid']}-final-phases.json"

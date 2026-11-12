@@ -11,6 +11,7 @@ import pytest
 from tests.api.client import APIError, positive_id, require_fields
 from tests.api.promotion import verify_promotion
 from tests.api.state import CONTRACTS
+from tests.regression.test_orders.preparations.resources import resource_ready, resource_status
 from tests.regression.test_orders.auth_recovery import RegressionSetupState
 from tests.regression.test_orders.preparations.clients import prepare_order_client
 
@@ -26,7 +27,10 @@ def persist(data, directory):
 
 def run_prepare_price(baseline, data, directory):
     """1. Oldingi narx/bog‘lanishlar. 2. Own UZS narx. 3. 7000 va preservation."""
-    data.update(status="process", run_id=uuid4("bonus_limit_setup").hex[:12], clients={}, prices={}, orders={}, limit="2", retention="retained")
+    data.update(status="process", run_id=uuid4("bonus_limit_setup").hex[:12], limit="2", retention="retained")
+    for name in ("clients", "prices", "orders"):
+        data.setdefault(name, {})
+    resource_status(data, "price", "process")
     state = RegressionSetupState(directory / "state.json", deepcopy(baseline))
     try:
         api = state.user()
@@ -51,8 +55,10 @@ def run_prepare_price(baseline, data, directory):
             if attached() != before_ids | {identity}:
                 raise APIError("Xona narx bog‘lanishlari mos emas")
             data["status"] = "price_ready"
+            resource_status(data, "price", "passed")
     except Exception:
         data["status"] = "failed"
+        resource_status(data, "price", "failed")
         raise
     finally:
         persist(data, directory)
@@ -62,16 +68,16 @@ def run_prepare_price(baseline, data, directory):
 
 def run_prepare_client(baseline, data, directory, kind):
     """1. Own aktiv klient. 2. Saved identity. 3. Additive xona attachment."""
-    if data.get("status") != "price_ready":
-        raise APIError("Avval bonus limiti narxi tayyorlanishi kerak")
+    data.setdefault("clients", {})
     data["clients"][kind] = prepare_order_client(baseline, purpose="bonus-limit", kind=kind, directory=directory)
     persist(data, directory)
 
 
 def run_prepare_action(baseline, data, directory):
     """1. 10 dona uchun bonus1, global cap2. 2. Saved qoida va isolation."""
-    if set(data.get("clients", {})) != {"first", "second"}:
-        raise APIError("Ikki klient tayyorlovi kerak")
+    if not resource_ready(data, "price"):
+        raise APIError("Bonus limiti uchun tekshirilgan narx tayyorlovi kerak")
+    resource_status(data, "bonus", "process")
     state = RegressionSetupState(directory / "state.json", deepcopy(baseline))
     try:
         api = state.user()
@@ -101,8 +107,10 @@ def run_prepare_action(baseline, data, directory):
             if len(limits) != 1 or str(limits[0][0]) != str(baseline["product_id_usa"]) or limits[0][2] != "G" or Decimal(str(limits[0][4])) != 2:
                 raise APIError("Saved umumiy bonus limiti mahsulot/tur/miqdori mos emas")
             data["status"] = "passed"
+            resource_status(data, "bonus", "passed")
     except Exception:
         data["status"] = "failed"
+        resource_status(data, "bonus", "failed")
         raise
     finally:
         persist(data, directory)

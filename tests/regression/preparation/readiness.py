@@ -70,9 +70,24 @@ def verify_contract(api, baseline, contract):
 
 def verify_retry_preparations(case, node, directory):
     plan = getattr(node.config, "_retry_plan", {})
-    if not plan:
+    inline = getattr(node, "_order_inline_source", None)
+    if not plan and not inline:
         return
-    contracts = plan.get("readiness", {}).get(node.nodeid, {})
+    contracts = dict(plan.get("readiness", {}).get(node.nodeid, {}))
+    if inline:
+        requirements = node.config._order_requirements
+        pending = list(requirements[node.nodeid])
+        visited = set()
+        owners = getattr(node.config, "_order_preparation_contracts", {})
+        while pending:
+            prerequisite = pending.pop()
+            if prerequisite in visited:
+                continue
+            visited.add(prerequisite)
+            if prerequisite not in node.config._order_passed:
+                raise RetryBlocked("Retry prerequisite PASS holatini yo‘qotgan: " + prerequisite)
+            contracts.update(owners.get(prerequisite, {}))
+            pending.extend(requirements[prerequisite])
     state = RegressionSetupState(directory / "readiness-state.json", deepcopy(case.baseline))
     try:
         api = state.user()
