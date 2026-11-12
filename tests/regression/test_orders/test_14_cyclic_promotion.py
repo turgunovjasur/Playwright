@@ -78,7 +78,7 @@ def run_cyclic_promotion(page, order_case):
                 base.click(name="Товар", role="link", exact=True)
                 expect(goods).to_be_visible()
             if previous_eligible:
-                base.click(name=re.compile(r"^Акции"), role="link")
+                base.tab(name=re.compile(r"^Акции"), section=True)
                 card = page.get_by_role("heading", name=action_name, exact=True).locator("xpath=ancestor::*[.//input[@ng-model='condition.get']][1]")
                 base.checkbox(ng_model="condition.get", checked=False, root=card)
                 base.click(name="Товар", role="link", exact=True)
@@ -87,7 +87,7 @@ def run_cyclic_promotion(page, order_case):
             base.form_view(label="ИТОГО", expect_value=str(gross), remove_spaces=True)
             base.click(locator="#anor279-button-prev_step")
             expect(goods).to_be_visible()
-            base.click(name=re.compile(r"^Акции"), role="link")
+            base.tab(name=re.compile(r"^Акции"), section=True)
             heading = page.get_by_role("heading", name=action_name, exact=True)
             if eligible:
                 expect(heading).to_be_visible()
@@ -122,7 +122,7 @@ def run_cyclic_promotion(page, order_case):
             expect(base.grid_cell(row, labels.index(label))).to_have_text(re.compile(rf"^\s*{re.escape(value)}\s*$"))
 
     with allure.step("9 - Saqlangan bonus manbasi, qty 2 va zero charge"):
-        base.click(name="Акция", role="link", exact=True)
+        base.tab(name="Акция", section=True)
         grid = page.locator("b-grid:visible")
         row = base.grid(order_case.bonus_product, action_name, order_case.warehouse, root=grid)
         headers = grid.locator(".tbl-header-cell")

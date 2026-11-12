@@ -74,7 +74,7 @@ def run_amount_promotion(page, order_case):
                 base.click(name="Товар", role="link", exact=True)
                 expect(goods).to_be_visible()
             if previous_eligible:
-                base.click(name=re.compile(r"^Акции"), role="link")
+                base.tab(name=re.compile(r"^Акции"), section=True)
                 card = page.get_by_role("heading", name=action_name, exact=True).locator("xpath=ancestor::*[.//input[@ng-model='condition.get']][1]")
                 base.checkbox(ng_model="condition.get", checked=False, root=card)
                 base.click(name="Товар", role="link", exact=True)
@@ -84,7 +84,7 @@ def run_amount_promotion(page, order_case):
             base.form_view(label="ИТОГО", expect_value=str(gross), remove_spaces=True)
             base.click(locator="#anor279-button-prev_step")
             expect(goods).to_be_visible()
-            base.click(name=re.compile(r"^Акции"), role="link")
+            base.tab(name=re.compile(r"^Акции"), section=True)
             heading = page.get_by_role("heading", name=action_name, exact=True)
             if eligible:
                 expect(heading).to_be_visible()
@@ -119,7 +119,9 @@ def run_amount_promotion(page, order_case):
             expect(base.grid_cell(row, labels.index(label))).to_have_text(re.compile(rf"^\s*{re.escape(value)}\s*$"))
 
     with allure.step("9 - Chegirma aksiyasi bepul bonus qatori yaratmaganini tekshirish"):
-        expect(page.get_by_role("link", name="Акция", exact=True)).to_have_count(0)
+        bonus_tab = page.get_by_role("tab", name="Акция", exact=True)
+        legacy_link = page.get_by_role("link", name="Акция", exact=True)
+        expect(bonus_tab.or_(legacy_link)).to_have_count(0)
 
 
 @allure.title("ORD-13: Summa aksiyasi va chegirma chegaralari")

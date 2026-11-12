@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 from playwright.sync_api import expect, sync_playwright
 
+from scripts.result_retention import prune_results
 from scripts.report_lifecycle import generate_report, generate_test_summary, show_trace
 from tests.shared import config as run_config, reporting
 from tests.shared.authorization import authorization
@@ -80,9 +81,14 @@ def pytest_addoption(parser):
 def pytest_configure(config):
     """Run environmentini tekshiradi va Allure metadata fayllarini tayyorlaydi."""
     config._smartup_started_at = time.time()
-    expect.set_options(timeout=20_000)
+    expect.set_options(timeout=60_000)
     run_info = run_config.configure_environment(config)
-    reporting.prepare_allure_results(run_info, ROOT_DIR)
+    if not config.option.collectonly and not hasattr(config, "workerinput"):
+        prune_results(ROOT_DIR / "test-results", os.environ)
+    reporting.prepare_allure_results(
+        run_info, ROOT_DIR, results_dir=getattr(config.option, "allure_report_dir", None),
+    )
+    reporting.register_allure_identity(config)
 
 
 @pytest.hookimpl(trylast=True)

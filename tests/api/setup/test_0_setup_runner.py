@@ -1,4 +1,4 @@
-"""HTTP-only setup chain in the same order as the existing UI setup runner."""
+"""HTTP-only base environment setup; promotions belong to consuming Order groups."""
 
 import allure
 import pytest
@@ -28,11 +28,6 @@ from tests.api.setup.test_21_room_attachment import run_room_attachment
 from tests.api.setup.test_22_warehouse import run_warehouse
 from tests.api.setup.test_23_init_balance import run_init_balance
 from tests.api.setup.test_24_balance import run_balance
-from tests.api.setup.test_25_quantity_discount import run_quantity_discount
-from tests.api.setup.test_26_quantity_bonus import run_quantity_bonus
-from tests.api.setup.test_27_amount_discount import run_amount_discount
-from tests.api.setup.test_28_amount_bonus import run_amount_bonus
-from tests.api.setup.test_29_cyclic_bonus import run_cyclic_bonus
 
 pytestmark = [pytest.mark.api_setup, allure.epic("API"), allure.feature("Setup"), allure.story("Setup Chain")]
 
@@ -160,28 +155,3 @@ def test_23_init_balance(api_setup):
 @allure.title("API 24 - Balance")
 def test_24_balance(api_setup):
     run_balance(api_setup)
-
-
-@allure.title("API 25 - Quantity Discount")
-def test_25_quantity_discount(api_setup):
-    run_quantity_discount(api_setup)
-
-
-@allure.title("API 26 - Quantity Bonus")
-def test_26_quantity_bonus(api_setup):
-    run_quantity_bonus(api_setup)
-
-
-@allure.title("API 27 - Amount Discount")
-def test_27_amount_discount(api_setup):
-    run_amount_discount(api_setup)
-
-
-@allure.title("API 28 - Amount Bonus")
-def test_28_amount_bonus(api_setup):
-    run_amount_bonus(api_setup)
-
-
-@allure.title("API 29 - Cyclic Bonus")
-def test_29_cyclic_bonus(api_setup):
-    run_cyclic_bonus(api_setup)

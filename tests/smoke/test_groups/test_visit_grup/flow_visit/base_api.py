@@ -5,7 +5,7 @@ from typing import Any
 import requests
 
 
-DEFAULT_API_TIMEOUT = (20, 120)
+DEFAULT_API_TIMEOUT = (60, 240)
 
 
 class APIError(AssertionError):

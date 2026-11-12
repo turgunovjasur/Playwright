@@ -52,7 +52,7 @@ def run_offset_client_balance(page, code):
         base.click(name="Взаиморасчет", exact=True)
         modal = page.get_by_role("dialog").filter(has=page.get_by_role("heading", name="Взаиморасчет", exact=True))
         base.expect_page(heading="Взаиморасчет", root=modal)  # navigation: same-url - Offset dialog opens inside the current settlement page.
-        base.input(placeholder="Выбрать дату", expect_value=base.date(), root=modal)
+        base.date_picker(label="Дата взаиморасчета", date="today", auto_fill=True, root=modal)
         for label in (
             "с учетом консигнации",
             "по проекту",

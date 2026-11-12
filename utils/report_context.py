@@ -41,7 +41,7 @@ def remember_page(page):
         return
     context = deepcopy(page_context(page))
     context.pop("menu", None)
-    if not context["login"]:
+    if not context["login"] and not context.get("authenticated_user_id"):
         return
     if context not in state["contexts"]:
         state["contexts"].append(context)

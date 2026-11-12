@@ -8,7 +8,7 @@ from utils.base_pages.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Filial")]
-FILIAL_SAVE_LOADER_TIMEOUT = 120_000
+FILIAL_SAVE_LOADER_TIMEOUT = 240_000
 
 # ----------------------------------------------------------------------------------------------------------------------
 

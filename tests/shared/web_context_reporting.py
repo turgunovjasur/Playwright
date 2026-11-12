@@ -67,7 +67,9 @@ def render_context(state):
         html.append(f'<p><a href="{escape(server.rstrip("/") + "/login.html", quote=True)}" target="_blank" rel="noopener noreferrer">Smartup kirish sahifasini ochish</a></p>')
     for index, context in enumerate(state["contexts"], 1):
         html.append(f"<h3>Kirish ma'lumotlari {index if len(state['contexts']) > 1 else ''}</h3>")
-        html.append(_table([(label, context.get(key) or "Aniqlanmadi") for label, key in [("Profil", "profile"), ("Company", "company"), ("Login", "login"), ("Parol", "password"), ("Filial", "filial"), ("Kirish holati", "authorization")]]))
+        identity_fields = [("Tasdiqlangan user ID", "authenticated_user_id")] if context.get("authenticated_user_id") else [("Login", "login"), ("Parol", "password")]
+        fields = [("Profil", "profile"), ("Company", "company"), *identity_fields, ("Filial", "filial"), ("Kirish holati", "authorization")]
+        html.append(_table([(label, context.get(key) or "Aniqlanmadi") for label, key in fields]))
     if not state["contexts"]:
         html.append("<p>Bu testda login bajarilgani qayd etilmagan.</p>")
     location = state.get("location", {})

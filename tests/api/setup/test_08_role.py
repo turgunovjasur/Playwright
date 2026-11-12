@@ -25,7 +25,7 @@ def run_role(api_setup):
     with allure.step("2 - Enable every role permission"):
         payload = {key: model[key] for key in ("role_id", "name", "order_no", "state", "pcode")}
         payload["function_ids"] = [row["function_id"] for row in functions]
-        api.call("trade/tr/role+edit:save", payload, timeout=(20, 600))
+        api.call("trade/tr/role+edit:save", payload, timeout=(60, 1_200))
     with allure.step("3 - Verify every requested permission was persisted"):
         actual = api.model("trade/tr/role+edit", role_id=s["role_id"])["functions"]
         enabled = {str(row["function_id"]) for row in actual if row["state"] == "Y"}

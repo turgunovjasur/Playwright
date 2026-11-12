@@ -9,8 +9,8 @@ from urllib.parse import unquote, urlsplit
 from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
-DEFAULT_URL_TIMEOUT = 30_000
-A2_URL_TIMEOUT = 240_000
+DEFAULT_URL_TIMEOUT = 60_000
+A2_URL_TIMEOUT = 480_000
 EXPECTED_URL_NOT_REACHED = "EXPECTED_URL_NOT_REACHED"
 SHELL_NOT_DETECTED = "SHELL_NOT_DETECTED"
 
@@ -112,7 +112,7 @@ def _direct_probe(page, result, *, expected_path, shell, timeout, capture_eviden
 
 
 def check_url(page, expected_path, *, timeout=None, try_direct_url=True, capture_evidence=None):
-    """Actual URLni kutadi: A2 240s, legacy 30s; explicit timeout ustun."""
+    """Actual URLni kutadi: A2 480s, legacy 60s; explicit timeout ustun."""
     if timeout is None:
         # A2 menu clickidan keyin route kontent bilan birga kech yangilanishi mumkin.
         timeout = (

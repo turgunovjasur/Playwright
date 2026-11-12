@@ -26,6 +26,7 @@ Source: user
 |---|---|---|
 | ✅ | `DONE` | Test mavjud, biznes natijasi assert qilingan va live run o'tgan |
 | 🟡 | `PARTIAL` | Oqimning bir qismi bor, lekin muhim biznes natijasi tekshirilmagan |
+| 📝 | `IMPLEMENTED / NOT RUN` | Test kodi yozilgan, live PASS hali tasdiqlanmagan |
 | ⬜ | `NOT_STARTED` | Alohida test hali yozilmagan |
 | 🔍 | `NEEDS_ANALYSIS` | UI mavjud, ammo kutiladigan biznes natija live aniqlanishi kerak |
 | 🔴 | `REGRESSION` | Test mavjud, lekin eng so'nggi tasdiqlangan run yiqilgan |
@@ -76,10 +77,10 @@ saqlangan `baseline → expected → actual` qiymatlarini ishlatadi.
 | ID | Ssenariy | Coverage | Mavjud dalil yoki qolgan savol |
 |---|---|---|---|
 | `SCN-001` | `Новый → Архив → Payment → manual Взаиморасчет` | ✅ `DONE` | Group-0 `0-01`–`0-04`, live `4 passed` |
-| `SCN-002` | Payment ichida `Провести взаимозачёт` orqali avtomatik yopish | ⬜ `NOT_STARTED` | Checkbox va optionlar live tasdiqlangan; debt/prepayment yakuniy natijasi uchun test yo'q |
+| `SCN-002` | Kirimda order qarzini avtomatik yopish | ✅ `DONE` | [Mustaqil runner](../../../tests/regression/test_orders/runners/test_auto_offset_runner.py). Kirim IDsi va posted holati tasdiqlanadi. Yagona qarz yopiladi, avans va balans 0.  [6 PASS, saqlangan run auditi](evidence/order-settlement-20261109.json). |
 | `SCN-003` | Normal operational lifecycle: `Черновик → Новый → В обработке → В ожидании → Отгружен → Доставлен → Архив` | 🟡 `PARTIAL` | `tests/smoke/test_life_cycle/test_order.py` statuslarni `Доставлен`gacha o'tkazadi; settlement natijasi tekshirilmaydi |
 | `SCN-004` | Orderni `Отменен` qilish | ⬜ `NOT_STARTED` | Avvalgi A/B implementatsiyasi o'chirilgan; stock booking va client debt/balance oldin-keyin tekshirilishi kerak |
-| `SCN-005` | Payment order/debtdan oldin kelishi: prepayment-first | ⬜ `NOT_STARTED` | Prepayment keyingi order qarziga qanday bog'lanishi tekshirilishi kerak |
+| `SCN-005` | Orderdan oldin olingan avans | ✅ `DONE` | [Mustaqil runner](../../../tests/regression/test_orders/runners/test_prepayment_first_runner.py). Qarz 0, qolgan avans va balans 6 000, bronlangan avans 0.  [7 PASS, saqlangan run auditi](evidence/order-settlement-20261109.json). |
 | `SCN-006` | Qisman payment: payment debt summasidan kichik | ⬜ `NOT_STARTED` | Offsetdan keyin qolgan debt assert qilinishi kerak |
 | `SCN-007` | Ortiqcha payment: payment debt summasidan katta | ⬜ `NOT_STARTED` | Offsetdan keyin qolgan prepayment assert qilinishi kerak |
 | `SCN-008` | Bitta payment bilan bir nechta order/debtni yopish | ⬜ `NOT_STARTED` | Debt detail va qaysi orderlar yopilganini tekshirish kerak |
@@ -91,15 +92,22 @@ qabul qilinmaydi. Avval live UI'da qaysi status `Заказ` summasini
 `Задолженность`ka o'tkazishi va cancellation debt yaratmasligini tekshirish
 kerak.
 
+### SCN-002 va SCN-005 runnerlari
+
+Status: trace-confirmed
+Verified: 2026-11-09
+Source: `tests/regression/test_orders/ordering.py`, `runners/test_auto_offset_runner.py`, `runners/test_prepayment_first_runner.py`
+
+Har bir guruh alohida klient, TMZ, narx va qoldiq tayyorlaydi. SCN-002 da kirimdan avval aynan bitta orderning qarzi tasdiqlanadi. SCN-005 da kirim orderdan oldin o‘tkaziladi, keyin shu orderga ajratilgan summa va qolgan avans solishtiriladi. Ikkala test yakunda tarixdan klient, order IDsi, musbat hisob-kitob IDsi, valyuta va 14 000 summaga mos yagona qatorni talab qiladi. 2026-11-09 kuni ikkala runner ketma-ket, har biri alohida pytest sessiyasida o‘z orderini yaratdi. SCN-002 6/6 va SCN-005 7/7 PASS bo‘ldi. Ikkala run ham birinchi urinishda o‘tdi.
+
 ## Keyingi Ustuvorlik
 
 1. `SCN-003`: normal delivery lifecycle'da debt qaysi statusda paydo
    bo'lishini aniqlash va settlement assertionlarini qo'shish.
 2. `SCN-004`: `Отменен` holatida stock booking bo'shashi va qarz
    yaratilmasligini tekshirish.
-3. `SCN-002`: payment ichidagi avtomatik offsetni alohida test qilish.
-4. `SCN-006` va `SCN-007`: partial va overpayment qoldiqlarini tekshirish.
-5. `SCN-005`, `SCN-008`, `SCN-009`, `SCN-010`: murakkab allocation va
+3. `SCN-006` va `SCN-007`: partial va overpayment qoldiqlarini tekshirish.
+4. `SCN-008`, `SCN-009`, `SCN-010`: murakkab allocation va
    konsignatsiya ssenariylari.
 
 ## Yangilash Qoidasi

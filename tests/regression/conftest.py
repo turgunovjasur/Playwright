@@ -1,13 +1,20 @@
 """Regression setup dependency va suite metadata qoidalari."""
 
 import os
+import json
 import sys
+import traceback
 from pathlib import Path
 from uuid import uuid4
 
 import pytest
 
 from utils.data_store import load_data_file
+from tests.regression.runtime import (
+    begin_case, case_directory, finalize_run, order_page_context, record_phase, run_directory,
+)
+from tests.shared.reporting import reporting_warning
+from utils.report_safety import safe_text
 
 REGRESSION_DIR = Path(__file__).resolve().parent
 _SETUP_FAILED = None
@@ -49,6 +56,26 @@ def order_case(page, code, tmp_path):
 def pytest_configure(config):
     global _SETUP_FAILED
     _SETUP_FAILED = None
+    config.addinivalue_line("markers", "order_positive: positive A2 Order cases and explicit preparations")
+    config.addinivalue_line("markers", "order_group(name): full ordered Order regression group")
+    config.addinivalue_line("markers", "order_requires(*test_names): explicit earlier prerequisites in the same runner")
+
+
+@pytest.fixture(scope="session")
+def regression_run_dir(request):
+    return run_directory(request.config)
+
+
+@pytest.fixture
+def regression_case_dir(request, regression_run_dir):
+    return case_directory(request.node)
+
+
+@pytest.fixture
+def order_page(session_browser, regression_case_dir, request):
+    """Positive Order uchun alohida context va aynan shu run/attempt trace'i."""
+    with order_page_context(session_browser, request.node) as page:
+        yield page
 
 
 @pytest.hookimpl(tryfirst=True)
@@ -64,8 +91,9 @@ def pytest_collection_modifyitems(items):
     order_paths = {Path(str(item.path)) for item in regression_items if Path(str(item.path)).parent.name == "test_orders"}
     if any(path.name == "test_0_orders_runner.py" for path in order_paths) and len(order_paths) > 1:
         raise pytest.UsageError("Order runner va standalone leaflarni birga tanlamang: caselar ikki marta bajariladi. regression-orders targeti yoki bitta leaf faylini ishlating.")
-    requires_setup = any(item.get_closest_marker("regression_requires_setup") for item in regression_items)
-    setup_selected = any(item.get_closest_marker("regression_setup") for item in regression_items)
+    legacy_items = [item for item in regression_items if item.get_closest_marker("order_positive") is None]
+    requires_setup = any(item.get_closest_marker("regression_requires_setup") for item in legacy_items)
+    setup_selected = any(item.get_closest_marker("regression_setup") for item in legacy_items)
     if requires_setup and not setup_selected:
         if os.environ.get("COMPANY_CODE") == "1":
             raise pytest.UsageError("Regression domain-only run uchun mavjud COMPANY_CODE kerak; yangi company uchun setup-regression-products yoki setup-regression-orders targetini ishlating.")
@@ -89,6 +117,9 @@ def pytest_collection_modifyitems(items):
 @pytest.hookimpl(tryfirst=True)
 def pytest_runtest_setup(item):
     """Setup failure faqat shu regression suite'ning bog'liq testlarini bloklaydi."""
+    if item.get_closest_marker("order_positive") is not None:
+        case_directory(item)
+        return
     depends_on_setup = (
         item.get_closest_marker("regression_setup") is not None
         or item.get_closest_marker("regression_requires_setup") is not None
@@ -104,5 +135,84 @@ def pytest_runtest_makereport(item, call):
     global _SETUP_FAILED
     outcome = yield
     report = outcome.get_result()
+    if item.get_closest_marker("order_positive") is not None:
+        try:
+            record_phase(item, report, call)
+        except Exception as error:
+            reporting_warning(item.nodeid, "Order regression dalillarini yozish", safe_text(str(error)))
+        return
     if report.failed and item.get_closest_marker("regression_setup") is not None:
         _SETUP_FAILED = _SETUP_FAILED or item.nodeid
+
+
+@pytest.hookimpl(hookwrapper=True, tryfirst=True)
+def pytest_sessionfinish(session, exitstatus):
+    """Final fixturelar tugagach direct Order runi uchun alohida Allure nusxasi."""
+    original_runner = os.environ.get("SMARTUP_RUNNER")
+    standalone = (
+        not os.environ.get("REGRESSION_RUN_ID")
+        and original_runner != "1"
+        and getattr(session.config, "_regression_run_dir", None) is not None
+        and bool(session.items)
+        and all(item.get_closest_marker("order_positive") for item in session.items)
+        and not session.config.option.collectonly
+    )
+    if standalone:
+        # Parent avtomatik reportni erta yaratmasin; aynan shu Order runi pastda yaratiladi.
+        os.environ["SMARTUP_RUNNER"] = "1"
+    try:
+        outcome = yield
+        outcome.get_result()
+    finally:
+        if standalone:
+            if original_runner is None: os.environ.pop("SMARTUP_RUNNER", None)
+            else: os.environ["SMARTUP_RUNNER"] = original_runner
+    directory = getattr(session.config, "_regression_run_dir", None)
+    if directory is None or os.environ.get("REGRESSION_RUN_ID"):
+        return
+    run = finalize_run(directory, int(session.exitstatus))
+    if run["status"] == "blocked" and int(session.exitstatus) == 0:
+        session.exitstatus = pytest.ExitCode.TESTS_FAILED
+        run["runner_exit_code"] = int(session.exitstatus)
+        (directory / "run.json").write_text(json.dumps(run, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    if standalone:
+        results = getattr(session.config.option, "allure_report_dir", None)
+        if results:
+            try:
+                from tests.regression.test_orders.reporting import prepare_presentation
+                from tests.regression.run import generate_run_report, run_pytest
+                from tests.regression.retry.suite import retry_after_suite, combined_results, summarize
+                # Snapshot only this session before merging the retry attempt.
+                prepare_presentation(results, directory / "allure-results",
+                                     started_at_ms=session.config._smartup_started_at * 1000)
+                retry_directory = None
+                if run["status"] != "interrupted" and session.config.option.maxfail != 1:
+                    environment = {**os.environ, "SMARTUP_RUNNER": "1"}
+                    try:
+                        retry_directory = retry_after_suite(directory, environment, run_pytest)
+                    except Exception as error:
+                        # A readiness/reporting error must not hide the completed
+                        # first attempt or prevent its Allure report being built.
+                        (directory / "retry-error.json").write_text(json.dumps({
+                            "error_type": type(error).__name__,
+                            "detail": safe_text(traceback.format_exc()),
+                        }, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                        reporting_warning("Order regression", "Yagona qayta urinish", error)
+                session.exitstatus = summarize(directory, retry_directory)
+                presentation = prepare_presentation(
+                    combined_results(directory, retry_directory), directory / "allure-presentation-results",
+                )
+                from scripts.report_lifecycle import generate_test_summary
+                generate_test_summary(
+                    REGRESSION_DIR.parents[1], dict(os.environ),
+                    test_exit=int(session.exitstatus), command_text="Order regression — direct pytest",
+                    started_at=session.config._smartup_started_at,
+                    results_dir=presentation, output_dir=directory,
+                )
+                generate_run_report(directory, presentation, dict(os.environ))
+            except Exception as error:
+                (directory / "reporting-error.json").write_text(json.dumps({
+                    "error_type": type(error).__name__,
+                    "detail": safe_text(traceback.format_exc()),
+                }, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                reporting_warning("Order regression", "Allure taqdimotini tayyorlash", error)

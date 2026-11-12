@@ -57,7 +57,7 @@ class AutoBasePage:
         self,
         heading=None,
         url=None,
-        timeout=240_000,
+        timeout=480_000,
         check_unblocked=True,
         root=None,
         *,

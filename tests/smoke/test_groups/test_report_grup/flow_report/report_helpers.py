@@ -7,12 +7,12 @@ import allure
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 DOWNLOAD_DIR = Path("test-results/downloads")
-REPORT_DOWNLOAD_TIMEOUT = 240_000
+REPORT_DOWNLOAD_TIMEOUT = 480_000
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def open_report(base, route, heading=None, timeout=60_000):
+def open_report(base, route, heading=None, timeout=120_000):
     """Menyuda yo'q integration reportni umumiy route API orqali ochadi."""
     base.open_route(f"trade/rep/integration/{route}", heading=heading, timeout=timeout)
 

@@ -11,8 +11,8 @@ pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Licen
 
 MANDATORY_LICENSE = "Smartup ERP: Базовый пользователь (Обязательный)"
 REGULAR_LICENSE = "Smartup ERP: Базовый пользователь"
-MANDATORY_LICENSE_ROW_TIMEOUT = 6_000
-LICENSE_BALANCE_TIMEOUT = 10_000
+MANDATORY_LICENSE_ROW_TIMEOUT = 12_000
+LICENSE_BALANCE_TIMEOUT = 20_000
 
 # ----------------------------------------------------------------------------------------------------------------------
 

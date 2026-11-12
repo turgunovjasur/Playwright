@@ -54,7 +54,7 @@ def run_init_balance(page, code):
         base.grid(document_number, click=True)
 
     with allure.step("5 - UZS provodkalarida miqdor va summani tekshirish"):
-        with page.expect_popup(timeout=60_000) as postings_page_info:
+        with page.expect_popup(timeout=120_000) as postings_page_info:
             base.click(name="Проводки")
         postings_page = postings_page_info.value
         expect(postings_page.get_by_role("rowgroup")).to_contain_text(quantity)

@@ -19,14 +19,26 @@ ALLURE_CONFIG_PATH = "allurerc.mjs"
 ALLURE_SERVER_LOG = "test-results/logs/allure-report-server.log"
 
 
-def generate_test_summary(root_dir, env, *, test_exit, command_text, started_at, dry_run=False):
-    """Faqat joriy run natijalari uchun analyzerni chaqiradi."""
+def generate_test_summary(root_dir, env, *, test_exit, command_text, started_at, dry_run=False,
+                          results_dir=None, output_dir=None):
+    """Explicit kataloglar berilsa summary boshqa run natijalariga tegmaydi."""
     root_dir = Path(root_dir)
     command = [
         sys.executable, str(root_dir / "scripts" / "analyze_test_result.py"),
         "--exit-code", str(test_exit), "--command", command_text,
         "--started-at", str(started_at),
     ]
+    if results_dir is not None:
+        command.extend(["--results-dir", str(results_dir)])
+    if output_dir is not None:
+        output_dir = Path(output_dir)
+        command.extend(["--logs-dir", str(output_dir / "logs")])
+        for kind in ("system", "ai"):
+            for extension in ("md", "json"):
+                command.extend([
+                    f"--{kind}-output-{extension}",
+                    str(output_dir / f"{kind}-summary.{extension}"),
+                ])
     print(" ".join(command))
     if dry_run:
         return 0

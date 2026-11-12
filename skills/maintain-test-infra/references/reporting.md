@@ -2,12 +2,47 @@
 
 ## Mundarija
 
+- [Teardown va run artefaktlari bo‘yicha tasdiqlangan kelishuv](#teardown-va-run-artefaktlari-boyicha-tasdiqlangan-kelishuv)
 - [Current architecture](#current-architecture)
 - [User-facing execution phase contract](#user-facing-execution-phase-contract)
 - [Forms central monitoring](#forms-central-monitoring)
 - [Failure artifacts](#failure-artifacts)
 - [Local Allure lifecycle](#local-allure-lifecycle)
 - [Verification](#verification)
+
+## Order regression guruhlarining Allure hisoboti
+
+14 guruh uchun daraxt `Regression → guruh → Setup / Biznes flow → test` tartibida ko‘rinadi.
+Runner dekoratorlari va yakuniy hisobot guruh hamda test nomlarini
+`tests/regression/test_orders/reporting.py`dan oladi. SCN-002 va SCN-005 guruh nomida
+ham, guruhning har bir test sarlavhasida ham qidiriladi. ↻ belgisi ikkinchi urinishning
+pytest `call` bosqichiga yetgan testida ko‘rinadi. Setupda bloklangan SKIP belgilanmaydi.
+Testning asl fullName va historyId qiymatlari urinishlarni bog‘lash uchun saqlanadi.
+Jonli Allure ochilganda birinchi urinish katalogi faqat o‘sha urinishni ko‘rsatadi.
+Retry natijalari ham ko‘rinishi uchun watch manbalariga `retry-execution.json`dagi
+child running `allure-results` katalogini ham kiriting. Yakuniy hisobot ikkala urinishni birlashtiradi.
+
+## Teardown va run artefaktlari bo‘yicha tasdiqlangan kelishuv
+
+Status: code-confirmed
+Verified: 2026-11-11
+Source: user tasdiqlagan teardown + Allure kelishuvi; `tests/regression/runtime.py`, `tests/regression/test_orders/reporting.py`, `tests/regression/test_orders/run_overview.py`, `scripts/result_retention.py`
+Implementation: Order runtime va yakuniy Allure taqdimotiga qo‘llangan. Syntax, vaqtinchalik papkalarda retention va saqlangan run nusxasidan report generation tekshirilgan; yangi pytest/full suite ishga tushirilmagan. Jonli tezlashish hali o‘lchanmagan.
+
+- Trace ZIP sanitizatsiyasi — parol/tokenlarni maskalash va ZIP’ni qayta yozish — olib tashlangan. Boshqa log/metadata sanitizerlari qoladi. Saqlangan trace original Playwright ZIP; raw trace bo‘yicha foydalanuvchi qarori ushbu scope uchun amal qiladi.
+- Barcha testlar uchun status, vaqt, expected/actual hamda mavjud fixture/order/payment IDlari kabi ixcham natijalar saqlanadi.
+- Trace vaqtincha yoziladi, barcha fixture teardown’lari yakunlangach PASS/SKIP trace o‘chiriladi. FAILED va INTERRUPTED trace qoladi. Kechgi teardown xatosi trace’ni yo‘qotmaydi; xatodagi mavjud screenshot va exception ham saqlanadi. Majburiy process kill paytida trace to‘liq yozilmagan bo‘lishi mumkin.
+- Zarur teardown qoladi: page/context/browser resurslari va handlerlarni yopish, checkpoint/jurnal va yakuniy natijani yozish.
+- Har Order runining natija, presentation, report va summary yo‘llari alohida. Full runner natijalarni global Allure store bilan aralashtirmaydi. Standalone Order yakunda aynan sessiya natijalarining alohida nusxasini oladi.
+- Retention: odatiy yangi run uchun joriy + eng yangi 3 eski run. Eskirgan tanilgan run papkalari JSON, trace, screenshot va Allure bilan to‘liq o‘chiriladi. Faol runlar va resume/retry uchun zarur manbalar shu 3 slot ichida himoyalanadi; zarur manbalar sig‘masa hech narsani o‘chirmasdan startup xato beradi. Bu holatda bog‘liq eski manba yangi mustaqil run o‘rnini egallashi mumkin. Symlink, noma’lum papka va legacy shared output ushbu run retention doirasiga kirmaydi.
+- Retention serverdagi biznes yozuvlariga tegmaydi. O‘zgarish joriy etilganda haqiqiy eski runlar qo‘lda o‘chirilmagan; keyingi run startupida qoida ishlaydi.
+- Native Allure: `Regression → guruh → Setup / Biznes flow → test`. PASS qisqa natija va yig‘ilgan qadamlar bilan, FAILED xato qadami, expected/actual, screenshot/trace va texnik tafsilotlar bilan ko‘rinadi. Tekshirilmagan root cause yozilmaydi.
+- Yakuniy faza ledger’i call-only PASS’dan ustun. INTERRUPTED va NOT_RUN Allure native `skipped` ko‘rinishida, aniq `Ijro holati`/tag bilan ajratiladi. Umumiy environment statistikasi ularni alohida sanaydi; sun’iy summary testi qo‘shilmaydi. NOT_RUN uchun bajarilgan qadamlar uydirilmaydi.
+- Codex IAB’da native Allure Description blob-iframe bo‘sh ko‘ringan; aniq renderer sababi tasdiqlanmagan. Standart Description saqlanadi, har testga to‘g‘ridan-to‘g‘ri ochiladigan `Qisqa QA natijasi` text/plain ilovasi ham qo‘shilgan. Ushbu matnning IAB’da ko‘rinishi amalda tekshirilgan.
+- Umumiy ko‘rsatkichlar: total/PASS/FAILED/INTERRUPTED/NOT_RUN/SKIP, Setup/Biznes sonlari, boshlanish, davomiylik va qayd etilgan stop sababi. `run-overview.json` hisobning machine-readable nusxasi.
+- O‘zgarishlarni implementatsiya qilish tasdiqlangan. Testlarni qayta ishga tushirish hali alohida foydalanuvchi ko‘rsatmasini kutadi.
+
+Ushbu bo‘lim Order scope uchun quyidagi eski jamlash/retention tavsiflaridan ustun. Smoke/Forms’ning alohida lifecycle qoidalari avtomatik o‘zgarmaydi.
 
 ## Current architecture
 

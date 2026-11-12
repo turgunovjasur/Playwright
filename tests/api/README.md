@@ -1,6 +1,6 @@
 # Smartup API setup
 
-Mavjud UI setupning HTTP orqali bajariladigan alohida varianti. Testlar browser,
+Bazaviy test muhitini HTTP orqali tayyorlaydigan alohida suite. Testlar browser,
 `page` fixture yoki UI loginni ishlatmaydi. Login cookie sessiyasi ham HTTP orqali
 olinadi. Asosiy runner: `setup/test_0_setup_runner.py`.
 
@@ -27,10 +27,15 @@ API natijalari:
 
 - `test-results/api/data_store.json`: API baseline va yaratilgan IDlar.
 - `test-results/api/allure-results/`: har bir qadam va HTTP statuslari.
+- `test-results/api/setup-runner.xml`: IDE/direct pytest ham yozadigan JUnit natija.
+- `test-results/api/setup-success.json`: faqat to‘liq muvaffaqiyatli runnerdan keyin
+  yoziladigan regression tasdig‘i. Unda baseline va JUnit fayllarining hash qiymatlari bor.
+  Xatoli, to‘xtatilgan yoki qisman setup yangi tasdiq yaratmaydi; yangi default
+  baseline runi boshlanganda oldingi tasdiq bekor qilinadi. Collection bunga tegmaydi.
 - `--api-data-file /absolute/path/baseline.json`: alohida API baseline yo'li.
 
 UI `test-results/data/data_store.json` fayli o'zgarmaydi. API suite UI baselinega
-qaramaydi. API yaratgan data serverda qoladi. Filial, user, mahsulot va aksiya
+qaramaydi. API yaratgan data serverda qoladi. Filial, user va mahsulot
 nomlari UI setupdagi `*-pw{code}` ko'rinishida bo'ladi. Birinchi xatodan keyin
 qolgan setup qadamlari dependency sabab skip qilinadi. Parallel workerlar bilan
 run qilish qo'llanmaydi.
@@ -43,6 +48,42 @@ Yakka qadam uchun `.env`da `NEW_CODE=0` qilib, oldingi API baseline'dan foydalan
 
 Qayta bajarilgan create qadamlari avtomatik deduplication yoki cleanup qilmaydi;
 yangi to'liq setup uchun yangi code ishlating.
+
+## Aksiyalar setupdan ajratilgan — 04.11.2026
+
+API setup `00–24` bazaviy qadamlar bilan tugaydi: jami 25 wrapper,
+mavjud kompaniyada `00 Company` tanlanmagani uchun 24 qadam.
+`25–29` aksiya yaratuvchi testlar API setupdan chiqarildi.
+Smoke/UI setup o‘zgartirilmagan; uning zanjiri bilan API zanjirining uzunligi endi bir xil emas.
+
+| Oldingi qadam | Endi qayerga tegishli? |
+|---|---|
+| 25 — miqdor bo‘yicha 10% chegirma | `tests/regression/test_orders/preparations/test_quantity_discount.py`; promotions, payments va returns runnerlarida alohida tayyorlov |
+| 26 — miqdor bo‘yicha bonus | Shu eski aksiyaning IDsi ishlatilmagan. Order guruhlarining mavjud `preparations/bonus.py` tayyorlovi A10→B1 aksiyasini o‘zi yaratadi |
+| 27 — summa shartli chegirma | Hozir consumer biznes testi yo‘q. Kelajakdagi summa shartli aksiya flowiga tegishli; avtomatik yaratilmaydi |
+| 28 — summa shartli bonus | Hozir consumer biznes testi yo‘q. Kelajakdagi summa shartli bonus flowiga tegishli; avtomatik yaratilmaydi |
+| 29 — siklli bonus | Eski ID ishlatilmagan. `bonus_limit` runnerining `test_03_prepare_action` testi o‘z limitli aksiyasini yaratadi; limitsiz siklli bonus alohida kelajak qamrovi |
+
+Beshta HTTP payload shabloni `contracts.json`da saqlanadi; shablon mavjudligi
+uni setupda bajarish degani emas. Baseline uchun `action_*` IDlari majburiy emas.
+Eski muvaffaqiyatli setup tasdig‘i aynan eski beshta qo‘shimcha qadam bilan
+mos kelsa, baseline/JUnit hashlari o‘zgarmagan holda qabul qilinadi. Natija
+fayllari qayta yozilmaydi. Boshqa noma’lum yoki qisman qadamlar to‘plami qabul qilinmaydi.
+
+Bu refaktordan keyin live run hali bajarilmagan. Quyidagi eski live natijalar
+o‘sha paytdagi, aksiyalar ham setupda bo‘lgan versiyaga tegishli.
+
+## API setupdan keyin Order regression
+
+API runnerni IDE’dan butun fayl sifatida pytest Run qilish ham tasdiq faylini
+avtomatik yozadi. So‘ng `tests/regression/run.py`ni ishga tushiring: u tasdiqlangan
+API ma’lumotlarini o‘zi tanlaydi, qo‘lda copy qilish kerak emas. Yoki Orderning
+`test_promotions_runner.py` / `test_payments_runner.py` guruh runnerini tanlang.
+
+Bu ulanish standart `test-results/api/data_store.json` uchun. Custom
+`--api-data-file` bilan run regressionning default baseline tasdig‘ini yaratmaydi.
+Eski API runidan faqat data_store/Allure qolgan bo‘lsa, tasdiqni taxminan tiklamang:
+yangi to‘liq API setup kerak (`NEW_CODE=1`); yaratilgan oldingi data o‘chirilmaydi.
 
 ## API setupdan keyin group testlar
 
@@ -92,7 +133,6 @@ Group-only run `.env`dagi `NEW_CODE=1` bilan API baseline code'ni qayta ishlatdi
 | 13–17 | UZS/USD narx turlari va room bog'lanishi, USD kursi, 4 to'lov turi, TMC to'plami |
 | 18–20 | Ikki mahsulot, 7000 UZS/1 USD narxlari, client yaratish va qayta o'qish |
 | 21–24 | Roomga kataloglar va `Акция` narx turini ulash, ombor, ikki boshlang'ich qoldiqni o'tkazish, har mahsulotdan 100 dona tekshirish |
-| 25–29 | Besh aksiya; saqlangan chegirma/bonus mahsuloti va shart qiymatlarini qayta o'qib tekshirish |
 
 Joriy capture mavjud company uchun olingan. `00 Company` mavjud company rejimida
 UI suite kabi deselect qilinadi. `COMPANY_CODE=1` uchun company create/security
@@ -148,3 +188,25 @@ Har ikki tracedagi `cislink_template+add:price_types` javobi HTTP 200,
 `{"count":0,"data":[]}`. Setupga tegishli 12 ta baseline maydoni group runidan
 keyin saqlangan. Run tafsilotlari:
 `outputs/setup-api-groups-20261019-1210/verification.md`.
+
+
+## Markaziy bank kursi setupdan ajratilgan — 05.11.2026
+
+Setup 15 test uchun belgilangan kursni qo‘lda saqlaydi va bugungi qiymatni
+qayta o‘qib tekshiradi. Tashqi xizmatdan kurs olish uning dependency’si emas.
+Server HTTP 500 xatosi yashirilmaydi: alohida integratsiya testi FAIL beradi.
+
+```sh
+./.venv/bin/python -m pytest -c tests/api/pytest.ini tests/api/integrations/test_0_currency_runner.py
+```
+
+Bu runner muvaffaqiyatli API baseline’dagi user/valyutani ishlatadi, yangi user
+yaratmaydi va `NEW_CODE`ga qaramaydi. Setup manifesti, JUnit va Allure natijalarini
+almashtirmaydi. Natijalari `test-results/api/external-currency-results`, JUnit
+esa `test-results/api/external-currency.xml`da. Setup bilan birga collect qilish
+taqiqlangan. Kurs yangilash shu baseline valyutasining server kursiga ta’sir qiladi;
+deterministik regression bilan parallel run qilmang.
+
+Tashqi testning oracle chegarasi: HTTP 200 va qayta o‘qilgan musbat kurs tekshiriladi.
+U mustaqil Markaziy bank manbasi bilan taqqoslamaydi; eski musbat kursning aynan
+Markaziy bankdan yangilanganini isbotlaydi deb talqin qilinmasin.

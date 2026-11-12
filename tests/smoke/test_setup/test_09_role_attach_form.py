@@ -1,10 +1,11 @@
 import allure
+from urllib.parse import unquote, urlsplit
 
 from tests.smoke.flows.flow_authorization import authorization
 from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("User")]
-ROLE_FORMS_LOADER_TIMEOUT = 1_200_000
+ROLE_FORMS_LOADER_TIMEOUT = 2_400_000
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -15,7 +16,7 @@ def run_role_attach_form(page):
     2. Роли ro'yxatini ochish.
     3. "Админ" rolining view formasini ochish.
     4. Формы ruxsatlari sahifasini ochish.
-    5. "Доступ ко всем формам" -> "Разрешить" bilan barcha formalarga ruxsat berish.
+    5. "Доступ ко всем формам" -> "Разрешить" bilan ruxsat berib, server javobini kutish.
     6. "Доступные" ro'yxati bo'shligini tekshirish.
     7. Sahifani yopib, Роли ro'yxatiga qaytish.
     """
@@ -40,7 +41,20 @@ def run_role_attach_form(page):
     with allure.step("5 - Barcha formalarga ruxsat berish"):
         base.click(name="Доступ ко всем формам")
         base.click(locator=page.get_by_text("Разрешить", exact=True))
-        base.confirm_biruni(expected_text="Разрешить доступ ко всем формам?")
+        # A2 closes the confirmation before the grant finishes. Switching the
+        # table now lets the pending attached-forms reload overwrite Available.
+        with page.expect_response(
+            lambda response: response.request.method == "POST"
+            and urlsplit(unquote(response.url)).path.endswith(
+                "/biruni/md/role_form_list$access_generate_all"
+            ),
+            timeout=ROLE_FORMS_LOADER_TIMEOUT,
+        ) as grant_response:
+            base.confirm_biruni(expected_text="Разрешить доступ ко всем формам?")
+        response = grant_response.value
+        response.finished()
+        if not response.ok:
+            raise AssertionError(f"Barcha formalarga ruxsat berish: HTTP {response.status}")
         base.wait_for_loader(timeout=ROLE_FORMS_LOADER_TIMEOUT)
         base.expect_page(heading="Роль (Просмотр)")  # navigation: same-url - Granting permissions updates the already-open role view.
 

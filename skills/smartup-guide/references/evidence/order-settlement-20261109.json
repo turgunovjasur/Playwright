@@ -1,0 +1,83 @@
+{
+  "SCN-002": {
+    "run": "20261109T104129Z-06acffe6",
+    "group": "auto_offset",
+    "run_status": "passed",
+    "start": "2026-11-09T10:41:29.704795+00:00",
+    "finish": "2026-11-09T10:50:38.505885+00:00",
+    "result": {
+      "passed": 6
+    },
+    "retry": 0,
+    "client_id": "22201244",
+    "product_id": "6676467",
+    "order_id": "299892926",
+    "order_create_requests": 1,
+    "order_reference": "B47604cad2e6",
+    "cashin_id": "113820121",
+    "cashin_amount": "14000",
+    "offset_id": "114967938",
+    "offset_amount": "14000",
+    "final_settlement": {
+      "debt": "0",
+      "prepayment": "0",
+      "open_order": "0",
+      "booked_prepayment": "0",
+      "balance": "0"
+    },
+    "retention": "retained",
+    "trace_count": 3,
+    "allure": "/Users/mac/Documents/projects/Playwright/test-results/runs/20261109T104129Z-06acffe6/allure-report/index.html",
+    "cases": [
+      "tests/regression/test_orders/runners/test_auto_offset_runner.py::test_000_catalog",
+      "tests/regression/test_orders/runners/test_auto_offset_runner.py::test_001_prices",
+      "tests/regression/test_orders/runners/test_auto_offset_runner.py::test_002_stock",
+      "tests/regression/test_orders/runners/test_auto_offset_runner.py::test_00_prepare_client",
+      "tests/regression/test_orders/runners/test_auto_offset_runner.py::test_01_archive_order",
+      "tests/regression/test_orders/runners/test_auto_offset_runner.py::test_02_post_auto_offset"
+    ],
+    "order_creation_evidence": "/Users/mac/Documents/projects/Playwright/test-results/runs/20261109T104129Z-06acffe6/test_01_archive_order-cea9767a/attempt-01/retry-journal.json",
+    "final_case_evidence": "/Users/mac/Documents/projects/Playwright/test-results/runs/20261109T104129Z-06acffe6/test_02_post_auto_offset-f4e5d8f6/attempt-01/case-data.json"
+  },
+  "SCN-005": {
+    "run": "20261109T105048Z-f1bff663",
+    "group": "prepayment_first",
+    "run_status": "passed",
+    "start": "2026-11-09T10:50:48.059288+00:00",
+    "finish": "2026-11-09T11:02:58.788231+00:00",
+    "result": {
+      "passed": 7
+    },
+    "retry": 0,
+    "client_id": "22201334",
+    "product_id": "6676742",
+    "order_id": "299896410",
+    "order_create_requests": 1,
+    "order_reference": "B9bf8d981a4f",
+    "cashin_id": "113821451",
+    "cashin_amount": "20000",
+    "offset_id": "114970011",
+    "offset_amount": "14000",
+    "final_settlement": {
+      "debt": "0",
+      "prepayment": "6000",
+      "open_order": "0",
+      "booked_prepayment": "0",
+      "balance": "6000"
+    },
+    "retention": "retained",
+    "trace_count": 4,
+    "allure": "/Users/mac/Documents/projects/Playwright/test-results/runs/20261109T105048Z-f1bff663/allure-report/index.html",
+    "cases": [
+      "tests/regression/test_orders/runners/test_prepayment_first_runner.py::test_000_catalog",
+      "tests/regression/test_orders/runners/test_prepayment_first_runner.py::test_001_prices",
+      "tests/regression/test_orders/runners/test_prepayment_first_runner.py::test_002_stock",
+      "tests/regression/test_orders/runners/test_prepayment_first_runner.py::test_00_prepare_client",
+      "tests/regression/test_orders/runners/test_prepayment_first_runner.py::test_01_post_advance",
+      "tests/regression/test_orders/runners/test_prepayment_first_runner.py::test_02_archive_after_advance",
+      "tests/regression/test_orders/runners/test_prepayment_first_runner.py::test_03_apply_advance"
+    ],
+    "order_creation_evidence": "/Users/mac/Documents/projects/Playwright/test-results/runs/20261109T105048Z-f1bff663/test_02_archive_after_advance-41a5ea45/attempt-01/retry-journal.json",
+    "final_case_evidence": "/Users/mac/Documents/projects/Playwright/test-results/runs/20261109T105048Z-f1bff663/test_03_apply_advance-6af68a47/attempt-01/case-data.json"
+  }
+}

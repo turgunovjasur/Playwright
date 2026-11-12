@@ -11,6 +11,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping, Sequence
 
+if __package__:
+    from .allure_identity import normalize_forms_results
+else:
+    from allure_identity import normalize_forms_results
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -85,6 +90,10 @@ def generate_report(
     )
     if dry_run:
         return AllureCommandResult(command=command, returncode=0)
+
+    changed, backup = normalize_forms_results(_absolute_path(results_dir, project_root))
+    if changed:
+        print(f"[ALLURE] Forms identities normalized: {changed}; backup: {backup}")
 
     if clean_output and output_dir.exists():
         filesystem_root = Path(output_dir.anchor)

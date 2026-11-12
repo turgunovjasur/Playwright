@@ -9,7 +9,7 @@ from pathlib import Path
 
 from dotenv import dotenv_values
 
-from api_setup_bridge import record_setup_success, select_api_baseline
+from api_setup_bridge import select_api_baseline, validate_api_baseline
 
 from report_lifecycle import generate_report, generate_test_summary, show_trace
 from smoke_environment import CREATED_COMPANY_PASSWORD, check_requiremants
@@ -50,6 +50,7 @@ TARGETS = {
     "regression-setup": (REGRESSION_SETUP_PATH, "--new-code"),
     "regression-products": (REGRESSION_PRODUCTS_PATH, ""),
     "setup-regression-products": ((REGRESSION_SETUP_PATH, REGRESSION_PRODUCTS_PATH), "--new-code"),
+    "regression-order-business": ("tests/regression/test_orders/runners/test_promotions_runner.py", ""),
     "regression-orders": (REGRESSION_ORDERS_PATH, ""),
     "setup-regression-orders": ((REGRESSION_SETUP_PATH, REGRESSION_ORDERS_PATH), "--new-code"),
     "setup-group-0": (
@@ -160,7 +161,7 @@ def parse_args():
             "setup-smoke, setup-group-0, setup-visit, setup-report, setup-a2-admin, "
             "company, groups, group-0, group-visit, group-report, "
             "forms, regression, regression-setup, regression-products, setup-regression-products, "
-            "regression-orders, setup-regression-orders yoki pytest target path."
+            "regression-orders, setup-regression-orders, regression-order-business yoki pytest target path."
         ),
     )
     parser.add_argument("--url", help="Server URL; lokal .env bo'lsa COMPANY_URL ishlatiladi.")
@@ -183,7 +184,7 @@ def parse_args():
         help="Yangi toza Allure report boshlaydi; --clean-results eski alias sifatida ishlaydi.",
     )
     parser.add_argument("--show-trace", action="store_true", help="Oxirgi Playwright trace viewerini ochadi.")
-    parser.add_argument("--use-api-baseline", action="store_true", help="regression-orders/products uchun to‘liq o‘tgan API setup baseline’ni tanlaydi; eskisini zaxiralaydi.")
+    parser.add_argument("--use-api-baseline", action="store_true", help="regression-orders/products/order-business uchun to‘liq o‘tgan API setup baseline’ni tanlaydi; eskisini zaxiralaydi.")
     parser.add_argument("--dry-run", action="store_true", help="Commandni ko'rsatadi, lekin ishga tushirmaydi.")
     return parser.parse_known_args()
 
@@ -226,7 +227,7 @@ def main():
     env["COMPANY_URL"] = company_url_arg
     if args.clean_results:
         env["CLEAN_ALLURE_RESULTS"] = "1"
-    if args.target in {"regression-products", "regression-orders"} and create_company:
+    if args.target in {"regression-products", "regression-orders", "regression-order-business"} and create_company:
         print(f"{args.target} mavjud company va saqlangan setup baseline'ni talab qiladi. Yangi muhit uchun setup-{args.target} targetini ishlating.", file=sys.stderr)
         return 2
     if create_company and args.target in GROUP_ONLY_TARGETS:
@@ -282,8 +283,8 @@ def main():
     if create_company:
         env["COMPANY_PASSWORD"] = CREATED_COMPANY_PASSWORD
 
-    if args.use_api_baseline and args.target not in {"regression-orders", "regression-products"}:
-        print("--use-api-baseline faqat setupsiz regression-orders/products targetlariga tegishli", file=sys.stderr)
+    if args.use_api_baseline and args.target not in {"regression-orders", "regression-products", "regression-order-business"}:
+        print("--use-api-baseline faqat setupsiz regression-orders/products/order-business targetlariga tegishli", file=sys.stderr)
         return 2
     if args.use_api_baseline and not args.dry_run:
         try:
@@ -333,7 +334,7 @@ def main():
     if args.target == "api-setup":
         if test_exit == 0 and not args.dry_run:
             try:
-                record_setup_success(ROOT, env, started_at=run_started_at)
+                validate_api_baseline(ROOT, env)
             except (OSError, ValueError, KeyError, TypeError) as error:
                 print(f"API setup baseline tasdiqlanmadi: {error}", file=sys.stderr)
                 return 2

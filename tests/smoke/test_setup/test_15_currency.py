@@ -1,3 +1,4 @@
+from decimal import Decimal
 from urllib.parse import urlsplit
 
 import allure
@@ -6,6 +7,7 @@ from tests.shared.reporting import safe_page_screenshot
 from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.setup_errors import SetupDependencyReadyError
 from utils.data_store import save_data
+from utils.date_utils import resolve_date
 from utils.base_pages.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
@@ -19,7 +21,7 @@ def run_currency(page, logger):
     1. Финансы -> Валюты ro'yxatini ochish.
     2. USD valyutasining view formasida Курсы tabini ochish.
     3. View URLdan USD currency IDni olib, data_store ga saqlash.
-    4. Markaziy bank kursini yangilab, natijani qayd etish.
+    4. Markaziy bank kursini yangilab, qaytgan sana va qiymatni jadvalda tekshirish.
     5. Manual kurs qo'shish modalini ochish.
     6. Bugungi sana uchun manual kursni kiritib saqlash.
     7. Kurslar gridida sana va kursni tekshirish.
@@ -51,6 +53,7 @@ def run_currency(page, logger):
         ) as rate_response:
             base.confirm_biruni(expected_text="Вы уверены что хотите установите курс валюты по ЦБ Узбекистана?")
         response = rate_response.value
+        response.finished()
         base.wait_for_loader()
 
         if response.status == 500 and "java.net.SocketTimeoutException: Connect timed out" in response.text():
@@ -63,9 +66,28 @@ def run_currency(page, logger):
             base.expect_page(heading="Валюта (просмотр)", url="currency_view")
             if response.status != 200:
                 raise AssertionError(f"CBU kursini olish: HTTP {response.status}")
-            if not base.grid(base.date("today"), return_bool=True):
-                central_bank_error = "CBU so'rovi HTTP 200 qaytardi, ammo bugungi kurs jadvalda yo'q"
+            # The published rate can take effect before today. Reload after the
+            # update finishes and verify the returned rate instead of inventing
+            # a new CBU publication for every calendar day.
+            with page.expect_response(
+                lambda result: result.request.method == "POST"
+                and urlsplit(result.url).path.endswith("/b/anor/mk/currency_view:currency_rates")
+            ) as rates_response:
+                base.grid_controller(reload=True)
+            rates_result = rates_response.value
+            if not rates_result.ok:
+                raise AssertionError(f"Yangilangan kurslar jadvali: HTTP {rates_result.status}")
+            rates = rates_result.json()["data"]
+            if not rates:
+                central_bank_error = "CBU so'rovi HTTP 200 qaytardi, ammo kurslar jadvali bo'sh"
                 logger.warning(central_bank_error)
+            else:
+                rate_date, rate = max(rates, key=lambda row: resolve_date(row[0]))
+                amount = Decimal(str(rate))
+                if resolve_date(rate_date) > resolve_date("today") or not amount.is_finite() or amount <= 0:
+                    raise AssertionError(f"Yangilangan kurs yaroqsiz: {rate_date}, {rate}")
+                base.grid(rate_date, str(rate))
+                logger.info(f"Yangilangan kurslar jadvali tekshirildi: {rate_date} — {rate}")
 
     with allure.step("5 - Manual kurs qo'shish modalini ochish"):
         base.click(name="Установить курс", exact=True)

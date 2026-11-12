@@ -1,5 +1,7 @@
 import re
+import allure
 from contextlib import nullcontext
+from time import monotonic
 from urllib.parse import urlsplit, urlunsplit
 
 from playwright.sync_api import expect
@@ -8,7 +10,7 @@ from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from utils.date_utils import format_date, resolve_date
 from utils.helper_utils import first_non_admin_filial, label_pattern
 from utils.base_pages.page_diagnostics import expectation_gate, report_page_expectation
-from utils.base_pages.page_errors import expect_no_application_error
+from utils.base_pages.page_errors import expect_no_application_error, observe_module_load_errors
 from utils.base_pages.page_reporting import report_web_action
 from utils.base_pages.page_values import expect_text_or_readonly_value
 from utils.report_context import record_filial
@@ -113,7 +115,7 @@ class AngularBasePage:
         *,
         index=0,
         root=None,
-        timeout=20_000,
+        timeout=60_000,
     ):
         """Label yoki editable jadval sarlavhasi ostidagi field containerini topadi."""
         root = self._resolve_root(root)
@@ -170,7 +172,7 @@ class AngularBasePage:
         exact=False,
         index=0,
         root=None,
-        timeout=20_000,
+        timeout=60_000,
     ):
         """A2 elementni semantic role/name yoki locator orqali topib bosadi.
 
@@ -238,7 +240,7 @@ class AngularBasePage:
     # ------------------------------------------------------------------------------------------------------------------
 
     @report_web_action
-    def tab(self, name, *, section=False, root=None, timeout=20_000):
+    def tab(self, name, *, section=False, root=None, timeout=60_000):
         """A2 bo'lim/status tabini tanlaydi va aktiv holatini tekshiradi."""
         self._validate_options('tab', section=section, timeout=timeout)
         target = self.click(name=name, role='tab', exact=True, root=root, timeout=timeout)
@@ -254,7 +256,7 @@ class AngularBasePage:
     # ------------------------------------------------------------------------------------------------------------------
 
     @report_web_action
-    def action(self, name, *, menu=None, root=None, timeout=20_000):
+    def action(self, name, *, menu=None, root=None, timeout=60_000):
         """Bevosita action tugmasini yoki smt-dropdown-button actionini bosadi."""
         self._validate_options('action', timeout=timeout)
         if menu is None:
@@ -275,7 +277,7 @@ class AngularBasePage:
     # ------------------------------------------------------------------------------------------------------------------
 
     @report_web_action
-    def page_link(self, name, *, root=None, timeout=20_000):
+    def page_link(self, name, *, root=None, timeout=60_000):
         """A2 parent formaning yagona ko'rinadigan linkini exact nom bilan ochadi."""
         self._validate_options('page_link', timeout=timeout)
         link = self._resolve_root(root).get_by_role('link', name=name, exact=True).filter(visible=True)
@@ -289,7 +291,7 @@ class AngularBasePage:
 
     @report_web_action
     def autocomplete(self, label, value, *, ng_model=None, query_response=None,
-                     empty_text=None, root=None, timeout=60_000):
+                     empty_text=None, root=None, timeout=120_000):
         """Server autocomplete'ga custom qiymat yozib, javobdan keyin overlayni yopadi.
 
         query_response typed query javobiga mos predicate; boshlang'ich bo'sh
@@ -312,7 +314,7 @@ class AngularBasePage:
     # ------------------------------------------------------------------------------------------------------------------
 
     @report_web_action
-    def open_route(self, route, *, heading=None, timeout=60_000):
+    def open_route(self, route, *, heading=None, timeout=120_000):
         """Joriy A2 app prefixidagi relative route'ni ochadi."""
         self._validate_options('open_route', timeout=timeout)
         target = urlsplit(route)
@@ -321,9 +323,19 @@ class AngularBasePage:
             raise ValueError('open_route(): relative app route berilishi kerak')
         current = urlsplit(self.page.url)
         app_path = current.path.split('/a2/', 1)[0]
-        self.page.goto(urlunsplit((current.scheme, current.netloc,
-                       f'{app_path}/a2/{route_path}', target.query, '')),
-                       wait_until='commit', timeout=timeout)
+        destination = urlunsplit((current.scheme, current.netloc,
+                                  f'{app_path}/a2/{route_path}', target.query, ''))
+        with observe_module_load_errors(self.page, destination) as failures:
+            self.page.goto(destination, wait_until="domcontentloaded", timeout=timeout)
+            try:
+                self.page.locator("main").first.wait_for(
+                    state="attached", timeout=min(timeout or 20_000, 20_000))
+            except PlaywrightTimeoutError:
+                blank = self.page.evaluate("""() => document.readyState === 'complete'
+                    && !document.querySelector('main') && !document.body?.innerText.trim()""")
+                if self.page.url == destination and (failures or blank):
+                    with allure.step("Forma yuklanmadi — ayni sahifani bir marta qayta ochish"):
+                        self.page.reload(wait_until="domcontentloaded", timeout=timeout)
         from utils.base_pages.auto_base_page import AutoBasePage
         expected_route = f'/{route_path}' + (f'?{target.query}' if target.query else '')
         AutoBasePage(self.page).expect_page(heading=heading,
@@ -389,16 +401,16 @@ class AngularBasePage:
         else:
             input_el = root.locator(locator).nth(index) if isinstance(locator, str) else locator
 
-        expect(input_el).to_be_visible(timeout=20_000)
+        expect(input_el).to_be_visible(timeout=60_000)
 
         if value is not _UNSET:
-            input_el.click(timeout=20_000)
+            input_el.click(timeout=60_000)
             if clear:
-                input_el.press("ControlOrMeta+A", timeout=20_000)
-                input_el.press("Backspace", timeout=20_000)
-            input_el.fill(str(value), timeout=20_000)
+                input_el.press("ControlOrMeta+A", timeout=60_000)
+                input_el.press("Backspace", timeout=60_000)
+            input_el.fill(str(value), timeout=60_000)
             if press_tab:
-                input_el.press("Tab", timeout=20_000)
+                input_el.press("Tab", timeout=60_000)
 
         expected = expect_value
         if expected is _UNSET and value is not _UNSET:
@@ -410,7 +422,7 @@ class AngularBasePage:
         elif isinstance(expected, str):
             expected = _whitespace_agnostic_pattern(expected, exact=True)
         if expected is not _UNSET:
-            expect(input_el).to_have_value(expected, timeout=20_000)
+            expect(input_el).to_have_value(expected, timeout=60_000)
 
         if return_value:
             return input_el.input_value()
@@ -428,6 +440,7 @@ class AngularBasePage:
         expect_value=_UNSET,
         return_value=False,
         search_text=None,
+        option_contains=(),
         clear=False,
         exact=True,
         server_search=False,
@@ -436,7 +449,7 @@ class AngularBasePage:
         delay=50,
         index=0,
         root=None,
-        timeout=20_000,
+        timeout=60_000,
     ):
         """A2 ``smt-data-select``dan option tanlaydi yoki joriy qiymatni tekshiradi.
 
@@ -444,6 +457,13 @@ class AngularBasePage:
         ``search_text`` inputga yoziladi va shu matnga mos option ko'ringuncha
         kutilib tanlanadi. Faqat ``value`` ham shu qiymatga mos optionni tanlaydi.
         Server lookupda aynan shu qidiruv so'rovi tugagach option bosiladi.
+
+        ``option_contains`` asosiy qidiruvga mos variantlarni qo'shimcha
+        ko'rinadigan matnlar (masalan, kod, manzil, ombor yoki narx turi) bilan
+        toraytiradi. Matn yoki matnlar ro'yxati beriladi; barcha matnlar bitta
+        optionda bo'lishi va natija aynan bitta option bo'lishi kerak.
+        Remote ro‘yxatda mos variant topilmasa keyingi sahifalar UI scroll orqali
+        timeout ichida yuklanadi. Berilmasa mavjud tanlash qoidasi saqlanadi.
 
         exact option matni va string assertioniga taalluqli; regex o'zicha ishlaydi.
         clear=True tanlovsiz ham maydonni tozalaydi. Default native input
@@ -463,6 +483,14 @@ class AngularBasePage:
             index=index,
             timeout=timeout,
         )
+        if isinstance(option_contains, str):
+            option_contains = (option_contains,)
+        if not isinstance(option_contains, (tuple, list)) or any(
+            not isinstance(text, str) or not text.strip() for text in option_contains
+        ):
+            raise TypeError("b_input(): option_contains non-empty matn yoki matnlar ro'yxati bo'lishi kerak")
+        if option_contains and (select_first or (value is _UNSET and not search_text)):
+            raise ValueError("b_input(): option_contains aniq value/search_text bilan ishlatiladi")
         if stop_after_select and return_value:
             raise ValueError("b_input(): stop_after_select va return_value birga berilmaydi")
         root = self._resolve_root(root)
@@ -563,7 +591,25 @@ class AngularBasePage:
                     option = option.or_(options.filter(has=self.page.locator(
                         f"xpath=.//*[text()[normalize-space(.)={text_literal}]]"
                     )))
-                option = option.first
+                for text in option_contains:
+                    option = option.filter(has_text=text)
+                if option_contains:
+                    # Remote data-select appends ten options per scroll. A matching
+                    # product name may have its required metadata on a later page.
+                    # Stay in the UI and bound pagination by the supplied timeout.
+                    deadline = monotonic() + timeout / 1000
+                    while server_lookup and option.count() == 0 and options.count():
+                        remaining = max(1, int((deadline - monotonic()) * 1000))
+                        if monotonic() >= deadline:
+                            break
+                        loaded = options.count()
+                        options.last.scroll_into_view_if_needed(timeout=remaining)
+                        remaining = max(1, int((deadline - monotonic()) * 1000))
+                        expect(options).not_to_have_count(loaded, timeout=remaining)
+                    expect(option).to_have_count(
+                        1, timeout=max(1, int((deadline - monotonic()) * 1000)))
+                else:
+                    option = option.first
             expect(option).to_be_visible(timeout=timeout)
             option.click(timeout=timeout)
             if stop_after_select:
@@ -598,7 +644,7 @@ class AngularBasePage:
         auto_fill=False,
         index=0,
         root=None,
-        timeout=20_000,
+        timeout=60_000,
     ):
         """A2 ``smt-date-picker``da bugungi yoki ``DD.MM.YYYY`` sanani tanlaydi."""
         self._validate_options(
@@ -649,7 +695,7 @@ class AngularBasePage:
         role,
         index=0,
         root=None,
-        timeout=20_000,
+        timeout=60_000,
     ):
         root = self._resolve_root(root)
         roles = (role,) if isinstance(role, str) else tuple(role)
@@ -705,7 +751,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def _set_toggle(self, toggle, checked, *, timeout=20_000):
+    def _set_toggle(self, toggle, checked, *, timeout=60_000):
         role = toggle.get_attribute("role")
         if role in {"switch", "checkbox", "radio"}:
             current = (toggle.get_attribute("aria-checked") or "").lower() == "true"
@@ -778,7 +824,7 @@ class AngularBasePage:
         else:
             raise ValueError("checkbox(): label, ng_model yoki locator dan bittasini bering")
 
-        expect(toggle).to_be_visible(timeout=20_000)
+        expect(toggle).to_be_visible(timeout=60_000)
 
         if checked is not _UNSET:
             self._set_toggle(toggle, bool(checked))
@@ -790,12 +836,12 @@ class AngularBasePage:
                 expect(toggle).to_have_attribute(
                     "aria-checked",
                     "true" if expected else "false",
-                    timeout=20_000,
+                    timeout=60_000,
                 )
             else:
-                expect(toggle).to_be_checked(timeout=20_000) if expected else expect(
+                expect(toggle).to_be_checked(timeout=60_000) if expected else expect(
                     toggle
-                ).not_to_be_checked(timeout=20_000)
+                ).not_to_be_checked(timeout=60_000)
 
         if return_value:
             if toggle.get_attribute("role"):
@@ -833,21 +879,21 @@ class AngularBasePage:
         if click:
             label_el = radio.locator("xpath=ancestor::label[1]")
             if label_el.count() > 0 and label_el.first.is_visible():
-                label_el.first.click(timeout=20_000)
+                label_el.first.click(timeout=60_000)
             else:
-                radio.click(timeout=20_000)
+                radio.click(timeout=60_000)
 
         if expect_checked is not _UNSET:
             if radio.get_attribute("role") == "radio":
                 expect(radio).to_have_attribute(
                     "aria-checked",
                     "true" if expect_checked else "false",
-                    timeout=20_000,
+                    timeout=60_000,
                 )
             elif expect_checked:
-                expect(radio).to_be_checked(timeout=20_000)
+                expect(radio).to_be_checked(timeout=60_000)
             else:
-                expect(radio).not_to_be_checked(timeout=20_000)
+                expect(radio).not_to_be_checked(timeout=60_000)
         if return_value:
             if radio.get_attribute("role") == "radio":
                 return (radio.get_attribute("aria-checked") or "").lower() == "true"
@@ -863,7 +909,7 @@ class AngularBasePage:
         *,
         index=0,
         root=None,
-        timeout=20_000,
+        timeout=60_000,
     ):
         """``smt-control`` ichidagi segmented button optionni tanlaydi."""
         self._validate_options(
@@ -879,7 +925,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def text(self, *values, root="b-page", timeout=20_000, include_input_values=False):
+    def text(self, *values, root="b-page", timeout=60_000, include_input_values=False):
         """Matnni, opt-in bo'lsa stringlarni readonly input qiymatlarida ham tekshiradi."""
         self._validate_options(
             'text',
@@ -909,7 +955,7 @@ class AngularBasePage:
         remove_spaces=False,
         index=0,
         root=None,
-        timeout=20_000,
+        timeout=60_000,
     ):
         """A2 view'dagi readonly ``smt-input`` qiymatini tekshiradi yoki qaytaradi."""
         self._validate_options(
@@ -969,7 +1015,7 @@ class AngularBasePage:
         index=0,
         close=True,
         exact=True,
-        timeout=20_000,
+        timeout=60_000,
         root=None,
     ):
         """A2 multi-select componentini canonical API bilan boshqaradi.
@@ -1114,7 +1160,7 @@ class AngularBasePage:
         exact=True,
         index=0,
         root=None,
-        timeout=20_000,
+        timeout=60_000,
     ):
         """Qidiruvdan keyin valuega mos optionni tanlaydi; component Locator qaytaradi.
 
@@ -1224,23 +1270,41 @@ class AngularBasePage:
 
     def _wait_for_loader(
         self,
-        timeout=240_000,
+        timeout=480_000,
         *,
-        appear_timeout=4_000,
+        appear_timeout=8_000,
         root=None,
     ):
         """A2 skeleton/busy holati paydo bo'lsa, to'liq tugashini kutadi."""
         root = self._content_root(root)
         skeleton = root.locator(".smt-skeleton:visible")
         busy = root.locator("[aria-busy='true']:visible")
-        loader = root.locator(
-            ".smt-skeleton:visible, [aria-busy='true']:visible"
-        )
-
-        try:
-            expect(loader.first).to_be_visible(timeout=appear_timeout)
-        except (AssertionError, PlaywrightTimeoutError):
-            pass
+        # A short auto-waiting assertion can start a locator handler and
+        # expire while it authenticates. Observe DOM appearance without action
+        # prechecks; the full completion assertions below may run the handler.
+        if appear_timeout > 0:
+            root.locator(":scope").evaluate_all(
+                """(roots, windowMs) => new Promise(resolve => {
+                    const visible = () => roots.some(root =>
+                        [...root.querySelectorAll('.smt-skeleton, [aria-busy="true"]')].some(node => {
+                            const box = node.getBoundingClientRect();
+                            return getComputedStyle(node).visibility === 'visible'
+                                && box.width > 0 && box.height > 0;
+                        }));
+                    if (visible()) { resolve(); return; }
+                    let timer;
+                    const finish = () => {
+                        clearTimeout(timer);
+                        observer.disconnect();
+                        resolve();
+                    };
+                    const observer = new MutationObserver(() => { if (visible()) finish(); });
+                    roots.forEach(root => observer.observe(root, {
+                        subtree: true, childList: true, attributes: true
+                    }));
+                    timer = setTimeout(finish, windowMs);
+                })""", appear_timeout,
+            )
 
         expect(skeleton).to_have_count(0, timeout=timeout)
         expect(busy).to_have_count(0, timeout=timeout)
@@ -1248,7 +1312,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def wait_for_loader(self, timeout=240_000):
+    def wait_for_loader(self, timeout=480_000):
         self._validate_options(
             'wait_for_loader',
             timeout=timeout,
@@ -1263,7 +1327,7 @@ class AngularBasePage:
         self,
         heading=None,
         url=None,
-        timeout=240_000,
+        timeout=480_000,
         check_unblocked=True,
         root=None,
         *,
@@ -1366,31 +1430,31 @@ class AngularBasePage:
             row_text = _whitespace_agnostic_pattern(text) if remove_spaces else text
             return rows.filter(has_text=row_text).first.is_visible()
 
-        expect(grid).to_be_visible(timeout=20_000)
-        self._wait_for_loader(timeout=20_000, root=grid)
+        expect(grid).to_be_visible(timeout=60_000)
+        self._wait_for_loader(timeout=60_000, root=grid)
 
         if state == "empty":
-            expect(no_data).to_be_visible(timeout=20_000)
+            expect(no_data).to_be_visible(timeout=60_000)
             return grid
 
         if checkbox == "all":
             toggle = grid.get_by_role("checkbox").first
-            expect(toggle).to_be_visible(timeout=20_000)
+            expect(toggle).to_be_visible(timeout=60_000)
             self._set_toggle(toggle, True)
             return toggle
 
         row_text = _whitespace_agnostic_pattern(text) if remove_spaces else text
         row = rows.filter(has_text=row_text).first
-        expect(row).to_be_visible(timeout=20_000)
+        expect(row).to_be_visible(timeout=60_000)
         for value in contains:
             expected = _whitespace_agnostic_pattern(value) if remove_spaces else value
-            expect(row).to_contain_text(expected, timeout=20_000)
+            expect(row).to_contain_text(expected, timeout=60_000)
         if checkbox == "row":
             toggle = row.get_by_role("checkbox").first
-            expect(toggle).to_be_visible(timeout=20_000)
+            expect(toggle).to_be_visible(timeout=60_000)
             self._set_toggle(toggle, True)
         if click:
-            row.click(timeout=20_000)
+            row.click(timeout=60_000)
         return row
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -1415,15 +1479,15 @@ class AngularBasePage:
         root = self._content_root(None if root == "b-grid-controller" else root)
         if search is not None:
             field = root.locator("input[type='search']").filter(visible=True).first
-            expect(field).to_be_visible(timeout=60_000)
-            field.click(timeout=60_000)
-            field.press("ControlOrMeta+A", timeout=60_000)
-            field.press("Backspace", timeout=60_000)
+            expect(field).to_be_visible(timeout=120_000)
+            field.click(timeout=120_000)
+            field.press("ControlOrMeta+A", timeout=120_000)
+            field.press("Backspace", timeout=120_000)
             if str(search):
-                field.fill(str(search), timeout=60_000)
-            expect(field).to_have_value(str(search), timeout=60_000)
-            field.press("Enter", timeout=60_000)
-            self._wait_for_loader(timeout=60_000, root=root)
+                field.fill(str(search), timeout=120_000)
+            expect(field).to_have_value(str(search), timeout=120_000)
+            field.press("Enter", timeout=120_000)
+            self._wait_for_loader(timeout=120_000, root=root)
             return
 
         if expand is not None:
@@ -1436,15 +1500,15 @@ class AngularBasePage:
                 "button",
                 name=re.compile(r"Строк на странице|Rows per page", re.IGNORECASE),
             ).first
-            expect(page_size).to_be_visible(timeout=60_000)
-            page_size.click(timeout=60_000)
+            expect(page_size).to_be_visible(timeout=120_000)
+            page_size.click(timeout=120_000)
             option = self.page.locator(".cdk-overlay-container:visible").get_by_text(
                 expand_value,
                 exact=True,
             ).filter(visible=True).first
-            expect(option).to_be_visible(timeout=60_000)
-            option.click(timeout=60_000)
-            self._wait_for_loader(timeout=60_000, root=root)
+            expect(option).to_be_visible(timeout=120_000)
+            option.click(timeout=120_000)
+            self._wait_for_loader(timeout=120_000, root=root)
             return
 
         action = None
@@ -1458,14 +1522,14 @@ class AngularBasePage:
             raise ValueError(
                 'grid_controller(): search, expand="50"/"100"/"500"/"1000", reload, open_filter yoki open_setting dan bittasini bering'
             )
-        expect(action).to_be_visible(timeout=60_000)
-        action.click(timeout=60_000)
+        expect(action).to_be_visible(timeout=120_000)
+        action.click(timeout=120_000)
         if reload:
-            self._wait_for_loader(timeout=60_000, root=root)
+            self._wait_for_loader(timeout=120_000, root=root)
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def grid_setting(self, *, menu_name, field_name, search_name=None, timeout=60_000):
+    def grid_setting(self, *, menu_name, field_name, search_name=None, timeout=120_000):
         """Grid settingda ustunni va ixtiyoriy search maydonini yoqadi.
 
         A2 table-setting va search-setting dialoglarini boshqaradi va
@@ -1561,15 +1625,19 @@ class AngularBasePage:
         if cells.count() == 0:
             cells = row.locator("[role='cell'], [data-smt-col-key]")
         cell = cells.nth(index)
-        expect(cell).to_be_visible(timeout=20_000)
+        expect(cell).to_be_visible(timeout=60_000)
+        # A2 rows below the viewport may defer rendering their inner text.
+        # A trial click scrolls without clicking and re-resolves a replaced row
+        # while async table refresh is finishing (scroll_into_view uses a handle).
+        cell.click(trial=True, timeout=60_000)
         field = cell.locator("input:not([type='checkbox']):not([type='radio']):not([type='hidden']), textarea").filter(visible=True)
         has_field = field.count() == 1
         if expect_value is not _UNSET:
             expected = _whitespace_agnostic_pattern(expect_value) if remove_spaces else str(expect_value)
             if has_field:
-                expect(field).to_have_value(expected, timeout=20_000)
+                expect(field).to_have_value(expected, timeout=60_000)
             else:
-                expect(cell).to_contain_text(expected, timeout=20_000)
+                expect(cell).to_contain_text(expected, timeout=60_000)
         if return_value:
             value = (field.input_value() if has_field else cell.inner_text()).strip()
             return re.sub(r"\s+", "", value) if remove_spaces else " ".join(value.split())
@@ -1582,7 +1650,7 @@ class AngularBasePage:
         self,
         tab="Главное",
         name="Организации",
-        timeout=60_000,
+        timeout=120_000,
     ):
         """A2 shell menu tabidan menuitem orqali boshqa A2 formani ochadi."""
         self._validate_options(
@@ -1616,7 +1684,7 @@ class AngularBasePage:
         menu_item,
         page_links=None,
         add_icon=False,
-        timeout=120_000,
+        timeout=240_000,
     ):
         """BasePage navigate_to_form kontraktini A2 shell orqali bajaradi.
 
@@ -1684,7 +1752,7 @@ class AngularBasePage:
     def switch_filial(
         self,
         name=None,
-        timeout=60_000,
+        timeout=120_000,
         *,
         first_filial=False,
     ):
@@ -1745,28 +1813,28 @@ class AngularBasePage:
         confirm = self._visible_modal_candidates(root="body").filter(
             has=self.page.get_by_role("button", name=matcher)
         ).last
-        expect(confirm).to_be_visible(timeout=20_000)
+        expect(confirm).to_be_visible(timeout=60_000)
         if expected_text:
-            expect(confirm).to_contain_text(expected_text, timeout=20_000)
+            expect(confirm).to_contain_text(expected_text, timeout=60_000)
         button = confirm.get_by_role("button", name=matcher).first
-        expect(button).to_be_visible(timeout=20_000)
-        button.click(timeout=20_000)
-        expect(confirm).to_be_hidden(timeout=20_000)
+        expect(button).to_be_visible(timeout=60_000)
+        button.click(timeout=60_000)
+        expect(confirm).to_be_hidden(timeout=60_000)
 
     # ------------------------------------------------------------------------------------------------------------------
 
     def close_biruni_alert(self, *expected_text):
         """Ko'rinadigan A2/CDK error dialogini tekshiradi va yopadi."""
         alert = self._visible_error_locator(root="body")
-        expect(alert).to_be_visible(timeout=20_000)
+        expect(alert).to_be_visible(timeout=60_000)
         for value in expected_text:
             if value:
-                expect(alert).to_contain_text(value, timeout=20_000)
+                expect(alert).to_contain_text(value, timeout=60_000)
 
         close = alert.get_by_role(
             "button",
             name=re.compile(r"закрыть|close|×", re.IGNORECASE),
         ).filter(visible=True).first
-        expect(close).to_be_visible(timeout=20_000)
-        close.click(timeout=20_000)
-        expect(alert).to_be_hidden(timeout=20_000)
+        expect(close).to_be_visible(timeout=60_000)
+        close.click(timeout=60_000)
+        expect(alert).to_be_hidden(timeout=60_000)

@@ -75,8 +75,8 @@ Source: live UI
 ### Payment ichidagi avtomatik o'zaro hisob-kitob
 Tags: client-payment, auto-offset, checkbox, settlement
 Status: live-ui-confirmed
-Verified: 2026-07-31
-Source: live UI
+Verified: 2026-11-09
+Source: Codex browser, A2 `trade/tcs/cashin+add`; saqlanmagan formada checkbox OFF → ON → OFF tekshirildi.
 - Qayerda: `Провести взаимозачёт` checkboxi.
 - Qoida: checkbox default o'chiq. Yoqilganda `С учётом консигнации`,
   `По договору`, `По типу оплаты`, `По проекту` optionlari ko'rinadi;

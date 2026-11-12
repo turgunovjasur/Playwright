@@ -1,4 +1,4 @@
-"""API equivalent of UI setup step 15: Currency."""
+"""Deterministic currency rate prerequisite for the API baseline."""
 
 import allure
 import pytest
@@ -11,18 +11,15 @@ pytestmark = [pytest.mark.api_setup, allure.epic("API"),
 
 
 def run_currency(api_setup):
-    """1 - Refresh the central-bank USD exchange rate
-    2 - Save the same manual rate used by UI setup
-    3 - Read back today's rate
+    """1 - Save the deterministic manual rate used by the regression baseline
+    2 - Read back today's rate
     """
     s = api_setup
-    with allure.step("1 - Refresh the central-bank USD exchange rate"):
+    with allure.step("1 - Test uchun belgilangan valyuta kursini saqlash"):
         api = s.user()
-        api.call("anor/mk/currency_view:update_currency_rate", api.context(currency_id=s["currency_id"]))
-    with allure.step("2 - Save the same manual rate used by UI setup"):
         payload = s.payload("currency_rate")
         s.send(api, "currency_rate")
-    with allure.step("3 - Read back today's rate"):
+    with allure.step("2 - Bugungi saqlangan kursni qayta o‘qib tekshirish"):
         row = api.one("anor/mk/currency_view:currency_rates", ["rate_date", "rate"], filters=["rate_date", "=", payload["rate_date"]], data={"currency_id": s["currency_id"]})
         require_fields(row, rate=payload["rate"])
 

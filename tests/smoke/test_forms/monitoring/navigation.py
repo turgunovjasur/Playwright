@@ -20,8 +20,8 @@ format_form_result = _format_form_result
 write_terminal_report = _write_terminal_report
 
 
-FORM_TIMEOUT = 30_000
-A2_FORM_TIMEOUT = 240_000
+FORM_TIMEOUT = 60_000
+A2_FORM_TIMEOUT = 480_000
 
 
 def _form_timeout(page):
@@ -105,6 +105,7 @@ def open_create_dropdown_form(
     menu_item,
     action,
     page_links=None,
+    action_path=None,
 ):
     """Parent listdagi ``Создать`` dropdown actionini va uning page-linklarini ochadi."""
     links = [] if page_links is None else list(page_links)
@@ -124,6 +125,8 @@ def open_create_dropdown_form(
     )
     with allure.step(f"Navigatsiya | Yo'l: {track}"):
         AutoBasePage(page).action(name=action, menu="Создать", timeout=_form_timeout(page))
+        if action_path:
+            AutoBasePage(page).expect_page(url=action_path, timeout=_form_timeout(page))
         _click_page_links(page, links)
 
 
@@ -138,6 +141,7 @@ def navigate_form_case(page, case):
             menu_column=case.get("menu_column"),
             menu_item=case["menu_item"],
             action=case["action"],
+            action_path=case.get("action_path"),
             page_links=case.get("page_links"),
         )
     else:

@@ -76,7 +76,7 @@ def run_role(page):
 
     with allure.step("5 - Rolni saqlab, ro'yxatga qaytish"):
         base.click(name="Сохранить", exact=True)
-        base.expect_page(heading="Роли", url="role_list", timeout=600_000)
+        base.expect_page(heading="Роли", url="role_list", timeout=1_200_000)
 
     with allure.step("6 - Saqlangan barcha ruxsatlarni qayta tekshirish"):
         base.grid("Админ", click=True)

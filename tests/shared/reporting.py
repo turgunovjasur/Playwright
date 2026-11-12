@@ -7,7 +7,9 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 import allure
+import allure_commons
 
+from scripts.allure_identity import forms_history_id
 from scripts.report_lifecycle import ALLURE_RESULTS_DIR, TRACE_DIR
 from tests.shared.progress import emit_progress_event
 from tests.shared.config import env_flag
@@ -23,6 +25,28 @@ _FINAL_RESULT_ATTR = "_smartup_final_result"
 _AUTH_LISTENER_ATTR = "_smartup_auth_diagnostics_installed"
 _AUTH_RESPONSE_ATTR = "_smartup_first_unauthorized_response"
 _LICENSE_401_MESSAGE = "Нет лицензии для входа в систему!"
+
+
+class FormsAllureIdentity:
+    """Set the final identity before Allure writes passed, failed or skipped results."""
+
+    @allure_commons.hookimpl(tryfirst=True)
+    def report_result(self, result):
+        history_id = forms_history_id(
+            result.fullName,
+            [{"name": p.name, "value": p.value} for p in result.parameters],
+        )
+        if history_id is not None:
+            result.historyId = history_id
+            result.testCaseId = history_id
+            for parameter in result.parameters:
+                parameter.excluded = True
+
+
+def register_allure_identity(config):
+    plugin = FormsAllureIdentity()
+    allure_commons.plugin_manager.register(plugin)
+    config.add_cleanup(lambda: allure_commons.plugin_manager.unregister(plugin))
 
 
 def safe_page_url(value):
@@ -324,10 +348,10 @@ def _clean_current_allure_results(results_dir):
             item.unlink(missing_ok=True)
 
 
-def prepare_allure_results(run_info, root_dir):
-    """Run boshida Allure environment va executor metadata fayllarini tayyorlaydi."""
+def prepare_allure_results(run_info, root_dir, *, results_dir=None):
+    """Metadata aynan pytest tanlagan Allure katalogiga yoziladi."""
     root_dir = Path(root_dir)
-    results_dir = root_dir / ALLURE_RESULTS_DIR
+    results_dir = Path(results_dir).resolve() if results_dir is not None else root_dir / ALLURE_RESULTS_DIR
     if env_flag("CLEAN_ALLURE_RESULTS"):
         _clean_current_allure_results(results_dir)
     else:

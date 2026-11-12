@@ -37,6 +37,19 @@ row-level UI qayta yaratilmagan. Bu qism amaldagi Playwright flowlari va
 qanday order/setting saqlanmadi; importdagi server validatsiyalari quyida
 tekshirilishi kerak bo'lgan test case sifatida berilgan.
 
+## Yangi Order biznes oqimini suite’ga qo‘shish
+
+Status: code-confirmed
+Verified: 2026-11-09
+Source: foydalanuvchining mustaqil guruh talabi; `tests/regression/test_orders/ordering.py` va [Order runnerlari](../../../tests/regression/test_orders/README.md).
+
+Har yangi biznes oqimi uchun suite oxirida alohida runner yarating. Uning nomi va faylini
+`GROUP_NAMES` va `GROUP_RUNNERS`ga bir xil tartibda qo‘shing. Barcha tayyorlov va
+biznes qadamlarini Allure `SPECS`da belgilang. Umumiy API baseline’dan foydalaniladi.
+Oqim uchun kerakli klient, TMZ, narx va qoldiqni guruhning o‘z tayyorlovlari beradi.
+`order_requires` faqat shu guruhning avvalgi qadamlariga murojaat qiladi.
+Settlement case’larining kodi va live ijro holatini [ssenariylar registrida](../../smartup-guide/references/order-settlement-scenarios.md) yuriting.
+
 ## Priority modeli
 
 - **P0** — har build/deployda ishlaydigan smoke; order yaratish yoki asosiy

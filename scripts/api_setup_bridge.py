@@ -16,10 +16,16 @@ from xml.etree import ElementTree
 REQUIRED_KEYS = (
     "code", "url", "company_code", "filial_id", "filial_name", "user_id",
     "product_id", "product_id_usa", "client_person_id", "warehouse_id",
-    "price_type_id_uzb", "price_type_id_usa", "action_quantity_discount",
-    "action_quantity_bonus", "action_amount_discount", "action_amount_bonus",
-    "action_cyclic_bonus",
+    "price_type_id_uzb", "price_type_id_usa",
 )
+
+
+# Only the known pre-refactor setup is compatible. Do not accept arbitrary
+# supersets or rewrite old success evidence to match the new runner.
+LEGACY_PROMOTION_STEPS = frozenset({
+    "test_25_quantity_discount", "test_26_quantity_bonus",
+    "test_27_amount_discount", "test_28_amount_bonus", "test_29_cyclic_bonus",
+})
 
 
 def _paths(root):
@@ -56,10 +62,10 @@ def _expected_steps(root, env):
     return runner, expected
 
 
-def record_setup_success(root, env, *, started_at):
+def record_setup_success(root, env, *, started_at, junit_path=None):
     """Yangi JUnitda barcha majburiy API runner qadamlari o'tganini tasdiqlash."""
     root = Path(root)
-    junit = root / "test-results/api/setup-runner.xml"
+    junit = Path(junit_path).resolve() if junit_path else root / "test-results/api/setup-runner.xml"
     if junit.stat().st_mtime < started_at:
         raise ValueError("API setup JUnit natijasi joriy runniki emas")
     runner, expected = _expected_steps(root, env)
@@ -88,26 +94,45 @@ def record_setup_success(root, env, *, started_at):
         "status": "passed", "completed_at": datetime.now(timezone.utc).isoformat(),
         "baseline_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
         "junit_sha256": hashlib.sha256(junit.read_bytes()).hexdigest(),
+        "junit_path": str(junit.resolve()),
         "runner": str(runner.relative_to(root)), "steps": sorted(expected),
     }
-    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    temporary = manifest_path.with_suffix(".json.tmp")
+    temporary.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    temporary.replace(manifest_path)
     return manifest_path
+
+
+def validate_api_baseline(root, env):
+    """API setup muvaffaqiyati va baseline butunligini o'zgartirmasdan tekshirish."""
+    root = Path(root)
+    path, data = _read_baseline(root, env)
+    _, manifest_path = _paths(root)
+    if not manifest_path.is_file():
+        raise ValueError(
+            "API setup tasdiq fayli yo‘q. API runner faylini to‘liq qayta ishga tushiring: "
+            "tests/api/setup/test_0_setup_runner.py. U muvaffaqiyatli tugagach "
+            "regression runnerni ishga tushiring. data_store.jsonning o‘zi yetarli emas."
+        )
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    runner, expected = _expected_steps(root, env)
+    if (not isinstance(manifest, dict)
+            or manifest.get("steps") not in (sorted(expected), sorted(expected | LEGACY_PROMOTION_STEPS))
+            or manifest.get("runner") != str(runner.relative_to(root))):
+        raise ValueError("API setup tasdig'i joriy runner qadamlariga mos emas")
+    if manifest.get("status") != "passed" or manifest.get("baseline_sha256") != hashlib.sha256(path.read_bytes()).hexdigest():
+        raise ValueError("API baseline uchun to'liq muvaffaqiyat tasdig'i yo'q yoki fayl o'zgargan")
+    junit = Path(manifest.get("junit_path", root / "test-results/api/setup-runner.xml"))
+    if manifest.get("junit_sha256") != hashlib.sha256(junit.read_bytes()).hexdigest():
+        raise ValueError("API setup natijasi o'zgargan; setupni qayta tekshiring")
+    return data
 
 
 def select_api_baseline(root, env):
     """Tasdiqlangan API natijasini umumiy UI storega atomik o'tkazish."""
     root = Path(root)
-    path, _ = _read_baseline(root, env)
-    _, manifest_path = _paths(root)
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    runner, expected = _expected_steps(root, env)
-    if not isinstance(manifest, dict) or manifest.get("steps") != sorted(expected) or manifest.get("runner") != str(runner.relative_to(root)):
-        raise ValueError("API setup tasdig'i joriy runner qadamlariga mos emas")
-    if manifest.get("status") != "passed" or manifest.get("baseline_sha256") != hashlib.sha256(path.read_bytes()).hexdigest():
-        raise ValueError("API baseline uchun to'liq muvaffaqiyat tasdig'i yo'q yoki fayl o'zgargan")
-    junit = root / "test-results/api/setup-runner.xml"
-    if manifest.get("junit_sha256") != hashlib.sha256(junit.read_bytes()).hexdigest():
-        raise ValueError("API setup natijasi o'zgargan; setupni qayta tekshiring")
+    validate_api_baseline(root, env)
+    path, _ = _paths(root)
     target = root / "test-results/data/data_store.json"
     target.parent.mkdir(parents=True, exist_ok=True)
     if target.exists():

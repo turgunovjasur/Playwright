@@ -150,3 +150,10 @@ Repo rootda `.env` mavjud bo'lsa direct pytest/PyCharm run konfiguratsiyasi unda
 Setup/group topology, cascade va markerlar uchun canonical manba:
 [smoke-runner.md](../smartup-guide/references/smoke-runner.md). Run natijasini
 shu model asosida tahlil qil; bu faylda topology qoidalarini takrorlama.
+
+
+### Eski run fayllarini saqlash muddati
+
+Order run retention va teardown uchun canonical manba: [tasdiqlangan kelishuv va implementatsiya holati](../maintain-test-infra/references/reporting.md#teardown-va-run-artefaktlari-boyicha-tasdiqlangan-kelishuv).
+
+`scripts/result_retention.py` startupda joriy run + ko‘pi bilan 3 eski tanilgan runni saqlaydi, eskilarining butun natija papkasini o‘chiradi. Faol/resume/retry manbalari 3 eski slotdan joy oladi; zarur manbalar sig‘masa o‘chirishdan oldin xato beradi. Noma’lum papka, symlink, legacy shared output va serverdagi biznes ma’lumotlari tegilmaydi. API setup/baseline fayllari run retention doirasidan tashqarida.

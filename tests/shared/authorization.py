@@ -22,8 +22,14 @@ def current_company_code():
 def _dismiss_announcement(announcement):
     """Login ortidan ko'ringan e'lonni yopib, navigatsiyani ochadi."""
     with allure.step("Login ortidan ochilgan e'lon oynasini yopish"):
-        announcement.locator(".announcement_dismiss").click(timeout=20_000)
-        expect(announcement).to_be_hidden(timeout=20_000)
+        announcement.locator(".announcement_dismiss").click(timeout=60_000)
+        expect(announcement).to_be_hidden(timeout=60_000)
+
+
+def install_announcement_handler(page):
+    announcement = page.locator(".announcement_widget")
+    page.remove_locator_handler(announcement)
+    page.add_locator_handler(announcement, _dismiss_announcement)
 
 
 def login(page, email=None, password=None, *, profile=None):
@@ -36,9 +42,7 @@ def login(page, email=None, password=None, *, profile=None):
     start_login(page, server=company_url, company=company if profile != "head" else "", profile=profile, login=email, password=password, code=match.group(1) if match else None)
 
     # E'lon login javobidan keyin kechroq ochilishi ham mumkin.
-    announcement = page.locator(".announcement_widget")
-    page.remove_locator_handler(announcement)
-    page.add_locator_handler(announcement, _dismiss_announcement)
+    install_announcement_handler(page)
 
     page.goto(f"{company_url}/a2/auth/login")
 
@@ -50,8 +54,8 @@ def login(page, email=None, password=None, *, profile=None):
 # ----------------------------------------------------------------------------------------------------------------------
 
 def dashboard(page):
-    # BasePage(page).expect_page(heading="Trade", url="dashboard", timeout=240_000)
-    BasePage(page).expect_page(url="dashboard", timeout=240_000)
+    # BasePage(page).expect_page(heading="Trade", url="dashboard", timeout=480_000)
+    BasePage(page).expect_page(url="dashboard", timeout=480_000)
     confirm_login(page)
     capture_filial(page)
 

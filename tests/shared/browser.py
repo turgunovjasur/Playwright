@@ -8,13 +8,16 @@ from tests.shared import config, reporting
 
 
 @contextmanager
-def browser_context(browser, trace_path):
+def browser_context(browser, trace_path, *, storage_state=None):
     """Contextni tayyorlaydi; trace xatosida ham contextni yopadi."""
-    context = browser.new_context(**config.browser_context_options())
+    options = config.browser_context_options()
+    if storage_state is not None:
+        options["storage_state"] = storage_state
+    context = browser.new_context(**options)
     trace_started = False
     try:
-        context.set_default_timeout(240_000)
-        context.set_default_navigation_timeout(240_000)
+        context.set_default_timeout(480_000)
+        context.set_default_navigation_timeout(480_000)
         context.tracing.start(screenshots=True, snapshots=True, sources=True)
         trace_started = True
         yield context

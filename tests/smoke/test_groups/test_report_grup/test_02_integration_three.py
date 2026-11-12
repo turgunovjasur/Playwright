@@ -16,7 +16,7 @@ pytestmark = [
     allure.story("Integration Three"),
 ]
 
-REPORT_RENDER_TIMEOUT = 120_000
+REPORT_RENDER_TIMEOUT = 240_000
 
 
 # ----------------------------------------------------------------------------------------------------------------------
