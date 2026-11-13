@@ -73,8 +73,3 @@ def run_prepare_quantity_discount(baseline, promotions, directory):
     finally:
         state.close()
         allure.attach(path.read_text(), "Order biznes setup ma'lumotlari", allure.attachment_type.JSON)
-
-
-@allure.title("A10 → 10% chegirmani guruh uchun tayyorlash")
-def test_prepare_quantity_discount(business_baseline, business_promotions, regression_case_dir):
-    run_prepare_quantity_discount(business_baseline, business_promotions, regression_case_dir)

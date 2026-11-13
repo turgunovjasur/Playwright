@@ -650,15 +650,6 @@ def _phase_evidence(directory, result):
     return _read_attachment(directory, attachment) or {}
 
 
-def _blocked_before_retry_body(directory, result):
-    if _attempt_number(result) != 2 or result.get("status") != "skipped":
-        return False
-    evidence = _phase_evidence(directory, result)
-    phases = evidence.get("phases", {})
-    return (bool(evidence.get("blocked_by")) and "call" not in phases
-            and phases.get("setup", {}).get("outcome") == "skipped")
-
-
 def _run_context(directory, results):
     attempts, impact = defaultdict(dict), defaultdict(Counter)
     for result in results:

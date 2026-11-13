@@ -123,8 +123,3 @@ def run_prepare_return_price(baseline, data, directory):
             allure.attach(json.dumps(metadata, ensure_ascii=False), "Возврат narxi — ID va bog'lanishlar", allure.attachment_type.JSON)
         finally:
             state.close()
-
-
-@allure.title("Qaytarish uchun Возврат narxini filial va xonaga biriktirish")
-def test_prepare_return_price(business_baseline, workflow_data, regression_case_dir):
-    run_prepare_return_price(business_baseline, workflow_data, regression_case_dir)

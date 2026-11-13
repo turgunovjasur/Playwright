@@ -36,13 +36,3 @@ def run_promoted_payment_client(business_baseline, payment_clients, regression_c
     except Exception:
         payment_clients["promoted"]["status"] = "failed"
         raise
-
-
-@allure.title("OP-01: Oddiy order to'lovi uchun alohida klient")
-def test_ordinary_payment_client(business_baseline, payment_clients, regression_case_dir):
-    run_ordinary_payment_client(business_baseline, payment_clients, regression_case_dir)
-
-
-@allure.title("OP-02: Aksiya va skidkali order to'lovi uchun alohida klient")
-def test_promoted_payment_client(business_baseline, payment_clients, regression_case_dir):
-    run_promoted_payment_client(business_baseline, payment_clients, regression_case_dir)

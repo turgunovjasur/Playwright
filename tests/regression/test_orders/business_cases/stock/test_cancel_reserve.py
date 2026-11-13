@@ -94,8 +94,3 @@ def run_cancel_reserve(case):
         case.check("Cancel: omborda jismonan mavjud miqdor", before["physical"], after_cancel["physical"])
         case.check("Cancel: bronlangan miqdor boshlang'ich holatga qaytdi", before["booked"], after_cancel["booked"])
         case.check("Cancel: sotish mumkin bo'lgan miqdor boshlang'ich holatga qaytdi", before["available"], after_cancel["available"])
-
-
-@allure.title("OS-01: Новый orderni bekor qilishda ombor rezervi qaytadi")
-def test_cancel_reserve(ordinary_order):
-    run_cancel_reserve(ordinary_order)

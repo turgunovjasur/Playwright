@@ -181,8 +181,3 @@ def run_prepare_margin(page, baseline, data, directory):
         persist(margin["stage"])
         allure.attach(json.dumps(margin, ensure_ascii=False), "Tayyor 10% skidka — ID va bog'lanishlar", allure.attachment_type.JSON)
         state.close()
-
-
-@allure.title("OD-02: Tayyor 10% skidkani tayyorlash va xonaga biriktirish")
-def test_prepare_margin(order_page, business_baseline, workflow_data, regression_case_dir):
-    run_prepare_margin(order_page, business_baseline, workflow_data, regression_case_dir)

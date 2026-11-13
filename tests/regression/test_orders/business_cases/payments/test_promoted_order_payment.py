@@ -169,8 +169,3 @@ def run_promoted_order_payment(case):
         case.check("Yakuniy klient balansi", before, final)
         case.check("Yakuniy boshqa order qarzlari", debts_before,
                    read_debts(page, case.client, settlement=final))
-
-
-@allure.title("ORD-BIZ-04: A10 + B1 bonus + 10% skidka → 25 000 + 38 000 to'lov")
-def test_promoted_order_payment(promoted_payment_order):
-    run_promoted_order_payment(promoted_payment_order)

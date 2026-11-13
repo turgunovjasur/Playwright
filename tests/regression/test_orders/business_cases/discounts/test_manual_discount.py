@@ -227,18 +227,3 @@ def run_amounts_with_bonus(case):
         base.input(label="ИТОГО", expect_value="68800")
         case.check("Qayta ochilgan order chegirmasi", Decimal("-200"), _number(base.input(label="Скидка/наценка к заказу", return_value=True)))
         case.check("Qayta ochilgan jami (so'm)", Decimal("68800"), _number(base.input(label="ИТОГО", return_value=True)))
-
-
-@allure.title("MD-01: Har dona uchun summali chegirma")
-def test_line_amount(ordinary_order):
-    run_line_amount(ordinary_order)
-
-
-@allure.title("MD-02: Butun orderga bir martalik summali chegirma")
-def test_order_amount(ordinary_order):
-    run_order_amount(ordinary_order)
-
-
-@allure.title("MD-03: Har dona va order chegirmasi bilan bepul bonus")
-def test_amounts_with_bonus(promoted_order):
-    run_amounts_with_bonus(promoted_order)

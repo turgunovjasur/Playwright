@@ -74,8 +74,3 @@ def run_other_product_bonus(case):
         base.click(name="Далее", exact=True)
         base.input(label="ИТОГО", expect_value="70000")
         case.check("Qayta ochilgan order jami (so'm)", "70000", re.sub(r"\s+", "", base.input(label="ИТОГО", return_value=True)))
-
-
-@allure.title("OB-02: Boshqa mahsulotdan 1 dona bepul bonus")
-def test_other_product_bonus(promoted_order):
-    run_other_product_bonus(promoted_order)

@@ -31,8 +31,3 @@ def run_business_setup(business_baseline, business_promotions):
     readiness = {**business_promotions.get("ready", {}), **prepared.get("ready", {})}
     business_promotions.update(prepared)
     business_promotions["ready"] = readiness
-
-
-@allure.title("OB-00: Setup mahsulotlari uchun boshqa mahsulot bonusini tayyorlash")
-def test_business_setup(business_baseline, business_promotions):
-    run_business_setup(business_baseline, business_promotions)

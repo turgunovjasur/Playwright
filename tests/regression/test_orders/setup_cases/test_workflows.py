@@ -1,5 +1,4 @@
 """Yangi Order guruhlari uchun alohida, ko'rinadigan tayyorlov test qadamlari."""
-import allure
 from tests.regression.test_orders.helpers.preparations.clients import prepare_order_client
 from tests.regression.test_orders.helpers.preparations.bonus import prepare_business_promotions
 from tests.regression.test_orders.helpers.preparations.resources import resource_status

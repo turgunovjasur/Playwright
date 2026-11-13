@@ -11,7 +11,6 @@ from pathlib import Path
 from tests.regression.helpers.retry.state import stable_uuid as uuid4
 from tests.shared.navigation import open_form_from_list
 from utils.base_pages.auto_base_page import AutoBasePage
-from playwright.sync_api import expect
 
 import allure
 

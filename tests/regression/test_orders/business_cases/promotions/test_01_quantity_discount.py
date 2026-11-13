@@ -76,8 +76,3 @@ def run_quantity_discount(case):
         base.click(name="Далее", exact=True)
         base.input(label="ИТОГО", expect_value=expected)
         case.check("Qayta ochilgan order jami (so'm)", expected, re.sub(r"\s+", "", base.input(label="ИТОГО", return_value=True)))
-
-
-@allure.title("OB-01: 10 dona mahsulotga 10% chegirma")
-def test_quantity_discount(promoted_order):
-    run_quantity_discount(promoted_order)

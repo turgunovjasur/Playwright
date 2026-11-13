@@ -144,8 +144,3 @@ def run_partial_full_payment(case):
         case.check("Yakuniy klient balansi", before, final)
         case.check("Yakuniy boshqa order qarzlari", debts_before,
                    read_debts(page, case.client, settlement=final))
-
-
-@allure.title("ORD-BIZ-01: Oddiy order → 6 000 qisman → 8 000 to'liq to'lov")
-def test_partial_full_payment(ordinary_payment_order):
-    run_partial_full_payment(ordinary_payment_order)

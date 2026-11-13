@@ -41,8 +41,8 @@ regression/
 report nomiga ega, tegishli `run_*`ni chaqiradi.
 
 **Testcase** — setup yoki biznes tekshiruvining qadamlari va kutilgan natijasi.
-Ular `setup_cases/` va `business_cases/` ichida. `run_*`ni runner chaqiradi;
-ayrim standalone modullarda `test_*` wrapper ham mavjud.
+Ular `setup_cases/` va `business_cases/` ichida. Bu yerdagi `run_*` funksiyalarni
+runner chaqiradi; ishga tushiriladigan `test_*` funksiyalar `runners/` ichida.
 
 **Helper** — testlar qayta ishlatadigan kod. Uni alohida test sifatida Run qilish
 kerak emas. `conftest.py`ni pytest o‘zi yuklaydi.

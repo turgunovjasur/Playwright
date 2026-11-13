@@ -72,8 +72,3 @@ def run_bonus_and_discount(case):
         base.click(name="Далее", exact=True)
         base.input(label="ИТОГО", expect_value="63000")
         case.check("Qayta ochilgan order jami (so'm)", "63000", re.sub(r"\s+", "", base.input(label="ИТОГО", return_value=True)))
-
-
-@allure.title("OB-03: Bitta orderda bonus va 10% chegirma")
-def test_bonus_and_discount(promoted_order):
-    run_bonus_and_discount(promoted_order)

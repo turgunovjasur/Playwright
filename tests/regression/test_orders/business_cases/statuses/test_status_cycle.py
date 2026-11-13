@@ -83,8 +83,3 @@ def run_status_cycle(case):
             if status == "Архив":
                 case.check("Arxivdan keyin aynan shu orderning qarzi", {order_id: Decimal(14000)}, read_debts(page, case.client, settlement=actual))
             verified("status_verified:" + status)
-
-
-@allure.title("OS-01: Bitta orderda 6 status, rezerv, chiqim va qarz")
-def test_status_cycle(workflow_order):
-    run_status_cycle(workflow_order)

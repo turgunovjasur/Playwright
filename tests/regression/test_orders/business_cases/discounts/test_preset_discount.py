@@ -66,8 +66,3 @@ def run_preset_discount(case):
                    _number(base.input(label="Сумма скидки/наценки", return_value=True)))
         case.check("Qayta ochilgan jami (so'm)", total,
                    _number(base.input(label="ИТОГО", return_value=True)))
-
-
-@allure.title("OD-03: Tayyor −10% skidka — 12 600 so'm")
-def test_preset_discount(workflow_order):
-    run_preset_discount(workflow_order)
