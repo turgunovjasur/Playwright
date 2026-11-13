@@ -22,7 +22,16 @@ def run_product_usa(api_setup):
         measure = api.one("anor/mr/product/inventory+add:measures", ["measure_id", "short_name"], filters=["short_name", "=", "шт"])
         s.save_id("measure_id", measure["measure_id"])
     with allure.step("2 - Create the product in the setup TMC set"):
-        result = s.send(api, "product_usa")
+        payload = s.payload("product_usa")
+        existing = api.table("anor/mr/product/inventory_list:table", ["product_id", "name", "code"],
+                             filters=["code", "=", payload["code"]])
+        if len(existing) > 1:
+            raise APIError("Setup product code is not unique")
+        if existing:
+            require_fields(existing[0], name=payload["name"], code=payload["code"])
+            result = existing[0]
+        else:
+            result = s.send(api, "product_usa")
         s.save_id("product_id_usa", result["product_id"])
     with allure.step("3 - Set the product price to 1"):
         api.call("anor/mr/product/product_set_price$save", {"product_id": s["product_id_usa"], "prices": [{"price_type_id": s["price_type_id_usa"], "card_id": "-1", "price": "1"}]})

@@ -52,7 +52,7 @@ def run_attach_license(page, code, logger):
         base.grid(state="empty")
 
     with allure.step("4 - Mavjud foydalanuvchilar sahifasini ochish"):
-        base.click(name="Доступные")
+        base.tab("Доступные")
         base.expect_page(heading=re.compile(r"^\s*(?:Доступные пользователи|Пользователи прикрепленные к лицензии)\s*$"))  # navigation: same-url - Available tab updates users inside the open license-user page.
         base.wait_for_loader()
 

@@ -1,5 +1,6 @@
 """Smoke va regression uchun umumiy pytest fixture va lifecycle hooklari."""
 
+import hashlib
 import os
 import random
 import time
@@ -13,7 +14,7 @@ from scripts.report_lifecycle import generate_report, generate_test_summary, sho
 from tests.shared import config as run_config, reporting
 from tests.shared.authorization import authorization
 from tests.shared.browser import browser_context, browser_page
-from utils.data_store import data_file, load_data_file
+from utils.data_store import data_file, load_data_file, write_data_file
 from utils.logger import get_logger, write_failure_log
 from utils.report_context import begin_test, end_test
 
@@ -226,7 +227,7 @@ def page(session_browser, request):
 
 @pytest.fixture(scope="session")
 def code(request):
-    """Setup NEW_CODE'ni qo'llaydi; setupsiz run saqlangan code'ni oladi.
+    """Yangi UI setupni ajratadi; resume faqat mos muhit baseline'ini oladi.
 
     Final tanlov tekshiriladi: -k/-m/node ID orqali setup chiqarib tashlansa
     yangi code yaratilmaydi. Setup + group run bitta session code'ni bo'lishadi.
@@ -240,17 +241,45 @@ def code(request):
         )
         for item in request.session.items
     )
+    server = os.environ["COMPANY_URL"].rstrip("/")
+    company = os.environ["COMPANY_CODE"]
     if setup_selected and run_config.env_flag("NEW_CODE"):
-        return str(random.randint(100000, 999999))
+        new_code = str(random.SystemRandom().randint(100000, 999999))
+        store_path = data_file()
+        if store_path.exists():
+            previous = store_path.read_bytes()
+            backups = store_path.parent / "baseline-backups"
+            backups.mkdir(parents=True, exist_ok=True)
+            (backups / f"{hashlib.sha256(previous).hexdigest()}.json").write_bytes(previous)
+        write_data_file({
+            "code": new_code,
+            "url": server,
+            "company_code": f"autotest{new_code}" if company == "1" else company,
+            "suite": "ui_setup",
+        })
+        return new_code
 
-    saved = load_data_file().get("code")
-    if saved:
-        return saved
+    baseline = load_data_file()
+    missing = [key for key in ("code", "url", "company_code") if not baseline.get(key)]
+    if missing:
+        pytest.exit(
+            "UI baseline to'liq emas; majburiy metadata yo'q: " + ", ".join(missing) + ". "
+            "Eski IDlar ishlatilmaydi. NEW_CODE=1 bilan to'liq UI setupni bajaring "
+            "yoki tasdiqlangan API baseline'ni tanlang.",
+            returncode=pytest.ExitCode.USAGE_ERROR,
+        )
 
-    pytest.exit(
-        "test-results/data/data_store.json ichida saqlangan 'code' topilmadi. "
-        "Avval setupni bajaring yoki API setup baseline'ni umumiy data_store.json ga ko'chiring."
-    )
+    saved = str(baseline["code"])
+    expected_company = f"autotest{saved}" if company == "1" else company
+    if (str(baseline["url"]).rstrip("/") != server
+            or str(baseline["company_code"]) != expected_company):
+        pytest.exit(
+            "Saqlangan baseline boshqa server yoki kompaniyaga tegishli. "
+            "Eski IDlar ishlatilmaydi. NEW_CODE=1 bilan to'liq UI setupni bajaring "
+            "yoki joriy muhitning tasdiqlangan API baseline'ini tanlang.",
+            returncode=pytest.ExitCode.USAGE_ERROR,
+        )
+    return saved
 
 
 @pytest.fixture

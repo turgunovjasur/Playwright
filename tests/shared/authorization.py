@@ -47,8 +47,11 @@ def login(page, email=None, password=None, *, profile=None):
     page.goto(f"{company_url}/a2/auth/login")
 
     base = BasePage(page)
-    base.input(placeholder="Логин@компания", value=email)
-    base.input(placeholder="Пароль", value=password)
+    # Current login uses accessible labels; older deployments use placeholders.
+    base.input(locator=page.get_by_label("Логин", exact=True).or_(
+        page.get_by_placeholder("Логин@компания", exact=True)), value=email)
+    base.input(locator=page.get_by_label("Пароль", exact=True).or_(
+        page.get_by_placeholder("Пароль", exact=True)), value=password)
     base.click(name="Войти")
 
 # ----------------------------------------------------------------------------------------------------------------------

@@ -200,6 +200,7 @@
     "endpoint": "anor/mr/product/inventory+add$save",
     "payload": {
       "name": "product-pw{code}",
+      "is_new_inventory": "N",
       "measure_id": "{measure_id}",
       "state": "A",
       "code": "c_p_pw{code}",
@@ -225,6 +226,7 @@
     "endpoint": "anor/mr/product/inventory+add$save",
     "payload": {
       "name": "product-usa-pw{code}",
+      "is_new_inventory": "N",
       "measure_id": "{measure_id}",
       "state": "A",
       "code": "c_p_usa_pw{code}",

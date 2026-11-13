@@ -9,7 +9,7 @@ pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("User"
 
 def _attach_available_permissions(base, *, expand):
     """Joriy tabdagi barcha available permissionlarni biriktiradi va natijani tekshiradi."""
-    base.click(name="Доступные")
+    base.tab("Доступные")
     base.wait_for_loader()
     base.grid_controller(expand=expand)
     base.grid(checkbox="all")

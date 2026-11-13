@@ -83,8 +83,8 @@ class SetupState:
             return value
         return render(CONTRACTS[name]["payload"])
 
-    def send(self, api, name, **overrides):
-        return api.call(CONTRACTS[name]["endpoint"], {**self.payload(name), **overrides})
+    def send(self, api, contract_name, **overrides):
+        return api.call(CONTRACTS[contract_name]["endpoint"], {**self.payload(contract_name), **overrides})
 
     def close(self):
         for client in self.clients.values():

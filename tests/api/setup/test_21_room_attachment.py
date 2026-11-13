@@ -26,7 +26,10 @@ def run_room_attachment(api_setup):
         with allure.step(f"1 - Read and attach {kind} to the setup room"):
             data = {"room_id": s["room_id"], "attached": "N"}
             available = api.table(route + ":table_" + kind, [key, "name"], data=data)
-            selected = [row for row in available if row["name"] in names]
+            selected = ([row for row in available if row["name"] in names]
+                        if kind == "natural_person" else available)
+            if selected and kind != "natural_person" and len(selected) != len(names):
+                raise APIError(f"Available {kind} count differs from the UI setup confirmation")
             if selected:
                 ids = [row[key] for row in selected]
                 value = ids[0] if kind == "natural_person" else ids

@@ -59,7 +59,7 @@ def run_role_attach_form(page):
         base.expect_page(heading="Роль (Просмотр)")  # navigation: same-url - Granting permissions updates the already-open role view.
 
     with allure.step("6 - Ruxsatlar berilganini tekshirish"):
-        base.click(name="Доступные")
+        base.tab("Доступные")
         base.wait_for_loader()
         base.grid(state="empty")
 

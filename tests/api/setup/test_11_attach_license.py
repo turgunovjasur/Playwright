@@ -20,20 +20,23 @@ def run_attach_license(api_setup):
         pytest.skip("Licensing policy is disabled for the new company")
     with allure.step("1 - Resolve the active ERP users license"):
         api = s.admin(head_filial=True)
-        licenses = api.table("biruni/kl/license_list:table_license", ["license_id", "license_name", "status"], filters=["status", "=", ["A", "P"]])
+        licenses = api.table("biruni/kl/license_list:table_license", ["license_id", "license_name", "status"], filters=["status", "=", ["A", "P"]], sort=["-created_on"])
         matches = [row for row in licenses if row["license_name"] == "ERP users"]
-        if len(matches) != 1:
-            raise APIError("Expected exactly one ERP users license, as required by UI setup")
+        if not matches:
+            raise APIError("No active ERP users license found")
+        # UI chooses the first ERP users row, newest purchase first.
         license_id = matches[0]["license_id"]
+        purchased = s.values.get("purchased_license_id")
+        if purchased and str(license_id) != str(purchased):
+            raise APIError("Newest ERP users license differs from this run's verified purchase")
     with allure.step("2 - Detach current users, matching the UI setup license step"):
         data = {"license_id": license_id, "attached": "Y", "filter_license_id": None}
         attached = api.table("biruni/kl/license_user_list:table", ["user_id", "name"], data=data)
-        previous_users = [row["user_id"] for row in attached if str(row["user_id"]) != str(s["user_id"])]
+        previous_users = [row["user_id"] for row in attached]
         if previous_users:
             api.call("biruni/kl/license_user_list$detach", {"license_id": license_id, "user_id": previous_users})
     with allure.step("3 - Attach and verify the setup user"):
-        if not any(str(row["user_id"]) == str(s["user_id"]) for row in attached):
-            api.call("biruni/kl/license_user_list$attach", {"license_id": license_id, "user_id": s["user_id"]})
+        api.call("biruni/kl/license_user_list$attach", {"license_id": license_id, "user_id": s["user_id"]})
         actual = api.table("biruni/kl/license_user_list:table", ["user_id"], data=data)
         if {str(row["user_id"]) for row in actual} != {str(s["user_id"])}:
             raise APIError("ERP users license was not assigned to the setup user")

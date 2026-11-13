@@ -79,8 +79,12 @@ def run_role(page):
         base.expect_page(heading="Роли", url="role_list", timeout=1_200_000)
 
     with allure.step("6 - Saqlangan barcha ruxsatlarni qayta tekshirish"):
-        base.grid("Админ", click=True)
-        base.click(name="Изменить")
+        base.grid("Админ")
+        # A2 restores the expanded row after Save; clicking it again closes it.
+        edit_action = page.get_by_role("button", name="Изменить", exact=True).filter(visible=True)
+        if edit_action.count() == 0:
+            base.grid("Админ", click=True)
+        base.click(name="Изменить", exact=True)
         base.expect_page(heading="Роль (изменение)", url=re.compile(r"/role(?:\+|%2[bB])edit(?:[?#]|$)"))
         for permission in ROLE_PERMISSIONS:
             base.checkbox(label=permission, expect_checked=True)

@@ -46,15 +46,16 @@ Yakka qadam uchun `.env`da `NEW_CODE=0` qilib, oldingi API baseline'dan foydalan
 ./.venv/bin/python -m pytest -c tests/api/pytest.ini tests/api/setup/test_24_balance.py
 ```
 
-Qayta bajarilgan create qadamlari avtomatik deduplication yoki cleanup qilmaydi;
-yangi to'liq setup uchun yangi code ishlating.
+Yangi to‘liq setup uchun yangi code ishlating. Mahsulot qadamlari mavjud exact code’ni qidirib, nomini tekshirgach qayta ishlatadi; bu barcha create qadamlari uchun umumiy deduplication degani emas. Avtomatik server cleanup yo‘q.
+
+`NEW_CODE=1` eski API baseline’ni hash nomi bilan `baseline-backups/`ga saqlab, yangi IDlar to‘plamini boshlaydi. `NEW_CODE=0` faqat mos server/company baseline’ni qabul qiladi.
 
 ## Aksiyalar setupdan ajratilgan — 04.11.2026
 
 API setup `00–24` bazaviy qadamlar bilan tugaydi: jami 25 wrapper,
 mavjud kompaniyada `00 Company` tanlanmagani uchun 24 qadam.
 `25–29` aksiya yaratuvchi testlar API setupdan chiqarildi.
-Smoke/UI setup o‘zgartirilmagan; uning zanjiri bilan API zanjirining uzunligi endi bir xil emas.
+Smoke/UI runner ham 00–24 bazaviy qadamlardan iborat. UI’dagi 25–29 aksiya testlari alohida fayllarda saqlangan, ammo setup runner ularni chaqirmaydi.
 
 | Oldingi qadam | Endi qayerga tegishli? |
 |---|---|
@@ -70,7 +71,7 @@ Eski muvaffaqiyatli setup tasdig‘i aynan eski beshta qo‘shimcha qadam bilan
 mos kelsa, baseline/JUnit hashlari o‘zgarmagan holda qabul qilinadi. Natija
 fayllari qayta yozilmaydi. Boshqa noma’lum yoki qisman qadamlar to‘plami qabul qilinmaydi.
 
-Bu refaktordan keyin live run hali bajarilmagan. Quyidagi eski live natijalar
+Quyidagi eski live natijalar
 o‘sha paytdagi, aksiyalar ham setupda bo‘lgan versiyaga tegishli.
 
 ## API setupdan keyin Order regression
@@ -138,10 +139,7 @@ Joriy capture mavjud company uchun olingan. `00 Company` mavjud company rejimida
 UI suite kabi deselect qilinadi. `COMPANY_CODE=1` uchun company create/security
 requestlari hali capture qilinmagan: bu rejim aniq xato bilan to'xtaydi.
 
-`10 Buy License` `smartup.online`da UI setup kabi skip qilinadi. Boshqa serverdagi
-litsenziya xaridi uchun ham capture kerak; bu amal taxminiy endpoint bilan
-bajarilmaydi. `11 Attach License` UI setupdagi kabi tanlangan `ERP users`
-litsenziyasidan oldingi userlarni ajratib, yangi setup userni ulaydi.
+`10 Buy License` `smartup.online`da UI setup kabi skip qilinadi. Xtrade’da UI networkdan olingan xarid oqimi bajariladi: payer va shartnoma IDlari joriy serverdan topiladi, yangi `ERP users` litsenziyasi qayta o‘qib tekshiriladi. `11 Attach License` aynan shu xarid litsenziyasini tanlaydi; UI setupdagi kabi oldingi ulangan userlarni ajratib, yangi setup userni ulaydi.
 
 ## Requestlar manbasi
 

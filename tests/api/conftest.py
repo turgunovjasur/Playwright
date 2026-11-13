@@ -1,5 +1,6 @@
 """API-only fixtures: no page, browser, storage-state or UI runner dependency."""
 
+import hashlib
 import json
 import os
 import random
@@ -147,6 +148,11 @@ def api_setup(pytestconfig):
     url = os.environ["COMPANY_URL"].rstrip("/")
     company = os.environ["COMPANY_CODE"]
     if run_config.env_flag("NEW_CODE"):
+        if path.exists():
+            previous = path.read_bytes()
+            backups = path.parent / "baseline-backups"
+            backups.mkdir(parents=True, exist_ok=True)
+            (backups / f"{hashlib.sha256(previous).hexdigest()}.json").write_bytes(previous)
         values = {"code": str(random.SystemRandom().randint(100000, 999999)),
                   "url": url, "company_code": company, "suite": "api_setup"}
     else:
