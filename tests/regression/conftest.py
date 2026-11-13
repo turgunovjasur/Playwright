@@ -10,7 +10,7 @@ from uuid import uuid4
 import pytest
 
 from utils.data_store import load_data_file
-from tests.regression.runtime import (
+from tests.regression.helpers.runtime import (
     begin_case, case_directory, finalize_run, order_page_context, record_phase, run_directory,
 )
 from tests.shared.reporting import reporting_warning
@@ -30,8 +30,8 @@ def order_case(page, code, tmp_path):
     import allure
 
     from tests.shared.authorization import authorization
-    from tests.regression.test_orders.order_data import OrderCase
-    from tests.regression.test_orders.order_environment import (
+    from tests.regression.legacy.orders.helpers.order_data import OrderCase
+    from tests.regression.legacy.orders.helpers.order_environment import (
         cleanup_order_environment,
         prepare_order_environment,
     )
@@ -83,12 +83,12 @@ def pytest_collection_modifyitems(items):
     """Faqat regression itemlarini belgilaydi; umumiy reporting parent hookda."""
     regression_items = [item for item in items if Path(str(item.path)).is_relative_to(REGRESSION_DIR)]
     regression_paths = {Path(str(item.path)) for item in regression_items}
-    if REGRESSION_DIR / "test_0_regression_runner.py" in regression_paths and len(regression_paths) > 1:
-        raise pytest.UsageError("Asosiy regression runnerni uning setup/products/orders runnerlari yoki leaflari bilan birga tanlamang. Faqat test_0_regression_runner.py yoki alohida runnerni ishlating.")
-    product_paths = {Path(str(item.path)) for item in regression_items if Path(str(item.path)).parent.name == "test_products"}
+    if REGRESSION_DIR / "legacy/runners/test_0_regression_runner.py" in regression_paths and len(regression_paths) > 1:
+        raise pytest.UsageError("Legacy asosiy runnerni uning setup/products/orders runnerlari yoki leaflari bilan birga tanlamang. Faqat legacy/runners/test_0_regression_runner.py yoki alohida runnerni ishlating.")
+    product_paths = {path for path in regression_paths if path.is_relative_to(REGRESSION_DIR / "legacy/products")}
     if any(path.name == "test_0_products_runner.py" for path in product_paths) and len(product_paths) > 1:
         raise pytest.UsageError("ТМЦ runner va standalone leaflarni birga tanlamang: caselar ikki marta bajariladi. regression-products targeti yoki bitta leaf faylini ishlating.")
-    order_paths = {Path(str(item.path)) for item in regression_items if Path(str(item.path)).parent.name == "test_orders"}
+    order_paths = {path for path in regression_paths if path.is_relative_to(REGRESSION_DIR / "legacy/orders")}
     if any(path.name == "test_0_orders_runner.py" for path in order_paths) and len(order_paths) > 1:
         raise pytest.UsageError("Order runner va standalone leaflarni birga tanlamang: caselar ikki marta bajariladi. regression-orders targeti yoki bitta leaf faylini ishlating.")
     legacy_items = [item for item in regression_items if item.get_closest_marker("order_positive") is None]
@@ -179,9 +179,9 @@ def pytest_sessionfinish(session, exitstatus):
         results = getattr(session.config.option, "allure_report_dir", None)
         if results:
             try:
-                from tests.regression.test_orders.reporting import prepare_presentation
+                from tests.regression.test_orders.helpers.reporting import prepare_presentation
                 from tests.regression.run import generate_run_report, run_pytest
-                from tests.regression.retry.suite import retry_after_suite, combined_results, summarize
+                from tests.regression.helpers.retry.suite import retry_after_suite, combined_results, summarize
                 # Snapshot only this session before merging the retry attempt.
                 prepare_presentation(results, directory / "allure-results",
                                      started_at_ms=session.config._smartup_started_at * 1000)

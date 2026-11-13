@@ -17,10 +17,10 @@ sys.path.insert(0,str(ROOT))
 from dotenv import load_dotenv
 from scripts.report_lifecycle import generate_test_summary, _open_report
 from scripts.allure_report_cli import AllureCliNotInstalled, generate_report as generate_allure_report
-from tests.regression.runtime import finalize_run, new_run_id, prepare_run
+from tests.regression.helpers.runtime import finalize_run, new_run_id, prepare_run
 
-from tests.regression.test_orders.ordering import GROUP_RUNNERS, GROUP_NAMES
-from tests.regression.test_orders.reporting import prepare_presentation
+from tests.regression.test_orders.helpers.ordering import GROUP_RUNNERS, GROUP_NAMES
+from tests.regression.test_orders.helpers.reporting import prepare_presentation
 
 def run_pytest(command, environment):
     """SIGINT/SIGTERMni childga uzatib, yakuniy natijani yozish uchun kutish."""
@@ -122,7 +122,7 @@ def main():
         (directory / "run.json").write_text(
             json.dumps(run, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
         )
-    from tests.regression.retry.suite import combined_results, summarize
+    from tests.regression.helpers.retry.suite import combined_results, summarize
     prepare_run_report(directory)
     results = directory / "allure-results" if args.order_id else combined_results(directory, None)
     if not args.resume_run:

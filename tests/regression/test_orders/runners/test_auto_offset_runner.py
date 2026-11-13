@@ -2,14 +2,14 @@
 import allure
 import pytest
 
-from tests.regression.test_orders.reporting import GROUP_FEATURES, order_report_case
+from tests.regression.test_orders.helpers.reporting import GROUP_FEATURES, order_report_case
 
-from tests.regression.test_orders.payments.test_cashin_auto_offset import (
+from tests.regression.test_orders.business_cases.payments.test_cashin_auto_offset import (
     run_archive_order,
     run_post_auto_offset,
 )
-from tests.regression.test_orders.preparations.clients import prepare_order_client
-from tests.regression.test_orders.preparations.test_catalog_stock import (
+from tests.regression.test_orders.helpers.preparations.clients import prepare_order_client
+from tests.regression.test_orders.setup_cases.test_catalog_stock import (
     run_prepare_catalog, run_prepare_prices, run_prepare_stock,
 )
 

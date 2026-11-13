@@ -2,18 +2,18 @@
 import allure
 import pytest
 
-from tests.regression.test_orders.reporting import GROUP_FEATURES, order_report_case
-from tests.regression.test_orders.preparations.test_quantity_discount import run_prepare_quantity_discount
+from tests.regression.test_orders.helpers.reporting import GROUP_FEATURES, order_report_case
+from tests.regression.test_orders.setup_cases.test_quantity_discount import run_prepare_quantity_discount
 
-from tests.regression.test_orders.preparations.test_bonus import run_business_setup
-from tests.regression.test_orders.promotions.test_01_quantity_discount import run_quantity_discount
-from tests.regression.test_orders.promotions.test_02_other_product_bonus import run_other_product_bonus
-from tests.regression.test_orders.promotions.test_03_bonus_and_discount import run_bonus_and_discount
+from tests.regression.test_orders.setup_cases.test_bonus import run_business_setup
+from tests.regression.test_orders.business_cases.promotions.test_01_quantity_discount import run_quantity_discount
+from tests.regression.test_orders.business_cases.promotions.test_02_other_product_bonus import run_other_product_bonus
+from tests.regression.test_orders.business_cases.promotions.test_03_bonus_and_discount import run_bonus_and_discount
 
 pytestmark = [pytest.mark.regression, pytest.mark.order_positive, pytest.mark.order_group("promotions"), allure.epic("Regression"), allure.feature(GROUP_FEATURES["promotions"])]
 
 
-from tests.regression.test_orders.preparations.test_catalog_stock import (
+from tests.regression.test_orders.setup_cases.test_catalog_stock import (
     run_prepare_catalog, run_prepare_prices, run_prepare_stock,
 )
 

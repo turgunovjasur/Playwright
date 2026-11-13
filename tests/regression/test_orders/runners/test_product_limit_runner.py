@@ -2,12 +2,12 @@
 import allure
 import pytest
 
-from tests.regression.test_orders.reporting import GROUP_FEATURES, order_report_case
+from tests.regression.test_orders.helpers.reporting import GROUP_FEATURES, order_report_case
 
-from tests.regression.test_orders.preparations.test_product_limit import (
+from tests.regression.test_orders.setup_cases.test_product_limit import (
     run_prepare_product, run_prepare_client, run_prepare_stock, run_prepare_limit,
 )
-from tests.regression.test_orders.stock.test_product_limit import (
+from tests.regression.test_orders.business_cases.stock.test_product_limit import (
     run_create_limit_order, run_cancel_first_limit_order, run_reuse_released_product_limit,
 )
 

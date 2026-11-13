@@ -589,6 +589,12 @@ Group runnerlar — har bir case alohida pytest/Allure test. User grouplarida gr
 
 ## Smoke va regression uchun umumiy infratuzilma
 
+**Joriy 14 guruhli Order suite:** `tests/regression/run.py`.
+Runner, setup, biznes testi va helperlarni topish uchun
+[Regression yo‘lko‘rsatkichini](tests/regression/README.md) oching.
+Quyidagi `regression`, `regression-products`, `regression-orders` CLI targetlari
+alohida eski suite uchun saqlangan; ularning kodi `tests/regression/legacy/`da.
+
 `tests/conftest.py` umumiy browser, context, page, loginli group page, `code`
 va logger fixture'larini, CLI sozlamalarini hamda report lifecycle hooklarini
 beradi. Fixture'larni import qilish kerak emas — pytest ularni test argumenti
@@ -602,7 +608,7 @@ yangi umumiy consumerlar `tests.shared`dan foydalanadi.
 
 Smoke va regression setup ma'lumotlari uchun bitta `test-results/data/data_store.json`
 hamda mavjud natija papkalaridan foydalanadi. TMZ natijalari test yonidagi
-`tests/regression/test_products/data_store.json`ga yoziladi. Runlar ketma-ket bajariladi. Yangi setup yozgan
+`tests/regression/legacy/products/cases/data_store.json`ga yoziladi. Runlar ketma-ket bajariladi. Yangi setup yozgan
 kalitlar yangilanadi, qolgan eski kalitlar avtomatik yangi baseline hisoblanmaydi.
 Yangi regression ishlarining holati [regression-plan.md](regression-plan.md)da.
 
@@ -619,13 +625,13 @@ mavjud smoke'dagi server/config shartlarini saqlaydi. Mahsulotlar, narxlash
 caselari, kirim va order regressioni hali bu target tarkibiga kirmaydi.
 `all` targetining mavjud smoke tarkibi o'zgarmagan.
 
-Asosiy regression runner — `tests/regression/test_0_regression_runner.py`.
+Eski suite’ning asosiy runneri — `tests/regression/legacy/runners/test_0_regression_runner.py`.
 Oddiy pytest fayli: `Test01Setup`dan keyin `Test02Products` bajariladi.
 U alohida runnerlardagi test funksiyalari, parametrlar va markerlarni qayta
 ishlatadi. Har case alohida pytest/Allure natijasi bo'lib qoladi.
 
 ```bash
-python -m pytest tests/regression/test_0_regression_runner.py
+python -m pytest tests/regression/legacy/runners/test_0_regression_runner.py
 # Shu asosiy runner tarkibi umumiy CLI orqali ham ishlaydi:
 python scripts/run_tests.py regression
 ```
@@ -634,8 +640,8 @@ Ikkalasi bir xil run uchun alternativ buyruqlar; ketma-ket ikkalasini bajarish
 shart emas. PyCharm'da `test_0_regression_runner.py`ni repo `.venv`
 interpreterida pytest bilan Run qilish mumkin. Alohida qismlar saqlanadi:
 
-- Setup: `tests/regression/test_setup/test_0_setup_runner.py`.
-- Mahsulotlar: `tests/regression/test_products/test_0_products_runner.py`.
+- Setup: `tests/regression/legacy/setup/runners/test_0_setup_runner.py`.
+- Mahsulotlar: `tests/regression/legacy/products/runners/test_0_products_runner.py`.
 
 ТМЦ uchun alohida targetlar:
 
@@ -681,7 +687,7 @@ yoki mapping farq qilsa importdan oldin xato chiqadi. Fayl
 `test-results/downloads/regression-tmz-{code}/TMZ-2-3-4-5-6.xlsx`da va Allure'da qoladi.
 
 Natijalar `regression_tmz_1` … `regression_tmz_6` kalitlarida test yonidagi
-`tests/regression/test_products/data_store.json`ga yoziladi. Har record
+`tests/regression/legacy/products/cases/data_store.json`ga yoziladi. Har record
 code/server/company bilan bog'langan. Karta va narxlar
 tekshirilgandan so'ng `card_verified=True`, `price_verified=True`,
 `stock_verified=False`: kirim/qoldiq va order hali yozilmagan.

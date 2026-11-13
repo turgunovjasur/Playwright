@@ -2,14 +2,14 @@
 import allure
 import pytest
 
-from tests.regression.test_orders.reporting import GROUP_FEATURES, order_report_case
-from tests.regression.test_orders.preparations.test_mandatory import run_prepare_prices as run_prepare_mandatory_prices, run_prepare_action
-from tests.regression.test_orders.promotions.test_mandatory_conditions import run_pair, run_payment_change, run_threshold, run_price_change
+from tests.regression.test_orders.helpers.reporting import GROUP_FEATURES, order_report_case
+from tests.regression.test_orders.setup_cases.test_mandatory import run_prepare_prices as run_prepare_mandatory_prices, run_prepare_action
+from tests.regression.test_orders.business_cases.promotions.test_mandatory_conditions import run_pair, run_payment_change, run_threshold, run_price_change
 
 pytestmark = [pytest.mark.regression, pytest.mark.order_positive, pytest.mark.order_group('mandatory'), allure.epic('Regression'), allure.feature(GROUP_FEATURES["mandatory"])]
 
 
-from tests.regression.test_orders.preparations.test_catalog_stock import (
+from tests.regression.test_orders.setup_cases.test_catalog_stock import (
     run_prepare_catalog, run_prepare_prices, run_prepare_stock,
 )
 

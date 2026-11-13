@@ -2,14 +2,14 @@
 import allure
 import pytest
 
-from tests.regression.test_orders.reporting import GROUP_FEATURES, order_report_case
-from tests.regression.test_orders.preparations.test_workflows import run_discount_client,run_workflow_promotions
-from tests.regression.test_orders.preparations.test_margin import run_prepare_margin
-from tests.regression.test_orders.discounts.test_preset_discount import run_preset_discount
-from tests.regression.test_orders.discounts.test_manual_discount import run_line_amount,run_order_amount,run_amounts_with_bonus
+from tests.regression.test_orders.helpers.reporting import GROUP_FEATURES, order_report_case
+from tests.regression.test_orders.setup_cases.test_workflows import run_discount_client,run_workflow_promotions
+from tests.regression.test_orders.setup_cases.test_margin import run_prepare_margin
+from tests.regression.test_orders.business_cases.discounts.test_preset_discount import run_preset_discount
+from tests.regression.test_orders.business_cases.discounts.test_manual_discount import run_line_amount,run_order_amount,run_amounts_with_bonus
 pytestmark=[pytest.mark.regression,pytest.mark.order_positive,pytest.mark.order_group("manual_discounts"),allure.epic("Regression"),allure.feature(GROUP_FEATURES["manual_discounts"])]
 
-from tests.regression.test_orders.preparations.test_catalog_stock import (
+from tests.regression.test_orders.setup_cases.test_catalog_stock import (
     run_prepare_catalog, run_prepare_prices, run_prepare_stock,
 )
 

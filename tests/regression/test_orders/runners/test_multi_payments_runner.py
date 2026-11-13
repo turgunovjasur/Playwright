@@ -2,12 +2,12 @@
 import allure
 import pytest
 
-from tests.regression.test_orders.reporting import GROUP_FEATURES, order_report_case
-from tests.regression.test_orders.preparations.test_workflows import run_multi_payment_client
-from tests.regression.test_orders.payments.test_multiple_orders import run_first_order, run_second_order, run_shared_cashin, run_partial_first, run_finish_first, run_finish_second
+from tests.regression.test_orders.helpers.reporting import GROUP_FEATURES, order_report_case
+from tests.regression.test_orders.setup_cases.test_workflows import run_multi_payment_client
+from tests.regression.test_orders.business_cases.payments.test_multiple_orders import run_first_order, run_second_order, run_shared_cashin, run_partial_first, run_finish_first, run_finish_second
 pytestmark=[pytest.mark.regression,pytest.mark.order_positive,pytest.mark.order_group("multi_payments"),allure.epic("Regression"),allure.feature(GROUP_FEATURES["multi_payments"])]
 
-from tests.regression.test_orders.preparations.test_catalog_stock import (
+from tests.regression.test_orders.setup_cases.test_catalog_stock import (
     run_prepare_catalog, run_prepare_prices, run_prepare_stock,
 )
 

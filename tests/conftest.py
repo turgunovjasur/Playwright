@@ -235,7 +235,7 @@ def code(request):
     Final tanlov tekshiriladi: -k/-m/node ID orqali setup chiqarib tashlansa
     yangi code yaratilmaydi. Setup + group run bitta session code'ni bo'lishadi.
     """
-    setup_dirs = (ROOT_DIR / "tests/smoke/test_setup", ROOT_DIR / "tests/regression/test_setup")
+    setup_dirs = (ROOT_DIR / "tests/smoke/test_setup", ROOT_DIR / "tests/regression/legacy/setup")
     setup_selected = any(
         "code" in item.fixturenames and (
             item.get_closest_marker("user_setup") is not None

@@ -2,18 +2,18 @@
 import allure
 import pytest
 
-from tests.regression.test_orders.reporting import GROUP_FEATURES, order_report_case
+from tests.regression.test_orders.helpers.reporting import GROUP_FEATURES, order_report_case
 
-from tests.regression.test_orders.preparations.test_mixed_promotions import (
+from tests.regression.test_orders.setup_cases.test_mixed_promotions import (
     run_prepare_price, run_prepare_mandatory_bonus, run_prepare_optional_discount,
 )
-from tests.regression.test_orders.promotions.test_mixed_promotions import run_toggle_discount, run_quantity_boundary
+from tests.regression.test_orders.business_cases.promotions.test_mixed_promotions import run_toggle_discount, run_quantity_boundary
 
 pytestmark = [pytest.mark.regression, pytest.mark.order_positive, pytest.mark.order_group("mixed_promotions"),
               allure.epic("Regression"), allure.feature(GROUP_FEATURES["mixed_promotions"])]
 
 
-from tests.regression.test_orders.preparations.test_catalog_stock import (
+from tests.regression.test_orders.setup_cases.test_catalog_stock import (
     run_prepare_catalog, run_prepare_prices, run_prepare_stock,
 )
 

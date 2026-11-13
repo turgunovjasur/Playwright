@@ -8,14 +8,14 @@ import allure
 import pytest
 from tests.api.client import positive_id, require_fields
 from tests.api.state import CONTRACTS
-from tests.regression.preparation.models import PreparationSpec, PreparationResult
-from tests.regression.preparation.registry import Registry
-from tests.regression.preparation.ensure import ensure_preparation
-from tests.regression.retry.state import ACTIVE, digest, RetryBlocked
-from tests.regression.retry.reconcile import exact_row, confirm_entity, is_retry
-from tests.regression.test_orders.auth_recovery import RegressionSetupState
-from tests.regression.test_orders.preparations.test_catalog_stock import run_prepare_catalog, run_prepare_prices, run_prepare_stock
-from tests.regression.test_orders.flows.order import open_new_order, select_order_product, save_order_by_reference
+from tests.regression.helpers.preparation.models import PreparationSpec, PreparationResult
+from tests.regression.helpers.preparation.registry import Registry
+from tests.regression.helpers.preparation.ensure import ensure_preparation
+from tests.regression.helpers.retry.state import ACTIVE, digest, RetryBlocked
+from tests.regression.helpers.retry.reconcile import exact_row, confirm_entity, is_retry
+from tests.regression.test_orders.helpers.auth_recovery import RegressionSetupState
+from tests.regression.test_orders.setup_cases.test_catalog_stock import run_prepare_catalog, run_prepare_prices, run_prepare_stock
+from tests.regression.test_orders.helpers.flows.order import open_new_order, select_order_product, save_order_by_reference
 from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [pytest.mark.regression, pytest.mark.order_positive, pytest.mark.order_group("recovery"),
@@ -159,7 +159,7 @@ def test_08_order_saved(ordinary_order):
         base.form_view(label="Сумма заказа", expect_value="14000", remove_spaces=True)
         confirm_entity("order", case.reference, identity, verified=True)
         case.remember_order(identity)
-    from tests.regression.retry.reconcile import ui_row
+    from tests.regression.helpers.retry.reconcile import ui_row
     row = ui_row(page, "trade/tdeal/order/order_list:table", ["deal_id", "delivery_number"], "delivery_number", case.reference)
     case.check("Exact TTN bo‘yicha yagona saved order", str(identity), str(row["deal_id"]))
 
@@ -167,14 +167,14 @@ def test_08_order_saved(ordinary_order):
 @allure.title("Recovery tayyorlovi: to‘lov uchun alohida klient")
 @pytest.mark.order_requires('test_001_prices')
 def test_09_prepare_payment_client(business_baseline, payment_clients, regression_case_dir):
-    from tests.regression.test_orders.preparations.test_payment_clients import run_ordinary_payment_client
+    from tests.regression.test_orders.setup_cases.test_payment_clients import run_ordinary_payment_client
     run_ordinary_payment_client(business_baseline, payment_clients, regression_case_dir)
 
 
 @allure.title("Recovery tayyorlovi: ikkinchi installment testi uchun alohida klient")
 @pytest.mark.order_requires('test_001_prices')
 def test_09b_prepare_second_client(business_baseline, payment_clients, regression_case_dir):
-    from tests.regression.test_orders.preparations.test_payment_clients import run_promoted_payment_client
+    from tests.regression.test_orders.setup_cases.test_payment_clients import run_promoted_payment_client
     run_promoted_payment_client(business_baseline, payment_clients, regression_case_dir)
 
 
@@ -189,7 +189,7 @@ def second_recovery_payment(order_user_page, business_baseline, payment_clients,
 @allure.title("Cashin saqlangach uzilish → bitta kirimdan qisman va to‘liq qarz yopish")
 @pytest.mark.order_requires('test_002_stock', 'test_09_prepare_payment_client')
 def test_10_cashin_saved(ordinary_payment_order, workflow_data, monkeypatch):
-    from tests.regression.test_orders.payments import test_partial_full_payment as flow
+    from tests.regression.test_orders.business_cases.payments import test_partial_full_payment as flow
     original = flow.verify_step
     def interrupt_after_cashin(name):
         original(name)
@@ -198,7 +198,7 @@ def test_10_cashin_saved(ordinary_payment_order, workflow_data, monkeypatch):
     with monkeypatch.context() as context:
         context.setattr(flow, "verify_step", interrupt_after_cashin)
         flow.run_partial_full_payment(ordinary_payment_order)
-    from tests.regression.retry.reconcile import ui_row
+    from tests.regression.helpers.retry.reconcile import ui_row
     payment = ordinary_payment_order.payments[-1]
     row = ui_row(ordinary_payment_order.page, "trade/tcs/cashin_list:table",
                  ["cashin_id", "cashin_number"], "cashin_number", payment["number"])
@@ -211,7 +211,7 @@ def test_10_cashin_saved(ordinary_payment_order, workflow_data, monkeypatch):
 def test_11_unknown_offset(ordinary_payment_order, workflow_data):
     """Control-only uncertain journal state; real debt is read, no fake server reply."""
     from decimal import Decimal
-    from tests.regression.test_orders.flows.settlement import allocate_to_order
+    from tests.regression.test_orders.helpers.flows.settlement import allocate_to_order
     journal = ACTIVE.get()
     order_id = workflow_data["payment_order"]
     operation = "offset:" + digest({"order_id": str(order_id), "amount": "1", "before": "0"})
@@ -226,7 +226,7 @@ def test_11_unknown_offset(ordinary_payment_order, workflow_data):
 @pytest.mark.order_requires('test_001_prices')
 def test_12_partial_attachment(business_baseline, regression_case_dir, monkeypatch):
     from tests.api.client import SmartupAPI
-    from tests.regression.test_orders.preparations.payment_clients import prepare_payment_client
+    from tests.regression.test_orders.helpers.preparations.payment_clients import prepare_payment_client
     original = SmartupAPI.call
     def interrupt_before_attachment(api, endpoint, *args, **kwargs):
         if endpoint == "anor/mrf/room_attachment$attach_natural_person" and not is_retry():
@@ -246,7 +246,7 @@ def test_12_partial_attachment(business_baseline, regression_case_dir, monkeypat
 @pytest.mark.order_requires()
 def test_13_ambiguous_lookup():
     """Protocol guard control; these synthetic replies are never business PASS evidence."""
-    from tests.regression.retry.reconcile import one_row
+    from tests.regression.helpers.retry.reconcile import one_row
     for reply in ({"count": 2, "data": [["1", "same"], ["2", "same"]]}, {"data": []}, {"count": 1, "data": []}):
         with pytest.raises(RetryBlocked):
             one_row(reply, ["id", "name"], "name", "same")
@@ -255,7 +255,7 @@ def test_13_ambiguous_lookup():
 @allure.title("Birinchi offsetdan keyin uzilish → faqat qolgan installment davom etadi")
 @pytest.mark.order_requires('test_002_stock', 'test_09b_prepare_second_client')
 def test_14_between_installments(second_recovery_payment, monkeypatch):
-    from tests.regression.test_orders.payments import test_partial_full_payment as flow
+    from tests.regression.test_orders.business_cases.payments import test_partial_full_payment as flow
     original = flow.verify_step
     def interrupt_after_first_offset(name):
         original(name)

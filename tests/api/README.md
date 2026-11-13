@@ -58,7 +58,7 @@ Smoke/UI setup o‘zgartirilmagan; uning zanjiri bilan API zanjirining uzunligi 
 
 | Oldingi qadam | Endi qayerga tegishli? |
 |---|---|
-| 25 — miqdor bo‘yicha 10% chegirma | `tests/regression/test_orders/preparations/test_quantity_discount.py`; promotions, payments va returns runnerlarida alohida tayyorlov |
+| 25 — miqdor bo‘yicha 10% chegirma | `tests/regression/test_orders/setup_cases/test_quantity_discount.py`; promotions, payments va returns runnerlarida alohida tayyorlov |
 | 26 — miqdor bo‘yicha bonus | Shu eski aksiyaning IDsi ishlatilmagan. Order guruhlarining mavjud `preparations/bonus.py` tayyorlovi A10→B1 aksiyasini o‘zi yaratadi |
 | 27 — summa shartli chegirma | Hozir consumer biznes testi yo‘q. Kelajakdagi summa shartli aksiya flowiga tegishli; avtomatik yaratilmaydi |
 | 28 — summa shartli bonus | Hozir consumer biznes testi yo‘q. Kelajakdagi summa shartli bonus flowiga tegishli; avtomatik yaratilmaydi |

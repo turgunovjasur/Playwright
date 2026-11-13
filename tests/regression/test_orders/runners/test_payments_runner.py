@@ -2,21 +2,21 @@
 import allure
 import pytest
 
-from tests.regression.test_orders.reporting import GROUP_FEATURES, order_report_case
-from tests.regression.test_orders.preparations.test_quantity_discount import run_prepare_quantity_discount
+from tests.regression.test_orders.helpers.reporting import GROUP_FEATURES, order_report_case
+from tests.regression.test_orders.setup_cases.test_quantity_discount import run_prepare_quantity_discount
 
-from tests.regression.test_orders.preparations.test_bonus import run_business_setup
-from tests.regression.test_orders.preparations.test_payment_clients import (
+from tests.regression.test_orders.setup_cases.test_bonus import run_business_setup
+from tests.regression.test_orders.setup_cases.test_payment_clients import (
     run_ordinary_payment_client, run_promoted_payment_client,
 )
-from tests.regression.test_orders.payments.test_partial_full_payment import run_partial_full_payment
-from tests.regression.test_orders.payments.test_promoted_order_payment import run_promoted_order_payment
+from tests.regression.test_orders.business_cases.payments.test_partial_full_payment import run_partial_full_payment
+from tests.regression.test_orders.business_cases.payments.test_promoted_order_payment import run_promoted_order_payment
 
 pytestmark = [pytest.mark.regression, pytest.mark.order_positive, pytest.mark.order_group("payments"),
               allure.epic("Regression"), allure.feature(GROUP_FEATURES["payments"])]
 
 
-from tests.regression.test_orders.preparations.test_catalog_stock import (
+from tests.regression.test_orders.setup_cases.test_catalog_stock import (
     run_prepare_catalog, run_prepare_prices, run_prepare_stock,
 )
 

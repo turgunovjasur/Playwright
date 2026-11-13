@@ -2,15 +2,15 @@
 import allure
 import pytest
 
-from tests.regression.test_orders.reporting import GROUP_FEATURES, order_report_case
-from tests.regression.test_orders.preparations.test_quantity_discount import run_prepare_quantity_discount
-from tests.regression.test_orders.preparations.test_return_price import run_prepare_return_price
-from tests.regression.test_orders.preparations.test_return_stock import run_prepare_return_stock
-from tests.regression.test_orders.preparations.test_workflows import run_returns_client,run_workflow_promotions
-from tests.regression.test_orders.returns.test_promoted_return import run_prepare_reason,run_create_promoted_order,run_ship_order,run_pay_order,run_partial_return,run_remaining_return
+from tests.regression.test_orders.helpers.reporting import GROUP_FEATURES, order_report_case
+from tests.regression.test_orders.setup_cases.test_quantity_discount import run_prepare_quantity_discount
+from tests.regression.test_orders.setup_cases.test_return_price import run_prepare_return_price
+from tests.regression.test_orders.setup_cases.test_return_stock import run_prepare_return_stock
+from tests.regression.test_orders.setup_cases.test_workflows import run_returns_client,run_workflow_promotions
+from tests.regression.test_orders.business_cases.returns.test_promoted_return import run_prepare_reason,run_create_promoted_order,run_ship_order,run_pay_order,run_partial_return,run_remaining_return
 pytestmark=[pytest.mark.regression,pytest.mark.order_positive,pytest.mark.order_group("returns"),allure.epic("Regression"),allure.feature(GROUP_FEATURES["returns"])]
 
-from tests.regression.test_orders.preparations.test_catalog_stock import (
+from tests.regression.test_orders.setup_cases.test_catalog_stock import (
     run_prepare_catalog, run_prepare_prices, run_prepare_stock,
 )
 
