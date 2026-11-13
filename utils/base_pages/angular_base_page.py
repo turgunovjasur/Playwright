@@ -1565,8 +1565,42 @@ class AngularBasePage:
             inactive_field.click(timeout=timeout)
         expect(active_fields.get_by_title(field_name, exact=True)).to_be_visible(timeout=timeout)
 
-        setting_dialog.get_by_role("button", name="Сохранить", exact=True).filter(visible=True).first.click(timeout=timeout)
-        expect(setting_dialog).not_to_be_visible(timeout=timeout)
+        # A settings Save refreshes the list. Its response can arrive after
+        # another settings Save or a search and reset both rows and selection.
+        # Serialize each Save with its own completed table request, rather
+        # than relying on a loader shared by overlapping refreshes.
+        route = urlsplit(self.page.url)
+        table_path = route.path.replace("/a2/", "/b/", 1) + ":table"
+
+        def table_refresh(request):
+            target = urlsplit(request.url)
+            return (request.method == "POST"
+                    and (target.scheme, target.netloc, target.path)
+                    == (route.scheme, route.netloc, table_path))
+
+        def save_settings(dialog):
+            started = set()
+
+            def remember(request):
+                if table_refresh(request):
+                    started.add(request)
+
+            self.page.on("request", remember)
+            try:
+                with self.page.expect_event(
+                    "requestfinished", predicate=lambda request: request in started,
+                    timeout=timeout,
+                ) as refreshed:
+                    dialog.get_by_role("button", name="Сохранить", exact=True).filter(visible=True).first.click(timeout=timeout)
+            finally:
+                self.page.remove_listener("request", remember)
+            response = refreshed.value.response()
+            if response is None or response.status != 200:
+                raise AssertionError("grid_setting(): table refresh failed after Save")
+            expect(dialog).not_to_be_visible(timeout=timeout)
+            self.wait_for_loader(timeout=timeout)
+
+        save_settings(setting_dialog)
 
         if search_name is not None:
             self.grid_controller(open_setting=True)
@@ -1583,8 +1617,7 @@ class AngularBasePage:
             ).first
             expect(search_option).to_be_visible(timeout=timeout)
             self._set_toggle(search_option.get_by_role("checkbox"), True, timeout=timeout)
-            search_dialog.get_by_role("button", name="Сохранить", exact=True).filter(visible=True).first.click(timeout=timeout)
-            expect(search_dialog).not_to_be_visible(timeout=timeout)
+            save_settings(search_dialog)
 
         self.wait_for_loader(timeout=timeout)
 

@@ -42,7 +42,7 @@ class GroupLogin:
         self.metadata = {}
 
     def _session(self, page, baseline):
-        response = page.request.post(baseline['url'].rstrip('/') + '/b/biruni/m:session', data={}, headers={'X-Requested-With': 'XMLHttpRequest', 'lang_code': 'ru'}, timeout=30_000)
+        response = page.request.post(baseline['url'].rstrip('/') + '/b/biruni/m:session', data={}, headers={'X-Requested-With': 'XMLHttpRequest', 'lang_code': 'ru'}, timeout=30_000, max_retries=1)
         try:
             if response.status == 401:
                 return None
