@@ -177,6 +177,11 @@ def run_price_change(case):
         with allure.step(f'Narx turini {price["name"]} ga almashtirish'):
             # Lookup matches the same product in the new price variant.
             base.b_input(label='Название', value=case.product, option_contains=(price['name'], 'Основной склад'), exact=True, clear=True)
+            if kind == 'terminal':
+                # Changing the saved action's price type opens this notice on the goods step.
+                # Acknowledge it before interacting with the underlying form.
+                with allure.step('Narx o‘zgargani uchun «Акция изменена!» xabarini tekshirish va yopish'):
+                    base.close_biruni_alert('H02-ANOR279-009', 'Акция изменена!')
             goods_row = case.page.locator('.smt-data-row').filter(has=case.page.get_by_text(price['name'], exact=True))
             expect(goods_row).to_have_count(1)
             expect(goods_row.locator('[data-smt-col-key=price]')).to_have_text(re.compile(r'^\s*7\s*000\s*$'))
@@ -185,11 +190,6 @@ def run_price_change(case):
             case.checkpoint()
         with allure.step('Bank payment va 70 000 jami saqlangan yakunlash bosqichi'):
             base.click(name='Далее', exact=True)
-            if kind == 'terminal':
-                # Saved Bank action becomes ineligible after changing its price type.
-                # Verified in A2: acknowledge the specific notice, then verify saved bonus0.
-                with allure.step('Narx o‘zgargani uchun «Акция изменена!» xabarini tekshirish va yopish'):
-                    base.close_biruni_alert('H02-ANOR279-009', 'Акция изменена!')
             base.b_input(label='Тип оплаты', expect_value=data['payments']['bank']['name'])
             base.input(label='ИТОГО', expect_value='70000')
         saved_id = save_edited_order(case.page, original_id, case.reference)
