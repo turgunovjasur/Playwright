@@ -28,7 +28,7 @@ def reconcile_results(directory, run_directory):
     """Add final phase evidence and honest NOT_RUN/INTERRUPTED rows before enrichment."""
     from tests.regression.test_orders.helpers.reporting import (
         GROUP_FEATURES, SPECS, _identity, _attempt_number, order_report_title,
-        order_report_section,
+        order_report_section, DEPENDENCY_LABEL,
     )
     directory, run_directory = Path(directory), Path(run_directory)
     run = _read(run_directory / "run.json")
@@ -56,6 +56,7 @@ def reconcile_results(directory, run_directory):
         attempts.sort(key=lambda entry: entry[0])
         latest[node] = final_result([(path, phase) for _, path, phase in attempts])[1].get("status", "unknown")
     manifest = _read(run_directory / "retry-manifest.json")
+    dependencies = {case["nodeid"]: case for case in manifest.get("cases", [])}
     for case in manifest.get("cases", []):
         nodes[_fullname(case["nodeid"])] = case["nodeid"]
         latest.setdefault(case["nodeid"], "not_run")
@@ -102,9 +103,22 @@ def reconcile_results(directory, run_directory):
             synthetic_ids.add(uid)
         for path, value in records:
             synthetic = value["uuid"] in synthetic_ids
+            # Use this run's captured declarations, never infer old dependencies
+            # from today's source. Older manifests retain their original node IDs.
+            labels = value.setdefault("labels", [])
+            original_label_count = len(labels)
+            if not any(label.get("name") == DEPENDENCY_LABEL for label in labels):
+                declaration = dependencies.get(node, {})
+                if "dependency_labels" in declaration:
+                    labels.extend(declaration["dependency_labels"])
+                elif "requires" in declaration:
+                    labels.extend({"name": DEPENDENCY_LABEL, "value": required}
+                                  for required in (declaration["requires"] or ["Boshqa testga bog‘liq emas"]))
             attempt = _attempt_number(value)
             evidence = ledgers.get((name, attempt))
             if evidence is None and not synthetic:
+                if len(labels) != original_label_count:
+                    _write(path, value)
                 continue  # An existing execution record is never invented as NOT_RUN.
             phase, case_dir = evidence if evidence else ({"nodeid": node, "status": "not_run", "phases": {}}, None)
             state = phase.get("status")

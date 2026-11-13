@@ -595,6 +595,52 @@ def prepare_presentation(source, target, *, started_at_ms=None):
 
 STATUS_NAMES = {"passed": "o‘tdi", "failed": "yiqildi", "broken": "xato bilan to‘xtadi", "skipped": "bajarilmadi", "interrupted": "to‘xtatildi", "not_run": "boshlanmadi"}
 TECHNICAL_STEP = "Texnik tafsilotlar"
+DEPENDENCY_LABEL = "Bog‘liq test"
+
+
+def order_dependency_labels(group, names):
+    """Capture direct prerequisites using the same titles as their runner tests."""
+    values = [order_report_title(group, name) for name in names]
+    return [{"name": DEPENDENCY_LABEL, "value": value}
+            for value in (values or ["Boshqa testga bog‘liq emas"])]
+
+
+def _dependency_summary(result):
+    values = [label["value"] for label in result.get("labels", [])
+              if label.get("name") == DEPENDENCY_LABEL]
+    return "\n".join(sorted(values)) if values else "Bu run uchun dependency ma’lumoti qayd etilmagan."
+
+
+def _recorded_steps(result, related):
+    """Render only recorded Allure steps, preserving phase and nested order."""
+    rows = []
+
+    def visit(steps, phase, prefix=""):
+        for index, step in enumerate(steps, 1):
+            if step.get("name") == TECHNICAL_STEP:
+                continue
+            number = f"{prefix}{index}"
+            start, stop = step.get("start"), step.get("stop")
+            duration = (f"{(stop - start) / 1000:.3f} s"
+                        if isinstance(start, (int, float)) and isinstance(stop, (int, float))
+                        and stop >= start else "Qayd etilmagan")
+            status = {"passed": "PASS", "failed": "FAIL", "broken": "ERROR",
+                      "skipped": "BAJARILMADI"}.get(step.get("status"), "TUGALLANMAGAN")
+            rows.append((phase, number, step.get("name", "Nomsiz qadam"), status, duration))
+            visit(step.get("steps", []), phase, number + ".")
+
+    def fixture_steps(key):
+        stages = [stage for container in related.values() for stage in container.get(key, [])]
+        # Unknown starts follow timed entries; never invent their chronology.
+        return sorted(stages, key=lambda stage: (
+            not isinstance(stage.get("start"), (int, float)),
+            stage["start"] if isinstance(stage.get("start"), (int, float)) else 0,
+        ))
+
+    visit(fixture_steps("befores"), "Setup")
+    visit(result.get("steps", []), "Test")
+    visit(fixture_steps("afters"), "Teardown")
+    return rows
 
 
 def _identity(full_name):
@@ -635,6 +681,11 @@ def order_report_case(function):
     """Use the same searchable names in raw Allure results and in the final report."""
     group, test = _identity(f"{function.__module__}#{function.__name__}")
     allure.title(order_report_title(group, test))(function)
+    declaration = next((mark for mark in getattr(function, "pytestmark", [])
+                        if mark.name == "order_requires"), None)
+    if declaration is not None:
+        for label in order_dependency_labels(group, declaration.args):
+            allure.label(label["name"], label["value"])(function)
     return allure.story(order_report_section(group, test))(function)
 
 
@@ -722,6 +773,10 @@ def _qa_summary(result, spec, case, phase, attempts, impact, preparation):
         actual = "Ushbu test boshlanmagan; amaldagi natija yo‘q."
     lines = [("Holat", STATUS_NAMES.get(status, "noma’lum")), ("Turi", spec[1]),
              ("Nima tekshiriladi", spec[2]), ("Kutilgan", expected), ("Amalda", actual)]
+    lines.append(("Bevosita bog‘liq testlar", _dependency_summary(result)))
+    if phase.get("blocked_by"):
+        lines.append(("Testni bloklagan sabab / test", phase["blocked_by"]))
+    lines.append(("Allure qadamlari", "Execution bo‘limida; to‘liq ro‘yxat «Allure qadamlari» ilovasida. Faqat qayd etilgan qadamlar ko‘rsatiladi."))
     phases = phase.get("phases", {})
     timing = []
     for key, label in (("setup", "Tayyorlanish"), ("call", "Test bajarilishi"), ("teardown", "Yakunlash")):
@@ -875,9 +930,23 @@ def enrich_results(directory, *, started_at_ms=None, context=None):
         result.pop("descriptionHtml", None)
         detail = _markdown(_description(result, spec, case, phase, preparation, len(journal)))
         result["description"] = _qa_summary(result, spec, case, phase, attempts, impact, preparation)
+        recorded_steps = _recorded_steps(result, related)
         # Containers may be shared by several attempts: keep their evidence available
         # until every test has collected its own technical details.
         _technical_details(directory, result, detail, deepcopy(related), keep_failure_evidence=keep_failure_evidence)
+        steps_file = f"{result['uuid']}-allure-steps.txt"
+        steps_text = "\n".join(
+            f"{stage} {number} | {status} | {duration} | {safe_text(str(name))}"
+            for stage, number, name, status, duration in recorded_steps
+        ) or "Bu test uchun bajarilgan Allure qadamlari qayd etilmagan."
+        (directory / steps_file).write_text(
+            "Qayd etilgan Allure qadamlari\nIchki qadam vaqti ota qadam vaqtiga kiradi.\n"
+            "Umumiy fixture bir nechta testga tegishli bo‘lishi mumkin; bu qayta bajarilganini anglatmaydi.\n"
+            "Boshlanish vaqti yo‘q fixturelar faza oxirida; ularning vaqt bo‘yicha tartibi noma’lum.\n\n"
+            + steps_text + "\n", encoding="utf-8")
+        result.setdefault("attachments", []).append({
+            "name": "Allure qadamlari", "source": steps_file, "type": "text/plain",
+        })
         # Native plain-text fallback also works where Description's blob iframe does not render.
         summary_file = f"{result['uuid']}-qa-summary.txt"
         (directory / summary_file).write_text(result["description"].replace("**", "") + "\n", encoding="utf-8")
@@ -894,15 +963,18 @@ def enrich_results(directory, *, started_at_ms=None, context=None):
         _backup_write(path, result, backup)
         changed += 1
         api_total += len(journal)
-    # All captured fixture attachments are now on the matching attempt.
+    # All fixture attachments have been copied to their matching attempts above.
+    # Keep the native step tree, but do not re-expose PASS screenshots/traces.
     presented = {r["uuid"] for r in originals.values() if _identity(r["fullName"]) in SPECS}
     for path, container in containers.items():
         if set(container.get("children", [])) <= presented:
-            for key in ("befores", "afters"):
-                # A failed fixture is a real step and remains visible.
-                container[key] = [stage for stage in container.get(key, [])
-                                  if stage.get("status") in {"broken", "failed"}]
-            _backup_write(path, container, backup)
+            edited = False
+            for stage in _walk(container):
+                if "attachments" in stage:
+                    stage.pop("attachments")
+                    edited = True
+            if edited:
+                _backup_write(path, container, backup)
     return {"updated_tests": changed, "grouped_api_attachments": api_total, "backup": str(backup)}
 
 

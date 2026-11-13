@@ -18,10 +18,15 @@ def source_hash():
 def record_collection(config, items):
     if config.option.collectonly:
         return
+    from tests.regression.test_orders.helpers.reporting import order_dependency_labels
     write(run_directory(config) / "retry-manifest.json", {
         "version": 1, "day": day(), "source_hash": source_hash(),
         "cases": [{"nodeid": item.nodeid, "group": item.get_closest_marker("order_group").args[0],
-                   "requires": list(item._order_required_steps)} for item in items],
+                   "requires": list(item._order_required_steps),
+                   "dependency_labels": order_dependency_labels(
+                       item.get_closest_marker("order_group").args[0],
+                       [node.rsplit("::", 1)[-1] for node in item._order_required_steps])}
+                  for item in items],
     })
 
 

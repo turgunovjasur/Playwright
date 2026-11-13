@@ -69,6 +69,14 @@ bo‘lishi kerak; `run.py` uni yashirincha yaratmaydi.
 
 ## Ushbu branchdagi retry chegarasi
 
+Allure’da testni ochganda `Bog‘liq test` maydonlari uning bevosita dependencylarini
+test kodi va nomi bilan ko‘rsatadi. Bog‘liqlik bo‘lmasa bu alohida yoziladi.
+Yakuniy `Qisqa QA natijasi`da dependencylar va mavjud bloklanish sababi ham chiqadi.
+`Execution`da setup, test va teardownning qayd etilgan Allure steplari saqlanadi;
+`Allure qadamlari` ilovasida ichki qadamlar, status va davomiylik ham bor.
+Boshlanmagan qadamlar taxmin qilib qo‘shilmaydi. Eski runlarda dependency yoki
+qadam dalili bo‘lmasa bu ochiq ko‘rsatiladi; eski hisobot avtomatik qayta yozilmaydi.
+
 Dependency boshqaruvi barcha 125 testga tegishli. Avtomatik bitta retry hozircha
 SCN-003 dagi 9 test uchun yoqilgan. `--order-retries=0` uni o‘chiradi.
 `--maxfail=0` mustaqil testlarni davom ettiradi; boshqa qiymat yakuniy xatolar limitidir.
