@@ -210,6 +210,8 @@ __marimo__/
 test-results/
 tests/regression/test_products/data_store.json
 tests/regression/test_products/data_store.json.tmp
+tests/regression/legacy/products/cases/data_store.json
+tests/regression/legacy/products/cases/data_store.json.tmp
 tests/smoke/test_action/data_store.json
 tests/smoke/test_action/data_store.json.tmp
 daily-smoke-test-results*

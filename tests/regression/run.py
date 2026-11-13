@@ -17,10 +17,10 @@ sys.path.insert(0,str(ROOT))
 from dotenv import load_dotenv
 from scripts.report_lifecycle import generate_test_summary, _open_report
 from scripts.allure_report_cli import AllureCliNotInstalled, generate_report as generate_allure_report
-from tests.regression.runtime import finalize_run, new_run_id, prepare_run
+from tests.regression.helpers.runtime import finalize_run, new_run_id, prepare_run
 
-from tests.regression.test_orders.ordering import GROUP_RUNNERS, GROUP_NAMES
-from tests.regression.test_orders.reporting import prepare_presentation
+from tests.regression.test_orders.helpers.ordering import GROUP_RUNNERS, GROUP_NAMES
+from tests.regression.test_orders.helpers.reporting import prepare_presentation
 
 def run_pytest(command, environment):
     """SIGINT/SIGTERMni childga uzatib, yakuniy natijani yozish uchun kutish."""
@@ -83,16 +83,21 @@ def main():
     parser.add_argument("--resume-run", help="Tugagan original run ID: oldingi PASS tayyorlovlardan davom etish")
     parser.add_argument("--group", choices=["product_limit", "bonus_limit"], help="Davom ettiriladigan guruh")
     parser.add_argument("--order-id", help="OL-09 davom ettiradigan saqlangan order IDsi")
+    parser.add_argument("--order-retries", type=int, choices=(0, 1), default=1,
+                        help="SCN-003 pilotida yiqilgan testga darhol retry: 0 yoki 1")
+    parser.add_argument("--maxfail", type=int, default=0,
+                        help="Yakuniy xatolar limiti; 0 — mustaqil testlarni davom ettirish")
     args = parser.parse_args()
+    if args.maxfail < 0:
+        parser.error("--maxfail manfiy bo‘lishi mumkin emas")
     if bool(args.order_id) != (args.group == "bonus_limit"):
         parser.error("bonus_limit resume uchun --order-id kerak")
     if bool(args.resume_run) != bool(args.group):
         parser.error("--resume-run va --group birga beriladi")
     load_dotenv(ROOT / ".env", override=True)
     runners = (GROUP_RUNNERS[GROUP_NAMES.index(args.group)],) if args.resume_run else GROUP_RUNNERS
-    command = [sys.executable, "-m", "pytest", *runners]
-    if not args.resume_run:
-        command.append("--maxfail=1")
+    command = [sys.executable, "-m", "pytest", *runners,
+               f"--maxfail={args.maxfail}", f"--order-retries={args.order_retries}"]
     started=time.time()
     environment=os.environ.copy()
     for key in ("ORDER_RESUME_RUN", "ORDER_RESUME_GROUP", "ORDER_RESUME_ORDER_ID", "ORDER_RETRY_PLAN"):
@@ -117,7 +122,7 @@ def main():
         (directory / "run.json").write_text(
             json.dumps(run, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
         )
-    from tests.regression.retry.suite import combined_results, summarize
+    from tests.regression.helpers.retry.suite import combined_results, summarize
     prepare_run_report(directory)
     results = directory / "allure-results" if args.order_id else combined_results(directory, None)
     if not args.resume_run:

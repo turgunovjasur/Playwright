@@ -4,19 +4,20 @@ import os
 from contextlib import contextmanager
 from functools import partialmethod
 from pathlib import Path
-from tests.regression.retry.state import stable_uuid as uuid4
+from tests.regression.helpers.retry.state import stable_uuid as uuid4
 
 import allure
 import pytest
 
 from scripts.api_setup_bridge import select_api_baseline, validate_api_baseline
-from tests.regression.environment import RegressionEnvironmentError
-from tests.regression.test_orders.reporting import GROUP_FEATURES, order_report_title
-from tests.regression.test_orders.models import OrderContext, _json_value
-from tests.regression.test_orders.auth_recovery import order_session_recovery
-from tests.regression.session_recovery import bind_lookup_context, bind_grid_settings_context
+from tests.regression.helpers.environment import RegressionEnvironmentError
+from tests.regression.test_orders.helpers.reporting import GROUP_FEATURES, order_report_title
+from tests.regression.test_orders.helpers.models import OrderContext, _json_value
+from tests.regression.test_orders.helpers.preparations.resources import resource_ready
+from tests.regression.test_orders.helpers.auth_recovery import order_session_recovery
+from tests.regression.helpers.session_recovery import bind_lookup_context, bind_grid_settings_context
 from utils.data_store import load_data_file
-from tests.regression.test_orders.ordering import (
+from tests.regression.test_orders.helpers.ordering import (
     check_previous_steps, record_step, validate_and_order,
 )
 
@@ -57,7 +58,7 @@ def api_business_baseline():
         raise RegressionEnvironmentError(
             "Tasdiqlangan API baseline kerak; avval API setupni muvaffaqiyatli yakunlang"
         )
-    from tests.regression.retry.state import ACTIVE, digest, read, write
+    from tests.regression.helpers.retry.state import ACTIVE, digest, read, write
     journal = ACTIVE.get()
     if journal:
         config = journal.item.config
@@ -65,7 +66,7 @@ def api_business_baseline():
         signature = digest(baseline)
         if plan and plan.get("baseline_signature") != signature:
             raise RegressionEnvironmentError("Retry API baseline dastlabki urinishga mos emas")
-        from tests.regression.runtime import run_directory
+        from tests.regression.helpers.runtime import run_directory
         manifest = run_directory(config) / "retry-manifest.json"
         if manifest.exists():
             data = read(manifest)
@@ -76,7 +77,7 @@ def api_business_baseline():
 
 @pytest.fixture(scope="module")
 def order_group_login(api_business_baseline):
-    from tests.regression.test_orders.group_auth import GroupLogin
+    from tests.regression.test_orders.helpers.group_auth import GroupLogin
     login = GroupLogin(api_business_baseline)
     try:
         yield login
@@ -86,7 +87,7 @@ def order_group_login(api_business_baseline):
 
 @pytest.fixture
 def order_user_page(session_browser, regression_case_dir, request, order_group_login):
-    from tests.regression.runtime import order_page_context
+    from tests.regression.helpers.runtime import order_page_context
     with order_page_context(session_browser, request.node, storage_state=order_group_login.snapshot()) as page:
         page._order_group_login = order_group_login
         yield page
@@ -94,7 +95,7 @@ def order_user_page(session_browser, regression_case_dir, request, order_group_l
 
 @pytest.fixture(scope="module")
 def catalog_data(request):
-    from tests.regression.retry.state import fixture_state
+    from tests.regression.helpers.retry.state import fixture_state
     return fixture_state(request, "catalog_data")
 
 
@@ -102,7 +103,7 @@ def catalog_data(request):
 def business_baseline(api_business_baseline, catalog_data):
     """Group-local copy; never write own SKU IDs into the API setup baseline."""
     from copy import deepcopy
-    from tests.regression.retry.state import digest
+    from tests.regression.helpers.retry.state import digest
     baseline = deepcopy(api_business_baseline)
     baseline["_baseline_signature"] = digest(api_business_baseline)
     for kind, field, name in (("goods", "product_id", "product_name"),
@@ -115,13 +116,13 @@ def business_baseline(api_business_baseline, catalog_data):
 
 @pytest.fixture(scope="module")
 def business_promotions(request):
-    from tests.regression.retry.state import fixture_state
+    from tests.regression.helpers.retry.state import fixture_state
     return fixture_state(request, "business_promotions")
 
 
 @pytest.fixture(scope="module")
 def payment_clients(request):
-    from tests.regression.retry.state import fixture_state
+    from tests.regression.helpers.retry.state import fixture_state
     return fixture_state(request, "payment_clients")
 
 
@@ -140,7 +141,7 @@ def _context(page, baseline, promotions, directory, node, *, client=None):
         price_type=f"Price Type UZB-pw{code}", reference="B" + uuid4("order_reference").hex[:11],
         promotions=promotions,
     )
-    from tests.regression.retry.state import ACTIVE
+    from tests.regression.helpers.retry.state import ACTIVE
     journal = ACTIVE.get()
     if journal:
         journal.case = case
@@ -183,7 +184,7 @@ def _context(page, baseline, promotions, directory, node, *, client=None):
         with order_session_recovery(page, baseline, directory, on_authenticated=lambda: login.refresh_cookies(page)):
             login.authorize(page, baseline, directory)
             if "prepare" not in node.name and node.name not in {"test_000_catalog", "test_001_prices", "test_002_stock"}:
-                from tests.regression.preparation.readiness import verify_retry_preparations
+                from tests.regression.helpers.preparation.readiness import verify_retry_preparations
                 verify_retry_preparations(case, node, directory)
             yield case
     finally:
@@ -196,9 +197,10 @@ def _base_promotions(baseline):
     return {"unit_price": "7000"}
 
 
-def _require_bonus(promotions):
-    if promotions.get("status") != "passed":
-        pytest.skip("BLOCKED: bonus tayyorlovi bajarilmagan yoki muvaffaqiyatsiz; test_bonus kerak")
+def _require_resources(data, names):
+    missing = [name for name in names if not resource_ready(data, name)]
+    if missing:
+        pytest.skip("BLOCKED: zarur resurs tayyor emas: " + ", ".join(missing))
 
 
 def _require_client(clients, key):
@@ -225,7 +227,8 @@ def catalog_order(order_user_page, business_baseline, regression_case_dir, reque
 @pytest.fixture
 def promoted_order(order_user_page, business_baseline, business_promotions,
                    regression_case_dir, request):
-    _require_bonus(business_promotions)
+    required = ("discount",) if request.node.name == "test_01_quantity_discount" else ("bonus", "discount")
+    _require_resources(business_promotions, required)
     with _context(order_user_page, business_baseline, business_promotions,
                   regression_case_dir, request.node) as case:
         yield case
@@ -243,7 +246,7 @@ def ordinary_payment_order(order_user_page, business_baseline, payment_clients,
 @pytest.fixture
 def promoted_payment_order(order_user_page, business_baseline, business_promotions,
                            payment_clients, regression_case_dir, request):
-    _require_bonus(business_promotions)
+    _require_resources(business_promotions, ("bonus", "discount"))
     client = _require_client(payment_clients, "promoted")
     with _context(order_user_page, business_baseline, business_promotions,
                   regression_case_dir, request.node, client=client) as case:
@@ -270,35 +273,40 @@ def pytest_runtest_makereport(item, call):
     outcome = yield
     record_step(item, outcome.get_result(), call)
     group = item.get_closest_marker("order_group")
-    if (call.when == "call" and getattr(item.config, "_retry_plan", None)
+    if (call.when == "call" and (getattr(item.config, "_retry_plan", None)
+                               or getattr(item, "_order_inline_source", None))
             and group and group.args[0] in GROUP_FEATURES):
         allure.dynamic.title(order_report_title(group.args[0], item.name, rerun=True))
 
 
 @pytest.fixture(scope="module")
 def mandatory_data(request):
-    from tests.regression.retry.state import fixture_state
+    from tests.regression.helpers.retry.state import fixture_state
     return fixture_state(request, "mandatory_data")
 
 
 @pytest.fixture
 def mandatory_order(order_user_page, business_baseline, mandatory_data, regression_case_dir, request):
-    if mandatory_data.get("status") != "passed":
-        pytest.skip("BLOCKED: majburiy aksiya tayyorlovi yakunlanmagan")
+    required = ["prices"]
+    dependencies = {node.rsplit("::", 1)[-1] for node in request.node._order_required_steps}
+    for test, resource in (("test_01_prepare_bank_action", "bank_action"),
+                           ("test_02_prepare_terminal_action", "terminal_action")):
+        if test in dependencies:
+            required.append(resource)
+    _require_resources(mandatory_data, required)
     with _context(order_user_page, business_baseline, mandatory_data, regression_case_dir, request.node) as case:
         yield case
 
 
 @pytest.fixture(scope="module")
 def bonus_limit_data(request):
-    from tests.regression.retry.state import fixture_state
+    from tests.regression.helpers.retry.state import fixture_state
     return fixture_state(request, "bonus_limit_data")
 
 
 @contextmanager
 def _limit_context(page, baseline, data, directory, node, client_kind):
-    if data.get("status") != "passed":
-        pytest.skip("BLOCKED: umumiy bonus limiti tayyorlovi yakunlanmagan")
+    _require_resources(data, ("price", "bonus"))
     client = data["clients"][client_kind]
     if client.get("status") != "passed":
         pytest.skip("BLOCKED: bonus limiti klienti tekshirilmagan")
@@ -323,7 +331,7 @@ def second_limit_order(order_user_page, business_baseline, bonus_limit_data, reg
 @pytest.fixture(scope="module")
 def workflow_data(request):
     """Faqat shu qat'iy runnerning tayyorlov va biznes qadamlariga tegishli."""
-    from tests.regression.retry.state import fixture_state
+    from tests.regression.helpers.retry.state import fixture_state
     return fixture_state(request, "workflow_data")
 
 
@@ -346,14 +354,13 @@ def workflow_order(order_user_page, business_baseline, workflow_data, regression
 
 @pytest.fixture(scope="module")
 def mixed_promotions_data(request):
-    from tests.regression.retry.state import fixture_state
+    from tests.regression.helpers.retry.state import fixture_state
     return fixture_state(request, "mixed_promotions_data")
 
 
 @pytest.fixture
 def mixed_order(order_user_page, business_baseline, mixed_promotions_data, regression_case_dir, request):
-    if mixed_promotions_data.get("status") != "passed":
-        pytest.skip("BLOCKED: majburiy va ixtiyoriy aksiya tayyorlanmagan")
+    _require_resources(mixed_promotions_data, ("price", "bonus", "discount"))
     with _context(order_user_page, business_baseline, mixed_promotions_data, regression_case_dir, request.node) as case:
         case.price_type = mixed_promotions_data["prices"]["mixed"]["name"]
         case.checkpoint()
@@ -366,7 +373,7 @@ def product_limit_data(request):
     plan = getattr(request.config, "_order_resume", None)
     if plan:
         return deepcopy(plan.workflow)
-    from tests.regression.retry.state import fixture_state
+    from tests.regression.helpers.retry.state import fixture_state
     return fixture_state(request, "product_limit_data")
 
 
@@ -376,7 +383,8 @@ def product_limit_order(order_user_page, business_baseline, api_business_baselin
     if plan:
         plan.verify_baseline(api_business_baseline)
     client = product_limit_data.get("client", {})
-    if client.get("status") != "passed" or not product_limit_data.get("product"):
+    if (client.get("status") != "passed" or not product_limit_data.get("product")
+            or (not plan and not resource_ready(product_limit_data, "product"))):
         pytest.skip("BLOCKED: TMZ limiti mahsulot va klient tayyorlovi bajarilmagan")
     baseline = {**business_baseline, "product_id": product_limit_data["product"]["id"]}
     with _context(order_user_page, baseline, {"unit_price": "7000"}, regression_case_dir, request.node, client=client) as case:
@@ -386,8 +394,8 @@ def product_limit_order(order_user_page, business_baseline, api_business_baselin
         case.orders = product_limit_data.setdefault("order_ids", [])
         case.checkpoint()
         if plan:
-            from tests.regression.resume import attach_resume
-            from tests.regression.test_orders.stock.test_product_limit import verify_resume_state
+            from tests.regression.helpers.resume import attach_resume
+            from tests.regression.test_orders.business_cases.stock.test_product_limit import verify_resume_state
             attach_resume(plan)
             if not plan.preflight_done:
                 verify_resume_state(case)
@@ -401,12 +409,36 @@ def pytest_runtest_protocol(item, nextitem):
     if item.get_closest_marker("order_positive") is None:
         yield
         return
-    from tests.regression.retry.hooks import start, finish
+    from tests.regression.helpers.retry.hooks import start, finish
     token = start(item)
     try:
         yield
     finally:
         finish(item, token)
+
+
+@pytest.hookimpl(tryfirst=True, specname="pytest_runtest_protocol")
+def pytest_order_attempt_protocol(item, nextitem):
+    from tests.regression.helpers.retry.immediate import execute_protocol
+    return execute_protocol(item, nextitem)
+
+
+@pytest.hookimpl(hookwrapper=True, tryfirst=True)
+def pytest_runtest_teardown(item, nextitem):
+    from tests.regression.helpers.retry.immediate import finish_teardown
+    yield from finish_teardown(item)
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtestloop(session):
+    from tests.regression.helpers.retry.immediate import run_loop
+    return run_loop(session)
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_report_teststatus(report, config):
+    if report.outcome == "rerun":
+        return "rerun", "R", "RETRY"
 
 
 @pytest.fixture(autouse=True)
@@ -415,8 +447,8 @@ def regression_retry_capture(monkeypatch, request):
         yield
         return
     from tests.api.client import SmartupAPI
-    from tests.regression.retry.reconcile import api_send
-    from tests.regression.retry.hooks import attach_attempt
+    from tests.regression.helpers.retry.reconcile import api_send
+    from tests.regression.helpers.retry.hooks import attach_attempt
     original = SmartupAPI._send
     def observed(api, endpoint, *, payload=None, form=None, timeout=None):
         return api_send(original, api, endpoint, payload=payload, form=form, timeout=timeout)
@@ -431,6 +463,6 @@ def regression_retry_capture(monkeypatch, request):
 @pytest.hookimpl(tryfirst=True)
 def pytest_pyfunc_call(pyfuncitem):
     if pyfuncitem.get_closest_marker("order_positive") is not None:
-        from tests.regression.preparation.repair import execute_selected_repair
+        from tests.regression.helpers.preparation.repair import execute_selected_repair
         return execute_selected_repair(pyfuncitem)
     return None

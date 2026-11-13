@@ -2,13 +2,13 @@
 import allure
 import pytest
 
-from tests.regression.test_orders.reporting import GROUP_FEATURES, order_report_case
+from tests.regression.test_orders.helpers.reporting import GROUP_FEATURES, order_report_case
 
-from tests.regression.test_orders.preparations.test_two_warehouses import (
+from tests.regression.test_orders.setup_cases.test_two_warehouses import (
     run_prepare_two_warehouse_client, run_prepare_two_warehouses,
     run_prepare_two_warehouse_stock,
 )
-from tests.regression.test_orders.stock.test_two_warehouses import (
+from tests.regression.test_orders.business_cases.stock.test_two_warehouses import (
     run_create_two_warehouses, run_reserve_two_warehouses,
     run_reallocate_two_warehouses, run_cancel_two_warehouses,
 )
@@ -18,7 +18,7 @@ pytestmark = [pytest.mark.regression, pytest.mark.order_positive,
               allure.feature(GROUP_FEATURES["two_warehouses"])]
 
 
-from tests.regression.test_orders.preparations.test_catalog_stock import (
+from tests.regression.test_orders.setup_cases.test_catalog_stock import (
     run_prepare_catalog, run_prepare_prices, run_prepare_stock,
 )
 
@@ -41,13 +41,13 @@ def test_002_stock(catalog_order, catalog_data, regression_case_dir):
     run_prepare_stock(catalog_order, catalog_data, regression_case_dir, "two_warehouses")
 
 @order_report_case
-@pytest.mark.order_requires('test_001_prices')
+@pytest.mark.order_requires()
 def test_00_prepare_client(business_baseline, workflow_data, regression_case_dir):
     run_prepare_two_warehouse_client(business_baseline, workflow_data, regression_case_dir)
 
 
 @order_report_case
-@pytest.mark.order_requires('test_001_prices', 'test_00_prepare_client')
+@pytest.mark.order_requires('test_00_prepare_client')
 def test_01_prepare_warehouses(workflow_order, regression_case_dir):
     run_prepare_two_warehouses(workflow_order, regression_case_dir)
 

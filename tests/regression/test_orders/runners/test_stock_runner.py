@@ -2,13 +2,13 @@
 import allure
 import pytest
 
-from tests.regression.test_orders.reporting import GROUP_FEATURES, order_report_case
-from tests.regression.test_orders.stock.test_cancel_reserve import run_cancel_reserve
+from tests.regression.test_orders.helpers.reporting import GROUP_FEATURES, order_report_case
+from tests.regression.test_orders.business_cases.stock.test_cancel_reserve import run_cancel_reserve
 
 pytestmark = [pytest.mark.regression, pytest.mark.order_positive, pytest.mark.order_group('stock'), allure.epic('Regression'), allure.feature(GROUP_FEATURES["stock"])]
 
 
-from tests.regression.test_orders.preparations.test_catalog_stock import (
+from tests.regression.test_orders.setup_cases.test_catalog_stock import (
     run_prepare_catalog, run_prepare_prices, run_prepare_stock,
 )
 

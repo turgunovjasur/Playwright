@@ -30,10 +30,10 @@ GROUP_RUNNER_PATHS = (
 )
 FORMS_RUNNER_PATH = "tests/smoke/test_forms/test_0_forms_runner.py"
 A2_ANGULAR_FORMS_PATH = "tests/smoke/test_forms/test_a2_angular_forms.py"
-REGRESSION_RUNNER_PATH = "tests/regression/test_0_regression_runner.py"
-REGRESSION_SETUP_PATH = "tests/regression/test_setup/test_0_setup_runner.py"
-REGRESSION_PRODUCTS_PATH = "tests/regression/test_products/test_0_products_runner.py"
-REGRESSION_ORDERS_PATH = "tests/regression/test_orders/test_0_orders_runner.py"
+REGRESSION_RUNNER_PATH = "tests/regression/legacy/runners/test_0_regression_runner.py"
+REGRESSION_SETUP_PATH = "tests/regression/legacy/setup/runners/test_0_setup_runner.py"
+REGRESSION_PRODUCTS_PATH = "tests/regression/legacy/products/runners/test_0_products_runner.py"
+REGRESSION_ORDERS_PATH = "tests/regression/legacy/orders/runners/test_0_orders_runner.py"
 
 TARGETS = {
     "all": (

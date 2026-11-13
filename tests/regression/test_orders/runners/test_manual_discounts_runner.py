@@ -2,14 +2,14 @@
 import allure
 import pytest
 
-from tests.regression.test_orders.reporting import GROUP_FEATURES, order_report_case
-from tests.regression.test_orders.preparations.test_workflows import run_discount_client,run_workflow_promotions
-from tests.regression.test_orders.preparations.test_margin import run_prepare_margin
-from tests.regression.test_orders.discounts.test_preset_discount import run_preset_discount
-from tests.regression.test_orders.discounts.test_manual_discount import run_line_amount,run_order_amount,run_amounts_with_bonus
+from tests.regression.test_orders.helpers.reporting import GROUP_FEATURES, order_report_case
+from tests.regression.test_orders.setup_cases.test_workflows import run_discount_client,run_workflow_promotions
+from tests.regression.test_orders.setup_cases.test_margin import run_prepare_margin
+from tests.regression.test_orders.business_cases.discounts.test_preset_discount import run_preset_discount
+from tests.regression.test_orders.business_cases.discounts.test_manual_discount import run_line_amount,run_order_amount,run_amounts_with_bonus
 pytestmark=[pytest.mark.regression,pytest.mark.order_positive,pytest.mark.order_group("manual_discounts"),allure.epic("Regression"),allure.feature(GROUP_FEATURES["manual_discounts"])]
 
-from tests.regression.test_orders.preparations.test_catalog_stock import (
+from tests.regression.test_orders.setup_cases.test_catalog_stock import (
     run_prepare_catalog, run_prepare_prices, run_prepare_stock,
 )
 
@@ -32,7 +32,7 @@ def test_002_stock(catalog_order, catalog_data, regression_case_dir):
     run_prepare_stock(catalog_order, catalog_data, regression_case_dir, "manual_discounts")
 
 @order_report_case
-@pytest.mark.order_requires('test_001_prices')
+@pytest.mark.order_requires()
 def test_00_prepare_client(business_baseline,workflow_data,regression_case_dir):
     run_discount_client(business_baseline,workflow_data,regression_case_dir)
 
@@ -42,7 +42,7 @@ def test_01_prepare_promotions(business_baseline,workflow_data):
     run_workflow_promotions(business_baseline,workflow_data)
 
 @order_report_case
-@pytest.mark.order_requires('test_001_prices')
+@pytest.mark.order_requires()
 def test_02_prepare_margin(order_page,business_baseline,workflow_data,regression_case_dir):
     run_prepare_margin(order_page,business_baseline,workflow_data,regression_case_dir)
 

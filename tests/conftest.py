@@ -33,6 +33,10 @@ def pytest_addoption(parser):
     """Smartup uchun CLI optionlarini pytestga ro'yxatdan o'tkazadi."""
     smartup = parser.getgroup("smartup")
     smartup.addoption(
+        "--order-retries", type=int, choices=(0, 1), default=1,
+        help="Order pilot testlari uchun darhol retry soni: 0 yoki 1 (SCN-003)",
+    )
+    smartup.addoption(
         "--headless",
         action="store_true",
         default=False,
@@ -232,7 +236,7 @@ def code(request):
     Final tanlov tekshiriladi: -k/-m/node ID orqali setup chiqarib tashlansa
     yangi code yaratilmaydi. Setup + group run bitta session code'ni bo'lishadi.
     """
-    setup_dirs = (ROOT_DIR / "tests/smoke/test_setup", ROOT_DIR / "tests/regression/test_setup")
+    setup_dirs = (ROOT_DIR / "tests/smoke/test_setup", ROOT_DIR / "tests/regression/legacy/setup")
     setup_selected = any(
         "code" in item.fixturenames and (
             item.get_closest_marker("user_setup") is not None

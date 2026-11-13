@@ -2,18 +2,18 @@
 import allure
 import pytest
 
-from tests.regression.test_orders.reporting import GROUP_FEATURES, order_report_case
+from tests.regression.test_orders.helpers.reporting import GROUP_FEATURES, order_report_case
 
-from tests.regression.test_orders.preparations.test_mixed_promotions import (
+from tests.regression.test_orders.setup_cases.test_mixed_promotions import (
     run_prepare_price, run_prepare_mandatory_bonus, run_prepare_optional_discount,
 )
-from tests.regression.test_orders.promotions.test_mixed_promotions import run_toggle_discount, run_quantity_boundary
+from tests.regression.test_orders.business_cases.promotions.test_mixed_promotions import run_toggle_discount, run_quantity_boundary
 
 pytestmark = [pytest.mark.regression, pytest.mark.order_positive, pytest.mark.order_group("mixed_promotions"),
               allure.epic("Regression"), allure.feature(GROUP_FEATURES["mixed_promotions"])]
 
 
-from tests.regression.test_orders.preparations.test_catalog_stock import (
+from tests.regression.test_orders.setup_cases.test_catalog_stock import (
     run_prepare_catalog, run_prepare_prices, run_prepare_stock,
 )
 
@@ -36,30 +36,30 @@ def test_002_stock(catalog_order, catalog_data, regression_case_dir):
     run_prepare_stock(catalog_order, catalog_data, regression_case_dir, "mixed_promotions")
 
 @order_report_case
-@pytest.mark.order_requires('test_001_prices')
+@pytest.mark.order_requires('test_000_catalog')
 def test_00_prepare_price(business_baseline, mixed_promotions_data, regression_case_dir):
     run_prepare_price(business_baseline, mixed_promotions_data, regression_case_dir)
 
 
 @order_report_case
-@pytest.mark.order_requires('test_001_prices', 'test_00_prepare_price')
+@pytest.mark.order_requires('test_00_prepare_price')
 def test_01_prepare_mandatory_bonus(business_baseline, mixed_promotions_data, regression_case_dir):
     run_prepare_mandatory_bonus(business_baseline, mixed_promotions_data, regression_case_dir)
 
 
 @order_report_case
-@pytest.mark.order_requires('test_001_prices', 'test_01_prepare_mandatory_bonus')
+@pytest.mark.order_requires('test_00_prepare_price')
 def test_02_prepare_optional_discount(business_baseline, mixed_promotions_data, regression_case_dir):
     run_prepare_optional_discount(business_baseline, mixed_promotions_data, regression_case_dir)
 
 
 @order_report_case
-@pytest.mark.order_requires('test_002_stock', 'test_02_prepare_optional_discount')
+@pytest.mark.order_requires('test_002_stock', 'test_01_prepare_mandatory_bonus', 'test_02_prepare_optional_discount')
 def test_03_toggle_discount(mixed_order):
     run_toggle_discount(mixed_order)
 
 
 @order_report_case
-@pytest.mark.order_requires('test_002_stock', 'test_02_prepare_optional_discount')
+@pytest.mark.order_requires('test_002_stock', 'test_01_prepare_mandatory_bonus', 'test_02_prepare_optional_discount')
 def test_04_quantity_boundary(mixed_order):
     run_quantity_boundary(mixed_order)
