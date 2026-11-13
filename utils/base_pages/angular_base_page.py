@@ -4,6 +4,7 @@ from contextlib import nullcontext
 from time import monotonic
 from urllib.parse import urlsplit, urlunsplit
 
+from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import expect
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
@@ -1570,13 +1571,25 @@ class AngularBasePage:
         # Serialize each Save with its own completed table request, rather
         # than relying on a loader shared by overlapping refreshes.
         route = urlsplit(self.page.url)
-        table_path = route.path.replace("/a2/", "/b/", 1) + ":table"
+        table_path = route.path.replace("/a2/", "/b/", 1)
 
         def table_refresh(request):
             target = urlsplit(request.url)
-            return (request.method == "POST"
-                    and (target.scheme, target.netloc, target.path)
-                    == (route.scheme, route.netloc, table_path))
+            page_path, separator, action = target.path.rpartition(":")
+            if (request.method != "POST" or not separator or not action
+                    or (target.scheme, target.netloc, page_path)
+                    != (route.scheme, route.netloc, table_path)):
+                return False
+            # Some grids use a named query such as offset_history_list:offset.
+            # Match the grid-query contract, excluding model/action requests.
+            try:
+                payload = request.post_data_json
+            except (PlaywrightError, ValueError, TypeError):
+                return False
+            params = payload.get("p") if isinstance(payload, dict) else None
+            return (isinstance(params, dict)
+                    and isinstance(params.get("column"), list)
+                    and {"filter", "sort", "offset", "limit"}.issubset(params))
 
         def save_settings(dialog):
             started = set()
