@@ -14,6 +14,7 @@ from scripts.report_lifecycle import generate_report, generate_test_summary, sho
 from tests.shared import config as run_config, reporting
 from tests.shared.authorization import authorization
 from tests.shared.browser import browser_context, browser_page
+from utils.base_pages import UI_TIMEOUT_MS
 from utils.data_store import data_file, load_data_file, write_data_file
 from utils.logger import get_logger, write_failure_log
 from utils.report_context import begin_test, end_test
@@ -86,7 +87,7 @@ def pytest_addoption(parser):
 def pytest_configure(config):
     """Run environmentini tekshiradi va Allure metadata fayllarini tayyorlaydi."""
     config._smartup_started_at = time.time()
-    expect.set_options(timeout=60_000)
+    expect.set_options(timeout=UI_TIMEOUT_MS)
     run_info = run_config.configure_environment(config)
     if not config.option.collectonly and not hasattr(config, "workerinput"):
         prune_results(ROOT_DIR / "test-results", os.environ)

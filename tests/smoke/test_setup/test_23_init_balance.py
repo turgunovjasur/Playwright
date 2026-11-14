@@ -4,6 +4,7 @@ import allure
 from playwright.sync_api import expect
 
 from tests.smoke.flows.flow_authorization import authorization
+from utils.base_pages import UI_TIMEOUT_MS
 from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Init Balance")]
@@ -54,7 +55,7 @@ def run_init_balance(page, code):
         base.grid(document_number, click=True)
 
     with allure.step("5 - UZS provodkalarida miqdor va summani tekshirish"):
-        with page.expect_popup(timeout=120_000) as postings_page_info:
+        with page.expect_popup(timeout=UI_TIMEOUT_MS) as postings_page_info:
             base.click(name="Проводки")
         postings_page = postings_page_info.value
         expect(postings_page.get_by_role("rowgroup")).to_contain_text(quantity)

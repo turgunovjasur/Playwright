@@ -5,14 +5,15 @@ import xml.etree.ElementTree as ET
 
 import allure
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+from utils.base_pages import UI_TIMEOUT_MS
 
 DOWNLOAD_DIR = Path("test-results/downloads")
-REPORT_DOWNLOAD_TIMEOUT = 480_000
+REPORT_DOWNLOAD_TIMEOUT = UI_TIMEOUT_MS
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def open_report(base, route, heading=None, timeout=120_000):
+def open_report(base, route, heading=None, timeout=UI_TIMEOUT_MS):
     """Menyuda yo'q integration reportni umumiy route API orqali ochadi."""
     base.open_route(f"trade/rep/integration/{route}", heading=heading, timeout=timeout)
 

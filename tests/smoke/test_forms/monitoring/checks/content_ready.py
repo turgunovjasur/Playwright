@@ -10,11 +10,10 @@ from tests.smoke.test_forms.monitoring.checks.core import (
     clean_text,
     reason_description,
 )
+from utils.base_pages import UI_TIMEOUT_MS
 
 
-DEFAULT_CONTENT_READY_TIMEOUT = 60_000
-A2_CONTENT_READY_TIMEOUT = 480_000
-INITIAL_DOCUMENT_CONTENT_READY_TIMEOUT = 480_000
+DEFAULT_CONTENT_READY_TIMEOUT = UI_TIMEOUT_MS
 LEGACY_DEFAULT_READY_SELECTORS = (
     "b-page:visible",
     ".subheader:visible",
@@ -81,19 +80,12 @@ def _matched_legacy_selector(page):
 
 
 def check_content_ready(page, *, shell, ready=None, timeout=None):
-    """A2/yuklanayotgan hujjat 480s, tayyor legacy 60s; explicit timeout ustun."""
+    """Forma kontenti tayyor bo‘lishini kutadi."""
     normalized_shell = clean_text(shell).lower()
     if normalized_shell not in {"legacy", "a2"}:
         raise ValueError("check_content_ready shell faqat 'legacy' yoki 'a2' bo'lishi kerak")
     if timeout is None:
-        if normalized_shell == "a2":
-            timeout = A2_CONTENT_READY_TIMEOUT
-        elif page.evaluate("document.readyState") != "complete":
-            # A2 -> legacy o'tishda URL tayyor, ammo CSS/JS hali yuklanayotgan
-            # bo'lishi mumkin. Iliq legacy navigatsiya uchun 60s saqlanadi.
-            timeout = INITIAL_DOCUMENT_CONTENT_READY_TIMEOUT
-        else:
-            timeout = DEFAULT_CONTENT_READY_TIMEOUT
+        timeout = DEFAULT_CONTENT_READY_TIMEOUT
     _validate_timeout(timeout)
     ready = _normalize_ready(ready)
     ready_source, expected_ready = _ready_contract(normalized_shell, ready)

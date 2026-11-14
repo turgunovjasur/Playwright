@@ -17,6 +17,8 @@ from urllib.parse import parse_qs, urlparse, unquote
 from weakref import WeakKeyDictionary
 
 import allure
+from playwright.sync_api import Error as PlaywrightError
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import expect
 
 from tests.shared.navigation import open_form_from_list
@@ -158,6 +160,35 @@ test to'xtaydi. Nol agregat bo'lsa detailga o'tish shart emas.
         return result
 
 
+def _open_saved_order(page, base, view_url, order_id):
+    for attempt in (1, 2):
+        step = (f"Saqlangan order {order_id} sahifasini ochish" if attempt == 1 else
+                f"Sahifa yuklanmadi: order {order_id} ni bir marta qayta ochish")
+        with allure.step(step):
+            try:
+                page.goto(view_url)
+            except PlaywrightError as error:
+                timed_out = isinstance(error, PlaywrightTimeoutError) or "net::ERR_TIMED_OUT" in str(error)
+                if attempt == 2 or not timed_out:
+                    raise
+                continue
+
+            try:
+                base.expect_page(heading="Заказ / Просмотр", url="order_view")
+            except (AssertionError, PlaywrightTimeoutError) as error:
+                if attempt == 2 or page.url != view_url:
+                    raise
+                gate = getattr(error, "_smartup_expectation_gate", None)
+                if gate == "heading":
+                    # A populated page with the wrong heading is a real mismatch.
+                    if not page.evaluate("() => !document.body?.innerText.trim()"):
+                        raise
+                elif gate != "loader":
+                    raise
+                continue
+            return
+
+
 def change_order_status(page, order_id, *, current, target):
     """Exact ID/current status → UI action → freshly opened saved target status."""
     base = AutoBasePage(page)
@@ -199,8 +230,7 @@ def change_order_status(page, order_id, *, current, target):
             row = base.grid(order_id)
             expect(base.grid_cell(row, columns["status"])).to_have_text(target)
     with allure.step(f"Order {order_id} viewini qayta ochib {target} statusini tekshirish"):
-        page.goto(view_url)
-        base.expect_page(heading="Заказ / Просмотр", url="order_view")
+        _open_saved_order(page, base, view_url, order_id)
         base.form_view(label="ИД заказа", expect_value=order_id)
         base.form_view(label="Статус", expect_value=target)
 

@@ -20,6 +20,7 @@ from tests.api.client import APIError, positive_id, require_fields
 from tests.regression.test_orders.helpers.auth_recovery import RegressionSetupState
 from tests.regression.helpers.environment import authorization
 from tests.shared.navigation import open_form_from_list
+from utils.base_pages import UI_TIMEOUT_MS
 from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [pytest.mark.regression, pytest.mark.order_positive,
@@ -124,7 +125,7 @@ def run_prepare_margin(page, baseline, data, directory):
             with allure.step("7 - Filialga biriktirish katalogini ochish"):
                 base.click(name="Прикрепление", exact=True)
                 base.expect_page(heading="Скидки/наценки (прикрепление)",
-                                 url=re.compile(r"margin_list(?:%2[Bb]|\+)attach"), timeout=60_000)
+                                 url=re.compile(r"margin_list(?:%2[Bb]|\+)attach"), timeout=UI_TIMEOUT_MS)
             with allure.step('8 - Faqat test uchun yaratilgan chegirmani filialga biriktirish'):
                 base.grid_controller(search=margin["name"])
                 base.grid(margin["name"], margin["code"], click=True)

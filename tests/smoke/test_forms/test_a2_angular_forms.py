@@ -271,6 +271,7 @@ from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.test_forms.monitoring.monitor import FormMonitor
 from tests.smoke.test_forms.monitoring.navigation import first_operational_filial, run_form_cases
 from tests.smoke.test_forms.monitoring.suite_runner import OPERATIONAL_PLACEHOLDER, build_suite_inventory
+from utils.base_pages import UI_TIMEOUT_MS
 from utils.base_pages.angular_base_page import AngularBasePage
 from utils.base_pages.base_page import BasePage
 
@@ -509,9 +510,9 @@ def run_a2_angular_forms(page, *, progress_test_id, terminal_reporter=None, chec
                     page.goto(
                         f"{company_url}/a2/trade/intro/dashboard",
                         wait_until="domcontentloaded",
-                        timeout=120_000,
+                        timeout=UI_TIMEOUT_MS,
                     )
-                    AngularBasePage(page).wait_for_loader(timeout=120_000)
+                    AngularBasePage(page).wait_for_loader(timeout=UI_TIMEOUT_MS)
             except (AssertionError, PlaywrightError) as exc:
                 monitor.record_precondition_failure(
                     operation,

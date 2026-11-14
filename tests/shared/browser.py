@@ -5,6 +5,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from tests.shared import config, reporting
+from utils.base_pages import UI_TIMEOUT_MS
 
 
 @contextmanager
@@ -16,8 +17,8 @@ def browser_context(browser, trace_path, *, storage_state=None):
     context = browser.new_context(**options)
     trace_started = False
     try:
-        context.set_default_timeout(480_000)
-        context.set_default_navigation_timeout(480_000)
+        context.set_default_timeout(UI_TIMEOUT_MS)
+        context.set_default_navigation_timeout(UI_TIMEOUT_MS)
         context.tracing.start(screenshots=True, snapshots=True, sources=True)
         trace_started = True
         yield context

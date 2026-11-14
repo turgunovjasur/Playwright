@@ -7,6 +7,7 @@ from playwright.sync_api import expect
 
 from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.test_groups.test_report_grup.flow_report.report_helpers import generate_and_verify_download, open_report
+from utils.base_pages import UI_TIMEOUT_MS
 from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [
@@ -16,7 +17,7 @@ pytestmark = [
     allure.story("Integration Three"),
 ]
 
-REPORT_RENDER_TIMEOUT = 240_000
+REPORT_RENDER_TIMEOUT = UI_TIMEOUT_MS
 
 
 # ----------------------------------------------------------------------------------------------------------------------

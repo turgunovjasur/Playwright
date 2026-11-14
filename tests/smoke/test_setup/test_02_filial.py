@@ -3,12 +3,13 @@ import re
 import allure
 
 from tests.smoke.flows.flow_authorization import authorization
+from utils.base_pages import UI_TIMEOUT_MS
 from utils.data_store import load_data, save_data
 from utils.base_pages.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Filial")]
-FILIAL_SAVE_LOADER_TIMEOUT = 240_000
+FILIAL_SAVE_LOADER_TIMEOUT = UI_TIMEOUT_MS
 
 # ----------------------------------------------------------------------------------------------------------------------
 

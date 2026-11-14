@@ -3,12 +3,13 @@ import re
 
 import allure
 
+from utils.base_pages import UI_TIMEOUT_MS
 from utils.base_pages.auto_base_page import AutoBasePage
 from utils.report_safety import safe_text
 from utils.base_pages.page_errors import is_module_load_error
 
 
-def open_form_from_list(page, *, heading, url, button="Создать", timeout=60_000):
+def open_form_from_list(page, *, heading, url, button="Создать", timeout=UI_TIMEOUT_MS):
     """Click a navigation button, verify the destination, recover one failed JS import."""
     base = AutoBasePage(page)
     source = page.url

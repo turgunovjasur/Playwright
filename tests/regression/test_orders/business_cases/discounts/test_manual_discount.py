@@ -12,6 +12,7 @@ import pytest
 from playwright.sync_api import expect
 
 from tests.regression.test_orders.helpers.flows.order import existing_order, open_new_order, select_order_product, save_order_by_reference, reopen_order_goods, promotion_card
+from utils.base_pages import UI_TIMEOUT_MS
 from utils.base_pages.auto_base_page import AutoBasePage
 from tests.regression.helpers.preparation.stock_guard import require_available
 
@@ -127,7 +128,7 @@ def run_line_amount(case):
         with allure.step("2 - Order yakunlash bosqichida jami 13 800"):
             base.click(name="Далее", exact=True)
             # Bosqich almashib bo‘lmaguncha eski grid maydonlarini qidirmaymiz.
-            expect(case.page.locator("label").filter(has_text=re.compile(r"^\s*ИТОГО\s*$")).filter(visible=True)).to_have_count(1, timeout=60_000)
+            expect(case.page.locator("label").filter(has_text=re.compile(r"^\s*ИТОГО\s*$")).filter(visible=True)).to_have_count(1, timeout=UI_TIMEOUT_MS)
             base.input(label="ИТОГО", expect_value="13800")
         _save_draft(case, 13800)
     with allure.step('3 - Saqlangan orderda mahsulot chegirmasi −200, umumiy order chegirmasi 0, jami 13 800 so‘m'):
@@ -140,7 +141,7 @@ def run_line_amount(case):
     with allure.step("5 - Qayta ochilgan order jami 13 800"):
         base.click(name="Далее", exact=True)
         # Bosqich almashib bo‘lmaguncha eski grid maydonlarini qidirmaymiz.
-        expect(case.page.locator("label").filter(has_text=re.compile(r"^\s*ИТОГО\s*$")).filter(visible=True)).to_have_count(1, timeout=60_000)
+        expect(case.page.locator("label").filter(has_text=re.compile(r"^\s*ИТОГО\s*$")).filter(visible=True)).to_have_count(1, timeout=UI_TIMEOUT_MS)
         base.input(label="ИТОГО", expect_value="13800")
         case.check("Qayta ochilgan jami (so'm)", Decimal("13800"), _number(base.input(label="ИТОГО", return_value=True)))
 
@@ -159,7 +160,7 @@ def run_order_amount(case):
         with allure.step("1 - Chegirmasiz 14 000 so'm bilan yakunlash bosqichini ochish"):
             base.click(name="Далее", exact=True)
             # Bosqich almashib bo‘lmaguncha eski grid maydonlarini qidirmaymiz.
-            expect(case.page.locator("label").filter(has_text=re.compile(r"^\s*ИТОГО\s*$")).filter(visible=True)).to_have_count(1, timeout=60_000)
+            expect(case.page.locator("label").filter(has_text=re.compile(r"^\s*ИТОГО\s*$")).filter(visible=True)).to_have_count(1, timeout=UI_TIMEOUT_MS)
             base.input(label="ИТОГО", expect_value="14000")
         with allure.step("2 - Butun orderga bir martalik 200 so'm chegirma"):
             _header_amount(case, -200)
@@ -173,7 +174,7 @@ def run_order_amount(case):
     with allure.step('5 - Qayta ochilgan orderga umumiy chegirma −200, jami 13 800 so‘m'):
         base.click(name="Далее", exact=True)
         # Bosqich almashib bo‘lmaguncha eski grid maydonlarini qidirmaymiz.
-        expect(case.page.locator("label").filter(has_text=re.compile(r"^\s*ИТОГО\s*$")).filter(visible=True)).to_have_count(1, timeout=60_000)
+        expect(case.page.locator("label").filter(has_text=re.compile(r"^\s*ИТОГО\s*$")).filter(visible=True)).to_have_count(1, timeout=UI_TIMEOUT_MS)
         base.input(label="Скидка/наценка к заказу", expect_value="-200")
         base.input(label="ИТОГО", expect_value="13800")
         case.check("Qayta ochilgan order chegirmasi", Decimal("-200"), _number(base.input(label="Скидка/наценка к заказу", return_value=True)))
@@ -202,7 +203,7 @@ def run_amounts_with_bonus(case):
         with allure.step('3 - Bonus bilan yakunlash: orderga umumiy chegirma berishdan oldin jami 69 000 so‘m'):
             base.click(name="Далее", exact=True)
             # Bosqich almashib bo‘lmaguncha eski grid maydonlarini qidirmaymiz.
-            expect(case.page.locator("label").filter(has_text=re.compile(r"^\s*ИТОГО\s*$")).filter(visible=True)).to_have_count(1, timeout=60_000)
+            expect(case.page.locator("label").filter(has_text=re.compile(r"^\s*ИТОГО\s*$")).filter(visible=True)).to_have_count(1, timeout=UI_TIMEOUT_MS)
             base.input(label="ИТОГО", expect_value="69000")
         with allure.step("4 - Butun orderga qo'shimcha −200: yakuniy jami 68 800"):
             _header_amount(case, -200)
@@ -222,7 +223,7 @@ def run_amounts_with_bonus(case):
     with allure.step('8 - Qayta ochilgan orderga umumiy chegirma −200, jami 68 800 so‘m'):
         base.click(name="Далее", exact=True)
         # Bosqich almashib bo‘lmaguncha eski grid maydonlarini qidirmaymiz.
-        expect(case.page.locator("label").filter(has_text=re.compile(r"^\s*ИТОГО\s*$")).filter(visible=True)).to_have_count(1, timeout=60_000)
+        expect(case.page.locator("label").filter(has_text=re.compile(r"^\s*ИТОГО\s*$")).filter(visible=True)).to_have_count(1, timeout=UI_TIMEOUT_MS)
         base.input(label="Скидка/наценка к заказу", expect_value="-200")
         base.input(label="ИТОГО", expect_value="68800")
         case.check("Qayta ochilgan order chegirmasi", Decimal("-200"), _number(base.input(label="Скидка/наценка к заказу", return_value=True)))

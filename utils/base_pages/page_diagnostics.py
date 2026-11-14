@@ -24,6 +24,9 @@ def report_page_expectation(method):
         try:
             return method(self, *args, **kwargs)
         except Exception as error:
+            # Preserve the inner check across nested AutoBasePage/Angular wrappers.
+            if not hasattr(error, "_smartup_expectation_gate"):
+                error._smartup_expectation_gate = getattr(self.page, "_smartup_expectation_gate", "")
             if getattr(error, "_smartup_expectation_reported", False):
                 raise
             # Diagnostika xatosi asl exceptionni almashtirmasligi kerak.

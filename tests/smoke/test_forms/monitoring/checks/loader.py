@@ -7,9 +7,10 @@ from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import expect
 
 from tests.smoke.test_forms.monitoring.checks.core import OPENED_WITH_DEFECT, reason_description
+from utils.base_pages import UI_TIMEOUT_MS
 
 
-DEFAULT_LOADER_TIMEOUT = 240_000
+DEFAULT_LOADER_TIMEOUT = UI_TIMEOUT_MS
 LOADER_NOT_FINISHED = "LOADER_NOT_FINISHED"
 BLOCKING_LOADER_SELECTORS = (
     ".block-ui-overlay:visible",

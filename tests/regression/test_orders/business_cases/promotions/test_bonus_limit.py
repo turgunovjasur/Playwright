@@ -13,6 +13,7 @@ from playwright.sync_api import expect
 from tests.regression.test_orders.helpers.flows.order import existing_order, open_new_order, select_order_product, save_order_by_reference, reopen_order_goods, promotion_card
 from tests.regression.test_orders.helpers.flows.stock import read_stock
 from tests.regression.test_orders.helpers.flows.order_status import cancel_order
+from utils.base_pages import UI_TIMEOUT_MS
 from utils.base_pages.auto_base_page import AutoBasePage
 from tests.regression.helpers.retry.checkpoints import reuse, verified
 from tests.regression.helpers.preparation.stock_guard import require_available
@@ -41,7 +42,7 @@ def _counter(case, expected):
         raise ValueError("Aksiya IDsi raqam bo‘lishi kerak")
     with allure.step("Aynan test aksiyasining View formasini ochish"):
         base.open_route(f"anor/mcg/action_view?action_id={action_id}",
-                        heading="Акция (просмотр)", timeout=45_000)
+                        heading="Акция (просмотр)", timeout=UI_TIMEOUT_MS)
         base.text(case.promotions["bonus"]["name"], include_input_values=True)
     with allure.step(f"Umumiy limit 2; berilgan bonus {expected} dona ekanini tekshirish"):
         base.tab(name="Лимит бонуса")

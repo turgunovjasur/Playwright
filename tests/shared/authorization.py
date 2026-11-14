@@ -4,6 +4,7 @@ import re
 import allure
 from playwright.sync_api import expect
 
+from utils.base_pages import UI_TIMEOUT_MS
 from utils.base_pages.base_page import BasePage
 from utils.base_pages.page_reporting import capture_filial
 from utils.data_store import load_data
@@ -22,8 +23,8 @@ def current_company_code():
 def _dismiss_announcement(announcement):
     """Login ortidan ko'ringan e'lonni yopib, navigatsiyani ochadi."""
     with allure.step("Login ortidan ochilgan e'lon oynasini yopish"):
-        announcement.locator(".announcement_dismiss").click(timeout=60_000)
-        expect(announcement).to_be_hidden(timeout=60_000)
+        announcement.locator(".announcement_dismiss").click(timeout=UI_TIMEOUT_MS)
+        expect(announcement).to_be_hidden(timeout=UI_TIMEOUT_MS)
 
 
 def install_announcement_handler(page):
@@ -57,8 +58,8 @@ def login(page, email=None, password=None, *, profile=None):
 # ----------------------------------------------------------------------------------------------------------------------
 
 def dashboard(page):
-    # BasePage(page).expect_page(heading="Trade", url="dashboard", timeout=480_000)
-    BasePage(page).expect_page(url="dashboard", timeout=480_000)
+    # BasePage(page).expect_page(heading="Trade", url="dashboard", timeout=UI_TIMEOUT_MS)
+    BasePage(page).expect_page(url="dashboard", timeout=UI_TIMEOUT_MS)
     confirm_login(page)
     capture_filial(page)
 

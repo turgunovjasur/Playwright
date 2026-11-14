@@ -2,10 +2,11 @@ import allure
 from urllib.parse import unquote, urlsplit
 
 from tests.smoke.flows.flow_authorization import authorization
+from utils.base_pages import UI_TIMEOUT_MS
 from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("User")]
-ROLE_FORMS_LOADER_TIMEOUT = 2_400_000
+ROLE_FORMS_LOADER_TIMEOUT = UI_TIMEOUT_MS
 
 # ----------------------------------------------------------------------------------------------------------------------
 

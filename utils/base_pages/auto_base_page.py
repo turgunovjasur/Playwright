@@ -6,6 +6,7 @@ from urllib.parse import urlsplit
 
 from playwright.sync_api import expect
 
+from utils.base_pages import UI_TIMEOUT_MS
 from utils.base_pages.angular_base_page import AngularBasePage
 from utils.base_pages.base_page import BasePage
 from utils.base_pages.page_diagnostics import expectation_gate, report_page_expectation
@@ -57,7 +58,7 @@ class AutoBasePage:
         self,
         heading=None,
         url=None,
-        timeout=480_000,
+        timeout=UI_TIMEOUT_MS,
         check_unblocked=True,
         root=None,
         *,

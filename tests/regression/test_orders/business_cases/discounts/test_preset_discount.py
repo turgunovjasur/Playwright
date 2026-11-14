@@ -8,6 +8,7 @@ from playwright.sync_api import expect
 
 from tests.regression.test_orders.business_cases.discounts.test_manual_discount import _number, _open_goods, _save_draft, _saved_amounts
 from tests.regression.test_orders.helpers.flows.order import reopen_order_goods
+from utils.base_pages import UI_TIMEOUT_MS
 from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [pytest.mark.regression, pytest.mark.order_positive,
@@ -42,7 +43,7 @@ def run_preset_discount(case):
     with allure.step("2 - Yakunlash bosqichida chegirma 1 400 va jami 12 600"):
         base.click(name="Далее", exact=True)
         # Bosqich almashib bo‘lmaguncha eski grid maydonlarini qidirmaymiz.
-        expect(case.page.locator("label").filter(has_text=re.compile(r"^\s*ИТОГО\s*$")).filter(visible=True)).to_have_count(1, timeout=60_000)
+        expect(case.page.locator("label").filter(has_text=re.compile(r"^\s*ИТОГО\s*$")).filter(visible=True)).to_have_count(1, timeout=UI_TIMEOUT_MS)
         base.input(label="Сумма скидки/наценки", expect_value=str(-discount))
         base.input(label="ИТОГО", expect_value=str(total))
         case.check("Mahsulotlar chegirmasi (so'm)", -discount,
@@ -59,7 +60,7 @@ def run_preset_discount(case):
     with allure.step("5 - Qayta ochilgan yakuniy summa 12 600 va chegirma −1 400"):
         base.click(name="Далее", exact=True)
         # Bosqich almashib bo‘lmaguncha eski grid maydonlarini qidirmaymiz.
-        expect(case.page.locator("label").filter(has_text=re.compile(r"^\s*ИТОГО\s*$")).filter(visible=True)).to_have_count(1, timeout=60_000)
+        expect(case.page.locator("label").filter(has_text=re.compile(r"^\s*ИТОГО\s*$")).filter(visible=True)).to_have_count(1, timeout=UI_TIMEOUT_MS)
         base.input(label="Сумма скидки/наценки", expect_value=str(-discount))
         base.input(label="ИТОГО", expect_value=str(total))
         case.check("Qayta ochilgan chegirma (so'm)", -discount,

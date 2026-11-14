@@ -2,6 +2,7 @@ import re
 
 import allure
 from tests.smoke.flows.flow_authorization import authorization
+from utils.base_pages import UI_TIMEOUT_MS
 from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("User")]
@@ -76,7 +77,7 @@ def run_role(page):
 
     with allure.step("5 - Rolni saqlab, ro'yxatga qaytish"):
         base.click(name="Сохранить", exact=True)
-        base.expect_page(heading="Роли", url="role_list", timeout=1_200_000)
+        base.expect_page(heading="Роли", url="role_list", timeout=UI_TIMEOUT_MS)
 
     with allure.step("6 - Saqlangan barcha ruxsatlarni qayta tekshirish"):
         base.grid("Админ")

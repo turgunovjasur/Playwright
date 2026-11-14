@@ -10,9 +10,10 @@ from tests.smoke.test_forms.monitoring.checks.core import (
     clean_text,
     reason_description,
 )
+from utils.base_pages import UI_TIMEOUT_MS
 
 
-DEFAULT_TITLE_TIMEOUT = 60_000
+DEFAULT_TITLE_TIMEOUT = UI_TIMEOUT_MS
 TITLE_NOT_REACHED = "TITLE_NOT_REACHED"
 TITLE_SOURCES = {
     "legacy": "visible_heading",

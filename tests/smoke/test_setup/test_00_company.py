@@ -2,13 +2,14 @@ import allure
 
 from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.test_setup.flow_setup.flow_license import license_policy_disabled
+from utils.base_pages import UI_TIMEOUT_MS
 from utils.data_store import save_data
 from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Company")]
 
 # Faqat company create/save flowiga tegishli lokal timeout: 40 minut.
-COMPANY_SAVE_TIMEOUT = 2_400_000
+COMPANY_SAVE_TIMEOUT = UI_TIMEOUT_MS
 
 # ----------------------------------------------------------------------------------------------------------------------
 

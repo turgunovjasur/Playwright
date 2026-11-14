@@ -1,6 +1,5 @@
 import allure
 
-from tests.smoke.test_forms.monitoring.checks.url import detect_shell
 from tests.smoke.test_forms.monitoring.reporting import (
     build_form_result as _build_form_result,
     form_navigation_track,
@@ -8,6 +7,7 @@ from tests.smoke.test_forms.monitoring.reporting import (
     format_form_result as _format_form_result,
     write_terminal_report as _write_terminal_report,
 )
+from utils.base_pages import UI_TIMEOUT_MS
 from utils.base_pages.auto_base_page import AutoBasePage
 from utils.helper_utils import first_non_admin_filial
 from utils.report_context import page_context
@@ -20,15 +20,6 @@ format_form_result = _format_form_result
 write_terminal_report = _write_terminal_report
 
 
-FORM_TIMEOUT = 60_000
-A2_FORM_TIMEOUT = 480_000
-
-
-def _form_timeout(page):
-    """Joriy shell uchun navigatsiya kutish limitini tanlaydi."""
-    return A2_FORM_TIMEOUT if detect_shell(page.url) == "a2" else FORM_TIMEOUT
-
-
 def _select_operational_filial(names):
     """Filial nomlaridan birinchi ``Администрирование`` bo'lmaganini tanlaydi."""
     return first_non_admin_filial(names)
@@ -38,7 +29,7 @@ def first_operational_filial(page):
     """Birinchi operatsion filialga o'tib, UI'da tasdiqlangan nomini oladi."""
     AutoBasePage(page).switch_filial(
         first_filial=True,
-        timeout=_form_timeout(page),
+        timeout=UI_TIMEOUT_MS,
     )
     # Ikkala switch_filial implementationi ham nomni UI assertionidan so'ng yozadi.
     return _select_operational_filial([page_context(page).get("filial", "")])
@@ -49,7 +40,7 @@ def first_operational_filial(page):
 
 def switch_forms_filial(page, name):
     """Joriy legacy/A2 shell turiga mos filial selectorini ishlatadi."""
-    AutoBasePage(page).switch_filial(name=name, timeout=_form_timeout(page))
+    AutoBasePage(page).switch_filial(name=name, timeout=UI_TIMEOUT_MS)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -58,7 +49,7 @@ def switch_forms_filial(page, name):
 def _click_page_links(page, page_links):
     base = AutoBasePage(page)
     for page_link in page_links:
-        base.page_link(name=page_link, timeout=_form_timeout(page))
+        base.page_link(name=page_link, timeout=UI_TIMEOUT_MS)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -89,7 +80,7 @@ def open_menu_form(
             menu_column=menu_column,
             menu_item=menu_item,
             add_icon=add_icon,
-            timeout=_form_timeout(page),
+            timeout=UI_TIMEOUT_MS,
         )
         _click_page_links(page, links)
 
@@ -124,9 +115,9 @@ def open_create_dropdown_form(
         page_links=links,
     )
     with allure.step(f"Navigatsiya | Yo'l: {track}"):
-        AutoBasePage(page).action(name=action, menu="Создать", timeout=_form_timeout(page))
+        AutoBasePage(page).action(name=action, menu="Создать", timeout=UI_TIMEOUT_MS)
         if action_path:
-            AutoBasePage(page).expect_page(url=action_path, timeout=_form_timeout(page))
+            AutoBasePage(page).expect_page(url=action_path, timeout=UI_TIMEOUT_MS)
         _click_page_links(page, links)
 
 
