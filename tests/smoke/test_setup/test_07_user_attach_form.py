@@ -1,6 +1,7 @@
 import allure
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
-from tests.smoke.flows.flow_authorization import authorization
+from tests.smoke.flows.flow_authorization import authorization, current_company_code
 from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("User")]
@@ -42,10 +43,22 @@ def run_user_attach_form(page, code):
         base.expect_page(heading="Пользователи", url="anor/mr/user_list")
 
     with allure.step("2 - Foydalanuvchi view sahifasini ochish"):
-        base.grid(f"natural_person-pw{code}", click=True)
-        base.click(name="Просмотреть")
+        login = f"user-pw{code}@{current_company_code()}"
+        list_url = page.url
+        view_button = page.get_by_role("button", name="Просмотреть", exact=True)
+        for attempt in range(2):
+            row = base.grid(f"natural_person-pw{code}", login)
+            row.get_by_text(login, exact=True).click()
+            try:
+                view_button.click(timeout=5_000)
+            except PlaywrightTimeoutError:
+                if attempt or page.url != list_url or view_button.is_visible():
+                    raise
+                # The list can redraw and close the selected row's actions.
+                continue
+            break
         base.expect_page(heading="Пользователь (просмотр)", url="user_view")
-        base.text(f"natural_person-pw{code}", include_input_values=True)
+        base.text(f"natural_person-pw{code}", login, include_input_values=True)
 
     with allure.step("3 - Foydalanuvchining Формы ruxsatlari sahifasini ochish"):
         base.tab("Формы", section=True)

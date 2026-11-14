@@ -1,5 +1,7 @@
-import allure
 from urllib.parse import unquote, urlsplit
+
+import allure
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 from tests.smoke.flows.flow_authorization import authorization
 from utils.base_pages import UI_TIMEOUT_MS
@@ -31,9 +33,21 @@ def run_role_attach_form(page):
         base.expect_page(heading="Роли", url="trade/tr/role_list")
 
     with allure.step("3 - Admin rolining view formasini ochish"):
-        base.grid("Админ", click=True)
-        base.click(name="Просмотреть")
+        role_name = page.locator("main").get_by_text("Админ", exact=True).filter(visible=True)
+        view_button = page.get_by_role("button", name="Просмотреть", exact=True)
+        list_url = page.url
+        for attempt in range(2):
+            role_name.click()
+            try:
+                view_button.click(timeout=5_000)
+            except PlaywrightTimeoutError:
+                if attempt or page.url != list_url or view_button.is_visible():
+                    raise
+                # A grid redraw can dismiss the row actions before the click.
+                continue
+            break
         base.expect_page(heading="Роль (Просмотр)", url="role_view")
+        base.text("Админ", include_input_values=True)
 
     with allure.step("4 - Admin rolining formalar ruxsatini ochish"):
         base.tab("Формы", section=True)

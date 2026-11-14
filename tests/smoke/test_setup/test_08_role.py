@@ -1,4 +1,5 @@
 import re
+from urllib.parse import urlsplit
 
 import allure
 from tests.smoke.flows.flow_authorization import authorization
@@ -76,8 +77,27 @@ def run_role(page):
             base.checkbox(label=permission, checked=True)
 
     with allure.step("5 - Rolni saqlab, ro'yxatga qaytish"):
-        base.click(name="Сохранить", exact=True)
-        base.expect_page(heading="Роли", url="role_list", timeout=UI_TIMEOUT_MS)
+        timed_out = False
+
+        def on_request_failed(request):
+            nonlocal timed_out
+            if (urlsplit(request.url).path.endswith("/trade/tr/role_list:table")
+                    and request.failure == "net::ERR_TIMED_OUT"):
+                timed_out = True
+
+        page.on("requestfailed", on_request_failed)
+        try:
+            base.click(name="Сохранить", exact=True)
+            try:
+                base.expect_page(heading="Роли", url="role_list", timeout=UI_TIMEOUT_MS)
+            except AssertionError:
+                if not timed_out or not urlsplit(page.url).path.endswith("/trade/tr/role_list"):
+                    raise
+                with allure.step("Rollar jadvali timeout bo‘ldi: ro‘yxatni bir marta qayta ochish"):
+                    page.reload(wait_until="domcontentloaded")
+                    base.expect_page(heading="Роли", url="role_list")
+        finally:
+            page.remove_listener("requestfailed", on_request_failed)
 
     with allure.step("6 - Saqlangan barcha ruxsatlarni qayta tekshirish"):
         base.grid("Админ")
