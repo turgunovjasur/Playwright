@@ -109,8 +109,7 @@ def web_verify_order_visit(page, visit):
         base.input(label="Клиент", expect_value=client_name)
 
     with allure.step("6 - Linked order grididagi product va summalarni tekshirish"):
-        base.click(name="Заказы", exact=True)
-        base.wait_for_loader()
+        base.tab("Заказы", section=True)
         order_row = base.grid(product_name, price_type_name, room_name, client_name, "Новый")
         base.grid_cell(order_row, 0, expect_value=price_type_name)
         base.grid_cell(order_row, 1, expect_value=visit.quantity)

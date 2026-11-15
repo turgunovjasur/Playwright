@@ -48,7 +48,7 @@ def run_report_integration_three_check(page):
         base.checkbox(label="Подтипы характеристик", expect_checked=True)
 
     with allure.step("3 - Settings ustunlari va nomlash defaultlarini tekshirish"):
-        base.click(name="Настройки", exact=True)
+        base.tab("Настройки", section=True)
         base.checkbox(label="Отображать штрих-код", expect_checked=True, index=0)
         base.checkbox(label="Отображать артикул код", expect_checked=True, index=0)
         base.checkbox(label="Отображать единицу измерения", expect_checked=True, index=0)
@@ -68,7 +68,7 @@ def run_report_integration_three_check(page):
         base.checkbox(label="Отображать название склада", expect_checked=True)
         base.checkbox(label="Отображать адрес склада", expect_checked=True)
         base.text("Настройки типов документов", "Заказ", "Инвентаризация расход")
-        base.click(name="Параметры", exact=True)
+        base.tab("Параметры", section=True)
 
     with allure.step("4 - HTML previewdagi Склады, Документы va Остатки sheetlarini tekshirish"):
         base.click(name="Сформировать", exact=True)
