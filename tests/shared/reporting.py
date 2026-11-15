@@ -351,6 +351,16 @@ def _clean_current_allure_results(results_dir):
             item.unlink(missing_ok=True)
 
 
+def _allure_environment(company_url):
+    address = urlsplit(company_url)
+    hostname = address.hostname or ""
+    if "xtrade" in address.path.lower().split("/") or hostname.split(".")[0] == "xtrade":
+        return "Xtrade"
+    if hostname == "smartup.online":
+        return "Smartup Online"
+    return hostname or "Unknown"
+
+
 def prepare_allure_results(run_info, root_dir, *, results_dir=None):
     """Metadata aynan pytest tanlagan Allure katalogiga yoziladi."""
     root_dir = Path(root_dir)
@@ -369,7 +379,7 @@ def prepare_allure_results(run_info, root_dir, *, results_dir=None):
         environment_file.write(f"Server={run_info['company_url']}\n")
         run_mode = "Create company" if run_info["create_company"] else "Existing company"
         environment_file.write(f"Run.Mode={run_mode}\n")
-        environment_file.write("Environment=Staging\n")
+        environment_file.write(f"Environment={_allure_environment(run_info['company_url'])}\n")
 
     executor_path = results_dir / "executor.json"
     executor_data = {
