@@ -14,6 +14,7 @@ from scripts.report_lifecycle import generate_report, generate_test_summary, sho
 from tests.shared import config as run_config, reporting
 from tests.shared.authorization import authorization
 from tests.shared.browser import browser_context, browser_page
+from tests.shared.forms_shutdown import arm_forms_shutdown
 from utils.base_pages import UI_TIMEOUT_MS
 from utils.data_store import data_file, load_data_file, write_data_file
 from utils.logger import get_logger, write_failure_log
@@ -300,11 +301,28 @@ def logger(request):
 @pytest.hookimpl(hookwrapper=True, tryfirst=True)
 def pytest_runtest_protocol(item, nextitem):
     """Skip/setup failure ham kiradigan testcase chegarasida kontekstni ajratadi."""
+    item.session._smartup_last_item_is_forms = getattr(item, "_smartup_forms_runner", False)
     token = begin_test(item.nodeid)
     try:
         yield
     finally:
         end_test(token)
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtest_teardown(item, nextitem):
+    if getattr(item, "_smartup_forms_runner", False) and (
+        nextitem is None or item.session.shouldstop or item.session.shouldfail
+    ):
+        arm_forms_shutdown(item.config)
+
+
+@pytest.hookimpl(wrapper=True, tryfirst=True, specname="pytest_sessionfinish")
+def pytest_sessionfinish_forms_shutdown(session):
+    # Interruptions can jump directly to sessionfinish without a last teardown.
+    if getattr(session, "_smartup_last_item_is_forms", False):
+        arm_forms_shutdown(session.config)
+    return (yield)
 
 
 def pytest_runtest_logreport(report):
