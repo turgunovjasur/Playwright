@@ -282,7 +282,7 @@ def ui_row(page, table, columns, field, value):
         raise RetryBlocked("Serverdan qidirish uchun joriy UI sessiyasi tayyor emas")
     result = page.request.post(journal.ui_root + "/b/" + table,
                                headers=journal.ui_headers,
-                               data=query_payload(columns, field, value))
+                               data=query_payload(columns, field, value), max_retries=1)
     if result.status != 200:
         raise RetryBlocked(f"Saqlangan yozuvni qidirish HTTP {result.status}; create bajarilmaydi")
     row = one_row(result.json(), columns, field, value)

@@ -86,6 +86,12 @@ class GroupLogin:
     def authorize(self, page, baseline, directory):
         if _identity(baseline) != self.identity:
             raise RegressionEnvironmentError('Guruh login konteksti server/user/filialga mos emas')
+        survey = page.get_by_role('dialog').filter(
+            has=page.get_by_role('heading', name='NPS Survey', exact=True)
+        )
+        page.add_locator_handler(
+            survey, lambda dialog: dialog.get_by_role('button', name='Закрыть', exact=True).click()
+        )
         started = monotonic()
         reused = self.storage is not None
         mode = 'reused' if reused else 'first_login'
