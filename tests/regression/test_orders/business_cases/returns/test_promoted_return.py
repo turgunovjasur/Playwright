@@ -14,7 +14,7 @@ from playwright.sync_api import expect
 
 from tests.regression.test_orders.helpers.flows.order import existing_order, open_new_order, promotion_card, save_order_by_reference, select_order_product
 from tests.regression.test_orders.helpers.flows.returns import _return_lot_row, archive_return, fill_return_items, finish_return, open_return_from_order, open_return_view, save_return_draft
-from tests.regression.test_orders.helpers.flows.settlement import allocate_to_order, change_order_status, post_cashin, read_debts, read_settlement, _number
+from tests.regression.test_orders.helpers.flows.settlement import allocate_to_order, change_order_status, post_cashin, read_debts, read_settlement, _columns, _number
 from tests.regression.test_orders.helpers.flows.stock import read_stock
 from tests.shared.navigation import open_form_from_list
 from tests.shared.list_search import find_list_record
@@ -234,15 +234,16 @@ def _return(case, *, key, goods, bonus, credit, previous_credit, goods_remaining
     source = case.workflow["source_order"]
     # Qaytarish TTN maydoni UI maxlength=10; ikkala hujjat uchun alohida kod.
     reference = source["reference"][-8:] + ("R1" if key == "partial_return" else "R2")
-    from tests.regression.helpers.retry.reconcile import is_retry, ui_row, confirm_entity
+    from tests.regression.helpers.retry.reconcile import ui_row, confirm_entity
     base = AutoBasePage(case.page)
-    with allure.step("Qaytarishni ro‘yxatda TTN orqali qidirish"):
+    with allure.step("Qaytarishni order IDsi orqali qidirish va TTN bo‘yicha tekshirish"):
         base.navigate_to(tab="Продажа", name="Возвраты")
         base.expect_page(heading="Возвраты", url="return_list")
-        label = "Номер товарно-транспортной накладной"
-        base.grid_setting(menu_name="Настройка таблицы", field_name=label, search_name=label)
-        saved = find_list_record(base, "return_list", "delivery_number", reference)
-    if saved or is_retry():
+        _columns(case.page, {"reference": "Номер товарно-транспортной накладной", "source_id": "ИД заказа"},
+                 search_name="ИД заказа")
+        saved = find_list_record(base, "return_list", "order_deal_id", source["id"],
+                                 also_match={"delivery_number": reference})
+        # Order search is scoped to one source. Check the TTN across orders before a new Save.
         confirmed = ui_row(case.page, "anor/mdeal/return/return_list:table",
                            ["deal_id", "delivery_number", "order_deal_id"], "delivery_number", reference)
         if saved and (not confirmed or str(saved["deal_id"]) != str(confirmed["deal_id"])):

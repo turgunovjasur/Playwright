@@ -14,9 +14,10 @@ def _has_filter(node, field, pattern):
     return any(_has_filter(child, field, pattern) for child in node if isinstance(child, list))
 
 
-def find_list_record(base, table, field, value, *, search_field=None):
-    """Return the exact row from this UI search, or None after a complete result."""
+def find_list_record(base, table, field, value, *, search_field=None, also_match=None):
+    """Search by field and require exact matches on any additional identity columns."""
     value = str(value)
+    expected = {**(also_match or {}), field: value}
     if not value.strip():
         raise ValueError("Ro‘yxat qidiruvi uchun qiymat bo‘sh")
     escaped = value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
@@ -43,11 +44,14 @@ def find_list_record(base, table, field, value, *, search_field=None):
         result = response.json()
         columns = params.get("column", [])
         rows = result.get("data") if isinstance(result, dict) else None
-        if (not isinstance(rows, list) or field not in columns
+        if (not isinstance(rows, list) or not expected.keys() <= set(columns)
                 or str(result.get("count")) != str(len(rows)) or int(params.get("offset", 0)) != 0):
             raise AssertionError(f"{table}: {field} bo‘yicha natija to‘liq emas")
         records = [dict(zip(columns, row, strict=True)) for row in rows]
-        matches = [row for row in records if str(row[field]) == value]
+        matches = [
+            row for row in records
+            if all(str(row[key]) == str(wanted) for key, wanted in expected.items())
+        ]
         if len(matches) > 1:
             raise AssertionError(f"{table}: {field}={value} bo‘yicha bir nechta yozuv topildi")
         if matches:
