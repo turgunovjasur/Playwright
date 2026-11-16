@@ -6,7 +6,7 @@ import html
 import re
 import time
 
-from .constants import AI_CONFIDENCE_LABELS, MAX_MESSAGE_LENGTH, TASHKENT_TZ
+from .constants import MANUAL_SUITE, AI_CONFIDENCE_LABELS, MAX_MESSAGE_LENGTH, TASHKENT_TZ
 from .formatting import (
     _clock_text,
     format_duration,
@@ -66,6 +66,11 @@ def _progress_time_lines(state):
 
 
 def _final_result_lines(state):
+    if state.get("target") == MANUAL_SUITE:
+        lines = [str(state.get("summary") or "")]
+        if not state.get("report_url"):
+            lines.append("Allure hisoboti mavjud emas. CI bosqichlarini run havolasidan ko‘ring.")
+        return lines
     metrics = _result_metrics(state)
     result = str(state.get("result") or "").upper()
     is_forms = str(state.get("target") or "").strip().lower() == "forms"

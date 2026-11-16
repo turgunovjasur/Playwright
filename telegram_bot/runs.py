@@ -7,7 +7,7 @@ import threading
 import time
 
 from .bot_delivery import safe_delete_transient_messages
-from .bot_messages import active_run_text, busy_run_text
+from .bot_messages import active_run_text, busy_run_text, report_keyboard
 from .constants import STATUS_POLL_ERROR_LIMIT, STATUS_POLL_INTERVAL_SECONDS
 from .models import ActiveRun
 
@@ -49,7 +49,7 @@ def start_run(
             f"{request.suite_label} testi boshlanyapti...",
         )
         try:
-            workflow_run = github.dispatch(request, telegram_progress_message_id=message_id)
+            workflow_run = github.dispatch(request)
         except Exception as exc:
             telegram.edit_message(chat_id, message_id, f"Testni boshlashda xato: {exc}")
             return
@@ -98,7 +98,16 @@ def monitor_run(
 
     while True:
         try:
-            status, _conclusion, _html_url = github.get_run_status(workflow_run.run_id)
+            status, conclusion, _html_url = github.get_run_status(workflow_run.run_id)
+            if status == "completed":
+                records = github.delivery_statuses(workflow_run.run_id)
+                report = next((item for item in records if item.get("report_url")), {})
+                keyboard = report_keyboard(report["report_url"]) if report else None
+                outcome = (conclusion or "unknown").upper()
+                text = f"API setup + Regression · {outcome}\n{workflow_run.html_url}"
+                if not report:
+                    text += "\nAllure hisoboti mavjud emas."
+                telegram.send_message(chat_id, text, reply_markup=keyboard)
         except Exception as exc:
             status_errors += 1
             print(

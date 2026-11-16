@@ -229,3 +229,7 @@ test-results/allure-history/
 
 # Playwright MCP session output
 .playwright-mcp/
+
+# Hetzner Playwright report host
+/report-auth/
+/report-storage/

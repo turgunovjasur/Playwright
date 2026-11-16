@@ -116,3 +116,27 @@ Bot faqat Telegram va GitHub API’lariga outbound HTTPS so‘rovlari yuboradi.
 Compose konfiguratsiyasi containerga `0.25 CPU`, `128 MB` RAM, read-only root
 filesystem, `no-new-privileges`, dropped Linux capabilities va log rotation
 chegaralarini beradi.
+
+## API setup va Order regression hisobotlari
+
+Botda `/run` → Online yoki Xtrade → run paroli. Bitta CI jobda
+`scripts/run_tests.py api-setup` tasdiqlagan baseline ustida
+`tests/regression/run.py` ishlaydi. Tayyor Allure Telegram tugmasida ochiladi.
+Brauzer uchun foydalanuvchi `qa`; viewer paroli deploy paytida botning run
+paroliga moslanadi. Run paroli o‘zgarsa viewer hashini ham yangilang.
+
+`reports` Compose servisi `report-storage/` ichidagi run-attempt HTML fayllarini
+o‘qishga beradi. CI alohida `ci` hisobida HTTPS PUT bilan joylaydi.
+GitHub Actions sozlamalari:
+
+- `ALLURE_REPORT_BASE_URL` repository variable — HTTPS manzili va
+  `/playwright-reports` prefiksi.
+- `ALLURE_UPLOAD_PASSWORD` repository secret — faqat CI publish paroli.
+
+Hostda `report-auth/viewers` va `report-auth/publisher` Nginx htpasswd
+fayllari bo‘lishi kerak. Ularni Git tashqarisida saqlang.
+`report-storage` konteynerdagi UID 101 uchun yoziladigan katalog.
+`telegram_bot/deploy/.env` ichidagi `ALLURE_BIND_ADDRESS` Docker ichki gateway
+manzilini tanlaydi. Mavjud TLS proxy `/playwright-reports/` prefiksini olib
+tashlab shu manzildagi 18086-portga uzatadi va upstreamga cookie yubormaydi.
+Serverdagi scoped retention eski HTML fayllarini yetti kundan keyin tozalaydi.

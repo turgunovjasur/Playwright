@@ -26,3 +26,22 @@ services:
     mem_limit: 128m
     stop_grace_period: 30s
     logging: *default-logging
+
+  reports:
+    image: nginxinc/nginx-unprivileged:stable-alpine
+    user: "101:101"
+    restart: unless-stopped
+    read_only: true
+    ports:
+      - "${ALLURE_BIND_ADDRESS:-127.0.0.1}:18086:8080"
+    volumes:
+      - ./reports-nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ../../report-storage:/reports
+      - ../../report-auth:/auth:ro
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    logging: *default-logging

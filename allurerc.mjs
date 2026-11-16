@@ -119,7 +119,7 @@ export default defineConfig({
         charts: minimalCharts,
         stepTreeExpansion: "expand_failed_only",
         defaultSortBy: "order,asc",
-        singleFile: false,
+        singleFile: process.env.ALLURE_SINGLE_FILE === "1",
       },
     },
   },

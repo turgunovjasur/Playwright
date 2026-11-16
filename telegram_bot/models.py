@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .constants import SUITES
+from .constants import TARGET_LABELS
 
 
 @dataclass(frozen=True)
@@ -14,7 +14,7 @@ class RunRequest:
 
     @property
     def suite_label(self):
-        return SUITES[self.suite_key]
+        return TARGET_LABELS[self.suite_key]
 
 
 @dataclass(frozen=True)

@@ -11,56 +11,16 @@ from .constants import TASHKENT_TZ
 
 def help_text():
     return (
-        "Test run qilish uchun /run yuboring. Oxirgi CI va Telegram "
-        "notification holati uchun /status yuboring. Barcha active CI runlarini "
-        "to'xtatish uchun /stop yuboring.\n\n"
-        "Bot avval Smoke yoki Forms suite'ini, keyin serverni so'raydi.\n"
-        "So'ngra parol so'raladi — to'g'ri parol kiritilsa tanlangan test ishga tushadi.\n"
-        "Company code/password GitHub Secrets'dan olinadi.\n"
-        "Smoke: User setup va Group-0. Forms: faqat markaziy Forms runner.\n"
-        "Yakuniy test natijasini GitHub Actions workflow yuboradi.\n"
-        "Manual yoki GitHub cron testi jarayonda bo'lsa yangi /run rad etiladi.\n"
-        "Soatlik Smoke, Report va Forms runlarini faqat GitHub cron boshqaradi; "
-        "bot faqat Smoke yoki Forms manual triggeri uchun.\n\n"
-        "To'liq qo'llanma uchun /start yuboring."
+        "/run — serverni tanlang va run parolini yuboring. API setup muvaffaqiyatli "
+        "tugagach Order regression testlari boshlanadi. Tayyor Allure hisobotini "
+        "yakuniy xabardagi tugma orqali oching.\n"
+        "/status — oxirgi CI holati. /stop — parol bilan faol runlarni to‘xtatish."
     )
 
 
 def start_text(config):
-    servers = "\n".join(f"  • {config.servers[key]}" for key in sorted(config.allowed_server_keys))
-    return (
-        "👋 Salom! Bu — Playwright Smoke va Forms testlarini GitHub Actions "
-        "orqali manual ishga tushiradigan CI bot.\n"
-        "\n"
-        "📌 Nima qiladi:\n"
-        "Testlarni GitHub Actions workflowda ishga tushiradi va natijani shu chatga yuboradi. "
-        "Company code/parol GitHub Secrets'da saqlanadi — bu yerda kiritilmaydi.\n"
-        "\n"
-        "🚀 Qanday run qilinadi:\n"
-        "1. /run yuboring\n"
-        "2. Smoke yoki Forms suite'ini tanlang\n"
-        "3. Serverni tanlang — Online yoki Xtrade\n"
-        "4. Bot parol so'raydi — to'g'ri parolni kiriting (parol QA jamoasida)\n"
-        "5. Parol to'g'ri bo'lsa test boshlanadi, bitta xabar jonli yangilanadi\n"
-        "6. Tugagach yakuniy natija (passed/failed) shu xabarda chiqadi\n"
-        "\n"
-        "🌐 Serverlar:\n"
-        f"{servers}\n"
-        "\n"
-        "🧪 Nima test qilinadi:\n"
-        "Smoke — User setup → Group-0. Forms — faqat markaziy Forms runner.\n"
-        "\n"
-        "📊 Natija xabari:\n"
-        "Status, hozirgi qadam, passed ro'yxati; failed bo'lsa Group / Runner test / "
-        "Ichki test / Step / Error turi ko'rsatiladi.\n"
-        "\n"
-        "⏱ Soatlik run:\nGitHub cron Online Smoke va Report'ni mustaqil "
-        "boshlaydi; Online Forms Smoke tugagach ishlaydi.\n"
-        "\n"
-        "⚠️ Test ketayotganda yangi /run xabar bilan rad etiladi.\n"
-        "\n"
-        "Buyruqlar: /run  /stop  /status  /servers  /help  /start"
-    )
+    servers = ", ".join(config.servers[key] for key in sorted(config.allowed_server_keys))
+    return f"Smartup CI\n{help_text()}\nServerlar: {servers}"
 
 
 def workflow_status_label(run):
@@ -190,15 +150,8 @@ def status_text(telegram, github):
     return "\n".join(lines)
 
 
-def suite_keyboard():
-    return {
-        "inline_keyboard": [
-            [
-                {"text": "Smoke", "callback_data": "suite:smoke"},
-                {"text": "Forms", "callback_data": "suite:forms"},
-            ]
-        ]
-    }
+def report_keyboard(url):
+    return {"inline_keyboard": [[{"text": "Allure hisobotini ochish", "url": url}]]}
 
 
 def server_keyboard(config, suite_key):

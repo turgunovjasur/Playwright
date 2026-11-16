@@ -77,14 +77,14 @@ def run_attach_license(page, code, logger):
         base.expect_page(heading=re.compile(r"^\s*(?:Доступные пользователи|Пользователи прикрепленные к лицензии)\s*$"))  # navigation: same-url - Attaching a user refreshes the current available-users tab.
 
     with allure.step("6 - Oynani yopib, biriktirilgan foydalanuvchilarga qaytish"):
-        if xtrade:
+        if not xtrade:
+            base.click(name="Закрыть")
+        else:
             base.tab("Прикрепленные")
             base.grid_controller(search=f"natural_person-pw{code}")
             base.grid(f"natural_person-pw{code}", f"user-pw{code}")
             # This full-page A2 list has no Close button.
             base.navigate_to(tab="Главное", name="Лицензии")
-        else:
-            base.click(name="Закрыть")
         base.expect_page(heading="Лицензии", url="biruni/kl/license_list")
 
 # ----------------------------------------------------------------------------------------------------------------------

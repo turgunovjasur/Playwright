@@ -97,6 +97,8 @@ def command_finish(args):
     if isinstance(started_epoch, (int, float)):
         state["duration"] = format_duration(time.time() - started_epoch)
 
+    if env_value("REPORT_URL"):
+        state["report_url"] = env_value("REPORT_URL")
     if args.run_url:
         state["run_url"] = args.run_url
     if args.run_code:

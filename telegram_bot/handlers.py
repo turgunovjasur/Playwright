@@ -14,9 +14,8 @@ from .bot_messages import (
     start_text,
     status_text,
     stop_result_text,
-    suite_keyboard,
 )
-from .constants import SUITES
+from .constants import MANUAL_SUITE, MANUAL_SUITE_LABEL
 from .models import PendingRun, PendingStop, RunRequest
 from .runs import find_busy_run, start_run
 
@@ -123,11 +122,14 @@ def show_run_start(
         if local_active is not None:
             active_store.add_status_message(workflow_run.run_id, message_id)
         return
-    telegram.send_message(chat_id, "Qaysi testni run qilamiz?", reply_markup=suite_keyboard())
+    telegram.send_message(
+        chat_id, f"{MANUAL_SUITE_LABEL} uchun serverni tanlang.",
+        reply_markup=server_keyboard(config, MANUAL_SUITE),
+    )
 
 
 def password_matches(expected, provided):
-    return hmac.compare_digest(expected, (provided or "").strip())
+    return hmac.compare_digest(expected.encode(), (provided or "").strip().encode())
 
 
 def verify_run_password(
@@ -290,27 +292,13 @@ def handle_callback(
             active_store.add_status_message(workflow_run.run_id, active_message_id)
         return
 
-    if data.startswith("suite:"):
-        suite_key = data.split(":", 1)[1]
-        if suite_key not in SUITES:
-            telegram.answer_callback(callback_id, "Unknown suite")
-            return
-        telegram.answer_callback(callback_id, "Serverni tanlang")
-        telegram.edit_message(
-            chat_id,
-            message_id,
-            f"{SUITES[suite_key]}: qaysi serverda run qilamiz?",
-            reply_markup=server_keyboard(config, suite_key),
-        )
-        return
-
     if data.startswith("server:"):
         parts = data.split(":")
         if len(parts) != 3:
             telegram.answer_callback(callback_id, "Unknown server action")
             return
         _action, suite_key, server_key = parts
-        if suite_key not in SUITES:
+        if suite_key != MANUAL_SUITE:
             telegram.answer_callback(callback_id, "Unknown suite")
             return
         if server_key not in config.allowed_server_keys or server_key not in config.servers:
@@ -326,7 +314,7 @@ def handle_callback(
             chat_id,
             message_id,
             (
-                f"🔒 {SUITES[suite_key]} · {config.servers[server_key]}\n\n"
+                f"🔒 {MANUAL_SUITE_LABEL} · {config.servers[server_key]}\n\n"
                 "Testni run qilish uchun parolni yuboring:"
             ),
         )

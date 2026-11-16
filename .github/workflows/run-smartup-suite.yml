@@ -24,7 +24,7 @@ on:
 jobs:
   suite:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: ${{ inputs.target == 'api-regression' && 350 || 90 }}
     env:
       TEST_SERVER_KEY: ${{ inputs.server_key }}
       TEST_TARGET: ${{ inputs.target }}
@@ -142,7 +142,25 @@ jobs:
             echo "::add-mask::$GEMINI_API_KEY"
           fi
 
+      - name: API setup
+        id: api
+        if: inputs.target == 'api-regression'
+        env: &regression_env
+          COMPANY_URL: ${{ env.TEST_SERVER_URL }}
+          COMPANY_CODE: ${{ env.TEST_COMPANY_CODE }}
+          COMPANY_PASSWORD: ${{ env.TEST_COMPANY_PASSWORD }}
+          HEADLESS: "1"
+          DEFER_ALLURE_REPORT: "1"
+        run: python -u scripts/run_tests.py api-setup
+
+      - name: Order regression
+        id: regression
+        if: inputs.target == 'api-regression'
+        env: *regression_env
+        run: python -u tests/regression/run.py
+
       - name: Run test suite
+        if: inputs.target != 'api-regression'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -160,15 +178,41 @@ jobs:
 
       - name: Generate Allure report
         if: ${{ always() }}
+        id: report
+        env:
+          ALLURE_SINGLE_FILE: ${{ inputs.target == 'api-regression' && '1' || '0' }}
         run: |
-          if [ ! -d test-results/allure-results ]; then
+          results=test-results/allure-results
+          if [[ "$TEST_TARGET" == api-regression ]]; then
+            results=test-results/api-regression-allure-results
+            bash scripts/collect_ci_regression_results.sh
+          fi
+          if [ ! -d "$results" ]; then
             echo "Allure results not found; report generation skipped."
             exit 0
           fi
           python scripts/allure_report_cli.py generate \
-            test-results/allure-results \
+            "$results" \
             --output test-results/allure-report \
             --config allurerc.mjs
+
+      - name: Publish Allure to Hetzner
+        id: publish
+        if: ${{ !cancelled() && inputs.target == 'api-regression' && steps.report.outcome == 'success' && hashFiles('test-results/allure-report/index.html') != '' }}
+        env:
+          REPORT_BASE: ${{ vars.ALLURE_REPORT_BASE_URL }}
+          UPLOAD_PASSWORD: ${{ secrets.ALLURE_UPLOAD_PASSWORD }}
+        run: |
+          set -eu
+          : "${REPORT_BASE:?Allure host is missing}" "${UPLOAD_PASSWORD:?Allure upload password is missing}"
+          file="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.html"
+          grep -qx '<head>' test-results/allure-report/index.html
+          sed '/^<head>$/r telegram_bot/deploy/report-preferences.html' test-results/allure-report/index.html > "$RUNNER_TEMP/report.html"
+          status=$(curl --proto '=https' --silent --show-error --fail --retry 2 --output /dev/null --write-out '%{http_code}' \
+            --user "ci:${UPLOAD_PASSWORD}" --upload-file "$RUNNER_TEMP/report.html" \
+            "${REPORT_BASE%/}/upload/${file}")
+          [[ "$status" == 201 || "$status" == 204 ]]
+          echo "url=${REPORT_BASE%/}/${file}" >> "$GITHUB_OUTPUT"
 
       - name: Save Allure 3 history
         if: ${{ always() }}
@@ -182,6 +226,9 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          REPORT_URL: ${{ steps.publish.outputs.url }}
+          API_STATUS: ${{ steps.api.outcome }}
+          REGRESSION_STATUS: ${{ steps.regression.outcome }}
           JOB_STATUS: ${{ job.status }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
@@ -208,13 +255,18 @@ jobs:
           PY
           )
 
+          if [[ "$TEST_TARGET" == api-regression ]]; then
+            SUMMARY="API setup: ${API_STATUS}. Order regression: ${REGRESSION_STATUS}."
+          fi
           python telegram_bot/telegram_progress.py finish \
             --result "$JOB_STATUS" \
             --run-url "$RUN_URL" \
             --run-code "$RUN_CODE" \
             --summary "$SUMMARY"
 
-          python -m telegram_bot.screenshots
+          if [[ "$TEST_TARGET" != api-regression ]]; then
+            python -m telegram_bot.screenshots
+          fi
 
       - name: Upload Telegram delivery status
         if: ${{ always() }}
@@ -226,7 +278,7 @@ jobs:
           retention-days: 7
 
       - name: Upload test results
-        if: ${{ always() }}
+        if: ${{ always() && inputs.target != 'api-regression' }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.artifact_name }}

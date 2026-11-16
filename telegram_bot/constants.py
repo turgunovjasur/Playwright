@@ -16,12 +16,10 @@ TELEGRAM_MAX_RETRY_WAIT_SECONDS = 10
 
 TASHKENT_TZ = timezone(timedelta(hours=5))
 
-SUITES = {
-    "smoke": "Smoke",
-    "forms": "Forms",
-}
+MANUAL_SUITE = "api-regression"
+MANUAL_SUITE_LABEL = "API setup + Regression"
 
-WORKFLOW_JOB_SUITES = ("Smoke", "Report", "Forms")
+WORKFLOW_JOB_SUITES = ("Smoke", "Report", "Forms", MANUAL_SUITE_LABEL)
 
 WORKFLOW_JOB_ORDER = {suite: index for index, suite in enumerate(WORKFLOW_JOB_SUITES)}
 
@@ -53,6 +51,7 @@ FINAL_DELIVERY_ATTEMPTS = TELEGRAM_REQUEST_ATTEMPTS
 FINAL_RETRY_WAIT_BUDGET_SECONDS = TELEGRAM_MAX_RETRY_WAIT_SECONDS
 
 TARGET_LABELS = {
+    MANUAL_SUITE: MANUAL_SUITE_LABEL,
     "all": "All",
     "setup": "Setup",
     "setup-group-0": "Smoke",
@@ -67,6 +66,7 @@ TARGET_LABELS = {
 }
 
 TARGET_SUITE_LABELS = {
+    MANUAL_SUITE: MANUAL_SUITE_LABEL,
     "all": "All",
     "setup": "Setup",
     "setup-group-0": "Smoke · Setup + A group",

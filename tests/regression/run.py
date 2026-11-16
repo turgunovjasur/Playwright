@@ -134,7 +134,8 @@ def main():
     description = f"Order regression resume: {args.group}; manba {args.resume_run}" if args.resume_run else "Order regression: statuslar → aksiya → to‘lov → majburiy shartlar → ombor → bonus limiti → qaytarish → ko‘p order to‘lovi → qo‘lda skidka → TMZ limiti → ikki ombor → majburiy+ixtiyoriy aksiya → avtomatik hisob-kitob → orderdan oldingi avans"
     generate_test_summary(ROOT, environment, test_exit=result, command_text=description,
                           started_at=started, results_dir=results, output_dir=directory)
-    generate_run_report(directory,results,environment)
+    if environment.get("DEFER_ALLURE_REPORT") != "1":
+        generate_run_report(directory, results, environment)
     return result
 
 if __name__=="__main__":

@@ -9,6 +9,7 @@ on:
         default: smoke
         type: choice
         options:
+          - api-regression
           - all
           - smoke
           - report
@@ -32,6 +33,16 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  api-regression:
+    name: API setup + Regression
+    if: ${{ inputs.suite == 'api-regression' }}
+    uses: ./.github/workflows/run-smartup-suite.yml
+    with:
+      target: api-regression
+      server_key: ${{ inputs.server }}
+      artifact_name: api-regression-results
+    secrets: inherit
+
   smoke:
     name: Smoke
     if: ${{ inputs.suite == 'smoke' || inputs.suite == 'all' }}

@@ -50,9 +50,13 @@ class GitHubActionsClient:
             json={
                 "ref": self.ref,
                 "inputs": inputs,
+                "return_run_details": True,
             },
             timeout=30,
         )
+        if response.status_code == 200:
+            data = response.json()
+            return WorkflowRun(run_id=data["workflow_run_id"], html_url=data["html_url"])
         if response.status_code != 204:
             raise RuntimeError(f"GitHub dispatch failed: {response.status_code} {response.text}")
 
