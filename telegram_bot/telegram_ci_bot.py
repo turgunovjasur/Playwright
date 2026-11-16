@@ -79,12 +79,13 @@ def main():
                             text.strip(),
                             message_id if isinstance(message_id, int) else None,
                             dispatch_lock,
+                            sender_id=(message.get("from") or {}).get("id"),
                         )
                     continue
 
                 callback = update.get("callback_query")
                 if isinstance(callback, dict):
-                    handle_callback(telegram, github, config, active_store, pending_store, callback)
+                    handle_callback(telegram, github, config, active_store, pending_store, pending_stop_store, callback)
         except KeyboardInterrupt:
             print("Stopping Telegram CI bot.")
             return 0

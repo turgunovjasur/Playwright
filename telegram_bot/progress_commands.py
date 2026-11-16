@@ -83,7 +83,10 @@ def command_finish(args):
         return 0
 
     passed_values = {"success", "passed", "pass", "ok"}
-    result = "PASSED" if str(args.result or "").strip().lower() in passed_values else "FAILED"
+    outcome = str(args.result or "").strip().lower()
+    result = "PASSED" if outcome in passed_values else "FAILED"
+    if outcome == "cancelled":
+        result = "CANCELLED"
     state["result"] = result
     state["status"] = ""
     state["current"] = ""

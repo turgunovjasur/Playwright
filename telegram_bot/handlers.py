@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import hmac
+import re
 import requests
 import sys
 
+from .bot_client import TelegramAPIError
 from .bot_delivery import edit_or_send_message, safe_delete_message, safe_delete_transient_messages
 from .bot_messages import (
     busy_run_text,
@@ -15,23 +17,53 @@ from .bot_messages import (
     status_text,
     stop_result_text,
 )
-from .constants import MANUAL_SUITE, MANUAL_SUITE_LABEL
+from .constants import ACTIVE_WORKFLOW_RUN_STATUSES, MANUAL_SUITE, MANUAL_SUITE_LABEL
 from .models import PendingRun, PendingStop, RunRequest
 from .runs import find_busy_run, start_run
 
 
-def show_stop_prompt(telegram, chat_id, pending_stop_store):
-    prompt_message_id = telegram.send_message(
-        chat_id,
-        (
-            "🔒 Barcha active CI runlarini to'xtatish uchun parolni yuboring.\n"
-            "Bu queued va running workflow runlarning barchasini bekor qiladi."
-        ),
+def show_stop_prompt(
+    telegram, chat_id, pending_stop_store, pending_key, *,
+    run_id=None, attempt=None, progress_message_id=None,
+):
+    prompt = (
+        "🔒 Barcha active CI runlarini to'xtatish uchun parolni yuboring.\n"
+        "Bu queued va running workflow runlarning barchasini bekor qiladi."
     )
+    if run_id is not None:
+        prompt = f"🔒 #{run_id} test runini to‘xtatish uchun parolni yuboring."
+    prompt_message_id = telegram.send_message(chat_id, prompt)
     pending_stop_store.set(
-        chat_id,
-        PendingStop(prompt_message_id=prompt_message_id),
+        pending_key,
+        PendingStop(prompt_message_id, run_id, attempt, progress_message_id),
     )
+
+
+def stop_progress_run(telegram, github, chat_id, pending):
+    try:
+        run = github.get_run(pending.run_id)
+        if (
+            run.get("run_attempt") != pending.attempt
+            or run.get("status") not in ACTIVE_WORKFLOW_RUN_STATUSES
+        ):
+            edit_or_send_message(telegram, chat_id, pending.prompt_message_id, "Bu urinish endi faol emas.")
+            return
+        github.force_cancel_run(pending.run_id)
+    except requests.RequestException as exc:
+        if exc.response is not None and exc.response.status_code == 409:
+            message = "GitHub Actions bu runni hozir to‘xtata olmaydi. Holatini /status orqali ko‘ring."
+        else:
+            message = "GitHub Actions bilan bog‘lanishda xato. Run holatini /status orqali tekshiring."
+    else:
+        message = f"⏹ #{pending.run_id} uchun to‘xtatish so‘rovi GitHub Actions’ga yuborildi."
+        try:
+            telegram.edit_message(chat_id, pending.progress_message_id, message)
+        except TelegramAPIError:
+            pass  # The password prompt can still carry the acknowledgement.
+        else:
+            safe_delete_message(telegram, chat_id, pending.prompt_message_id)
+            return
+    edit_or_send_message(telegram, chat_id, pending.prompt_message_id, message)
 
 
 def verify_stop_password(
@@ -43,8 +75,9 @@ def verify_stop_password(
     chat_id,
     text,
     user_message_id,
+    pending_key,
 ):
-    pending = pending_stop_store.get(chat_id)
+    pending = pending_stop_store.get(pending_key)
     if pending is None:
         return
 
@@ -54,11 +87,14 @@ def verify_stop_password(
             telegram,
             chat_id,
             pending.prompt_message_id,
-            "❌ Parol noto'g'ri. Qaytadan parolni yuboring yoki /stop bilan boshidan boshlang.",
+            "❌ Parol noto'g'ri. Qaytadan parolni yuboring.",
         )
         return
 
-    pending_stop_store.clear(chat_id)
+    pending_stop_store.clear(pending_key)
+    if pending.run_id is not None:
+        stop_progress_run(telegram, github, chat_id, pending)
+        return
     edit_or_send_message(
         telegram,
         chat_id,
@@ -142,9 +178,10 @@ def verify_run_password(
     text,
     user_message_id,
     dispatch_lock,
+    pending_key,
 ):
     """Parol kutilayotgan chatda kelgan matnni parol sifatida tekshiradi."""
-    pending = pending_store.get(chat_id)
+    pending = pending_store.get(pending_key)
     if pending is None:
         return
 
@@ -160,16 +197,16 @@ def verify_run_password(
             pending.prompt_message_id,
             "Test holatini tekshirib bo'lmadi. /run bilan qayta urinib ko'ring.",
         )
-        pending_store.clear(chat_id)
+        pending_store.clear(pending_key)
         return
 
     if workflow_run is not None:
-        pending_store.clear(chat_id)
+        pending_store.clear(pending_key)
         telegram.edit_message(chat_id, pending.prompt_message_id, busy_run_text(workflow_run))
         return
 
     if password_matches(config.run_password, text):
-        pending_store.clear(chat_id)
+        pending_store.clear(pending_key)
         start_run(telegram, github, chat_id, pending.prompt_message_id, pending.request, active_store, dispatch_lock)
     else:
         telegram.edit_message(
@@ -190,10 +227,12 @@ def handle_message(
     text,
     message_id,
     dispatch_lock,
+    sender_id=None,
 ):
     is_command = text.startswith("/")
+    pending_key = (chat_id, sender_id)
 
-    if pending_stop_store.has(chat_id) and not is_command:
+    if pending_stop_store.has(pending_key) and not is_command:
         verify_stop_password(
             telegram,
             github,
@@ -203,18 +242,19 @@ def handle_message(
             chat_id,
             text,
             message_id,
+            pending_key,
         )
         return
 
     # Parol kutilayotgan bo'lsa va bu buyruq bo'lmasa — matnni parol urinishi deb qaraymiz.
-    if pending_store.has(chat_id) and not is_command:
-        verify_run_password(telegram, github, config, active_store, pending_store, chat_id, text, message_id, dispatch_lock)
+    if pending_store.has(pending_key) and not is_command:
+        verify_run_password(telegram, github, config, active_store, pending_store, chat_id, text, message_id, dispatch_lock, pending_key)
         return
 
     # Buyruq kelsa, oldingi parol kutish holatini bekor qilamiz.
     if is_command:
-        pending_store.clear(chat_id)
-        pending_stop_store.clear(chat_id)
+        pending_store.clear(pending_key)
+        pending_stop_store.clear(pending_key)
 
     command = text.split(maxsplit=1)[0].split("@", 1)[0].lower() if text else ""
     if command == "/start":
@@ -245,7 +285,7 @@ def handle_message(
         show_run_start(telegram, github, chat_id, config, active_store)
         return
     if command == "/stop":
-        show_stop_prompt(telegram, chat_id, pending_stop_store)
+        show_stop_prompt(telegram, chat_id, pending_stop_store, pending_key)
         return
 
     telegram.send_message(
@@ -260,6 +300,7 @@ def handle_callback(
     config,
     active_store,
     pending_store,
+    pending_stop_store,
     callback,
 ):
     callback_id = str(callback.get("id", ""))
@@ -268,9 +309,24 @@ def handle_callback(
     chat = message.get("chat") or {}
     chat_id = str(chat.get("id", ""))
     message_id = message.get("message_id")
+    pending_key = (chat_id, (callback.get("from") or {}).get("id"))
 
     if not isinstance(message_id, int):
         telegram.answer_callback(callback_id)
+        return
+
+    if data.startswith("stop:"):
+        rows = (message.get("reply_markup") or {}).get("inline_keyboard", [])
+        target = re.fullmatch(r"stop:([0-9]+):([0-9]+)", data)
+        if not target or not any(button.get("callback_data") == data for row in rows for button in row):
+            telegram.answer_callback(callback_id, "Tugma endi faol emas")
+            return
+        telegram.answer_callback(callback_id, "Parol kerak")
+        pending_store.clear(pending_key)
+        show_stop_prompt(
+            telegram, chat_id, pending_stop_store, pending_key,
+            run_id=int(target[1]), attempt=int(target[2]), progress_message_id=message_id,
+        )
         return
 
     try:
@@ -309,7 +365,8 @@ def handle_callback(
             suite_key=suite_key,
             server_key=server_key,
         )
-        pending_store.set(chat_id, PendingRun(request=request, prompt_message_id=message_id))
+        pending_stop_store.clear(pending_key)
+        pending_store.set(pending_key, PendingRun(request=request, prompt_message_id=message_id))
         telegram.edit_message(
             chat_id,
             message_id,

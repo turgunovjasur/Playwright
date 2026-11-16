@@ -60,6 +60,9 @@ class PendingRun:
 @dataclass(frozen=True)
 class PendingStop:
     prompt_message_id: int | None
+    run_id: int | None = None
+    attempt: int | None = None
+    progress_message_id: int | None = None
 
 
 @dataclass(frozen=True)

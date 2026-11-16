@@ -12,6 +12,7 @@ from .bot_messages import report_keyboard
 from .constants import (
     FINAL_DELIVERY_ATTEMPTS,
     FINAL_RETRY_WAIT_BUDGET_SECONDS,
+    MANUAL_SUITE,
     PROGRESS_EDIT_INTERVAL_SECONDS,
 )
 from .environment import env_value, telegram_enabled
@@ -92,6 +93,14 @@ def telegram_payload(state, *, message_id=None, plain=False):
         payload["message_id"] = str(message_id)
     if state.get("result") and state.get("report_url"):
         payload["reply_markup"] = json.dumps(report_keyboard(state["report_url"]))
+    elif state.get("target") == MANUAL_SUITE and not state.get("result"):
+        run_id = env_value("GITHUB_RUN_ID")
+        attempt = env_value("GITHUB_RUN_ATTEMPT")
+        if run_id.isdecimal() and attempt.isdecimal():
+            payload["reply_markup"] = json.dumps({"inline_keyboard": [[{
+                "text": "⏹ Testni to‘xtatish",
+                "callback_data": f"stop:{run_id}:{attempt}",
+            }]]})
     if not plain:
         payload["parse_mode"] = "HTML"
     return payload

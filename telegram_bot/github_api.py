@@ -118,6 +118,11 @@ class GitHubActionsClient:
                 page += 1
         return sorted(runs_by_id.values(), key=lambda run: run.run_id or 0)
 
+    def force_cancel_run(self, run_id):
+        url = f"https://api.github.com/repos/{self.repository}/actions/runs/{run_id}/force-cancel"
+        response = self.session.post(url, timeout=30)
+        response.raise_for_status()
+
     def force_cancel_all_active_runs(self):
         active_runs = self.active_runs()
         cancelled_run_ids = []
@@ -125,14 +130,8 @@ class GitHubActionsClient:
         for run in active_runs:
             if run.run_id is None:
                 continue
-            url = (
-                f"https://api.github.com/repos/{self.repository}/actions/"
-                f"runs/{run.run_id}/force-cancel"
-            )
             try:
-                response = self.session.post(url, timeout=30)
-                if response.status_code not in {202, 204}:
-                    response.raise_for_status()
+                self.force_cancel_run(run.run_id)
             except requests.RequestException:
                 failed_run_ids.append(run.run_id)
                 continue
@@ -172,11 +171,14 @@ class GitHubActionsClient:
                 return WorkflowRun(run_id=run_id, html_url=html_url)
         return None
 
-    def get_run_status(self, run_id):
+    def get_run(self, run_id):
         url = f"https://api.github.com/repos/{self.repository}/actions/runs/{run_id}"
         response = self.session.get(url, timeout=30)
         response.raise_for_status()
-        data = response.json()
+        return response.json()
+
+    def get_run_status(self, run_id):
+        data = self.get_run(run_id)
         return str(data.get("status", "")), data.get("conclusion"), str(data.get("html_url", self.workflow_url))
 
     def latest_run(self):

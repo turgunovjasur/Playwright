@@ -26,6 +26,8 @@ def title_line(state):
         return f"✅ {name} — PASSED"
     if result == "FAILED":
         return f"❌ {name} — FAILED"
+    if result == "CANCELLED":
+        return f"⏹ {name} — To‘xtatildi"
     return f"🟡 {name} — RUNNING"
 
 
