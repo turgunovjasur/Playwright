@@ -156,7 +156,7 @@ def show_run_start(
     if workflow_run is not None:
         message_id = telegram.send_message(chat_id, busy_run_text(workflow_run))
         if local_active is not None:
-            active_store.add_status_message(workflow_run.run_id, message_id)
+            active_store.add_status_message(workflow_run.run_id, chat_id, message_id)
         return
     telegram.send_message(
         chat_id, f"{MANUAL_SUITE_LABEL} uchun serverni tanlang.",
@@ -345,7 +345,7 @@ def handle_callback(
         telegram.answer_callback(callback_id, "Test jarayonda")
         active_message_id = telegram.send_message(chat_id, busy_run_text(workflow_run))
         if local_active is not None:
-            active_store.add_status_message(workflow_run.run_id, active_message_id)
+            active_store.add_status_message(workflow_run.run_id, chat_id, active_message_id)
         return
 
     if data.startswith("server:"):

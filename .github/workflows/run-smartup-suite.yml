@@ -20,6 +20,11 @@ on:
         description: Result artifact name
         required: true
         type: string
+      telegram_reply_route:
+        description: Encrypted reply destination supplied by the Telegram bot
+        required: false
+        default: ""
+        type: string
 
 jobs:
   suite:
@@ -76,10 +81,22 @@ jobs:
               output.write(f"TEST_SERVER_URL={servers[server_key]}\n")
           PY
 
+      - name: Install Telegram routing dependency
+        if: inputs.telegram_reply_route != ''
+        run: python -m pip install -r telegram_bot/deploy/requirements.txt
+
+      - name: Resolve requesting Telegram chat
+        id: reply_chat
+        if: inputs.telegram_reply_route != ''
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_REPLY_ROUTE: ${{ inputs.telegram_reply_route }}
+        run: python -m telegram_bot.reply_chat
+
       - name: Start Telegram progress
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_CHAT_ID: &notification_chat ${{ steps.reply_chat.outputs.chat_id || (inputs.telegram_reply_route == '' && secrets.TELEGRAM_CHAT_ID) || '' }}
         run: |
           mkdir -p test-results
           python telegram_bot/telegram_progress.py start \
@@ -106,7 +123,7 @@ jobs:
         if: ${{ success() }}
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_CHAT_ID: *notification_chat
         run: python telegram_bot/telegram_progress.py update --status "Playwright browser o‘rnatilmoqda"
 
       - name: Install Playwright browser
@@ -149,7 +166,7 @@ jobs:
         if: inputs.target == 'api-regression'
         env: &regression_env
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_CHAT_ID: *notification_chat
           COMPANY_URL: ${{ env.TEST_SERVER_URL }}
           COMPANY_CODE: ${{ env.TEST_COMPANY_CODE }}
           COMPANY_PASSWORD: ${{ env.TEST_COMPANY_PASSWORD }}
@@ -167,7 +184,7 @@ jobs:
         if: inputs.target != 'api-regression'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_CHAT_ID: *notification_chat
           DEFER_ALLURE_REPORT: "1"
         run: |
           mkdir -p test-results
@@ -229,7 +246,7 @@ jobs:
         if: ${{ always() }}
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_CHAT_ID: *notification_chat
           REPORT_URL: ${{ steps.publish.outputs.url }}
           API_STATUS: ${{ steps.api.outcome }}
           BROWSER_STATUS: ${{ steps.browser.outcome }}

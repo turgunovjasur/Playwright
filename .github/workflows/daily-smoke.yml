@@ -27,6 +27,11 @@ on:
         required: false
         default: ""
         type: string
+      telegram_reply_route:
+        description: Encrypted reply destination supplied by the Telegram bot
+        required: false
+        default: ""
+        type: string
 
 concurrency:
   group: daily-smoke-tests
@@ -41,6 +46,7 @@ jobs:
       target: api-regression
       server_key: ${{ inputs.server }}
       artifact_name: api-regression-results
+      telegram_reply_route: ${{ inputs.telegram_reply_route }}
     secrets: inherit
 
   smoke:

@@ -29,7 +29,7 @@ class ActiveRunStore:
             if run_id is None or self._active.workflow_run.run_id == run_id:
                 self._active = None
 
-    def add_status_message(self, run_id, message_id):
+    def add_status_message(self, run_id, chat_id, message_id):
         if message_id is None:
             return
         with self._lock:
@@ -37,12 +37,13 @@ class ActiveRunStore:
                 return
             if run_id is not None and self._active.workflow_run.run_id != run_id:
                 return
-            message_ids = self._active.extra_status_message_ids
-            if message_id == self._active.status_message_id or message_id in message_ids:
+            message = (chat_id, message_id)
+            messages = self._active.extra_status_messages
+            if message == (self._active.chat_id, self._active.status_message_id) or message in messages:
                 return
             self._active = replace(
                 self._active,
-                extra_status_message_ids=message_ids + (message_id,),
+                extra_status_messages=messages + (message,),
             )
 
 

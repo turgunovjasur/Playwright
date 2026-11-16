@@ -10,6 +10,7 @@ from .bot_delivery import safe_delete_transient_messages
 from .bot_messages import active_run_text, busy_run_text, report_keyboard
 from .constants import STATUS_POLL_ERROR_LIMIT, STATUS_POLL_INTERVAL_SECONDS
 from .models import ActiveRun
+from .reply_chat import encode_reply_chat
 
 
 def find_busy_run(github, active_store):
@@ -49,7 +50,8 @@ def start_run(
             f"{request.suite_label} testi boshlanyapti...",
         )
         try:
-            workflow_run = github.dispatch(request)
+            route = encode_reply_chat(telegram.token, chat_id)
+            workflow_run = github.dispatch(request, telegram_reply_route=route)
         except Exception as exc:
             telegram.edit_message(chat_id, message_id, f"Testni boshlashda xato: {exc}")
             return

@@ -36,7 +36,7 @@ class GitHubActionsClient:
     def workflow_url(self):
         return f"https://github.com/{self.repository}/actions/workflows/{self.workflow}"
 
-    def dispatch(self, request, telegram_progress_message_id=None):
+    def dispatch(self, request, telegram_progress_message_id=None, *, telegram_reply_route=None):
         started_at = datetime.now(timezone.utc)
         url = f"https://api.github.com/repos/{self.repository}/actions/workflows/{self.workflow}/dispatches"
         inputs = {
@@ -45,6 +45,8 @@ class GitHubActionsClient:
         }
         if telegram_progress_message_id is not None:
             inputs["telegram_progress_message_id"] = str(telegram_progress_message_id)
+        if telegram_reply_route:
+            inputs["telegram_reply_route"] = telegram_reply_route
         response = self.session.post(
             url,
             json={

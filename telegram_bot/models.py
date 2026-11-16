@@ -48,7 +48,7 @@ class ActiveRun:
     workflow_run: WorkflowRun
     started_at: float
     status_message_id: int | None
-    extra_status_message_ids: tuple[int, ...] = ()
+    extra_status_messages: tuple[tuple[str, int], ...] = ()
 
 
 @dataclass(frozen=True)

@@ -5,14 +5,6 @@ from __future__ import annotations
 import sys
 
 
-def transient_status_message_ids(active):
-    # Only the throwaway "test jarayonda" reminder replies. The main progress
-    # message (status_message_id) becomes the final report and must be kept.
-    if active is None:
-        return ()
-    return tuple(active.extra_status_message_ids)
-
-
 def safe_delete_message(telegram, chat_id, message_id):
     if message_id is None:
         return
@@ -25,8 +17,8 @@ def safe_delete_message(telegram, chat_id, message_id):
 def safe_delete_transient_messages(telegram, active):
     if active is None:
         return
-    for message_id in transient_status_message_ids(active):
-        safe_delete_message(telegram, active.chat_id, message_id)
+    for chat_id, message_id in active.extra_status_messages:
+        safe_delete_message(telegram, chat_id, message_id)
 
 
 def edit_or_send_message(telegram, chat_id, message_id, text):
