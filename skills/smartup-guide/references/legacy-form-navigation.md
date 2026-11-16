@@ -16,7 +16,7 @@
 - [Legacy title check](#legacy-title-check-visible-headingni-exact-talab-qiladi-2026-08-06)
 - [Group-0 moliyaviy sahifalari](#group-0-moliyaviy-sahifalari-2026-07-31-live)
 
-Tags: legacy, forms, navigation, menu, navbar, page-link, dropdown, filial, administration
+Qidiruv kalitlari: legacy, forms, navigation, menu, navbar, page-link, dropdown, filial, administration
 
 Bu reference Smartup foydalanuvchisi legacy formani UI orqali qayerdan va
 qanday topishini saqlaydigan global katalogdir. Unda navbar tab, menu column,
@@ -41,6 +41,9 @@ birgalikda yoziladi.
 ## `Справочники` legacy mega-menu inventari (2026-07-29 live)
 
 Tags: legacy, menu, navbar, spravochniki, filial, administration, test
+Status: live-ui-confirmed
+Verified: 2026-07-29
+Source: 2026-07-29 live UI inventari (Git `fa8adcf5`); [operatsion menu screenshoti](forms/screenshots/spravochniki-navigation/spravochniki-navigation__operational-menu__desktop-2880x1566.png); `tests/smoke/test_forms/inventory/spravochniki.py`
 
 - Muhit: `app3.greenwhite.uz/xtrade`, ochiq admin sessiyasi. Taqqoslash
   `Администрирование` va filial ro'yxatidagi birinchi operatsion filialda
@@ -97,6 +100,9 @@ Tags: legacy, menu, navbar, spravochniki, filial, administration, test
 ## `Справочники` page-link inventari (2026-07-29 live)
 
 Tags: legacy, menu, page-link, openSibling, filial, administration, test
+Status: live-ui-confirmed
+Verified: 2026-07-29
+Source: 2026-07-29 live UI inventari va uni o‘sha paytda ishlatgan `test_spravochniki_menu_forms.py` (Git `fa8adcf5`); joriy route yozuvlari: `tests/smoke/test_forms/inventory/spravochniki.py`
 
 - Foydalanuvchi tasdiqlagan qoida: menu formasi ochilganda yuqori
   `page_links` ham test qamroviga kiradi va birma-bir ochilib, destination
@@ -242,6 +248,9 @@ Tags: legacy, menu, page-link, openSibling, filial, administration, test
 ## `Создать` dropdownidagi yashirin formalar (2026-07-29 live)
 
 Tags: legacy, menu, create, dropdown, import, attach, local-code, page-link, filial, test
+Status: live-ui-confirmed
+Verified: 2026-07-29
+Source: 2026-07-29 live UI inventari (Git `fa8adcf5`); [14 ta arxiv tasviri](forms/screenshots/spravochniki-hidden-imports/); `tests/smoke/test_forms/inventory/spravochniki.py`
 
 - Foydalanuvchi aniqlashtirgan qoida: list formadagi `Создать` tugmasi
   yonidagi dropdown actionlar ham alohida yashirin formalar hisoblanadi.
@@ -348,46 +357,23 @@ Tags: legacy, menu, create, dropdown, import, attach, local-code, page-link, fil
   - `prices-import.jpg`
 
 ## `Справочники` form-opening smoke verifikatsiyasi (2026-07-29)
-
-Tags: spravochniki, test, run-result, canonical-url, screenshot
-
-- Dated run evidence is pre-renumbering: its historical compatibility identity
-  is `test_forms_01_spravochniki`; it must not be read as a Forms-05 run.
-- Current Forms-05 leaf: `tests/smoke/test_forms/test_05_spravochniki_forms.py`.
-- Muhit/filiallar: `app3.greenwhite.uz/xtrade`, operatsion
-  `api_filial-232905` + `Администрирование`.
-- Natija: 100/100 navigation OK, pytest `1 passed`, 256.97s.
-- Qamrov: 37 direct menu forma, 35 birinchi darajali page-link, 9 ikkinchi
-  darajali, 2 uchinchi darajali, 14 hidden dropdown forma va import ichidagi
-  3 page-link.
-- Screenshot:
-  `forms/screenshots/spravochniki-navigation/spravochniki-navigation__operational-menu__desktop-2880x1566.png`.
+2026-07-29 dagi natija, inventar kesimi va keyingi aktiv qamrov
+[tarixiy run qaydida](history.md#forms-inventari-va-filial-tanlashning-eski-natijalari).
+Joriy Forms-05 leaf — `tests/smoke/test_forms/test_05_spravochniki_forms.py`.
 
 ### Vaqtincha qamrovdan chiqarilgan menu parentlari (2026-07-29)
 Tags: spravochniki, test, temporary-exclusion, sellers, telegram
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/smoke/test_forms/inventory/skipped_forms.py::SKIPPED_FORMS`; `tests/smoke/test_forms/monitoring/cases.py`; `tests/smoke/test_forms/test_05_spravochniki_forms.py`
 
-- Foydalanuvchi qarori bilan `Продавцы` va `Публикация в бот` parentlariga
-  tegishli barcha direct/page-link yo'llar hozircha form-opening smoke testiga
-  qo'shilmaydi.
-- Implementatsiya:
-  `tests/smoke/test_forms/inventory/skipped_forms.py` ichidagi `SKIPPED_FORMS` canonical
-  pathlar bo'yicha markaziy reja tuzilishidan oldin filterlaydi.
-- Qamrov ta'siri: 100 ta inventar yo'lidan 11 tasi chiqarilib, aktiv test
-  qamrovi 89 ta navigatsiya bo'ldi.
-- Bu o'zgarish UI inventarini bekor qilmaydi; menular qayta yoqilganda mos
-  pathlarni skip registry'dan olib tashlash yetarli.
+- `Продавцы` va `Публикация в бот` yo‘llari skip registryda sabab bilan turadi.
+  Joriy leaf `Дашборд по MML`ni ham skip qatorida sanaydi.
+  Forma menyuda borligi, suite skip holati va oxirgi run natijasi alohida ma’lumotlardir.
 
 ### Aktiv 89 forma va strukturali hisobot verifikatsiyasi (2026-07-29)
-Tags: spravochniki, test, report, terminal, allure, run-result
-
-- `Продавцы` va `Публикация в бот` yo'llari chiqarilgan aktiv qamrov
-  `smartup.online`da **89/89 passed, 229.90s** natija berdi.
-- Har bir Allure forma stepida filial, tab, menu va destination forma;
-  ichki steplarda to'liq user yo'li, kutilgan URL va haqiqiy URL saqlanadi.
-- Terminal yakuniy jadvali ham har bir aktiv forma uchun filial, tab, menu,
-  forma va full URLni ko'rsatadi.
-- Reporting-only o'zgarishda Smartup forma UI/state o'zgarmagani uchun yangi
-  screenshot olinmadi; mavjud navigation screenshotlari aktual.
+89 ta yo‘l o‘sha kundagi aktiv inventar edi.
+[Tarixiy run qaydi](history.md#forms-inventari-va-filial-tanlashning-eski-natijalari).
 
 ## `Продажа` mega-menu inventari (2026-08-04 live)
 

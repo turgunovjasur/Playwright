@@ -1,0 +1,20 @@
+{
+  "form_slug": "company",
+  "state": "Company view on Активация для лицензии. The activation-code box is empty, and the company is marked Не активирован.",
+  "url_pattern": "/biruni/md/company_view",
+  "viewport": null,
+  "screenshot_pixels": {
+    "width": 1920,
+    "height": 1080
+  },
+  "entity": "autotest{code}",
+  "created_at": null,
+  "browser": "Playwright Chromium",
+  "dynamic_areas": [
+    "Activation code and status"
+  ],
+  "source": "skills/smartup-guide/references/forms/company.md",
+  "supporting_sources": [
+    "2f7559e3:scripts/debug_company_activation.py"
+  ]
+}

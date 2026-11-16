@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -15,6 +16,7 @@ REFERENCES = SKILL_ROOT / "references"
 FORMS = REFERENCES / "forms"
 SCREENSHOTS = FORMS / "screenshots"
 SKILL_MD = SKILL_ROOT / "SKILL.md"
+SNAPSHOT_SESSION_VALUE = re.compile(r"/#/![\w-]+/|(?:pw|autotest)\d{3,}|[?&]\w+_id=\d+", re.IGNORECASE)
 
 ALLOWED_STATUSES = {
     "user-reported",
@@ -24,8 +26,8 @@ ALLOWED_STATUSES = {
 }
 MARKDOWN_LINK = re.compile(r"!?\[[^\]]*]\(([^)]+)\)")
 REPO_PATH = re.compile(
-    r"`((?:tests|scripts|utils|skills|data|pages|flows)/"
-    r"[A-Za-z0-9_./-]+\.(?:py|sh|json|md))"
+    r"(?<![\w/.-])((?:tests|scripts|utils|skills|data|pages|flows|telegram_bot|\.github)/"
+    r"[\w./-]+\.(?:py|sh|json|md|bat|ya?ml))\b"
 )
 ALLOW_MISSING = re.compile(r"kb-allow-missing:\s*([A-Za-z0-9_./-]+)")
 TOC = re.compile(
@@ -43,9 +45,9 @@ DOSSIER_SECTIONS = (
 )
 
 # Debt ratchet: lower the matching baseline in the same change when debt drops.
-BASELINE_LEGACY_ENTRIES_WITHOUT_PROVENANCE = 125
-BASELINE_SCREENSHOTS_WITHOUT_JSON_SIDECAR = 41
-BASELINE_DOSSIERS_WITHOUT_CANONICAL_SECTIONS = 21
+BASELINE_LEGACY_ENTRIES_WITHOUT_PROVENANCE = 0
+BASELINE_SCREENSHOTS_WITHOUT_JSON_SIDECAR = 0
+BASELINE_DOSSIERS_WITHOUT_CANONICAL_SECTIONS = 0
 
 
 def relative(path: Path) -> str:
@@ -104,48 +106,47 @@ def check_long_file_toc(files: list[Path], errors: list[str]) -> None:
             )
 
 
-def entry_metadata(lines: list[str], start: int) -> dict[str, str]:
-    metadata: dict[str, str] = {}
-    for line in lines[start + 1 : start + 8]:
-        if line.startswith(("#", "Tags:", "- ")):
-            break
-        for key in ("Status", "Verified", "Source"):
-            prefix = f"{key}:"
-            if line.startswith(prefix):
-                metadata[key] = line[len(prefix) :].strip()
-    return metadata
-
-
 def check_provenance(files: list[Path], errors: list[str]) -> int:
     legacy_entries = 0
     for path in files:
         if path.name == "history.md":
             continue
         lines = path.read_text(encoding="utf-8").splitlines()
-        for index, line in enumerate(lines):
-            if not line.startswith("Tags:"):
+        index = 0
+        while index < len(lines):
+            start = index
+            if not lines[index].startswith(("Tags:", "Status:", "Verified:", "Source:")):
+                index += 1
                 continue
-            metadata = entry_metadata(lines, index)
+            metadata = {}
+            while index < len(lines):
+                line = lines[index]
+                if line.strip():
+                    key, separator, value = line.partition(":")
+                    if not separator or key not in ("Tags", "Status", "Verified", "Source") or key in metadata:
+                        break
+                    metadata[key] = value.strip()
+                index += 1
             status = metadata.get("Status")
             verified = metadata.get("Verified")
             source = metadata.get("Source")
             values = (status, verified, source)
-            if not any(values):
+            if set(metadata) == {"Tags"}:
                 legacy_entries += 1
                 continue
             if not all(values):
                 errors.append(
-                    f"{relative(path)}:{index + 1}: Status, Verified and Source "
+                    f"{relative(path)}:{start + 1}: Status, Verified and Source "
                     "must be written together"
                 )
                 continue
             if status not in ALLOWED_STATUSES:
                 errors.append(
-                    f"{relative(path)}:{index + 2}: unsupported Status '{status}'"
+                    f"{relative(path)}:{start + 1}: unsupported Status '{status}'"
                 )
             if not VERIFIED.fullmatch(verified or ""):
                 errors.append(
-                    f"{relative(path)}:{index + 3}: Verified must be YYYY-MM-DD or pending"
+                    f"{relative(path)}:{start + 1}: Verified must be YYYY-MM-DD or pending"
                 )
     return legacy_entries
 
@@ -166,6 +167,15 @@ def check_repo_paths(files: list[Path], errors: list[str]) -> None:
 
 
 def check_screenshots(files: list[Path], errors: list[str]) -> int:
+    for snapshot in sorted(SCREENSHOTS.rglob("*.json")):
+        try:
+            metadata = json.loads(snapshot.read_text(encoding="utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            errors.append(f"{relative(snapshot)}: invalid snapshot JSON")
+            continue
+        if SNAPSHOT_SESSION_VALUE.search(json.dumps(metadata, ensure_ascii=False)):
+            errors.append(f"{relative(snapshot)}: replace session or entity value with a placeholder")
+
     all_markdown = "\n".join(
         path.read_text(encoding="utf-8") for path in files
     )
@@ -192,7 +202,8 @@ def main() -> int:
     check_long_file_toc(files, errors)
     reference_files = sorted(REFERENCES.rglob("*.md"))
     legacy_entries = check_provenance(reference_files, errors)
-    check_repo_paths(files, errors)
+    path_files = SKILL_ROOT.parent.rglob("*.md") if "--all-skill-paths" in sys.argv[1:] else files
+    check_repo_paths(sorted(path_files), errors)
     images_without_metadata = check_screenshots(files, errors)
     if legacy_entries > BASELINE_LEGACY_ENTRIES_WITHOUT_PROVENANCE:
         errors.append(

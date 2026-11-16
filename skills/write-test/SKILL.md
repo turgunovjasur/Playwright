@@ -24,6 +24,8 @@ test execution va run summary `run-smoke` ownerligida qoladi.
    - yangi navbar Forms suite → avval
      [references/navbar-form-suite.md](references/navbar-form-suite.md), so'ng
      `Form-opening smoke suite arxitekturasi`;
+   - forma uchun funksional avtotest (validatsiya, lookup, Save/Cancel,
+     qayta ochish yoki import) → `references/form-regression.md`;
    - Order regression scope yoki yangi Order testcase →
      [references/order-test-coverage.md](references/order-test-coverage.md);
    - har qanday kod/test o'zgarishi → `Unit test qo'shmaslik va run qilmaslik`;
@@ -77,5 +79,5 @@ test execution va run summary `run-smoke` ownerligida qoladi.
 4. `run_*` + `test_*` yoki runner wrapperni yozish.
 5. Kerak bo'lsa runner target/path mappinglarini yangilash.
 6. Tekshirishda `run-smoke` skillidagi user-reported execution qoidasiga amal qilish.
-7. Yangi, tasdiqlangan Smartup bilimi topilsa `learn` provenance qoidasi
-   bo'yicha current dossier/reference'ni yangilash.
+7. Yangi Smartup faktini va ownerini bildir. Dossier/reference tahriri ham
+   tasdiqlangan bo‘lsa [learn](../learn/SKILL.md) orqali yoz.

@@ -24,15 +24,15 @@
       "Green White Solutions LLC"
     ],
     "cards": [
-      "filial-pw7177 (19823405) Активный Основная информация Пользователи Продукты История изменений Системные ошибки",
-      "Основная информация Название filial-pw7177 Валюта Узбекский сум Код cod_lg_pw7177 Юридическое лицо ОАО «Семенов, Алексеева и Крылов» legal_person-pw7177 Ставка НДС (%) 12 Акциз Да Часовой пояс (+05:00) Ташкент Создал Admin Дата создания 02.06.2026 18:26:45 Изменил Admin Дата изменения 02.06.2026 18:26:45",
-      "Название filial-pw7177 Валюта Узбекский сум",
-      "Код cod_lg_pw7177 Юридическое лицо ОАО «Семенов, Алексеева и Крылов» legal_person-pw7177",
-      "Ставка НДС (%) 12 Акциз Да Часовой пояс (+05:00) Ташкент",
-      "Создал Admin",
-      "Дата создания 02.06.2026 18:26:45",
-      "Изменил Admin",
-      "Дата изменения 02.06.2026 18:26:45"
+      "<filial_name> (<filial_id>) Активный Основная информация Пользователи Продукты История изменений Системные ошибки",
+      "Основная информация Название <filial_name> Валюта <currency_name> Код <filial_code> Юридическое лицо <legal_person_name> Ставка НДС (%) <vat_rate> Акциз Да Часовой пояс (+05:00) Ташкент Создал <user_name> Дата создания <timestamp> Изменил <user_name> Дата изменения <timestamp>",
+      "Название <filial_name> Валюта <currency_name>",
+      "Код <filial_code> Юридическое лицо <legal_person_name>",
+      "Ставка НДС (%) <vat_rate> Акциз Да Часовой пояс (+05:00) Ташкент",
+      "Создал <user_name>",
+      "Дата создания <timestamp>",
+      "Изменил <user_name>",
+      "Дата изменения <timestamp>"
     ],
     "switches": [
       {
@@ -60,7 +60,7 @@
         "visible": false
       }
     ],
-    "body": "Команда Smartup\nЗдравствуйте! Готова помочь вам. Напишите мне, если у вас появятся вопросы.\nГлавное\nПродажа\nСклад\nФинансы\nКадры и зарплата\nСправочники\nТорговый маркетинг\nОборудование\nA\n\nTrade\n\nАдминистрирование\n\n Организация (просмотр)\nИЗМЕНИТЬ ЗАКРЫТЬ\nfilial-pw7177  (19823405)\nАктивный\nОсновная информация\nПользователи\nПродукты\nИстория изменений\nСистемные ошибки\nОсновная информация\nНазвание\n\nfilial-pw7177\nВалюта\n\nУзбекский сум\nКод\n\ncod_lg_pw7177\nЮридическое лицо\n\nОАО «Семенов, Алексеева и Крылов» legal_person-pw7177\nСтавка НДС (%)\n\n12\nАкциз\n\nДа\nЧасовой пояс\n\n(+05:00) Ташкент\nСоздал\nAdmin\nДата создания\n02.06.2026 18:26:45\nИзменил\nAdmin\nДата изменения\n02.06.2026 18:26:45\nCopyright © 2012-2026,  Green White Solutions LLC. All rights reserved. , "
+    "body": "Команда Smartup\nЗдравствуйте! Готова помочь вам. Напишите мне, если у вас появятся вопросы.\nГлавное\nПродажа\nСклад\nФинансы\nКадры и зарплата\nСправочники\nТорговый маркетинг\nОборудование\nA\n\nTrade\n\nАдминистрирование\n\n Организация (просмотр)\nИЗМЕНИТЬ ЗАКРЫТЬ\n<filial_name>  (<filial_id>)\nАктивный\nОсновная информация\nПользователи\nПродукты\nИстория изменений\nСистемные ошибки\nОсновная информация\nНазвание\n\n<filial_name>\nВалюта\n\n<currency_name>\nКод\n\n<filial_code>\nЮридическое лицо\n\n<legal_person_name>\nСтавка НДС (%)\n\n<vat_rate>\nАкциз\n\nДа\nЧасовой пояс\n\n(+05:00) Ташкент\nСоздал\n<user_name>\nДата создания\n<timestamp>\nИзменил\n<user_name>\nДата изменения\n<timestamp>\nCopyright © 2012-2026,  Green White Solutions LLC. All rights reserved. , "
   },
   "Основная информация": {
     "url": "<server_url>/#/!<session>/anor/mr/filial_view?filial_id=<filial_id>",
@@ -87,15 +87,15 @@
       "Green White Solutions LLC"
     ],
     "cards": [
-      "filial-pw7177 (19823405) Активный Основная информация Пользователи Продукты История изменений Системные ошибки",
-      "Основная информация Название filial-pw7177 Валюта Узбекский сум Код cod_lg_pw7177 Юридическое лицо ОАО «Семенов, Алексеева и Крылов» legal_person-pw7177 Ставка НДС (%) 12 Акциз Да Часовой пояс (+05:00) Ташкент Создал Admin Дата создания 02.06.2026 18:26:45 Изменил Admin Дата изменения 02.06.2026 18:26:45",
-      "Название filial-pw7177 Валюта Узбекский сум",
-      "Код cod_lg_pw7177 Юридическое лицо ОАО «Семенов, Алексеева и Крылов» legal_person-pw7177",
-      "Ставка НДС (%) 12 Акциз Да Часовой пояс (+05:00) Ташкент",
-      "Создал Admin",
-      "Дата создания 02.06.2026 18:26:45",
-      "Изменил Admin",
-      "Дата изменения 02.06.2026 18:26:45"
+      "<filial_name> (<filial_id>) Активный Основная информация Пользователи Продукты История изменений Системные ошибки",
+      "Основная информация Название <filial_name> Валюта <currency_name> Код <filial_code> Юридическое лицо <legal_person_name> Ставка НДС (%) <vat_rate> Акциз Да Часовой пояс (+05:00) Ташкент Создал <user_name> Дата создания <timestamp> Изменил <user_name> Дата изменения <timestamp>",
+      "Название <filial_name> Валюта <currency_name>",
+      "Код <filial_code> Юридическое лицо <legal_person_name>",
+      "Ставка НДС (%) <vat_rate> Акциз Да Часовой пояс (+05:00) Ташкент",
+      "Создал <user_name>",
+      "Дата создания <timestamp>",
+      "Изменил <user_name>",
+      "Дата изменения <timestamp>"
     ],
     "switches": [
       {
@@ -123,7 +123,7 @@
         "visible": false
       }
     ],
-    "body": "Команда Smartup\nЗдравствуйте! Готова помочь вам. Напишите мне, если у вас появятся вопросы.\nГлавное\nПродажа\nСклад\nФинансы\nКадры и зарплата\nСправочники\nТорговый маркетинг\nОборудование\nA\n\nTrade\n\nАдминистрирование\n\n Организация (просмотр)\nИЗМЕНИТЬ ЗАКРЫТЬ\nfilial-pw7177  (19823405)\nАктивный\nОсновная информация\nПользователи\nПродукты\nИстория изменений\nСистемные ошибки\nОсновная информация\nНазвание\n\nfilial-pw7177\nВалюта\n\nУзбекский сум\nКод\n\ncod_lg_pw7177\nЮридическое лицо\n\nОАО «Семенов, Алексеева и Крылов» legal_person-pw7177\nСтавка НДС (%)\n\n12\nАкциз\n\nДа\nЧасовой пояс\n\n(+05:00) Ташкент\nСоздал\nAdmin\nДата создания\n02.06.2026 18:26:45\nИзменил\nAdmin\nДата изменения\n02.06.2026 18:26:45\nCopyright © 2012-2026,  Green White Solutions LLC. All rights reserved. , "
+    "body": "Команда Smartup\nЗдравствуйте! Готова помочь вам. Напишите мне, если у вас появятся вопросы.\nГлавное\nПродажа\nСклад\nФинансы\nКадры и зарплата\nСправочники\nТорговый маркетинг\nОборудование\nA\n\nTrade\n\nАдминистрирование\n\n Организация (просмотр)\nИЗМЕНИТЬ ЗАКРЫТЬ\n<filial_name>  (<filial_id>)\nАктивный\nОсновная информация\nПользователи\nПродукты\nИстория изменений\nСистемные ошибки\nОсновная информация\nНазвание\n\n<filial_name>\nВалюта\n\n<currency_name>\nКод\n\n<filial_code>\nЮридическое лицо\n\n<legal_person_name>\nСтавка НДС (%)\n\n<vat_rate>\nАкциз\n\nДа\nЧасовой пояс\n\n(+05:00) Ташкент\nСоздал\n<user_name>\nДата создания\n<timestamp>\nИзменил\n<user_name>\nДата изменения\n<timestamp>\nCopyright © 2012-2026,  Green White Solutions LLC. All rights reserved. , "
   },
   "Продукты": {
     "url": "<server_url>/#/!<session>/anor/mr/filial_view?filial_id=<filial_id>",
@@ -151,7 +151,7 @@
       "Green White Solutions LLC"
     ],
     "cards": [
-      "filial-pw7177 (19823405) Активный Основная информация Пользователи Продукты История изменений Системные ошибки",
+      "<filial_name> (<filial_id>) Активный Основная информация Пользователи Продукты История изменений Системные ошибки",
       "finance",
       "trade Equipment Finance - Main Finance - Advanced HR and Payroll Image Recognition Main Manufacturing Marking Sales - Main Sales - Advanced Store Telegram Trade Marketing Uzbekistan Module Warehouse - Main Warehouse - Advanced"
     ],
@@ -325,6 +325,6 @@
         "visible": false
       }
     ],
-    "body": "Команда Smartup\nЗдравствуйте! Готова помочь вам. Напишите мне, если у вас появятся вопросы.\nГлавное\nПродажа\nСклад\nФинансы\nКадры и зарплата\nСправочники\nТорговый маркетинг\nОборудование\nA\n\nTrade\n\nАдминистрирование\n\n Организация (просмотр)\nИЗМЕНИТЬ ЗАКРЫТЬ\nfilial-pw7177  (19823405)\nАктивный\nОсновная информация\nПользователи\nПродукты\nИстория изменений\nСистемные ошибки\nСОХРАНИТЬ\nFINANCE\nTRADE\nEquipment\nFinance - Main\nFinance - Advanced\nHR and Payroll\nImage Recognition\nMain\nManufacturing\nMarking\nSales - Main\nSales - Advanced\nStore\nTelegram\nTrade Marketing\nUzbekistan Module\nWarehouse - Main\nWarehouse - Advanced\nCopyright © 2012-2026,  Green White Solutions LLC. All rights reserved. , "
+    "body": "Команда Smartup\nЗдравствуйте! Готова помочь вам. Напишите мне, если у вас появятся вопросы.\nГлавное\nПродажа\nСклад\nФинансы\nКадры и зарплата\nСправочники\nТорговый маркетинг\nОборудование\nA\n\nTrade\n\nАдминистрирование\n\n Организация (просмотр)\nИЗМЕНИТЬ ЗАКРЫТЬ\n<filial_name>  (<filial_id>)\nАктивный\nОсновная информация\nПользователи\nПродукты\nИстория изменений\nСистемные ошибки\nСОХРАНИТЬ\nFINANCE\nTRADE\nEquipment\nFinance - Main\nFinance - Advanced\nHR and Payroll\nImage Recognition\nMain\nManufacturing\nMarking\nSales - Main\nSales - Advanced\nStore\nTelegram\nTrade Marketing\nUzbekistan Module\nWarehouse - Main\nWarehouse - Advanced\nCopyright © 2012-2026,  Green White Solutions LLC. All rights reserved. , "
   }
 }

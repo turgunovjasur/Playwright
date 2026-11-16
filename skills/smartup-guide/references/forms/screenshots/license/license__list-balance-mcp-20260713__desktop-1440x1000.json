@@ -1,0 +1,26 @@
+{
+  "form_slug": "license",
+  "state": "Лицензии on Баланс with a positive balance, replenishment options, purchase history and the payer row.",
+  "url_pattern": "/biruni/kl/license_list",
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "screenshot_pixels": {
+    "width": 1440,
+    "height": 1000
+  },
+  "entity": "<company_code>",
+  "created_at": "2026-07-13",
+  "browser": null,
+  "dynamic_areas": [
+    "Company and payer identifiers",
+    "Balance and purchase history",
+    "Support chat widget"
+  ],
+  "source": "skills/smartup-guide/references/forms/license.md",
+  "supporting_sources": [
+    "b4660f48:skills/smartup-guide/references/forms/license.md"
+  ],
+  "notes": "MCP capture. The viewport is the size documented in the archive filename."
+}

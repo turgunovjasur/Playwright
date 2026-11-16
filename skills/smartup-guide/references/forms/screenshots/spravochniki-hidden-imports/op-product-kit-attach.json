@@ -1,0 +1,20 @@
+{
+  "form_slug": "spravochniki-hidden-imports",
+  "state": "Сет ТМЦ (прикрепление) with an empty grid for code, name, item count and status.",
+  "url_pattern": "/anor/mr/product_kit_list+attach",
+  "viewport": null,
+  "screenshot_pixels": {
+    "width": 1440,
+    "height": 722
+  },
+  "entity": null,
+  "created_at": "2026-07-29",
+  "browser": null,
+  "dynamic_areas": [
+    "Product kit rows and grid count",
+    "Current filial in the navbar",
+    "Support chat widget"
+  ],
+  "source": "skills/smartup-guide/references/legacy-form-navigation.md",
+  "filial_context": "operational filial"
+}

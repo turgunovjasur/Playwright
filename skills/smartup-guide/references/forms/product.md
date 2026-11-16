@@ -10,6 +10,12 @@ order testlari uchun ikkita product yaratiladi:
 
 ## Mundarija
 
+- [Quick Lookup](#quick-lookup)
+- [Screenshot Paths](#screenshot-paths)
+- [Known Locators](#known-locators)
+- [Flow And Tests](#flow-and-tests)
+- [Business Rules](#business-rules)
+- [Known Issues](#known-issues)
 - [Screenshot](#screenshot)
 - [Navigatsiya](#navigatsiya)
 - [Forma maydonlari](#forma-maydonlari-yaratish)
@@ -19,21 +25,27 @@ order testlari uchun ikkita product yaratiladi:
 - [Test](#test)
 - [Ikkinchi USD product](#2026-07-30--ikkinchi-usd-product)
 
-## Screenshot
+## Screenshot Paths
+
+### Screenshot
 
 - Add forma: `references/forms/screenshots/product/product__add__desktop-1440x783__20260713.png`
 - View forma: `references/forms/screenshots/product/product__view__desktop-1440x783__20260713.png`
 - Narx belgilash: `references/forms/screenshots/product/product__set-price__desktop-1440x783__20260713.png`
 - Har screenshot yonida shu nomli `.json` metadata fayli bor.
 
-## Navigatsiya
+## Quick Lookup
+
+### Navigatsiya
 
 - Menyu: **Справочники → ТМЦ**
 - Ro'yxat heading: `ТМЦ`
-- Yaratish heading: `ТМЦ (создание)`
+- Yaratish heading: `ТМЦ (создание)`, list route `anor/mr/product/inventory_list`
 - Narx belgilash heading: `ТМЦ (установка цен)`
 
-## Forma maydonlari (yaratish)
+## Known Locators
+
+### Forma maydonlari (yaratish)
 
 | Maydon | Locator | Qiymat |
 |---|---|---|
@@ -91,9 +103,11 @@ Live UI probe (2026-07-13) narx grid headerlari: `Название`, `Тип ц�
 - Ikkinchi product narxi = **1 USD**. Uning price type'i
   `run_price_type_usa` yaratgan `Price Type USA-pw{code}` bo'lishi shart.
 - Setup 14-qadam shu USD price type'ni `Доллар США` valyutasida yaratadi va
-  joriy kun kursini 10000 qilib o'rnatadi.
+  USD kursini keyingi 15-qadamda alohida `run_currency` o‘rnatadi.
 
-## Downstream ta'siri
+## Business Rules
+
+### Downstream ta'siri
 
 - `action.md` aksiya ssenariysi: `product-pw{code}` x10 = 70 000; 10% skidka = 63 000
 - `order-add.md`: `product-pw{code}` va `product-usa-pw{code}` ikkita alohida
@@ -102,7 +116,9 @@ Live UI probe (2026-07-13) narx grid headerlari: `Название`, `Тип ц�
   o'tkaziladi; shuning uchun fresh run'da ikkalasi ham Order product pickerda
   stock preconditioniga ega.
 
-## Test
+## Flow And Tests
+
+### Test
 
 - `tests/smoke/test_setup/test_18_product.py` ichidagi
   `run_product(page, code, *, save_product_id=False)` UZS productni,
@@ -130,3 +146,7 @@ Setup run `20 passed, 1 deselected`
   `1` narx yozildi.
 - Product saqlangandan keyin alohida USD boshlang'ich qoldig'i o'tkazildi va
   yakuniy `Остатки ТМЦ` sahifasida product kodi va nomi topildi.
+
+## Known Issues
+
+`Установить цены` product listida tanlangan qatorga bog‘langan. View ochiq bo‘lsa, avval `Закрыть` orqali listga qaytiladi. [Product flow](../../../../tests/smoke/test_setup/flow_setup/flow_product.py).

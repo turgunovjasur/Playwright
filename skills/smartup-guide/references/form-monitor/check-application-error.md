@@ -36,13 +36,13 @@ deb hisoblanadi va bajarilmaydi.
 ## Konseptual Interfeys
 
 ```python
-check_application_error(page, *, shell, timeout=1_200)
+check_application_error(page, *, shell, timeout=DEFAULT_APPLICATION_ERROR_TIMEOUT)
 ```
 
 - `page` — joriy Playwright sahifasi.
 - `shell` — `check_url` actual URLdan aniqlagan `legacy` yoki `a2` qiymati.
 - `timeout` — hard error ko'rinishini kuzatish vaqti, millisekundlarda.
-- Default timeout `1_200 ms`.
+- Default timeout `4_800 ms`.
 - Bu checkda timeout tugashi failure emas: error ko'rinmasa check `PASSED`.
 - Errorni kutish, selectorni aniqlash va matnni olish shu check ichida bo'ladi;
   caller yoki `capture_form_state()` bu kutishni takrorlamaydi.
@@ -100,7 +100,7 @@ kirmaydi.
 ```text
 passed: True
 execution_status: PASSED
-timeout_ms: 1200
+timeout_ms: 4800
 matched_selector: ""
 error_text: ""
 ```
@@ -114,7 +114,7 @@ passed: False
 execution_status: FAILED
 status: OPENED_WITH_DEFECT
 reason_code: APPLICATION_ERROR
-timeout_ms: 1200
+timeout_ms: 4800
 matched_selector: <topilgan hard-error selectori>
 error_text: <UI xato matni yoki bo'sh matn belgisi>
 actual_url: <joriy browser URLi>
@@ -174,7 +174,7 @@ o'zgartirmaydi va screenshotdan oldin bajarilmaydi.
 
 ## Implementatsiya Invariantlari
 
-- Default timeout aynan `1_200 ms`.
+- Default timeout aynan `4_800 ms`.
 - Hard selectorlar shellga mos contractdagi aniq signallardan tanlanadi.
 - `shell` majburiy va faqat `legacy` yoki `a2` bo'lishi mumkin.
 - `[role="alert"]` o'zicha hard failure emas.
@@ -196,7 +196,7 @@ o'zgartirmaydi va screenshotdan oldin bajarilmaydi.
 ```text
 check_url: PASSED
 check_loader: PASSED
-1200 ms ichida hard error yo'q
+4800 ms ichida hard error yo'q
 check_application_error: PASSED
 check_content_ready va title: ishlaydi
 ```

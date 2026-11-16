@@ -55,7 +55,7 @@ Bir turga tegishli qoidani boshqa turga xato sifatida qo'llama.
   mavjud bo'lmagan UI harakati uchun qolgan
 
 ### 5. Locator sifati
-- [ ] `page.locator()` ishlatilgan (`find_element` emas)
+- [ ] Maxsus actionga raw locator kerak bo‘lsa, yuqoridagi BasePage tasdiq qoidasi tekshirilgan va Playwright locatori ishlatilgan
 - [ ] `expect(locator).to_be_visible()` ishlatilgan (Python `assert` emas)
 - [ ] Hard-coded `wait_for_timeout()` ishlatilmagan
 - [ ] Locatorlar barqaror (ID, data-testid yoki semantik CSS)

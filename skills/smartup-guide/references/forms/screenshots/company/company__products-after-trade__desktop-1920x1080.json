@@ -1,0 +1,21 @@
+{
+  "form_slug": "company",
+  "state": "Products card on the company creation form with TRADE enabled, its module switches visible and off.",
+  "url_pattern": "/biruni/md/company_add",
+  "viewport": null,
+  "screenshot_pixels": {
+    "width": 940,
+    "height": 942
+  },
+  "entity": "autotest{code}",
+  "created_at": null,
+  "browser": "Playwright Chromium",
+  "dynamic_areas": [
+    "Product and module switches"
+  ],
+  "source": "skills/smartup-guide/references/forms/company.md",
+  "supporting_sources": [
+    "2f7559e3:scripts/debug_company_products.py"
+  ],
+  "notes": "Element screenshot of the products card. The probe uses the same filename in headed and headless mode."
+}

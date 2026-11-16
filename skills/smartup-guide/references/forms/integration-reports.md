@@ -4,6 +4,12 @@ Alohida dossierlar: [cislink.md](cislink.md), [integration-three.md](integration
 
 ## Mundarija
 
+- [Quick Lookup](#quick-lookup)
+- [Screenshot Paths](#screenshot-paths)
+- [Known Locators](#known-locators)
+- [Flow And Tests](#flow-and-tests)
+- [Business Rules](#business-rules)
+- [Known Issues](#known-issues)
 - [Umumiy navigatsiya va filial](#umumiy-navigatsiya-va-filial)
 - [Download tekshiruvi](#download-tekshiruvi)
 - [SalesWork](#saleswork-saleswork)
@@ -11,17 +17,17 @@ Alohida dossierlar: [cislink.md](cislink.md), [integration-three.md](integration
 - [Spot2D](#spot2d-spot)
 - [Integration Two / Monolith](#integration-two--monolith-integration_two)
 
+## Quick Lookup
+
 ### Umumiy navigatsiya va filial
+
 Status: code-confirmed
-Verified: 2026-08-24
-Source: `tests/smoke/test_groups/test_report_grup/flow_report/report_helpers.py`; `test_01_cislink.py` ... `test_06_integration_two.py`
-- Integration reportlar menyuda yo'q; `open_report()` joriy URLdan session tokenini olib direct route ochadi va heading/URLni tekshiradi.
-- Report-01–05 admin loginidan keyin `base.switch_filial(first_filial=True)` bilan birinchi `Администрирование` bo'lmagan filialga o'tadi.
-- Report-06 Integration Two faqat `Администрирование` filialida tekshiriladi.
-- UI maydonlari label-first `BasePage` API bilan boshqariladi; legacy `select_b_input_option()` raw-locator helperi olib tashlangan.
-- Report testlari setup `code` fixturega bog'liq emas. Yangi template va lokal
-  download nomlari collision bo'lmasligi uchun har test runida UUID suffix
-  yaratiladi.
+Verified: 2026-11-16
+Source: `tests/smoke/test_groups/test_report_grup/flow_report/report_helpers.py:16`; `tests/smoke/test_groups/test_report_grup/test_01_cislink.py:31`; `tests/smoke/test_groups/test_report_grup/test_06_integration_two.py:71`
+- `open_report()` `base.open_route("trade/rep/integration/<report>")`ni chaqiradi. Report-02–05 birinchi operatsion filialga, Report-06 `Администрирование`ga o‘tadi. [CisLink](cislink.md) setup saqlagan filial nomini ishlatadi.
+- Template va lokal download nomlari uchun run-local UUID suffix ishlatiladi.
+
+## Flow And Tests
 
 ### Download tekshiruvi
 Status: code-confirmed
@@ -39,7 +45,7 @@ Verified: 2026-08-20
 Source: live Chromium UI; `tests/smoke/test_groups/test_report_grup/test_03_saleswork.py`
 - Main tugmalar: `Экспорт`, `Сформировать(MQ)`, `Шаблоны`, `Закрыть`; period defaulti joriy oy boshi–bugun.
 - Main `Шаблон` b-inputi tanlangan template nomini ko'rsatadi.
-- Template list route `saleswork_template_list`, create route `saleswork_template+add`; list create actioni `Создать` deb nomlangan.
+- 2026-08-20 legacy kuzatuvida list route `saleswork_template_list`, create route `saleswork_template+add`; list create actioni `Создать` deb nomlangan.
 - Create required maydonlari `Название` va `Продуктовое направление`.
 - Defaultlar: `Активный`, barcha product subtype, report type `MarevenFoodCentral`; `ParentCompanies`, `Outlets`, `ArchivedStocks`, `LocalProducts`, `SalOuts`, `SalIns` checked, `OutletDebts` unchecked.
 - Test har bir run uchun UUID suffixli yangi template yaratadi, main formada aynan shu template tanlanganini tekshiradi va uni mavjud template bilan almashtirmaydi. `Экспорт` natijasi `sales_work` prefiksli non-empty ZIP.
@@ -66,7 +72,7 @@ Source: live Chromium UI; `tests/smoke/test_groups/test_report_grup/test_05_spot
 - Heading `Spot2D(<dynamic-id>)`; tugmalar `Сформировать`, `Настройки`, `Шаблоны`.
 - `Последние 45 дней` default checked, custom period unchecked, `Дата окончания периода` default kechagi sana.
 - Settingsda `Разделить по дням (файл receive)` va `Дублировать Код клиента ERP (ID#ID)` default unchecked; VAT default `Системный ввод НДС(%)`; `Сброс настроек` actioni mavjud. Test destructive resetni bosmaydi.
-- Template list route `spot_template_list`, create route `spot_template+add`; list create actioni `Добавить`.
+- 2026-08-20 legacy kuzatuvida list route `spot_template_list`, create route `spot_template+add`; list create actioni `Добавить`.
 - Create required maydonlari `Название` va `Продуктовое направление`; product subtype `Все`, status `Активный`.
 - Template form delivery, stocks, clients, ttoptions, ta, cancellations, receive, sku va warehouse file mappinglarini ko'rsatadi.
 - Test har bir run uchun UUID suffixli yangi template yaratadi, main formada aynan shu template tanlanganini tekshiradi va uni mavjud template bilan almashtirmaydi. `Сформировать` natijasi `Spot2D` prefiksli non-empty ZIP.
@@ -95,20 +101,29 @@ Source: live Chromium UI; `tests/smoke/test_groups/test_report_grup/test_06_inte
 - Oldingi test faqat to'rtta modeni qamragan; `Экспорт остатков` va `Экспорт внутренних перемещений` endi testga qo'shilgan.
 
 ### Endpoint preconditioni va XML natijalari
+
 Status: code-confirmed
-Verified: 2026-08-20
-Source: user; live Chromium UI; `tests/smoke/test_groups/test_report_grup/test_06_integration_two.py`
-- Oldingi `URL=https` qiymati serverda scheme xatosi berishi live UI'da tasdiqlangan; test fake endpoint yozmaydi.
-- Report-06 mavjud configured `User` va `https://` yoki `http://` Monolith URLni majburiy precondition sifatida tekshiradi.
-- XML download kutiladigan exchange mode'larda `Генерировать` bosiladi va non-empty `.xml` download tekshiriladi; endpoint noto'g'ri bo'lsa download timeout diagnostika bilan testcase failure bo'ladi.
-- Forma accessi bo'lmagan deploymentda aniq Biruni access-denied xabari environment skip sifatida qayd etiladi.
-- Archived access-denied evidence: `screenshots/integration-reports/integration-two__access-denied__desktop-2880x1566.png`.
+Verified: 2026-11-16
+Source: `tests/smoke/test_groups/test_report_grup/test_06_integration_two.py:80`; `tests/smoke/test_groups/test_report_grup/flow_report/report_helpers.py:53`
+- Report-06 konfiguratsiyadagi `User` va HTTP(S) `URL` qiymatini tekshiradi. `INTEGRATION_TWO_XML_URL` berilgan bo‘lsa endpoint maydoniga shu qiymat kiritiladi. Olti mode, jumladan `Экспорт заказа`, yuklangan XML bilan tekshiriladi; download helperi uni parse qiladi va HTML rootni rad etadi.
+- `INTEGRATION_TWO_DEMO=1` bo‘lsa Monolith GET/POST proxy javoblari lokal mockdan keladi. Bu rejim tashqi endpoint natijasini tekshirmaydi.
 
 ### Export order error modal
-Status: user-reported
-Verified: pending
-Source: user; `tests/smoke/test_groups/test_report_grup/test_06_integration_two.py`
-- `Экспорт заказа` mode'ida `Генерировать` Biruni error modalini chiqaradi,
-  qolgan exchange mode'larda bu muammo kuzatilmagan. Report-06 shu modalni
-  `BasePage.close_biruni_alert()` bilan yopib, keyingi mode'larni tekshirishda
-  davom etadi; bu mode uchun XML download talab qilinmaydi.
+
+Eski deploymentda user `Экспорт заказа` uchun Biruni error modalini bildirgan. Joriy Report-06 bu mode uchun ham XML talab qiladi. Eski natija [tarixiy qayd](../history.md#forma-testlarining-eski-qamrovi)da.
+
+## Screenshot Paths
+
+[Integration Two uchun kirish rad etilgan arxiv holati](screenshots/integration-reports/integration-two__access-denied__desktop-2880x1566.png).
+
+## Known Locators
+
+Report-06 mode’ni nomlangan radio orqali tanlaydi. SalesWork va Spot testlarida A2 template drawerlarining headinglari page scope’da tekshiriladi. [SalesWork](../../../../tests/smoke/test_groups/test_report_grup/test_03_saleswork.py), [Spot](../../../../tests/smoke/test_groups/test_report_grup/test_05_spot.py).
+
+## Business Rules
+
+SalesWork uchun `Экспорт`, Optimum va Spot uchun `Сформировать` ZIP qaytarishi kutiladi. Monolith mode’laridan XML chiqishi kerak.
+
+## Known Issues
+
+[Integration Two access-error rasmi](#screenshot-paths) forma ochilmagan deploymentga tegishli. Report-06 admin filialini, konfiguratsiyadagi user va endpointni talab qiladi.

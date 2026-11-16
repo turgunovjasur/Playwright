@@ -207,7 +207,7 @@ def check_reference_routing(skills: list[Path], errors: list[str]) -> None:
 
 def run_smartup_validator(errors: list[str]) -> str:
     completed = subprocess.run(
-        [sys.executable, str(SMARTUP_VALIDATOR)],
+        [sys.executable, str(SMARTUP_VALIDATOR), "--all-skill-paths"],
         cwd=REPO_ROOT,
         check=False,
         capture_output=True,

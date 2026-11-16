@@ -51,8 +51,9 @@ Dalillarni quyidagi ustuvorlikda ishlat:
   nomzod deb ol, ammo riskli qarordan oldin manbasini qayta tasdiqla.
 - `references/history.md` faqat tarixiy kontekst; undagi qoidani current truth
   sifatida ishlatma.
-- Qarama-qarshi dalilda eng yangi va yuqori ustuvorlikdagi manbani tanla,
-  current reference'ni yangila va almashtirilgan qoidani `history.md`ga ko'chir.
+- Dalillar zid bo‘lsa, javobda eng kuchli joriy manbaga tayan. Eskirgan fakt
+  va ownerini bildir. Reference va tarixni faqat [learn](../learn/SKILL.md)
+  bo‘yicha write-back tasdiqlanganda yangila.
 
 ## Skill Chegarasi
 
@@ -187,15 +188,8 @@ ajrat.
 
 ## Tekshirish
 
-Knowledge-base o'zgargandan keyin quyidagini ishga tushir:
-
-```bash
-./.venv/bin/python skills/smartup-guide/scripts/validate_knowledge_base.py
-```
-
-Skill package, cross-skill Markdown link va `.agents/.claude` entrypoint
-paritysi ham o'zgargan bo'lsa repo-level validatorni ishlat; u yuqoridagi
-Smartup validatorini ham ichidan chaqiradi:
+Har qanday skill yoki bilim bazasi o‘zgarishidan keyin repo validatorini
+ishga tushir. U Smartup bilim bazasi tekshiruvlarini ham bajaradi.
 
 ```bash
 ./.venv/bin/python skills/scripts/validate_skills.py

@@ -2,7 +2,9 @@
 
 Robot = **Штат** (xodim/sotuvchi). Smoke testda "Админ" rolli, room-pw{code} biriktirilgan xodim yaratiladi.
 
-## Navigatsiya
+## Quick Lookup
+
+### Navigatsiya
 
 - Menyu: **Справочники → Штат**
 - Ro'yxat heading: `Штат`
@@ -11,7 +13,9 @@ Robot = **Штат** (xodim/sotuvchi). Smoke testda "Админ" rolli, room-pw{
 - **Muhim:** "Штат" Справочники menyusida faqat to'g'ri filialga o'tilgandan keyin ko'rinadi.
   Shuning uchun test avval `switch_filial(page, name=f"filial-pw{code}")` qiladi, so'ng `navigate_to(tab="Справочники", name="Штат")`. Default/Администрирование filialida bu yo'l 404 beradi.
 
-## Forma maydonlari
+## Known Locators
+
+### Forma maydonlari
 
 | # | Maydon | Locator | Qiymat |
 |---|---|---|---|
@@ -48,7 +52,7 @@ MCP bilan tasdiqlangan (2026-06-30, Штат formasi):
 
 ## Saqlash
 
-`page.get_by_role("button", name="Сохранить", exact=True).first.click()` → `expect_page(page, heading="Штат")` — biruni confirm yo'q.
+`base.click(name="Сохранить", exact=True)` → `expect_page(page, heading="Штат")` — biruni confirm yo'q.
 
 Natija ro'yxatda (`grid(robot_name, robot_code)`):
 - `c_rb_pw{code}` ko'rinadi
@@ -66,12 +70,24 @@ Source: live UI; `tests/smoke/test_setup/test_04_robot.py`
 - Setup test save'dan keyin view'ni ochib, `robot_id`ni musbat integer sifatida
   tekshiradi va `data_store.json.robot_id`ga saqlaydi.
 
-## Downstream ta'siri
+## Business Rules
+
+### Downstream ta'siri
 
 - `test_06_user.py`: user yaratishda `robot-pw{code}` "Штат" maydoniga biriktiriladi
 - Order yaratishda robot avtomatik to'ladi (room-pw{code} tanlangach)
 
-## Test
+## Flow And Tests
+
+### Test
 
 - `tests/smoke/test_setup/test_04_robot.py` → `test_robot` → `authorization(who='admin')` →
   `switch_filial(filial-pw{code})` → `run_robot(page, code)`
+
+## Screenshot Paths
+
+[Operatsion filialdagi Штат importi](screenshots/spravochniki-hidden-imports/op-robot-import.jpg) — import actioni. Yaratish formasiga alohida rasm saqlanmagan.
+
+## Known Issues
+
+Legacy multiselect tanlovdan keyin qidiruv inputini bo‘shatadi. Qiymat tanlangan chip matnidan tekshiriladi.

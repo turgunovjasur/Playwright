@@ -96,7 +96,7 @@ kerak.
 
 Status: trace-confirmed
 Verified: 2026-11-09
-Source: `tests/regression/test_orders/ordering.py`, `runners/test_auto_offset_runner.py`, `runners/test_prepayment_first_runner.py`
+Source: `tests/regression/test_orders/helpers/ordering.py`; `tests/regression/test_orders/runners/test_auto_offset_runner.py`; `tests/regression/test_orders/runners/test_prepayment_first_runner.py`; [saqlangan run auditi](evidence/order-settlement-20261109.json)
 
 Har bir guruh alohida klient, TMZ, narx va qoldiq tayyorlaydi. SCN-002 da kirimdan avval aynan bitta orderning qarzi tasdiqlanadi. SCN-005 da kirim orderdan oldin o‘tkaziladi, keyin shu orderga ajratilgan summa va qolgan avans solishtiriladi. Ikkala test yakunda tarixdan klient, order IDsi, musbat hisob-kitob IDsi, valyuta va 14 000 summaga mos yagona qatorni talab qiladi. 2026-11-09 kuni ikkala runner ketma-ket, har biri alohida pytest sessiyasida o‘z orderini yaratdi. SCN-002 6/6 va SCN-005 7/7 PASS bo‘ldi. Ikkala run ham birinchi urinishda o‘tdi.
 

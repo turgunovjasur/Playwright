@@ -5,6 +5,12 @@
 
 ## Mundarija
 
+- [Quick Lookup](#quick-lookup)
+- [Screenshot Paths](#screenshot-paths)
+- [Known Locators](#known-locators)
+- [Flow And Tests](#flow-and-tests)
+- [Business Rules](#business-rules)
+- [Known Issues](#known-issues)
 - [URL va navigation](#url--navigation)
 - [Modul ID](#anor279-modul-id)
 - [Step 1](#step-1--main-page)
@@ -13,7 +19,9 @@
 - [Flow/helper/test fayllari](#ishlatiladigan-flow-va-test-fayllari)
 - [Known issues](#known-issues--debug-notes)
 
-## URL / Navigation
+## Quick Lookup
+
+### URL / Navigation
 - Navigation: `Продажа > Заказы` → `Создать` (yoki list `flow_order_list(page, add=True)`).
 - URL: `*/anor/mdeal/order/order+add` (yangi), `*/anor/mdeal/order/order+edit` (edit).
 - Content heading: `Заказ (создание)` / `Заказ (изменение)`.
@@ -21,7 +29,9 @@
   orqaga `#anor279-button-prev_step`. Save tugmasida `fa-save` ikonka bor →
   `get_by_role("button", name="Сохранить", exact=True)` 0 element topadi; `exact_button=False` kerak.
 
-## anor279 Modul ID
+## Known Locators
+
+### anor279 Modul ID
 - Order wizard moduli ID = **`anor279`** (autotest deploymentida barqaror).
 - Bu Smartup modul/forma kodi — boshqa deployment/versiyada **boshqacha bo'lishi mumkin**. Agar order add
   locatorlari to'satdan butunlay topilmasa, birinchi navbatda `anor279` prefiksining hali to'g'riligini tekshir
@@ -57,16 +67,7 @@
   - Option matni **kombinatsiyalangan**: `"product-pw{code}  Основной склад  Price Type ...  7 000"` —
     product nomi **alohida text node emas**. Shuning uchun `page.get_by_text(product)` page-wide bo'lib bir nechta
     elementga tushadi va dropdown ochilishini kutmaydi → flaky.
-  - **To'g'ri pattern** (`flow_order_product_page`):
-    ```python
-    product_input = page.locator("#anor279_input-b_input-product_name_goods0")
-    search = product_input.get_by_role("textbox", name="Поиск")
-    search.click(); search.fill(product)
-    option = product_input.locator(".hint-item").filter(has_text=product).first
-    expect(option).to_be_visible(); option.click()
-    expect(product_input.locator("input").first).to_have_value(product)
-    ```
-  - `.hint-item` ni bosish to'g'ridan-to'g'ri qatorni tanlaydi (name cell ichiga emas).
+  - Joriy `flow_order_product_page` product gridini `b-pg-grid[name="goods_items"]` bilan chegaralaydi va `Название`ni `base.b_input(..., root=product_grid)`, `Кол-во`ni `base.input(..., root=product_grid)` orqali tanlaydi.
 
 ## Step 3 — Final page
 - Payment type b-input: `d.payment_type_name`, label "Тип оплаты" → `b_input("Тип оплаты", value=...)` (label orqali, id'da typo bor).
@@ -96,18 +97,22 @@
   AssertionError berardi. Tuzatildi: limit `q.consignment_day_limit` dan o'qiladi, max sana esa formadagi haqiqiy
   `delivery_date` + limit dan hisoblanadi.
 
-## Ishlatiladigan flow va test fayllari
+## Flow And Tests
+
+### Ishlatiladigan flow va test fayllari
 - Flowlar: `tests/smoke/test_life_cycle/flow_order/flow_order_add.py` (main/product/final), `flow_order_list.py` (list/add/find_row/view/edit/status).
-- Avvalgi Group A/B order testlari 2026-07-31 kuni o'chirilgan; yangi testlar qaytadan yoziladi.
+- Order yaratish/o‘zgartirish regression case’i: `tests/regression/legacy/orders/cases/test_01_create_edit_order.py`.
 - Group-0 base order:
   - `tests/smoke/test_groups/test_a_grup/test_01_create_base_order.py`
   - `tests/smoke/test_groups/test_a_grup/test_0_group_runner.py`
 
-## Known issues / debug notes
+## Known Issues
+
+### Known issues / debug notes
 - Product chiqmasligi → balans/booking; orders.md "Product Chiqmasa" bo'limiga qara.
 - `anor279` prefiksi deploymentga bog'liq — locator butunlay topilmasa avval shuni tekshir.
 
-### Product grid headeri asinxron render bo'ladi
+#### Product grid headeri asinxron render bo'ladi
 Tags: order, product, grid, locator, base-page
 Status: trace-confirmed
 Verified: 2026-07-31
@@ -121,9 +126,11 @@ Source: `test-results/traces/tests_smoke_test_groups_test_0_grup_test_create_bas
   bo'yicha normallashtiradi. Leaf test raw sleep yoki stabil modul IDiga
   qaytmaydi.
 
-## 2026-07-31 Live UI Qo'shimchalari
+## Business Rules
 
-### Step 1 field va permission holatlari
+### 2026-07-31 Live UI Qo'shimchalari
+
+#### Step 1 field va permission holatlari
 Tags: order, add, edit, main-step, permission, locator
 Status: live-ui-confirmed
 Verified: 2026-07-31
@@ -137,7 +144,7 @@ Source: live UI
   required/readonly holati, auto-fill qiymati va step o'tish validatsiyasini
   alohida assert qilish kerak.
 
-### Step 2 item turlari va bo'sh order validatsiyasi
+#### Step 2 item turlari va bo'sh order validatsiyasi
 Tags: order, product, service, material, promotion, validation
 Status: live-ui-confirmed
 Verified: 2026-07-31
@@ -152,7 +159,7 @@ Source: live UI
   xizmat va marketing tablarini hamda bo'sh order negative case'ini alohida
   qoplash kerak.
 
-### Product qatori hisob-kitob va split-card boshqaruvlari
+#### Product qatori hisob-kitob va split-card boshqaruvlari
 Tags: order, product, grid, quantity, margin, split-card
 Status: live-ui-confirmed
 Verified: 2026-07-31
@@ -165,7 +172,7 @@ Source: live UI
 - Testda ishlatish: miqdor/case miqdori o'zaro bog'liqligi, stock cheklovi,
   row va order summalari, remove, duplicate va split-card grantlarini tekshir.
 
-### Step 3 logistika, marking va statuslar
+#### Step 3 logistika, marking va statuslar
 Tags: order, final-step, delivery, marking, status, locator
 Status: live-ui-confirmed
 Verified: 2026-07-31
@@ -181,7 +188,7 @@ Source: live UI
   chegaralarini, xarita save/close/clear oqimini va status variantlarini
   tekshir.
 
-### Final summary item viewlari
+#### Final summary item viewlari
 Tags: order, final-step, summary, grid
 Status: live-ui-confirmed
 Verified: 2026-07-31
@@ -210,3 +217,7 @@ Source: user
   qismida unique entity yaratadi. Sibling group testcase yaratgan `data_store`
   keyni consumer sifatida o'qimaslik; live UI bilan tasdiqlanmaguncha bu
   entryni current truth sifatida ishlatmaslik.
+
+## Screenshot Paths
+
+N/A — yaratish wizardiga alohida arxiv rasmi yo‘q. Saqlashdan keyingi qator menyusi [order list dosyesida](order-list.md#screenshot-paths).

@@ -1,0 +1,23 @@
+{
+  "form_slug": "spravochniki-navigation",
+  "state": "Справочники mega-menu open over Комментарии, showing the Справочники, Основное and Маркетинг columns.",
+  "url_pattern": "/core/mvt/comment_list",
+  "viewport": null,
+  "screenshot_pixels": {
+    "width": 2880,
+    "height": 1566
+  },
+  "entity": null,
+  "created_at": "2026-07-29",
+  "browser": null,
+  "dynamic_areas": [
+    "Current filial in the navbar",
+    "Available menu entries",
+    "Support chat widget"
+  ],
+  "source": "skills/smartup-guide/references/legacy-form-navigation.md",
+  "filial_context": "operational filial",
+  "supporting_sources": [
+    "tests/smoke/test_forms/inventory/spravochniki.py"
+  ]
+}

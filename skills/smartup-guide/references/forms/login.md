@@ -1,27 +1,28 @@
-## Login Form
+# Login Form
+
+## Quick Lookup
+
+Joriy login manzili `<company_url>/a2/auth/login`. `authorization(...)` rolga mos profil bilan login qiladi va dashboard routeni kutadi.
+
+## Screenshot Paths
 
 ### Default Login Snapshot
-Tags: login, auth, screenshot, locator
-- URL pattern: `<company_url>/login.html`; odatiy server uchun `https://smartup.online/login.html`.
-- Screenshot: `skills/smartup-guide/references/forms/screenshots/login/login__default__desktop-1440x900__20260610-151534.png`.
-- UI holati: markazda Smartup login kartasi, yuqorida til selector (`Язык: РУС`), maydonlar `Логин@компания` va `Пароль`, asosiy tugma `ВОЙТИ`, linklar `Забыли пароль?` va `Войти через номер телефона`.
-- Test locatorlari: `page.get_by_placeholder("Логин@компания")`, `page.get_by_role("textbox", name="Пароль")`, `page.get_by_role("button", name="Войти")`.
-- `authorization(...)` login oxirida `dashboard(page)` orqali `Trade` headingni tekshiradi; caller bu assertni qayta yozmaydi.
-- Debug note: snapshot credential kiritmasdan, faqat default login sahifasi yuklangandan keyin olindi.
+
+Tags: login, auth, screenshot
+Status: live-ui-confirmed
+Verified: 2026-06-10
+Source: [Legacy login arxivi](screenshots/login/login__default__desktop-1440x900__20260610-151534.png)
+- Legacy login kartasida `Логин@компания` va `Пароль` maydonlari, til tanlovi va `ВОЙТИ` tugmasi ko‘rinadi. Arxivdagi layout eski login sahifasiga tegishli.
+
+## Known Issues
 
 ### Sessiya Qulfi / Timeout Overlay (#closing-session)
-Tags: login, auth, session, timeout, overlay, flaky, locator
-- **Muammo (flaky)**: Smartup test o'rtasida sessiya overlayini ko'rsatishi
-  mumkin. Overlay `<div id="closing-session">` ichidagi
-  `<div class="cs-backdrop open">` **barcha kliklarni intercept qiladi**;
-  heading, menu yoki list actioni keyingi ko'rinadigan simptom sifatida
-  `TimeoutError`/`AssertionError` bilan yiqilishi mumkin.
-- **Ikki holat** (MCP bilan smartup.online da tasdiqlangan):
-  - Timeout-warning (`.cs-dialog.cs-timeout`): "Закрытие сессии", countdown "Осталось N сек.", **"Продолжить"** tugmasi → `a.session.sessionStay()` sessiyani **parolsiz** uzaytiradi.
-  - Lock/expired (`.cs-dialog.cs-lock.open`): avatar + user nomi +
-    **"Пароль"** input + **"Войти"** (`a.relogin()`) + "Это не вы??"
-    (`a.logout(true)`).
-- Trigger (debug uchun): `angular.element(document.getElementById('closing-session')).scope()` zanjirida `a.session.lockScreen()` overlayni summon qiladi.
+
+Tags: login, auth, session, overlay, locator
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/shared/reporting.py:139`
+- 401 diagnostikasi joriy sahifada `#closing-session .cs-lock.open` ko‘rinsa `session_lock`ni qayd etadi. Sababni aniqlash uchun birinchi 401 javobi va UI holati birga o‘qiladi.
 
 ### License 401 ham generic sessiya qulfini chiqaradi
 Tags: login, auth, session, license, 401, overlay, ci, debug
@@ -50,27 +51,18 @@ Source: GitHub Actions runs `30413648152`, `30531780519`; artifacts
   yo'qolishini faqat server logi ajrata oladi.
 
 ### Joriy kodda sessiya-qulf recovery handleri yo'q
+
 Tags: login, auth, session, overlay, recovery, regression
 Status: code-confirmed
-Verified: 2026-07-30
-Source: `tests/smoke/flows/flow_authorization.py`; git commits `21bdc3c`,
-`f94b377`; CI head `0670b8f`
-- `login()` hozir faqat login formasini to'ldirib `Войти`ni bosadi;
-  `page.add_locator_handler(...)` o'rnatmaydi. Shu sabab lock overlay chiqqanda
-  test o'z-o'zidan qayta login qilmaydi.
-- Oldingi `install_session_keepalive()` implementatsiyasi `21bdc3c`da
-  qo'shilgan, lekin `f94b377` refaktorida olib tashlangan. Tarixiy kontrakt
-  `references/history.md`ga ko'chirilgan.
-- Generic auto-relogin handler hali qaytarilmagan. `change_password:save`
-  boundarysi uchun tor va deterministik himoya mavjud:
-  `run_change_password()` majburiy fresh login qiladi va dashboardni
-  tekshiradi.
+Verified: 2026-11-16
+Source: `tests/shared/authorization.py:30`; `tests/smoke/test_setup/test_12_change_password.py:42`
+- Shared login helperi e’lon widgeti uchun handler o‘rnatadi. Parol almashtirish smoke case’i confirmdan so‘ng user bilan fresh login qilib dashboard routeni tasdiqlaydi. Eski session keepalive tarixi [history.md](../history.md)da.
 
 ### HTTP 401 failure diagnostikasi
 Tags: login, auth, license, 401, diagnostics, allure, telegram
 Status: code-confirmed
 Verified: 2026-07-30
-Source: `tests/smoke/smoke_reporting.py`, `tests/smoke/conftest.py`,
+Source: `tests/shared/reporting.py`, `tests/smoke/conftest.py`,
 `scripts/analyze_test_result.py`, `telegram_bot/telegram_progress.py`
 - Har smoke page faqat Smartup bilan bir origin'dagi birinchi HTTP `401`ni
   test kesimida saqlaydi; keyingi test boshlanishidan oldin holat tozalanadi.
@@ -85,7 +77,20 @@ Source: `tests/smoke/smoke_reporting.py`, `tests/smoke/conftest.py`,
   timeoutidan ustun sabab sifatida ko'rsatiladi.
 
 ### Login POST 500 — UCP-29
-Tags: login, auth, backend, connection-pool, 500, debug
-- Belgisi: login maydonlari to'g'ri to'ldirilib `Войти` bosilgach sahifa `login.html`da qoladi; `dashboard()` `Trade` headingni kutib timeout bo'ladi va UI'da aniq credential xatosi ko'rinmasligi mumkin.
-- Tasdiqlangan sabab (2026-07-13): trace networkda `POST /b/biruni/s$log_in` javobi `500`, response body `UCP-29: Failed to get a connection` bo'lgan.
-- Tahlil qoidasi: bunday holatni darhol noto'g'ri `code` yoki parol deb xulosa qilma; trace networkdagi login POST statusi va response bodyni tekshir. `UCP-29` Smartup backend connection pool xatosi, test locator xatosi emas.
+
+2026-07-13 dagi backend xatosi bo‘yicha [tarixiy qayd](../history.md#forma-testlarining-eski-qamrovi). Yangi login xatosini tekshirishda o‘sha running login javobi kerak.
+
+## Known Locators
+
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/shared/authorization.py:45`
+- Login `Логин` va `Пароль` exact labellari yoki eski `Логин@компания` / `Пароль` placeholderlaridan topiladi. Submit tugmasi `Войти`.
+
+## Flow And Tests
+
+`tests/shared/authorization.py` ichidagi `authorization`, `login` va `dashboard` smoke flowlariga xizmat qiladi. `tests/smoke/test_setup/test_12_change_password.py` majburiy parol almashgach shu login oqimini takrorlaydi.
+
+## Business Rules
+
+`who="user"` uchun setup kodi talab qilinadi. Head va company admin profillari o‘z konfiguratsiyasidagi credentiallarni ishlatadi.

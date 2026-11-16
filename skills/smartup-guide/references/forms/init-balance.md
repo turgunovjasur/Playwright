@@ -1,34 +1,44 @@
 # Ввод начальных остатков ТМЦ — boshlang'ich qoldiq
 
-## Navigatsiya
+## Quick Lookup
+
+### Navigatsiya
 
 - Menyu: **Склад → Ввод начальных остатков ТМЦ**
 - Ro'yxat heading: `Ввод начальных остатков ТМЦ`
 - Yaratish heading: `Ввод начальных остатков ТМЦ (создание)`
 - URL pattern: `/anor/mkw/init_balance/init_inventory_balance_list`, add forma `init_inventory_balance+add`
 
-## Screenshotlar
+## Screenshot Paths
+
+### Screenshotlar
 
 - `screenshots/init-balance/create-form-2026-07-09.png` — create forma, MCP orqali tasdiqlangan.
 
-## Forma maydonlari
+## Known Locators
 
-| Maydon | Turi | Test helper |
-|---|---|---|
-| Номер | oddiy input, `d.balance_number` | `base.input(label="Номер", value=...)` |
-| Склад | b-input, `d.warehouse_name` | Label resolver tuzatilmaguncha `base.b_input(ng_model="d.warehouse_name", value="Основной склад", clear=True)` |
-| Название | product editable grid column, `item.product_name` | `base.b_input(label="Название", value=product_code, root=product_grid, expect_value=re.compile(r".+"))` |
-| Кол-во | editable grid column, `item.quantity` | `base.input(label="Кол-во", value=..., root=product_grid)` |
-| Цена | editable grid column, `item.price` | `base.input(label="Цена", value=..., root=product_grid)` |
+### Forma maydonlari
 
-## Locator qoidalari
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/smoke/test_setup/test_23_init_balance.py:35`
 
-- `Склад` display text auto-fill ko'rinsa ham `warehouse_id` backendga set bo'lmasligi mumkin; test `Склад` b-inputini real dropdown orqali qayta tanlaydi.
-- Init Balance DOMida `BasePage.b_input(label="Склад", ...)` xavfsiz emas: `_field_locator_by_label(target="b-input")` ishlatadigan `following::b-input[1]` warehouse o'rniga keyingi `Валюта` b-inputiga tushadi. Shu sabab warehouse uchun aniq `ng_model="d.warehouse_name"` locator ishlatiladi.
-- `Название`, `Кол-во`, `Цена` oddiy `<label>` emas, `b-pg-grid` column headerlari. `BasePage._field_locator_by_grid_header(...)` fallback shu header ostidagi input/b-inputni topadi.
-- Product `c_p_pw{code}` bilan qidirilganda b-input value `product-pw{code}` bo'lib qoladi; shuning uchun product tanlashda `expect_value=re.compile(r".+")` yoki expected product name ishlatiladi.
+| Maydon | Joriy setup amali |
+|---|---|
+| `Номер` | `base.input(label="Номер", value=document_number)` |
+| `Склад` va `Валюта` | Har ikkalasi nomlangan `b_input` orqali, `clear=True` bilan tanlanadi |
+| `Название` | TMC kodi bilan qidiriladi, tanlangan qiymat aynan kutilgan nomga tengligi tekshiriladi |
+| `Кол-во` va `Цена` | Har biri alohida `base.input(label=...)` orqali to‘ldiriladi |
 
-## Test
+## Business Rules
+
+### Locator qoidalari
+
+Ombor va valyutani tanlagach product kodi bilan row tanlanadi. UZS va USD uchun alohida hujjat saqlanadi va `Провести` bilan o‘tkaziladi. UZS provodkalari alohida oynada tekshiriladi.
+
+## Flow And Tests
+
+### Test
 
 - `tests/smoke/test_setup/test_23_init_balance.py`:
   - yagona `run_init_balance(page, code)` `product-pw{code}` uchun 100 dona,
@@ -39,13 +49,15 @@
 - USD hujjat raqami birinchi hujjat bilan to'qnashmasligi uchun `1{code}`.
 - Setup 24-qadam `Остатки ТМЦ` sahifasida ikkala productni ham tekshiradi.
 
-## Debug Notes
+## Known Issues
 
-### 2026-07-14 fresh setup run
-Tags: init-balance, warehouse, b-input, error
-- **User tasdiqlagan root cause:** `base.b_input(label="Склад", value="Основной склад", clear=True)` label resolver sabab `Валюта` b-inputini target qilgan va unga `Основной склад` yozgan. Currency dropdownida bunday option bo'lmagani uchun `Locator expected to be visible` chiqqan; keyingi `base.b_input(label="Валюта", ...)` qatori umuman bajarilmagan.
+### Debug Notes
 
-### 2026-07-30 — Ikki valyutadagi product qoldiqlari
+#### 2026-07-14 fresh setup run
+
+Eski label resolver bo‘yicha user tasdiqlagan `Склад` / `Валюта` almashishi [tarixiy qayd](../history.md#forma-testlarining-eski-qamrovi)da. Joriy ikkala hujjatda test ombor va valyutani label bilan tanlaydi.
+
+#### 2026-07-30 — Ikki valyutadagi product qoldiqlari
 Tags: init-balance, product, usd, stock, order
 Status: live-ui-confirmed
 Verified: 2026-07-30

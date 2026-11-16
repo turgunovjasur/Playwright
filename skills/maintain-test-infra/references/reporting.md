@@ -14,7 +14,7 @@
 
 14 guruh uchun daraxt `Regression → guruh → Setup / Biznes flow → test` tartibida ko‘rinadi.
 Runner dekoratorlari va yakuniy hisobot guruh hamda test nomlarini
-`tests/regression/test_orders/reporting.py`dan oladi. SCN-002 va SCN-005 guruh nomida
+`tests/regression/test_orders/helpers/reporting.py`dan oladi. SCN-002 va SCN-005 guruh nomida
 ham, guruhning har bir test sarlavhasida ham qidiriladi. ↻ belgisi ikkinchi urinishning
 pytest `call` bosqichiga yetgan testida ko‘rinadi. Setupda bloklangan SKIP belgilanmaydi.
 Testning asl fullName va historyId qiymatlari urinishlarni bog‘lash uchun saqlanadi.
@@ -26,7 +26,7 @@ child running `allure-results` katalogini ham kiriting. Yakuniy hisobot ikkala u
 
 Status: code-confirmed
 Verified: 2026-11-11
-Source: user tasdiqlagan teardown + Allure kelishuvi; `tests/regression/runtime.py`, `tests/regression/test_orders/reporting.py`, `tests/regression/test_orders/run_overview.py`, `scripts/result_retention.py`
+Source: user tasdiqlagan teardown + Allure kelishuvi; `tests/regression/helpers/runtime.py`, `tests/regression/test_orders/helpers/reporting.py`, `tests/regression/test_orders/helpers/run_overview.py`, `scripts/result_retention.py`
 Implementation: Order runtime va yakuniy Allure taqdimotiga qo‘llangan. Syntax, vaqtinchalik papkalarda retention va saqlangan run nusxasidan report generation tekshirilgan; yangi pytest/full suite ishga tushirilmagan. Jonli tezlashish hali o‘lchanmagan.
 
 - Trace ZIP sanitizatsiyasi — parol/tokenlarni maskalash va ZIP’ni qayta yozish — olib tashlangan. Boshqa log/metadata sanitizerlari qoladi. Saqlangan trace original Playwright ZIP; raw trace bo‘yicha foydalanuvchi qarori ushbu scope uchun amal qiladi.
@@ -35,7 +35,7 @@ Implementation: Order runtime va yakuniy Allure taqdimotiga qo‘llangan. Syntax
 - Zarur teardown qoladi: page/context/browser resurslari va handlerlarni yopish, checkpoint/jurnal va yakuniy natijani yozish.
 - Har Order runining natija, presentation, report va summary yo‘llari alohida. Full runner natijalarni global Allure store bilan aralashtirmaydi. Standalone Order yakunda aynan sessiya natijalarining alohida nusxasini oladi.
 - Retention: odatiy yangi run uchun joriy + eng yangi 3 eski run. Eskirgan tanilgan run papkalari JSON, trace, screenshot va Allure bilan to‘liq o‘chiriladi. Faol runlar va resume/retry uchun zarur manbalar shu 3 slot ichida himoyalanadi; zarur manbalar sig‘masa hech narsani o‘chirmasdan startup xato beradi. Bu holatda bog‘liq eski manba yangi mustaqil run o‘rnini egallashi mumkin. Symlink, noma’lum papka va legacy shared output ushbu run retention doirasiga kirmaydi.
-- Retention serverdagi biznes yozuvlariga tegmaydi. O‘zgarish joriy etilganda haqiqiy eski runlar qo‘lda o‘chirilmagan; keyingi run startupida qoida ishlaydi.
+- API setup/baseline fayllari va serverdagi biznes yozuvlari Order run retention doirasidan tashqarida. O‘zgarish joriy etilganda haqiqiy eski runlar qo‘lda o‘chirilmagan; keyingi run startupida qoida ishlaydi.
 - Native Allure: `Regression → guruh → Setup / Biznes flow → test`. PASS qisqa natija va yig‘ilgan qadamlar bilan, FAILED xato qadami, expected/actual, screenshot/trace va texnik tafsilotlar bilan ko‘rinadi. Tekshirilmagan root cause yozilmaydi.
 - Yakuniy faza ledger’i call-only PASS’dan ustun. INTERRUPTED va NOT_RUN Allure native `skipped` ko‘rinishida, aniq `Ijro holati`/tag bilan ajratiladi. Umumiy environment statistikasi ularni alohida sanaydi; sun’iy summary testi qo‘shilmaydi. NOT_RUN uchun bajarilgan qadamlar uydirilmaydi.
 - Codex IAB’da native Allure Description blob-iframe bo‘sh ko‘ringan; aniq renderer sababi tasdiqlanmagan. Standart Description saqlanadi, har testga to‘g‘ridan-to‘g‘ri ochiladigan `Qisqa QA natijasi` text/plain ilovasi ham qo‘shilgan. Ushbu matnning IAB’da ko‘rinishi amalda tekshirilgan.
@@ -234,37 +234,10 @@ Source: `tests/smoke/test_forms/test_0_forms_runner.py`,
   Nuqson topilgan forma uchun validatsiya bajarilgan, ammo undan o'tmagan deb
   ko'rsatiladi; suite bloklangan sahifa esa forma ochildi deb noto'g'ri
   hisoblanmaydi.
-- URL birinchi hard gate: `url_timeout` ichida exact canonical target ochilmasa
-  `EXPECTED_URL_NOT_REACHED` yoziladi va boshqa hard check/diagnostikalar
-  `NOT_RUN` bo'ladi. Menu failure screenshoti direct urinishdan oldin olinadi;
-  optional shell-aware direct probe ikkinchi screenshot va structured xulosani
-  saqlaydi, ammo original failure'ni passga aylantirmaydi.
-- Loader URLdan keyingi ikkinchi hard gate: ko'rinadigan `.block-ui-overlay`
-  yoki `.smt-skeleton` default `60_000 ms` ichida yo'qolmasa
-  `OPENED_WITH_DEFECT / LOADER_NOT_FINISHED` yoziladi. `application_error`,
-  `content_ready` va `title` `NOT_RUN`, `blocked_by=loader` bo'ladi; evidence
-  olingach suite keyingi formaga davom etadi. Forms navigatsiyasi loaderni
-  oldindan kutmaydi — kutish va timeout klassifikatsiyasi `check_loader`
-  ichida.
-- Application error URL va loaderdan keyingi uchinchi browser-aware hard gate:
-  aniq Biruni, inline yoki A2 error signali default `1_200 ms` ichida
-  ko'rinsa `OPENED_WITH_DEFECT / APPLICATION_ERROR` yoziladi.
-  `content_ready` va `title` `NOT_RUN`, `blocked_by=application_error` bo'ladi.
-  Generic `[role="alert"]` hard signal emas va `allowed_warnings` exceptioni
-  yo'q. Failure screenshoti Biruni modalini yopishga urinishdan oldin olinadi;
-  cleanup faqat Biruni modaliga tegadi va original failure'ni o'zgartirmaydi.
-- Content ready to'rtinchi browser-aware hard gate: explicit `ready` selector
-  bo'lsa o'shani, aks holda legacy `b-page/.subheader` yoki A2 `main` kontentini
-  default `15_000 ms` ichida kutadi. Timeoutda
-  `NOT_OPENED / CONTENT_NOT_READY`; `title` `NOT_RUN`,
-  `blocked_by=content_ready`. `capture_form_state()` content readinessni qayta
-  kutmaydi yoki baholamaydi.
-- Title beshinchi va oxirgi browser-aware hard gate: legacy formada visible
-  semantic headingni, A2 formada `document.title`ni default `15_000 ms` ichida
-  whitespace-normalized exact kutadi. Partial match va missing Legacy heading
-  failure: `OPENED_WITH_DEFECT / TITLE_NOT_REACHED`. Title kutishning yagona
-  authoritysi `check_title`; eski `settle_form_open()` va silent unverified-pass
-  hisoboti yo'q.
+- FormMonitor hisobotida birinchi yiqilgan gate, uning sababi va keyingi
+  gate’larning `NOT_RUN` holati saqlanadi. Menu failure screenshoti direct
+  probe’dan, Biruni failure screenshoti esa modal cleanupidan oldin olinadi.
+  Gate tartibi va har birining kontrakti [Smartup reference xaritasi](../../smartup-guide/SKILL.md#reference-xarita)da.
 - Xato paytidagi full-page screenshot aynan shu forma Allure stepiga
   biriktiriladi. Default mask faqat password/secret/token elementlarini
   yashiradi; oddiy search/filter inputlari ochiq qoladi.

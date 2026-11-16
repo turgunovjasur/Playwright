@@ -31,8 +31,9 @@ testni ishga tushirish va run summary — `run-smoke`; test artifactini yozish �
 2. Tegishli reference va amaldagi kodni o'qish; reference'ni koddan ustun qo'ymaslik.
 3. Secret, production dispatch yoki doimiy server processiga tegmasdan read-only
    diagnostika bilan sababni isbotlash.
-4. O'zgartirish so'ralgan bo'lsa eng kichik kesimda kod + reference'ni birga
-   yangilash. Unit-test scope'i uchun `write-test`dagi canonical qoidaga amal qil.
+4. So‘ralgan infra o‘zgarishini kirit. Reference tahriri ham tasdiqlangan bo‘lsa
+   [learn](../learn/SKILL.md) orqali yangila. Aks holda eskirgan fakt va ownerini
+   foydalanuvchiga bildir. Unit-test scope'i uchun `write-test` qoidasiga amal qil.
 5. Default verificationni syntax/config parse, linter, read-only inspection va
    `git diff --check` bilan chekla. `pytest`, test collection yoki boshqa test
    commandini faqat user aynan `run qil` deganda ishlat.
@@ -44,7 +45,8 @@ testni ishga tushirish va run summary — `run-smoke`; test artifactini yozish �
 - Credential/token/password qiymatini kod, skill, chat yoki logga yozma.
 - Telegram va GitHub API response'larini userga chiqarishda tokenli URL yoki
   request payloadni redact qil.
-- Runner CLI/help, target mapping va skill commandlari bir o'zgarishda sinxron bo'lsin.
+- Runner CLI/help, target mapping va skill commandlarini solishtir. Skill
+  commandlarini yangilashda yuqoridagi write-back qoidasiga amal qil.
 - Telegram progress, terminal summary va Allure bir xil test identity
   (`group`, `runner`, `test`, `Allure title`, nested step)dan foydalansin.
 - Implementatsiya va execution authoritysi uchun

@@ -73,8 +73,10 @@ Smartup reference ownershipi:
   `dev1`da ishlagin.
 - Testlarni, collectionni yoki smoke targetni faqat foydalanuvchi aynan
   `run qil` desa ishlat; aks holda handoffda `run qilinmadi` de.
-- Secret, token, real credential, email, session code va PII'ni skillga yozma;
-  parametrik placeholder ishlat.
+- Secret, token, real credential, email, session code va PII'ni skillga yozma.
+  Snapshotning URL, matn va metadata qiymatlarida ham parametrik placeholder ishlat.
+- Skill yoki bilim bazasi o‘zgargach
+  `./.venv/bin/python skills/scripts/validate_skills.py`ni ishlat.
 - Escalation kerak bo'lsa xavfsiz, qayta ishlatiladigan `prefix_rule` taklif qil.
 - Uzun inline Python o'rniga workspace scriptidan foydalan.
 

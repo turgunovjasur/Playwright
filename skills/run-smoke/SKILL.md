@@ -90,15 +90,11 @@ Repo rootda `.env` mavjud bo'lsa direct pytest/PyCharm run konfiguratsiyasi unda
 
 - `group-0`, `group-visit` va `groups` targetlari setup yaratmaydi; user testlari oldin
   muvaffaqiyatli tugagan setup baseline'dagi `code`ni qayta ishlatadi.
-- Repo rootda `.env` bo'lsa `NEW_CODE` ham CLI'dan ustun. `NEW_CODE=1` bilan
-  code-dependent group-only targetni ishlatma: fixture yangi random code yaratadi, lekin shu
-  code uchun setup user/entitylar yaratilmagan bo'ladi. Runner bunday
-  kombinatsiyani configuration error bilan bloklaydi.
+- Group-only targetda `NEW_CODE=1` berilganda ham fixture mavjud baseline’ni
+  o‘qiydi. `code`, `url` va `company_code` to‘liq hamda joriy muhitga mos bo‘lsin.
+  Group-only target bilan yangi company yaratish rejimi runnerda bloklanadi.
 - Group-0ni yangi baseline bilan tekshirish uchun `setup-group-0` ishlat:
   setup va Group-0 bitta pytest sessiyasida bir xil yangi `code` bilan yuradi.
-- `group-0`ni alohida qayta run qilish faqat `.env`da `NEW_CODE=0` va
-  `data_store.json.code` aynan joriy server/companydagi muvaffaqiyatli setupdan
-  qolganiga ishonch bo'lsa to'g'ri.
 - `group-report` testlari `code` fixturega bog'liq emas; template va download
   nomlarining unikalligi run-local UUID suffix bilan ta'minlanadi.
 
@@ -124,8 +120,6 @@ Repo rootda `.env` mavjud bo'lsa direct pytest/PyCharm run konfiguratsiyasi unda
 
 - Asosiy runner cross-platform: `python scripts/run_tests.py --url <server_url> --company-code <code> --company-password <password>`; Mac/Linux uchun `./run_tests.sh ...` wrapper ham bor.
 - Precedence qat'iy: repo rootda `.env` mavjud bo'lsa u yagona asosiy konfiguratsiya hisoblanadi; terminaldagi inline env va CLI flaglar berilgan bo'lsa ham `.env` qiymatlari ishlaydi. `.env` bo'lmasa terminal/CI CLI flaglari va shell env ishlaydi.
-- `.env`dagi `NEW_CODE=1` group-only debug run uchun yaroqsiz; yangi code bilan
-  setup ham shu sessiyada ishlashi kerak.
 - Mavjud company bilan run qilish uchun `--company-code` va `--company-password` majburiy.
 - Yangi company yaratish uchun `--company-code 1`, `--head-email` va `--head-password` majburiy.
 - Create rejimida `--company-password` berilmaydi; company code test ichida
@@ -155,5 +149,3 @@ shu model asosida tahlil qil; bu faylda topology qoidalarini takrorlama.
 ### Eski run fayllarini saqlash muddati
 
 Order run retention va teardown uchun canonical manba: [tasdiqlangan kelishuv va implementatsiya holati](../maintain-test-infra/references/reporting.md#teardown-va-run-artefaktlari-boyicha-tasdiqlangan-kelishuv).
-
-`scripts/result_retention.py` startupda joriy run + ko‘pi bilan 3 eski tanilgan runni saqlaydi, eskilarining butun natija papkasini o‘chiradi. Faol/resume/retry manbalari 3 eski slotdan joy oladi; zarur manbalar sig‘masa o‘chirishdan oldin xato beradi. Noma’lum papka, symlink, legacy shared output va serverdagi biznes ma’lumotlari tegilmaydi. API setup/baseline fayllari run retention doirasidan tashqarida.

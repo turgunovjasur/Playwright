@@ -1,0 +1,18 @@
+{
+  "form_slug": "natural-person",
+  "state": "Физическое лицо (создание) in the default filial with empty identity fields, Мужской selected, Активный enabled and Характеристики visible.",
+  "url_pattern": "/anor/mr/person/natural_person+add",
+  "viewport": null,
+  "screenshot_pixels": {
+    "width": 1200,
+    "height": 1038
+  },
+  "entity": null,
+  "created_at": "2026-07-01",
+  "browser": null,
+  "dynamic_areas": [
+    "Person identity and contact fields",
+    "Support chat widget"
+  ],
+  "source": "skills/smartup-guide/references/forms/natural-person.md"
+}

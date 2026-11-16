@@ -17,8 +17,7 @@ Verified: 2026-08-13
 Source: user; `tests/smoke/test_setup/test_02_filial.py`;
 `test-results/allure-results/d2c3f725-feed-461b-825b-ce19d11f5baa-result.json`
 
-- Joriy Filial list/add/view oqimi legacy Biruni formasi sifatida
-  `BasePage` bilan boshqariladi; `AngularBasePage` bilan aralashtirilmaydi.
+- 2026-08-13 trace’da Filial list/add/view legacy Biruni ko‘rinishida ochilgan.
 - Navigation: `Главное → Организации`.
 - List heading: `Организации`; add heading: `Организация (создание)`; view
   heading: `Организация (просмотр)`.
@@ -27,7 +26,7 @@ Source: user; `tests/smoke/test_setup/test_02_filial.py`;
 
 ## Screenshot Paths
 
-- `references/forms/screenshots/filial/filial__add-default__desktop-1920x1080.png`
+- `references/forms/screenshots/filial/filial__add-default__desktop-1920x1080.png` — shu kadrda НДС va Акциз yoqilgan, Ставка НДС (%) maydoni ko‘rinadi.
 - `references/forms/screenshots/filial/filial__add-vat-on__desktop-1200x690.png`
 - `references/forms/screenshots/filial/filial__view-main__desktop-1920x1080.png`
 - `references/forms/screenshots/filial/filial__view-products__desktop-1920x1080.png`
@@ -41,16 +40,16 @@ Source: user; `tests/smoke/test_setup/test_02_filial.py`;
 
 Tags: filial, b-input, ng-model, grid, locator
 Status: code-confirmed
-Verified: 2026-08-13
-Source: `tests/smoke/test_setup/test_02_filial.py`; archived screenshots/JSON
+Verified: 2026-11-16
+Source: `tests/smoke/test_setup/test_02_filial.py:41`; `screenshots/filial/filial__add-fields.json`
 
-- `Название`: oddiy input; test `BasePage.input(label="Название", ...)`
+- `Название`: oddiy input; setup `AutoBasePage.input(label="Название", ...)`
   ishlatadi.
 - `Базовая валюта` va `Юридическое лицо`: legacy `b-input`; test
-  `BasePage.b_input(...)` ishlatadi.
+  `AutoBasePage.b_input(...)` ishlatadi.
 - Valyuta tanlangach `Продолжить?` Biruni confirmi chiqadi.
-- List qidiruvi `BasePage.grid_controller(...)`, row tekshiruvi/tanlovi
-  `BasePage.grid(...)` bilan bajariladi.
+- List qidiruvi `base.grid_controller(...)`, row tekshiruvi/tanlovi
+  `base.grid(...)` bilan bajariladi.
 - Button/actionlar ikkala page objectda yagona `click(...)` API nomidan
   foydalanadi; legacy formada `BasePage.click(...)` ishlatiladi.
 
@@ -87,7 +86,7 @@ Source: archived Filial add screenshot/JSON evidence
 - Setup leaf: `tests/smoke/test_setup/test_02_filial.py::run_filial`.
 - Setup runner item:
   `tests/smoke/test_setup/test_0_setup_runner.py::test_02_filial`.
-- Page object: `utils/base_pages/base_page.py::BasePage`.
+- Page object: `utils/base_pages/auto_base_page.py::AutoBasePage`.
 - `AngularBasePage.button()` API nomi `AngularBasePage.click()`ga almashtirilgan;
   `BasePage` va `AngularBasePage` button click metodi bir xil nomlangan.
 
@@ -117,5 +116,4 @@ Verified: 2026-08-13
 Source: user;
 `test-results/allure-results/d2c3f725-feed-461b-825b-ce19d11f5baa-result.json`
 
-- Filial testini A2 deb `AngularBasePage`ga o'tkazish noto'g'ri. Joriy test
-  legacy `BasePage`ga qaytarildi va relevant setup run green bo'ldi.
+- 2026-08-13 runida kutilgan A2 route ochilmagan, forma legacy Biruni’da ishlagan. Joriy leaf uchun [Flow And Tests](#flow-and-tests).

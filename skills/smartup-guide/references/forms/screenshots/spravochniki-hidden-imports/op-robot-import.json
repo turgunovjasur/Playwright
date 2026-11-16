@@ -1,0 +1,20 @@
+{
+  "form_slug": "spravochniki-hidden-imports",
+  "state": "Штат (импорт) file drop area with empty staff and error grids.",
+  "url_pattern": "/anor/mrf/robot_import",
+  "viewport": null,
+  "screenshot_pixels": {
+    "width": 1440,
+    "height": 722
+  },
+  "entity": null,
+  "created_at": "2026-07-29",
+  "browser": null,
+  "dynamic_areas": [
+    "Imported staff and user rows and errors",
+    "Current filial in the navbar",
+    "Support chat widget"
+  ],
+  "source": "skills/smartup-guide/references/legacy-form-navigation.md",
+  "filial_context": "operational filial"
+}

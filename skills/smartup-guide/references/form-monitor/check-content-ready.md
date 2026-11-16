@@ -40,14 +40,14 @@ check_content_ready(
     *,
     shell,
     ready=None,
-    timeout=15_000,
+    timeout=None,
 )
 ```
 
 - `ready` — optional explicit CSS selector.
 - `shell` — `check_url` actual URLdan aniqlagan `legacy` yoki `a2` qiymati.
 - `ready` berilsa non-empty string bo'lishi shart.
-- Default timeout aynan `15_000 ms`.
+- Default timeout aynan `60_000 ms`.
 - Kutish va timeout klassifikatsiyasi checkning o'zida; caller va
   `capture_form_state()` uni takrorlamaydi.
 
@@ -108,7 +108,7 @@ ready_source: a2_default
 ```text
 passed: True
 execution_status: PASSED
-timeout_ms: 15000
+timeout_ms: 60000
 ready_source: explicit | legacy_default | a2_default
 expected_ready: <kutilgan signal>
 matched_selector: <ko'ringan signal>
@@ -126,7 +126,7 @@ passed: False
 execution_status: FAILED
 status: NOT_OPENED
 reason_code: CONTENT_NOT_READY
-timeout_ms: 15000
+timeout_ms: 60000
 ready_source: <signal manbasi>
 expected_ready: <kutilgan signal>
 matched_selector: ""
@@ -175,7 +175,7 @@ Check modalni yopmaydi va sahifa holatini o'zgartirmaydi.
 
 ## Implementatsiya Invariantlari
 
-- Default timeout aynan `15_000 ms`.
+- Default timeout aynan `60_000 ms`.
 - `ready` optional; explicit bo'lmasa shell defaulti doim mavjud.
 - Shell bu check ichida URLdan qayta aniqlanmaydi; `check_url` bergan parametr
   ishlatiladi.
@@ -194,7 +194,7 @@ Check modalni yopmaydi va sahifa holatini o'zgartirmaydi.
 
 ```text
 ready: b-grid[name='items']
-selector 15 soniyadan oldin visible
+selector 60 soniyadan oldin visible
 check_content_ready: PASSED
 title: ishlaydi
 ```
@@ -220,7 +220,7 @@ check_content_ready: PASSED
 ### 4. Timeout
 
 ```text
-15 soniya ichida ready signal yo'q
+60 soniya ichida ready signal yo'q
 check_content_ready: FAILED / CONTENT_NOT_READY
 title: NOT_RUN
 blocked_by: content_ready

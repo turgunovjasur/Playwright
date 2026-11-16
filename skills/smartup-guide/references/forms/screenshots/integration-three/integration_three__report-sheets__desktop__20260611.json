@@ -1,0 +1,19 @@
+{
+  "form_slug": "integration-three",
+  "state": "Интеграция №3 NEON HTML preview with Документы selected and its column headers visible between the Склады and Остатки tabs.",
+  "url_pattern": "/trade/rep/integration/integration_three",
+  "viewport": null,
+  "screenshot_pixels": {
+    "width": 1200,
+    "height": 739
+  },
+  "entity": null,
+  "created_at": "2026-06-11",
+  "browser": null,
+  "dynamic_areas": [
+    "Report rows",
+    "Current filial in the navbar",
+    "Support chat widget"
+  ],
+  "source": "skills/smartup-guide/references/forms/integration-three.md"
+}

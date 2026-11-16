@@ -13,128 +13,103 @@
 
 ## Qidiruv Kalitlari
 
-Tags: debug, data-store, setup, screenshot, dependency, smoke
+Qidiruv so‘zlari: debug, data-store, setup, screenshot, dependency, smoke
 
-### Timeoutlar funksiya ichida saqlanadi
+### Browser va page-object uchun UI timeout
 Tags: timeout, playwright, base-page, conftest, debug
-- Loyiha qoidasi: alohida `utils/timeouts.py`, umumiy timeout klassi yoki markaziy timeout registri bo'lmaydi.
-  <!-- kb-allow-missing: utils/timeouts.py -->
-- Har bir helper o'z timeoutini funksiya signature'ida (`timeout=...`) yoki aynan shu amal yonidagi Playwright chaqiruvida saqlaydi. Qiymatni tushunish uchun boshqa faylga o'tish talab qilinmasin.
-- `tests/smoke/conftest.py` Playwright context uchun `set_default_timeout(10_000)` va `set_default_navigation_timeout(20_000)` qiymatlarini fixture yaratiladigan joyning o'zida beradi.
-- `BasePage` va `AngularBasePage` helperlari component, loader, transition, probe va typing delay qiymatlarini o'z funksiyalari ichida saqlaydi.
-- Bir xil millisekund qiymati turli funksiyalarda takrorlansa ham markaziy constantga chiqarilmaydi; timeout shu funksiyaning xatti-harakatini o'qiyotganda ko'rinishi muhimroq.
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `utils/base_pages/__init__.py`; `tests/shared/browser.py`; `utils/base_pages/base_page.py`; `utils/base_pages/angular_base_page.py`
+- `browser_context` oddiy amal va navigatsiya uchun bir xil `UI_TIMEOUT_MS`
+  qiymatini qo‘llaydi. Joriy default 60 000 ms. Legacy va A2 page-object
+  metodlarida ham `timeout=UI_TIMEOUT_MS` ishlatiladi. Aniq amal uchun
+  caller bergan timeoutni tegishli chaqiruvda tekshir.
 - `delay=50` maksimal timeout emas; `b_input()` server-search typingida har bir belgi orasidagi real pauza.
-- `BasePage.expect_page(url=...)` URL mosligini kutadi, lekin hozirgi implementatsiyada loader `check_unblocked` tekshiruvi faqat `heading` branchida ishlaydi; URL-only chaqiruv loader kutishi deb qabul qilinmaydi. Umumiy menu flowida loaderni `BasePage.navigate_to()`, standalone URL tekshiruvida esa alohida `BasePage.wait_for_loader()` kutadi. Forms monitoring oqimi bundan mustasno: unda URLdan keyingi yagona loader authority `check_loader`.
+- `expect_page(url=...)` URL mos kelgach, `check_unblocked=True` bo‘lsa heading berilmaganda ham tegishli shell loaderini kutadi. Forms monitoringidagi alohida gate uchun [check_loader](form-monitor/check-loader.md) kontraktini o‘qi.
 - `requests`/`urllib` HTTP timeoutlari sekundlarda va UI kutishlaridan boshqa mas'uliyatga ega; ular ham tegishli request funksiyasi yonida turadi.
 
 ### Integration report navigatsiyasi
 Tags: report, navigation, playwright, timeout, open-report
 Status: code-confirmed
-Verified: 2026-09-18
-Source: `tests/smoke/test_groups/test_report_grup/flow_report/report_helpers.py::open_report`
-- `open_report(base, route, heading=None, timeout=30_000)` joriy URLga qarab
-  legacy session hash yoki A2 path yasaydi. Legacy shellda authenticated
+Verified: 2026-11-16
+Source: `tests/smoke/test_groups/test_report_grup/flow_report/report_helpers.py::open_report`; `utils/base_pages/base_page.py`; `utils/base_pages/angular_base_page.py`
+- `open_report(base, route, heading=None, timeout=UI_TIMEOUT_MS)` report yo‘li,
+  heading va timeoutni `base.open_route()`ga uzatadi. Yo‘lni page-object quradi. Legacy shellda authenticated
   session tokeni bo'lmasa aniq xato beradi.
-- `page.goto(..., wait_until="commit", timeout=timeout)`dan keyin
-  `base.expect_page(heading=heading, url=..., timeout=timeout)` ishlaydi.
-  Timeout ikkala bosqichga ham uzatiladi; eski default `load` kutish xatosi
-  [history.md](history.md#skills-auditida-ajratilgan-eski-kontraktlar)da.
+- Legacy navigatsiya `commit`ni, A2 `domcontentloaded`ni kutadi. Har ikki
+  implementation so‘ng `AutoBasePage.expect_page()`ga expected route,
+  heading va timeoutni uzatadi.
 
 ### Bitta pytest sessiyasida yagona Sync Playwright runtime
 Tags: playwright, fixture, session-browser, asyncio, ci
-- `sync_playwright()` bir threadda ichma-ich ochilmaydi. Session-scoped runtime faol
-  paytda function-scoped fixture yana `sync_playwright()` ochsa Playwright
-  `using Playwright Sync API inside the asyncio loop` xatosini beradi; bu testning
-  async yozilganini yoki A2 UI xatosini anglatmaydi.
-- `session_browser` pytest sessiyasi uchun yagona Sync Playwright runtime/browserni
-  yaratadi. `session_context`, `group_session_page` va fresh `page` fixturelari
-  shu browserdan alohida context/page yaratadi.
-- Xato fixture setupda chiqsa test UI qadamlariga yetmagan bo'ladi; screenshot/trace
-  locator diagnostikasi emas, fixture dependency va runtime lifecycle tekshiriladi.
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/conftest.py::session_browser`; `tests/shared/browser.py::browser_context`
+- Session-scoped `session_browser` bitta `sync_playwright()` kontekstida Chromium ochadi. Setup `session_context`ni, group va standalone fixturelar esa shu browser ichidagi alohida context/page’larni ishlatadi.
+- Fixture setup paytidagi runtime xatosida `session_browser → context → page` dependency zanjirini tekshir. `browser_context` trace yozishni tugatib contextni yopadi, `session_browser` sessiya yakunida browser’ni yopadi.
 
 ### Code Fixture
 Tags: code, data-store
-- Session `code` setupda yaratiladi.
-- Entity nomlari uchun ishlatiladi:
-  - `natural_client-pw{code}`
-  - `room-pw{code}`
-  - `robot-pw{code}`
-  - `product-pw{code}`
-- Yakka testlarda `code` `test-results/data/data_store.json` dan olinadi.
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/conftest.py::code`; `utils/data_store.py::write_data_file`
+- `code` session-scoped. Yakuniy collectionda `code`ga bog‘liq UI setup item tanlangan va `NEW_CODE=1` bo‘lsa, fixture yangi 6 xonali kod oladi. Oldingi data fayli mavjud bo‘lsa, uning baytlarini SHA-256 nomi bilan `baseline-backups/`ga saqlaydi. Yangi baseline `code`, `url`, `company_code`, `suite=ui_setup` bilan boshlanadi.
+- Boshqa holatda fixture saqlangan baseline’ni o‘qiydi. `code`, `url`, `company_code` yetishmasa yoki server/kompaniya joriy konfiguratsiyaga mos kelmasa pytest usage error bilan tugaydi.
+- [Setup zanjiri](smoke-runner.md#testlar-tartibi-va-vazifasi) shu koddan jismoniy shaxs, room, robot va mahsulot nomlarini yasaydi.
 
 ### Admin-only runnerda ortiqcha `code` dependency
 Tags: code, data-store, fixture, admin, forms
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/conftest.py::group_session_page`; `tests/conftest.py::group_user_page`; `tests/smoke/test_forms/test_0_forms_runner.py::forms_session`
 - `group_session_page` browser context/page lifecycle fixture'i bo'lib,
   `code`ni qabul qilmaydi.
 - User login uchun `code` kerak bo'lsa uni `group_user_page`, test data uchun
   kerak bo'lsa tegishli test wrapper o'zi so'raydi.
 - Admin-only Forms runner `group_session_page` orqali ishlaydi. Umumiy fixture
-  `code`ga bog'lansa, `data_store.json` yo'q yakka run UI qadamlarigacha
-  yetmasdan `pytest.exit` bilan to'xtaydi.
+  orqali baseline yaratish yoki tekshirish boshlanmaydi.
 
 ### Yakka testda user login code'i
 Tags: authorization, user, code, data-store, debug
-- `authorization` code generatsiya qilmaydi va `data_store.json`dan code o'qimaydi; yangi/eski code tanlovining yagona source'i `NEW_CODE` boshqaradigan `code` fixture.
-- `who="user"` bilan login qiladigan runner va yakka testlarda doim `authorization(page, who="user", code=code)` ishlatilsin; `code` berilmasa authorization darhol aniq `AssertionError` beradi.
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/shared/authorization.py::authorization`; `tests/shared/authorization.py::current_company_code`; `tests/conftest.py::group_user_page`
+- `authorization(page, who="user", code=code)` foydalanuvchi loginini session kodi va joriy company suffixidan yig‘adi. Create rejimida `current_company_code()` suffixni data store’dan o‘qiydi. `code`ni helperga runner fixture yoki standalone wrapper uzatadi. Argumentning defaulti `None`, shu sabab helper chaqirishdan oldin fixture qiymatini uzatish caller zimmasida.
 
-### NEW_CODE=1 bilan group-only login ishlamaydi
-Tags: authorization, user, code, data-store, group, runner
-Status: trace-confirmed
-Verified: 2026-07-31
-Source: `test-results/traces/test_0_group_runner.zip`;
-`scripts/run_tests.py`; user correction
-- Group-only target setupni ishlatmaydi. `.env`dagi `NEW_CODE=1` precedence
-  sabab `code` fixture yangi random qiymat yaratsa, shu code uchun user va
-  boshqa setup entitylar mavjud bo'lmaydi.
-- Tasdiqlangan simptom: Group-0 fixture setupida login POST `400` va
-  noto'g'ri login/parol javobi qaytdi; testcase bodygacha yetilmadi.
-- Testda ishlatish: group-only rerun uchun `NEW_CODE=0` va joriy baseline;
-  yangi code bilan Group-0 uchun setup va testni bir sessiyada bajaradigan
-  `setup-group-0` targeti ishlatiladi. Runner `NEW_CODE=1 + group-only`
-  kombinatsiyasini UI ochilishidan oldin bloklaydi.
+### Group-only baseline bilan login
+
+Group-only run uchun server va company tekshiruvlari [Code Fixture](#code-fixture) bo‘limida. Wrapper `COMPANY_CODE=1` bilan group-only targetni startupda to‘xtatadi. [Runner shartlari](smoke-runner.md#runner-qoidasi)
 
 ### Debug Iteratsiyada Precondition Qayta Yaratilmaydi
-Tags: debug, data-store, precondition
-- Qoida: Test yozish/debug iteratsiyasi paytida precondition entity allaqachon yaratilgan va `data_store.json` ga saqlangan bo'lsa, uni qayta yaratish shart emas.
-- Misol: contract code/name mavjud bo'lsa, order testdagi xatoni tekshirish uchun mavjud contractdan foydalan.
-- Faqat real chain verification kerak bo'lsa yoki data yo'q bo'lsa precondition test qayta run qilinadi.
+
+Mavjud setup entity’ni qachon qayta ishlatish [debug-test](../../debug-test/SKILL.md)da belgilangan. Baseline qaysi server va kompaniyaga tegishli ekanini [Code Fixture](#code-fixture) orqali tekshir.
 
 ### Fresh Database Assumption
 Tags: fresh-db, setup, group, data
-- Qoida: Yangi testlar har doim yangi server/baza holatida ham ishlashi kerak; lokal debug rerunlari yaratgan mavjud dataga suyanib test yozma.
-- Cleanup/cancel qadamlari faqat mavjud data bo'lsa ishlasin; data yo'q bo'lsa no-op bo'lib, test yangi record yaratib davom etsin.
-- Testga kerakli entity setup runner yoki shu group ichida yaratilishi kerak; sahifada oldindan record bor deb hisoblama.
-- Fresh DB default sozlamalari ham hisobga olinsin: testga kerak bo'lgan feature setting default o'chirilgan bo'lsa, test uni idempotent yoqib keyin asosiy flowga o'tsin.
-- Order edit case yozish/debug paytida test yiqilib yarim holat qolsa, keyingi urinishdan oldin shu clientning active orderlarini `Отменен` qilib product bookingni tozala; aks holda edit logikasi eski data bilan buziladi.
-- Kelajakda kamaytirib edit qilinadigan order preconditioni minimal quantity bilan yaratilmasin; masalan konsignatsiya edit testi uchun create bosqichida 5 dona yaratilib, editda 4 donaga tushiriladi.
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/smoke/test_groups/test_a_grup/test_01_create_base_order.py::run_create_base_order`
+- Group-0 birinchi case clientning settlement qatorini qidiradi. Qator mavjud bo‘lsa joriy summalarni saqlaydi. Bo‘sh gridda boshlang‘ich summalarni nol qilib, keyin o‘z orderini yaratadi.
+- Test yaratishda feature precondition va cleanup egasi [group testcase mustaqilligi](../../write-test/references/project-rules.md#group-testcase-mustaqilligi) bilan belgilanadi.
 
 ### Masked Input Replace
-Tags: debug, input, date, amount, mask
-- Smartup date/amount mask inputlarida invalid qiymatdan keyin oddiy `fill()` eski qiymatni almashtirmay ustiga qo'shib yuborishi mumkin.
-- Test helper avval inputni focus qilib `ControlOrMeta+A` va `Backspace` bilan tozalasin, keyin yangi value yozib `Tab` bossin.
+
+Maydonni tozalash, qayta yozish va `press_tab` parametri [Masked Date/Amount Inputs](ui-patterns.md#masked-dateamount-inputs) bo‘limida.
 
 ### Setup Va Group Model
 Tags: setup, group, dependency
-- `tests/smoke/test_setup/test_0_setup_runner.py` ichidagi mavjud testlar user setup testlari; runner setup testlari bilan bir papkada turadi.
-- `scripts/run_tests.py all` Setup → Group-0 → Visit → Report → Forms
-  runnerlarini bitta pytest sessiyasida collect qiladi.
-- Setup testlari ketma-ket va bir-biriga bog'liq.
-- Smoke runner bo'yicha har bir test vazifasi va entity naming xaritasi `references/smoke-runner.md` ichida saqlanadi.
-- Group testlar user setup natijalariga bog'liq, lekin boshqa grouplarga bog'liq emas.
-- Group ichidagi testlar bir-biriga bog'liq bo'lishi mumkin; shu groupda bitta test failed bo'lsa, shu groupning keyingi testlari skip qilinadi.
-- Bir group failed bo'lishi boshqa grouplarga ta'sir qilmasin.
-- Group testlar boshqa groupning `data_store` keylari, UI state yoki yaratilgan biznes recordlariga suyanmasin; faqat user_setup va o'z group prefixidagi data ishlatilsin.
-- Yangi group runner qo'shilsa, full run uchun `scripts/run_tests.py` dagi `GROUP_RUNNER_PATHS` va `tests/smoke/conftest.py` default runner tanloviga ulanadi.
-- `user_setup` failed bo'lsa faqat setupga bog'liq grouplar skip qilinadi;
-  `setup_independent=True` runnerlar davom etadi. `independent=True` esa
-  bir group ichidagi failure cascade'ini o'chiradi; bu ikki flag alohida.
-- Implementatsiya: `pytest.mark.user_setup` setup chain uchun, `pytest.mark.smoke_group("A")` kabi markerlar group chain uchun ishlatiladi.
-- Grouplar orasida browser/page state leak bo'lmasligi uchun har group runner module-scoped `group_session_page` bilan alohida context/page oladi.
-- User group ichidagi testlar `group_user_page` fixture bilan bitta module-scoped page ishlatadi; login group boshida bir marta qilinadi, group tugaganda fixture oynani yopadi.
-- Group ichidagi testlar bir-biriga bog'liq bo'lmasa `pytest.mark.smoke_group("X", independent=True)` ishlatiladi — bitta test failed bo'lsa ham qolganlar skip qilinmaydi. Report group shu sababli `independent=True` bilan belgilangan.
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `scripts/run_tests.py::TARGETS`; `tests/smoke/conftest.py`; `tests/conftest.py::group_user_page`; `tests/smoke/test_forms/test_0_forms_runner.py`; `tests/smoke/test_groups/test_a_grup/test_0_group_runner.py`; `tests/smoke/test_groups/test_visit_grup/test_0_visit_runner.py`; `tests/smoke/test_groups/test_report_grup/test_0_group_runner.py`
+- `all` targeti bitta pytest jarayoniga Setup → Group-0 → Visit → Report → Forms runnerlarini uzatadi. [Setup zanjiri va entity nomlari](smoke-runner.md#testlar-tartibi-va-vazifasi)
+- Oddiy `user_setup` xatosi keyingi setup itemlarni va setupga bog‘liq grouplarni skip qiladi. `SetupDependencyReadyError` bu cascade’ni boshlamaydi. `setup_independent=True` setup failure’dan keyin ham o‘z runneriga ruxsat beradi, `independent=True` esa shu group ichidagi failure cascade’ini o‘chiradi.
+- Group-0 bitta module-scoped `group_user_page` bilan ishlaydi. Visit va Report `independent=True`, Forms esa ikkala mustaqillik markeri bilan belgilangan. Group page context’i modul tugaganda yopiladi.
 
 ### Company Mode Va Birinchi Authorization
 Tags: setup, company, authorization, env, data-store, collection
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `scripts/smoke_environment.py::check_requiremants`; `tests/shared/config.py::configure_environment`; `tests/shared/authorization.py::current_company_code`; `tests/conftest.py::pytest_collection_modifyitems`; `tests/smoke/test_setup/test_01_legal_person.py::run_legal_person`
 - `.env`dagi `COMPANY_CODE=1` bo'lsa `test_00_company` collectionda qoladi;
   haqiqiy mavjud company kodi berilsa deselect qilinadi va Allure'da skipped
   test sifatida ko'rinmaydi. `COMPANY_CODE=0` configuration error.
@@ -150,34 +125,32 @@ Tags: setup, company, authorization, env, data-store, collection
 
 ### Report Group
 Tags: report, group, integration, download
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/smoke/test_groups/test_report_grup/test_0_group_runner.py`; `tests/smoke/test_groups/test_report_grup/test_06_integration_two.py`; `tests/smoke/test_groups/test_report_grup/flow_report/report_helpers.py::generate_and_verify_download`; `scripts/run_tests.py::TARGETS`
 - Report testlar: `tests/smoke/test_groups/test_report_grup/` — CisLink, Integration Three, SalesWork, Optimum, Spot 2d, Integration Two.
 - Alohida run: `python scripts/run_tests.py group-report --url ... --company-code ... --company-password ...`
 - Report testlar `independent=True` — biri yiqilsa qolganlari davom etadi.
 - Report testlar `code` fixture yoki `data_store.json.code`ga bog'liq emas;
   template va saqlanadigan download nomlari run-local UUID suffix oladi.
-- Integration Two faqat `Администрирование` filialida ishlaydi; test admin loginidan keyin shu filialga aniq o'tadi.
-- Integration Two `Тип цены`ni qidiruv qiymatisiz `select_first=True` bilan
-  birinchi mavjud optiondan tanlaydi.
+- Integration Two testi admin loginidan keyin `Администрирование` filialini aniq tanlaydi.
+- Integration Two `Тип цены` bo‘sh bo‘lsa birinchi optionni tanlaydi, mavjud qiymat bo‘lsa uni saqlaydi.
 - Download testlarida `generate_and_verify_download(base, button_name, expected_prefix, save_name, expected_suffix=...)` helper ishlatiladi; fayl `test-results/downloads/`ga saqlanadi.
-- Integration Two fake URL yozmaydi: configured Monolith `User` va valid HTTP(S) URL majburiy precondition. Generate download bermasa helper URL, Biruni alert va screenshotni Allurega biriktirib fail qiladi.
+- Integration Two bo‘sh bo‘lmagan Monolith `User` va HTTP(S) URLni tekshiradi. `INTEGRATION_TWO_XML_URL` berilsa URL maydoniga shu qiymat yoziladi. Faqat `INTEGRATION_TWO_DEMO=1`da server proxy chaqiruvlariga lokal XML javobi beriladi. Download timeoutida helper URL, Biruni alert va screenshotni Allurega biriktirib xato beradi.
 
 ### Runner Va Debug Helper Qoidalari
 Tags: runner, debug, modal, data-store
-- Runnerlar hech qachon boshqa moduldagi pytest `test_*` funksiyani import qilib chaqirmaydi; umumiy bajariladigan body `run_*` funksiyalarda turadi, pytest entrypointlar esa thin wrapper bo'ladi.
-- Global smoke/regression mode parametri olib tashlangan. `run_*` funksiyasiga
-  ishlatilmaydigan `scope`/`mode` parametrini qo'shma; coverage farqi alohida
-  testcase yoki runner targeti bilan ifodalansin.
-- Group `run_*` funksiyalarida `login=True/login=False` mode parametri ishlatilmaydi. User group runnerlari login qilingan `group_user_page` uzatadi; fresh `page` bilan standalone pytest wrapper `run_*` chaqiruvidan oldin o'zi login qiladi. B-04 va Report kabi admin preconditionli caselar esa kerakli admin loginni `run_*` ichida parametrsiz bajaradi.
-- `BasePage.confirm_biruni(expected_text=None)` `#biruniConfirm` uchun text, opacity `1`, scoped `да`, hidden kutishni bitta joyda bajaradi.
-- `logger.fail(..., raise_error=True)` false-pass bo'lmasligi uchun kerakli joyda real `AssertionError` ko'taradi.
-- CI/Telegram failure xabari faqat `TimeoutError` yoki locator call log bilan cheklanmasin; xabardan qaysi test, qaysi biznes step, sahifa/form holati, kutilgan action va tekshiriladigan keyingi joy aniq ko'rinishi kerak.
-- Save transition xatolarida list/view timeoutini root cause deb ko'rsatma; avval add/edit formdagi `Сохранить` actionidan keyingi Biruni/UI error, actual heading va expected transition yozilsin.
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/smoke/test_setup/test_0_setup_runner.py`; `tests/smoke/test_groups/test_a_grup/test_0_group_runner.py`; `tests/smoke/test_groups/test_report_grup/test_0_group_runner.py`; `tests/smoke/test_groups/test_report_grup/test_06_integration_two.py::run_report_integration_two_check`
+- Setup va Report runnerlari leaf’lardan `run_*` import qiladi. Group-0 wrapperi login qilingan `group_user_page`ni uzatadi. Integration Two kabi admin testi esa `authorization(who="admin")`ni o‘z flow’ida chaqiradi.
+- Test/flow tuzilishi [write-test](../../write-test/SKILL.md)da, confirm modal kontrakti [Biruni Confirm](ui-patterns.md#biruni-confirm)da. Save’dan keyingi xatoda action, asl exception va dalillarni [debug-test](../../debug-test/SKILL.md) orqali tekshir.
 
 ### `load_data` strict data-store kontrakti
 Tags: fixture, data-store, load-data, dependency
 Status: code-confirmed
 Verified: 2026-08-28
-Source: `tests/smoke/conftest.py:248`
+Source: `utils/data_store.py::load_data`
 - `save_data` va `load_data` fixture emas; `utils.data_store`dan import qilinadi.
 - Qoida: `load_data("key")` missing yoki bo'sh keyda aniq dependency xatosi
   ko'taradi; faqat optional key `allow_missing=True` bilan `None` qaytaradi.
@@ -241,42 +214,12 @@ Source: `tests/smoke/test_forms/monitoring/monitor.py`;
   `check_url → check_loader → check_application_error → check_content_ready → check_title`.
   JavaScript exception alohida hard check emas. `TypeError`, `KeyError` va
   boshqa kod kontrakti xatolari forma nuqsoni sifatida yashirilmaydi.
-- Menu navigatsiyasidan keyin `check_url` birinchi hard gate bo'lib, o'zining
-  `url_timeout` vaqti ichida exact canonical `expected_path`ni kutadi. URL
-  ochilmasa yagona reason `EXPECTED_URL_NOT_REACHED`; `previous_url`,
-  `URL_MISMATCH` va `URL_TIMEOUT` klassifikatsiyasi ishlatilmaydi. Qolgan hard
-  checklar va diagnostikalar `NOT_RUN` bo'ladi.
-- URL gate o'tgach `check_loader` ko'rinadigan `.block-ui-overlay` va
-  `.smt-skeleton` yo'qolishini o'zining default `60_000 ms` timeouti ichida
-  kutadi. Timeoutda `OPENED_WITH_DEFECT / LOADER_NOT_FINISHED`; undan keyingi
-  `application_error`, `content_ready` va `title` `NOT_RUN`,
-  `blocked_by=loader` bo'ladi. Forms navigation helperlari bu loader kutishini
-  takrorlamaydi. To'liq kontrakt:
-  [form-monitor/check-loader.md](form-monitor/check-loader.md).
-- URL va loader o'tgach `check_application_error` aniq
-  `#biruniAlertExtended:visible`, `#biruniAlert:visible`,
-  `.alert-danger:visible` yoki
-  `[role="dialog"]:visible [data-testid*="error" i]` signalini default
-  `1_200 ms` kuzatadi. Error ko'rinmasa timeout muvaffaqiyat; ko'rinsa
-  `OPENED_WITH_DEFECT / APPLICATION_ERROR`, undan keyingi `content_ready` va
-  `title` esa `NOT_RUN`, `blocked_by=application_error`. Generic
-  `[role="alert"]` hard signal emas. Screenshot Biruni cleanupidan oldin
-  olinadi; `capture_form_state()` application errorni kutmaydi. To'liq
-  kontrakt: [form-monitor/check-application-error.md](form-monitor/check-application-error.md).
-- Application-error gate o'tgach `check_content_ready` explicit `ready`
-  selectorni, u bo'lmasa legacy `b-page/.subheader` yoki A2 `main` kontentini
-  o'zining default `15_000 ms` timeouti ichida kutadi. Timeoutda
-  `NOT_OPENED / CONTENT_NOT_READY`; `title` `NOT_RUN`,
-  `blocked_by=content_ready`. `capture_form_state()` kontentni kutmaydi.
-  To'liq kontrakt:
-  [form-monitor/check-content-ready.md](form-monitor/check-content-ready.md).
-- Content-ready gate o'tgach `check_title` legacy formada visible semantic
-  headingni, A2 formada `document.title`ni o'zining default `15_000 ms`
-  timeouti ichida whitespace-normalized exact kutadi. Partial match yoki
-  missing Legacy heading `OPENED_WITH_DEFECT / TITLE_NOT_REACHED`; timeout va
-  mismatch alohida reasonlarga ajratilmaydi. `check_title` kutishning yagona
-  authoritysi, `capture_form_state()` esa faqat diagnostik snapshot oladi.
-  To'liq kontrakt: [form-monitor/check-title.md](form-monitor/check-title.md).
+- Diagnostikada avval yiqilgan gate va uning `reason_code` qiymatini top.
+  Keyingi `NOT_RUN` steplar uchun `blocked_by` maydonini tekshir.
+  Har bir gate selektorlari, timeouti va kutiladigan natijasi o‘z kontraktida:
+  [URL](form-monitor/check-url.md), [loader](form-monitor/check-loader.md),
+  [application error](form-monitor/check-application-error.md),
+  [content ready](form-monitor/check-content-ready.md), [title](form-monitor/check-title.md).
 - URL gate yiqilganda avval menu failure screenshoti olinadi. Yoqilgan
   `try_direct_url` diagnostikasi keyin shellga mos expected URLni ochib ko'radi
   va ikkinchi screenshot, direct expected/actual URL hamda
@@ -355,23 +298,17 @@ Source: `test-results/logs/tests_smoke_test_forms_test_0_forms_runner.py__test_f
   bo'lib qoladi.
 
 ### Screenshot Debug Workflow
-Tags: screenshot, debug
-- Yangi Smartup formaga kirilganda yoki URL/form state o'zgarganda screenshot saqla.
-- Forma bo'yicha doimiy bilim screenshotlari skill ichida saqlanadi: `references/forms/screenshots/<form-slug>/`.
-- `test-results/screens/smartup/` ishlatilmasin; debug/form screenshot ham skill arxiviga yoziladi.
-- Form dossieridagi screenshot pathlar `test-results`ga emas, skill ichidagi arxiv pathlariga ko'rsatsin; `test-results` run output bo'lgani uchun tozalanishi mumkin.
-- Naming: `<form-slug>__<state>__<viewport>__<stable-id>.png`.
-- Har screenshot uchun shu form slug arxiv papkasi ichida metadata `.json` saqla.
-- Screenshotlar kelajakdagi release visual regression uchun baseline/current taqqoslashga tayyor bo'lishi kerak.
-- Muammo bo'lsa avval mavjud screenshotni tekshir; yo'q bo'lsa formani ochib screenshot ol, keyin locator/test flow yoz.
+
+Oldingi forma holatini tekshirish uchun tegishli dossierning `Screenshot Paths` bo‘limini och. Doimiy screenshot, metadata va run output joylari [Screenshot Arxivi](ui-patterns.md#screenshot-arxivi)da. Yangi dalilni arxivlashga [learn](../../learn/SKILL.md) orqali write-back tasdig‘i kerak.
 
 ### Test Results Retention
 Tags: test-results, data-store, traces, allure, cleanup
-- `test-results/data/data_store.json` `NEW_CODE=0` rejimidagi yakka testlar va runnerlar uchun kerakli runtime state; keyingi chain/test shu run datalariga tayanayotgan bo'lsa saqlanadi.
-- `test-results/allure-results/` va `test-results/allure-report/` hisobot output; test ishlashi uchun doimiy shart emas, yangi run/reportda qayta yaratiladi.
-- `test-results/traces/*.zip` debug output; xato tahlili tugaganidan keyin kerak emas, yangi runlarda qayta yoziladi yoki yangi zip yaratiladi.
-- `test-results/logs/*.log` faqat failed test longrepr loglari; 0 byte yoki tahlil qilingan eski loglar kerak emas.
-- `test-results/allure-results/` pytest/Allure failure attachment outputi; foydali form screenshotlar doim skill arxivida bo'lishi kerak.
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/conftest.py::code`; `utils/logger.py::write_failure_log`; `tests/shared/browser.py::browser_context`; `scripts/report_lifecycle.py`; `scripts/result_retention.py::prune_results`
+- UI baseline `test-results/data/data_store.json`da. Yangi setup eski baseline’ni saqlaydi, setupsiz consumer muhit mosligini tekshiradi.
+- `test-results/allure-results/` va `test-results/allure-report/` hisobot fayllari. Browser fixture trace ZIP’ni kontekst yopilayotganda yozadi. `test-results/logs/`da test logger fayllari bilan birga xatoning pytest bosqichi va longrepr yozilgan failure loglar ham bo‘ladi.
+- `prune_results` `runs/`dagi tegishli manifestli runlarni tozalaydi. Joriy runga qo‘shimcha ko‘pi bilan uchta eski run saqlanadi. Faol run, eng yangi eski run va retry/resume manbalari limitga sig‘masa funksiya o‘chirishdan oldin to‘xtaydi.
 
 ## Loyiha Xususiyatlari
 
@@ -396,9 +333,5 @@ Source: user
   to'g'ridan-to'g'ri ko'rinib tursin.
 
 ### Ish Yakuni Knowledge Capture
-Tags: summary, knowledge-capture, dossier
-- Har bir Smartup/test vazifasi yakunida bajarilgan ish xulosasi mos skill reference fayllarga yoziladi.
-- Agar ish aniq forma bilan bog'liq bo'lsa, avval `references/forms/<form-slug>.md` yangilanadi.
-- Agar ish umumiy biznes qoida bo'lsa, `contracts.md` yoki `orders.md` yangilanadi.
-- Agar ish locator/modal/grid/screenshot pattern bilan bog'liq bo'lsa, `ui-patterns.md` yangilanadi.
-- Xulosa ichida quyilar tartibli bo'lsin: nima qilindi, qaysi fayllar/flowlar tegdi, qanday biznes/UI qoida o'rganildi, screenshot path, known issue yoki keyingi risk.
+
+Yangi dalilni saqlashga ruxsat va canonical owner tanlash uchun [project-guide](../../project-guide/SKILL.md#governance) va [learn](../../learn/SKILL.md)ga qarang. Write-back faqat foydalanuvchi tasdiqlagan scope’da bajariladi.

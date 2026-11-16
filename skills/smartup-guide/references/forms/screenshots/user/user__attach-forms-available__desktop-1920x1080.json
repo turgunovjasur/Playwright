@@ -1,0 +1,23 @@
+{
+  "form_slug": "user",
+  "state": "Пользователь (просмотр) on Формы → Доступные with the available-form grid populated and the page-size menu closed.",
+  "url_pattern": "/anor/mr/user_view?user_id=<user_id>",
+  "viewport": null,
+  "screenshot_pixels": {
+    "width": 1920,
+    "height": 1311
+  },
+  "entity": "natural_person-pw{code}",
+  "created_at": null,
+  "browser": "Playwright Chromium",
+  "dynamic_areas": [
+    "User profile and login",
+    "Available forms, counts and permissions",
+    "Current filial in the navbar",
+    "Support chat widget"
+  ],
+  "source": "skills/smartup-guide/references/forms/user.md",
+  "supporting_sources": [
+    "2f7559e3:scripts/debug_user_attach.py"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "form_slug": "spravochniki-hidden-imports",
+  "state": "Физические лица (прикрепление) with selectable active person rows and a search box.",
+  "url_pattern": "/anor/mr/person/natural_person_list+attach",
+  "viewport": null,
+  "screenshot_pixels": {
+    "width": 1440,
+    "height": 722
+  },
+  "entity": null,
+  "created_at": "2026-07-29",
+  "browser": null,
+  "dynamic_areas": [
+    "Personal names, dates of birth and grid rows",
+    "Current filial in the navbar",
+    "Support chat widget"
+  ],
+  "source": "skills/smartup-guide/references/legacy-form-navigation.md",
+  "filial_context": "operational filial"
+}

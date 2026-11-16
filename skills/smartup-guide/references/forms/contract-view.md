@@ -1,6 +1,6 @@
 # Contract View
 
-Tags: contract, contract-view, view-form, locator, screenshot, order-precondition
+Qidiruv kalitlari: contract, contract-view, view-form, locator, screenshot, order-precondition
 
 ## Quick Lookup
 
@@ -8,8 +8,7 @@ Tags: contract, contract-view, view-form, locator, screenshot, order-preconditio
 - Navigation: `Финансы > Договоры` -> contract row -> `Просмотр`
 - URL pattern: `*/anor/mkf/contract_view`
 - Page container: `b-page`
-- Joriy automated test yo'q; avvalgi Group A testlari 2026-07-31 kuni o'chirilgan.
-- Contract testlari self-contained; `flow_contract` ishlatilmaydi.
+- Forms inventarida contract **listi** bor. Eski Group A view ssenariysi [tarixda](../history.md#order-va-contract-testlarining-eski-qamrovi) saqlangan.
 - Related domain docs:
   - `../contracts.md`
   - `../ui-patterns.md`
@@ -27,15 +26,11 @@ Tags: contract, contract-view, view-form, locator, screenshot, order-preconditio
 - If screenshot is missing, open contract view in stable UI state, take screenshot, save it to `references/forms/screenshots/contract-view/`, save metadata in the same folder, and update this section with exact file path.
 - Visual regression note: loader, dropdown, confirm/error modal, and transient notifications must be closed/hidden before taking baseline-ready screenshot.
 
-## Open Flow
+## Flow And Tests
 
-1. Har test faylida `BasePage.navigate_to(tab="Финансы", name="Договоры")` bilan list ochiladi.
-2. `Создать` bosilib add heading/URL tekshiriladi; barcha inputlar shu test faylining `run_*` funksiyasida to'ldiriladi.
-3. `base.click(name="Сохранить", exact=True)` va
-   `base.expect_page(heading="Договоры", url="anor/mkf/contract_list")` bilan
-   saqlanadi.
-4. `grid_controller(search=contract_code)` va `grid(..., click=True)` bilan row tekshiriladi.
-5. `Просмотр` bosilib qiymatlar `BasePage.form_view(...)` bilan tekshiriladi; `Закрыть` orqali listga qaytiladi.
+### Open Flow
+
+Legacy listda contract qatorini tanlab `Просмотр` orqali view ochilgan. Hozirgi Forms list case’i `tests/smoke/test_forms/inventory/finansy.py`da. [Order helperi](../../../../tests/smoke/test_life_cycle/flow_order/flow_order_add.py) mavjud contractni nomiga qarab tanlaydi.
 
 ## Known Locators
 
@@ -48,33 +43,21 @@ Tags: contract, contract-view, view-form, locator, screenshot, order-preconditio
 
 ## Current View Assertions
 
-For UZS contract:
-
-- `contract_code`
-- `contract_name`
-- `natural_client-pw{code}`
-- `Узбекский сум`
-- `500000`
-
-For payment type contract:
-
-- same as above
-- `Перечисление` if contract was created with `Типы оплат = Перечисление`
+Arxivlangan view’da kod, nom, kontragent, valyuta, summa va to‘lov turi ko‘rish uchun beriladi. Qiymatlar tanlangan shartnomaga bog‘liq. [Trace metadatasi](screenshots/contract-view/contract-view__default__trace-800x435__contract_code_2375.json).
 
 ## Verified Contract Chain
 
-- 2026-07-21: A-01 va A-02 alohida self-contained test fayllarga ajratilgach runner orqali live tekshirildi — 2 passed (29.98s).
-- 2026-07-21: A-01 yaratgan `500000` limitli contract A-03 limit/valid-order testida, A-02 saqlagan payment-type keylari A-04 auto-fill testida live tekshirildi — 2 passed.
+Avvalgi Group A limit va to‘lov turini tekshirgan holatlar [tarixiy contract ssenariysida](../history.md#order-va-contract-testlarining-eski-qamrovi) keltirilgan.
 
-## Related Business Rules
+## Business Rules
 
-- Contract code and name are saved to `data_store.json` for order tests.
-- Order form selects contract by `contract_name`, not by contract code.
-- Contract `Сумма договора` is used as order total amount limit.
-- Contract `Типы оплат` auto-fills order `Тип оплаты`, but user may change it; validation is still based on sum limit.
-- Contract currency filters products in order; changing to another currency contract clears already selected products.
+### Related Business Rules
 
-## Known Debug Notes
+Order helperi `Договор` maydoniga saqlangan contract nomini uzatadi. Limit, to‘lov turi va boshqa valyutaga o‘tish dalillari [contracts.md](../contracts.md)da.
+
+## Known Issues
+
+### Known Debug Notes
 
 - Contract list grid may not display every contract field. If a field is needed for list search/assert, enable its column/search through grid setting.
 - Contract View'da `BasePage.input(label=..., expect_value=...)` ishlamaydi: qiymat `input[readonly]`da emas, `.form-view` spanida. `BasePage.form_view(...)` ishlatilsin.

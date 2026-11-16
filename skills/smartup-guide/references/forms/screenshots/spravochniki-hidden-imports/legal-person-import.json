@@ -1,0 +1,20 @@
+{
+  "form_slug": "spravochniki-hidden-imports",
+  "state": "Юридические лица (импорт) with local code selected, supplier and client switches off, and empty import tables.",
+  "url_pattern": "/anor/mr/person/legal_person_import",
+  "viewport": null,
+  "screenshot_pixels": {
+    "width": 1440,
+    "height": 722
+  },
+  "entity": null,
+  "created_at": "2026-07-29",
+  "browser": null,
+  "dynamic_areas": [
+    "Imported legal-person rows and errors",
+    "Current filial in the navbar",
+    "Support chat widget"
+  ],
+  "source": "skills/smartup-guide/references/legacy-form-navigation.md",
+  "filial_context": "operational filial"
+}

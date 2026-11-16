@@ -11,7 +11,7 @@
 - [Test](#test)
 - [Tarixiy diagnostika](#tarixiy-diagnostika)
 
-Tags: a2, migrated-forms, filial, menu, navigation, error, url
+Qidiruv kalitlari: a2, migrated-forms, filial, menu, navigation, error, url
 
 Smartup yangi formalari (yangi Angular/modern app) eski AngularJS Biruni app ustiga qo'shilgan.
 Ular URL'da **`a2`** prefiksi bilan ajraladi; filial va navigatsiya yo'llari
@@ -289,24 +289,15 @@ Source: `tests/smoke/test_forms/test_a2_angular_forms.py`; `tests/smoke/test_for
 
 ### Legacy dropdown linklarini filial deb qabul qilish regressiyasi (2026-07-27)
 Tags: a2, filial, project, menu, ci, locator, regression
-- GitHub Actions run `30264090893` failure screenshot/trace'ida A2 selector ikki
-  alohida ro'yxat ekanligi tasdiqlandi: chapdagi `TRADE`/`Финансы` —
-  `shell-project-filial--project-list` loyihalari, o'ngdagi
-  `Администрирование`/`filial-pw{code}` — haqiqiy
-  `shell-project-filial--filial-list` tashkilot/filiallari.
-- `tests/smoke/test_forms/monitoring/navigation.py::first_operational_filial()` legacy
-  `.dropdown-menu` ichidagi barcha `role=link` elementlarni olgani sabab birinchi
-  `Администрирование` bo'lmagan matn sifatida `Trade` loyiha nomini qaytargan.
-- Keyingi `AngularBasePage.switch_filial(name="Trade")` haqiqiy filial
-  ro'yxatidan `Trade` optionini qidirib 30 soniyada `element(s) not found` bilan
-  yiqilgan. Bu setup yaratgan filial, server yoki A2 formaning ochilish xatosi
-  emas; operatsion filialni topish bosqichidagi project/filial klassifikatsiya
-  xatosi.
-- Tuzatish: `_first_operational_filial()` optionlarni umumiy `.dropdown-menu`
-  ichidan emas, faqat `.filial-list` ichidan oladi; so'ng
-  `Администрирование`ni chiqarib, qolgan birinchi haqiqiy filialni qaytaradi.
-- Tuzatishdan keyingi standalone headless run: barcha 22 forma ochildi,
-  `1 passed in 122.26s`.
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/smoke/test_forms/monitoring/navigation.py::first_operational_filial`; `utils/base_pages/base_page.py::switch_filial`; `utils/base_pages/angular_base_page.py::switch_filial`
+
+- `first_operational_filial` tanlovni `AutoBasePage.switch_filial(first_filial=True)`ga
+  topshiradi va UI tekshiruvidan so‘ng kontekstga yozilgan filial nomini oladi.
+  Legacy implementatsiya linklarni `.filial-list`dan, A2 esa filial optionlarini
+  `shell-project-filial--filial-list`dan oladi.
+- [2026-07-27 dagi xato va uning dalili](history.md#forms-inventari-va-filial-tanlashning-eski-natijalari).
 
 ### A2 project nomi TRADE'dan SFA'ga o'zgardi (2026-08-03)
 Tags: a2, project, filial-switch, locator, sfa, trade

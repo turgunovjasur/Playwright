@@ -1,15 +1,26 @@
 # Типы оплат (Payment Type) — ulash
 
-To'lov turlari **yaratilmaydi** — global katalogdan company'ga ulanadi (Прикрепление).
+## Mundarija
 
-## Navigatsiya
+- [Quick Lookup](#quick-lookup)
+- [Screenshot Paths](#screenshot-paths)
+- [Known Locators](#known-locators)
+- [Flow And Tests](#flow-and-tests)
+- [Business Rules](#business-rules)
+- [Known Issues](#known-issues)
+
+## Quick Lookup
+
+### Navigatsiya
 
 - Menyu: **Справочники → Цены → Типы оплат**
   - "Цены" menyusiga kirgach `Типы оплат` link chiqadi
-- Ro'yxat heading: `Типы оплат`
+- Ro‘yxat headingi `Типы оплат`, route `anor/mkr/payment_type_list`
 - Prикreplenie heading: `Тип оплат (прикрепление)`
 
-## Ulash flow
+## Known Locators
+
+### Ulash flow
 
 ```
 "Прикрепление" button
@@ -18,11 +29,13 @@ To'lov turlari **yaratilmaydi** — global katalogdan company'ga ulanadi (При
 → "Прикрепить" button
 → confirm_biruni("Прикрепить типы оплат в количестве 4?")
 → wait_for_loader()
-→ `BasePage.grid(state="empty", return_bool=True)` natijasi `True` ekanini tekshirish (barcha available bo'sh qolishi kerak)
+→ `base.grid(state="empty")` orqali bo‘sh holatni tekshirish (barcha available bo'sh qolishi kerak)
 → "Закрыть" button
 ```
 
-## Natija (4 ta to'lov turi)
+## Business Rules
+
+### Natija (4 ta to'lov turi)
 
 Ro'yxatda ko'rinishi kerak:
 - `Наличные деньги`
@@ -80,6 +93,16 @@ Source: live UI — `https://smartup.online/#/<session>/biruni/md/biruni/grid_se
   muvaffaqiyatli o'tgan; failure faqat search root noto'g'ri tanlangani sabab
   checkbox helperga yetib bormagan.
 
-## Test
+## Flow And Tests
+
+### Test
 
 - `tests/smoke/test_setup/test_16_payment_type.py` → `run_payment_type(page)`
+
+## Screenshot Paths
+
+N/A — to‘lov turlarini biriktirish formasiga alohida arxiv rasmi yo‘q.
+
+## Known Issues
+
+Legacy grid menyusida icon glyph accessible nomga qo‘shiladi. [Grid-setting kuzatuvi](#grid-setting-link-accessible-nomiga-icon-glyph-ham-kiradi) va [search card root](#search-card-root-class-token-bilan-tanlanishi-kerak) 2026-08-27 runidagi locator xatolarini tavsiflaydi.

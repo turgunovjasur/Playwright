@@ -1,0 +1,18 @@
+{
+  "form_slug": "legal-person",
+  "state": "Карта dialog over Юридическое лицо (создание), showing a map pin, coordinate field and map controls.",
+  "url_pattern": "/anor/mr/person/legal_person+add",
+  "viewport": null,
+  "screenshot_pixels": {
+    "width": 1920,
+    "height": 1080
+  },
+  "entity": null,
+  "created_at": null,
+  "browser": null,
+  "dynamic_areas": [
+    "Map tiles, pin and coordinates",
+    "Support chat widget"
+  ],
+  "source": "skills/smartup-guide/references/forms/legal-person.md"
+}

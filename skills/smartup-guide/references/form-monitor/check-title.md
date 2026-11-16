@@ -41,13 +41,13 @@ check_title(
     *,
     expected_title,
     shell,
-    timeout=15_000,
+    timeout=DEFAULT_TITLE_TIMEOUT,
 )
 ```
 
 - `expected_title` majburiy non-empty string.
 - `shell` `check_url` actual URLdan aniqlagan `legacy` yoki `a2` qiymati.
-- Default timeout aynan `15_000 ms`.
+- Default timeout aynan `60_000 ms`.
 - Kutish va failure klassifikatsiyasi checkning o'zida; caller yoki
   `capture_form_state()` uni takrorlamaydi.
 - Empty title, unsupported shell va noto'g'ri timeout UI nuqsoni emas,
@@ -121,7 +121,7 @@ result:   FAILED
 ```text
 passed: True
 execution_status: PASSED
-timeout_ms: 15000
+timeout_ms: 60000
 title_source: visible_heading | document_title
 expected_title: <kutilgan forma nomi>
 actual_title: <topilgan forma nomi>
@@ -137,7 +137,7 @@ passed: False
 execution_status: FAILED
 status: OPENED_WITH_DEFECT
 reason_code: TITLE_NOT_REACHED
-timeout_ms: 15000
+timeout_ms: 60000
 title_source: <signal manbasi>
 expected_title: <kutilgan forma nomi>
 actual_title: <haqiqiy forma nomi yoki bo'sh>
@@ -191,7 +191,7 @@ holatini o'zgartirmaydi.
 
 ## Implementatsiya Invariantlari
 
-- Default timeout aynan `15_000 ms`.
+- Default timeout aynan `60_000 ms`.
 - Title source `check_url` actual URLdan aniqlab uzatgan `shell` orqali tanlanadi.
 - Legacy title visible heading `innerText`i orqali kutiladi; named accessible
   locator ishlatilmaydi.

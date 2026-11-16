@@ -10,6 +10,12 @@ yaratiladi va `room-pw{code}` ga biriktiriladi:
 
 ## Mundarija
 
+- [Quick Lookup](#quick-lookup)
+- [Screenshot Paths](#screenshot-paths)
+- [Known Locators](#known-locators)
+- [Flow And Tests](#flow-and-tests)
+- [Business Rules](#business-rules)
+- [Known Issues](#known-issues)
 - [Navigatsiya](#navigatsiya)
 - [A2 grid setting](#a2-grid-setting)
 - [Forma maydonlari](#forma-maydonlari)
@@ -20,9 +26,11 @@ yaratiladi va `room-pw{code}` ga biriktiriladi:
 - [Test](#test)
 - [USA price type downstream](#2026-07-30--usa-price-type-downstream-ishlatildi)
 
-## Navigatsiya
+## Quick Lookup
 
-- Menyu: **Справочники → Цены**
+### Navigatsiya
+
+- Menyu: **Справочники → Цены**, list `anor/mkr/price_type_list`.
 - Ro'yxat heading: `Цены`
 - Yaratish heading: `Цена (создание)`
 
@@ -47,7 +55,9 @@ Source: live UI; `https://kernel.greenwhite.uz/anor/mkr/price_type_list`;
 - Legacy `Дополнительные поля` / `Настройки поиска` Biruni formasi va uning
   `.gs-main-list` / `.gs-extra-list` locatorlari A2 uchun ishlatilmaydi.
 
-## Forma maydonlari
+## Known Locators
+
+### Forma maydonlari
 
 | Maydon | Locator | Qiymat |
 |---|---|---|
@@ -64,26 +74,27 @@ tekshirish yoki umumiy `BasePage.text("Цена продажи")` false-positive
 
 ## Label Helper Mapping
 
-Tags: price-type, locator, helper, mcp
-- MCP Playwright bilan 2026-06-26 da `Цена (создание)` real DOM'da tekshirildi.
-- `BasePage.input(label="Код", value=value)` → `ng-model="d.code"`.
-- `BasePage.input(label="Название", value=value)` → `ng-model="d.name"` (`Название*` labeli bilan ham mos tushadi).
-- `BasePage.b_input(label="Валюта", value="Узбекский сум")` → `b-input name="currencies"`, `ng-model="d.currency_name"`.
-- `BasePage.checkbox(label="Статус", checked=enabled)` → checkbox `ng-model="d.state"`.
-- Screenshot: `references/forms/screenshots/price-type/price-type__add-default__desktop-mcp-20260626.png`.
+Tags: price-type, locator, helper
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/smoke/test_setup/test_13_price_type_uzb.py:40`; `tests/smoke/test_setup/test_14_price_type_usa.py`
+- Setup `Код` va `Название`ni nomlangan inputlar orqali to‘ldiradi. `Рабочие зоны` uchun `multiselect`, `Валюта` uchun `b_input`, `Цена продажи` uchun `radio(expect_checked=True)` ishlatiladi.
+- Legacy add formaning label auditiga tegishli rasm [Screenshot Paths](#screenshot-paths)da.
 
-## NPS Survey modali
+## Known Issues
 
-Bu test `fill_nps_survey(page, logger)` bilan boshlanadi — step 0. Agar NPS modal chiqsa o'tkazib yuboriladi.
+### NPS Survey modali
 
-### NPS helper failure'ni yashirishi mumkin
+Bu test `fill_nps_survey(page, logger)` bilan boshlanadi — step 0. NPS modal chiqsa helper 10 ni tanlab, javobni yuboradi.
+
+#### NPS helper failure'ni yashirishi mumkin
 
 Tags: nps, modal, timeout, exception, flaky
 Status: code-confirmed
 Verified: 2026-08-14
 Source: `tests/smoke/test_setup/flow_setup/flow_nps_survey.py::fill_nps_survey`
 
-- Helper modalni `20_000 ms` kutadi va butun flow'ni `except Exception` bilan
+- Helper modalni `UI_TIMEOUT_MS` davomida kutadi va butun flow'ni `except Exception` bilan
   yutadi. Modal chiqib, rating yoki submit bosqichi xato qilsa ham log uni
   “modal yo'q” deb ko'rsatishi mumkin.
 - Root cause tahlilida bu helperni optional-modal absence bilan real interaction
@@ -113,15 +124,19 @@ Source: live UI; `tests/smoke/test_setup/test_13_price_type_uzb.py`;
 - Setup testlar view ochilgach IDni musbat integer sifatida tekshiradi va
   `price_type_id_uzb` yoki `price_type_id_usa` kaliti bilan saqlaydi.
 
-## Room bilan munosabat
+## Business Rules
+
+### Room bilan munosabat
 
 UZB va USA price type'lar yaratish formasidagi `Рабочие зоны` orqali
 `room-pw{code}` ga ulanadi (room formasidagi "Выбранных" rooms, room
 prikreplenie "Тип цены" tabidan farqli).
 
-Room prikreplenie "Тип цены" tabida esa `Акция` narx turi ulanadi — bu boshqa. Qarang: [room.md], [action.md].
+Room prikreplenie "Тип цены" tabida esa `Акция` narx turi ulanadi — bu boshqa. Qarang: [room.md](room.md), [action.md](action.md).
 
-## Test
+## Flow And Tests
+
+### Test
 
 - `tests/smoke/test_setup/test_13_price_type_uzb.py` →
   `run_price_type_uzb(page, code, logger)`; setup zanjiridagi optional
@@ -139,5 +154,9 @@ Verified: 2026-07-30
 Source: `tests/smoke/test_setup/test_0_setup_runner.py`; `smartup.online` headless
 Setup run `20 passed, 1 deselected`
 
-- `Price Type USA-pw{code}` faqat yaratilmaydi: Setup 16-qadamdagi
+- `Price Type USA-pw{code}` faqat yaratilmaydi: USD product setup qadamidagi
   `product-usa-pw{code}` narxi aynan shu row orqali `1 USD` qilib qo'yiladi.
+
+## Screenshot Paths
+
+[Legacy narx turini yaratish formasi](screenshots/price-type/price-type__add-default__desktop-mcp-20260626.png).

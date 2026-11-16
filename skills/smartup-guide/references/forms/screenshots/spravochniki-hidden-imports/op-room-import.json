@@ -1,0 +1,20 @@
+{
+  "form_slug": "spravochniki-hidden-imports",
+  "state": "Рабочие зоны (импорт) file drop area with empty work-zone and error grids.",
+  "url_pattern": "/anor/mrf/room_import",
+  "viewport": null,
+  "screenshot_pixels": {
+    "width": 1440,
+    "height": 722
+  },
+  "entity": null,
+  "created_at": "2026-07-29",
+  "browser": null,
+  "dynamic_areas": [
+    "Imported work zones, assignments and errors",
+    "Current filial in the navbar",
+    "Support chat widget"
+  ],
+  "source": "skills/smartup-guide/references/legacy-form-navigation.md",
+  "filial_context": "operational filial"
+}

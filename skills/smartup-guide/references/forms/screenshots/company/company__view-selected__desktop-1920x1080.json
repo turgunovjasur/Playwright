@@ -1,0 +1,20 @@
+{
+  "form_slug": "company",
+  "state": "Selected company on the Основная информация tab with its identifiers, language, status and time zone.",
+  "url_pattern": "/biruni/md/company_view",
+  "viewport": null,
+  "screenshot_pixels": {
+    "width": 1920,
+    "height": 1080
+  },
+  "entity": "autotest{code}",
+  "created_at": null,
+  "browser": "Playwright Chromium",
+  "dynamic_areas": [
+    "Company identifiers, contact details and audit timestamps"
+  ],
+  "source": "skills/smartup-guide/references/forms/company.md",
+  "supporting_sources": [
+    "2f7559e3:scripts/debug_company_activation.py"
+  ]
+}

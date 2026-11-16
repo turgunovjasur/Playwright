@@ -1,0 +1,18 @@
+{
+  "form_slug": "company",
+  "state": "Компании list with a populated search box and one matching company row.",
+  "url_pattern": "/biruni/md/company_list",
+  "viewport": null,
+  "screenshot_pixels": {
+    "width": 1920,
+    "height": 1080
+  },
+  "entity": "autotest{code}",
+  "created_at": null,
+  "browser": null,
+  "dynamic_areas": [
+    "Company search query",
+    "Company row and audit fields"
+  ],
+  "source": "skills/smartup-guide/references/forms/company.md"
+}

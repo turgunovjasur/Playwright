@@ -29,8 +29,10 @@ vaqtinchalik session qiymatini yozma.
 1. **Approval:** joriy suhbatda aynan shu write-back uchun foydalanuvchi
    tasdig'i borligini tekshir; yo'q bo'lsa yozishni boshlama.
 2. **Atomize:** xabarni bittadan tekshiriladigan, loyihaga xos faktlarga ajrat.
-3. **Sanitize:** password, token, email, credential, session code va real company
-   qiymatini olib tashla; `<company_code>` kabi placeholder ishlat.
+3. **Sanitize:** [project-guide](../project-guide/SKILL.md#governance) bo‘yicha
+   yozuv va unga biriktirilgan snapshotlarni tozala. URL, UI matni va JSON
+   maydonlaridagi o‘zgaruvchan qiymatlarga `<session>`, `<person_id>` yoki
+   `<company_code>` kabi placeholder ishlat.
 4. **Evidence:** har faktga eng kuchli mavjud statusni qo'y:
    - `user-reported` — faqat foydalanuvchi aytgan;
    - `code-confirmed` — amaldagi kod tasdiqlagan;

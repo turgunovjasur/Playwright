@@ -7,6 +7,9 @@ fayldagi ma'lumotni current truth sifatida ishlatmasin.
 ## Mundarija
 
 - [Entry formati](#entry-formati)
+- [Order va contract testlarining eski qamrovi](#order-va-contract-testlarining-eski-qamrovi)
+- [Forms inventari va filial tanlashning eski natijalari](#forms-inventari-va-filial-tanlashning-eski-natijalari)
+- [Forma testlarining eski qamrovi](#forma-testlarining-eski-qamrovi)
 - [Skills auditida ajratilgan eski kontraktlar](#skills-auditida-ajratilgan-eski-kontraktlar)
 - [Superseded runner scope](#superseded-runner-scope)
 - [Removed Forms Monitor checklari](#removed-forms-monitor-checklari)
@@ -30,6 +33,95 @@ Source: <fayl, trace yoki live UI>
 Replaced by: <joriy reference heading yoki kod path>
 - Old behavior: <eski qoida>
 ```
+
+## Order va contract testlarining eski qamrovi
+
+Status: superseded
+Source: Git `0b229249` dagi `tests/smoke/test_groups/test_A_grup/` va
+`tests/smoke/test_groups/test_B_grup/order_helpers.py`. Eski testlar
+`aa0b95d8` o‘zgarishida olib tashlangan. Quyidagilar o‘sha koddagi
+kutilmalar. Joriy serverda qayta bajarilgan run sifatida ishlatilmasin.
+
+- `test_create_contract.py` contract kodini va raqamini alohida kiritgan,
+  jismoniy shaxs, UZS va 500 000 summani tanlagan. Saqlagach kod orqali
+  qidirgan va view’da nom, kod, klient, valyuta, summani o‘qigan.
+- `test_contract_limit_validation_and_valid_order.py` 100 dona × 7 000 uchun
+  «Сумма заказа превышает сумму остатка по договору» xabarini va add formasi
+  ochiq qolganini tekshirgan. Qolgan limit o‘zgaruvchan bo‘lgan. Bir dona
+  mahsulot bilan 7 000 summali order saqlanganini view’da tekshirgan.
+- `test_create_contract_with_payment_type.py` va
+  `test_order_uses_contract_payment_type.py` contractdagi «Перечисление»
+  orderga o‘tishini, uni «Наличные деньги»ga almashtirib saqlash mumkinligini
+  tekshirgan. `test_edit_order_and_save_as_new.py` edit oqimini «Новый»
+  statusida yakunlagan.
+- B-group konsignatsiya case’i limitni 30 kun, dastlabki orderni 5 dona va
+  35 000 summa bilan tayyorlagan. Keyingi edit case’i o‘sha orderga bog‘langan.
+  Miqdorni 4 ga tushirganda «Общая сумма консигнаций не должна быть больше суммы
+  заказа» xabarini, keyin summa va sana maydonlari bo‘shaganini tekshirgan.
+  Yetkazish sanasi +31 kun rad etilishi, +30 kun chegarasi va ikki qatorda
+  14 000 dan saqlanishi kutilgan. Limit `q.consignment_day_limit`dan o‘qilgan.
+- O‘sha B-group helperi «Накладные» row menyusida HTML popup, «Экспортировать
+  заказ» download va «Чек-лист (80 мм)» uchun faqat ochish/yopishni ajratgan.
+  Bugungi ORD-17 ning aniq qamrovi [orders.md](orders.md#order-list-накладные-reports)da.
+- Boshqa valyutadagi contract tanlanganda TMC ro‘yxati filtrlanishi va eski
+  qatorlar tozalanishi haqidagi matn Git `524a84b8`dagi `contracts.md`ga
+  borib taqaladi. Ko‘rib chiqilgan test kodida yoki saqlangan trace’da aynan
+  shu o‘tish tasdiqlanmadi. Holat [ochiq savol](contracts.md#contract-currency).
+
+## Forms inventari va filial tanlashning eski natijalari
+
+Status: superseded
+Source: Git `fa8adcf5` dagi `legacy-form-navigation.md` run qaydi va
+`tests/smoke/test_forms/test_spravochniki_menu_forms.py` inventari.
+
+- 2026-07-29 qaydida 100/100 yo‘l uchun 256.97 s va 11 ta yo‘l
+  chiqarilgach 89/89 uchun 229.90 s ko‘rsatilgan. O‘sha kod 89 ta aktiv
+  yo‘lni sanaydi. Screenshot operatsion menyuni ko‘rsatadi. Raqamlar
+  o‘sha davrning yozma natijasi, bugungi Forms-05 run o‘lchovi emas.
+- 2026-07-27 qaydi `30264090893` CI runida loyiha nomi filial sifatida
+  tanlanganini va tuzatishdan keyin 22 forma ochilganini bildiradi. Git
+  `9e6364c5` diffida legacy qidiruv butun dropdown’dan `.filial-list`ga
+  toraytirilgani ko‘rinadi. [Joriy tanlov](a2-migrated-forms.md#legacy-dropdown-linklarini-filial-deb-qabul-qilish-regressiyasi-2026-07-27)
+  shell page-objectiga topshiriladi.
+
+## Forma testlarining eski qamrovi
+
+Status: superseded
+Source: Git `b905e216` dagi `tests/smoke/test_setup/test_legal_person.py`,
+`test_natural_person.py`, `test_room.py`; eski forma dossierlarining Git tarixi.
+
+- Legal-person setup oldin owner va director yaratish, region daraxti, GPS,
+  rahbarlar, bank hisobi, kontakt va view tablarini qamragan. Bugungi minimal
+  setup qamrovi [legal-person](forms/legal-person.md)da. Iyun/iyuldagi
+  eski run izohlari joriy suite qamrovini belgilamaydi.
+- Natural-person va room testlarida qo‘lda to‘ldirish, qidirish va eski DOM
+  rootlariga bog‘langan chaqiruvlar ishlatilgan. Bugungi autocomplete, view
+  va tab qoidalari [natural-person](forms/natural-person.md) va
+  [room](forms/room.md) dossierlarida.
+- Login dossierining `b4660f48` versiyasida 2026-07-13 kungi UCP-29
+  hodisasi qayd etilgan. Xom trace qayta topilmadi. Bugungi login manzili
+  va tekshiruvlar uchun [login](forms/login.md) ishlatiladi.
+- 2026-07-14 init-balance qaydida eski label resolver «Склад» o‘rniga
+  «Валюта»ni topgani aytilgan. Hozirgi field chaqiruvlari
+  [init-balance](forms/init-balance.md)da. Company-client uchun eski
+  operatsion filialdagi access error va joriy filial tanlash tartibi
+  [company-client](forms/company-client.md)da alohida izohlangan.
+- Monolith uchun eski dossierda foydalanuvchi «Экспорт заказа» paytida
+  Biruni xato modali chiqqanini bildirgan. [Joriy Report-06](forms/integration-reports.md#integration-two--monolith-integration_two)
+  oltita rejimning har birida, jumladan shu rejimda ham, XML faylini tekshiradi.
+
+### Group-only login va eski diagnostika
+
+- Git `aa0b95d8` dagi `testing-debug.md` setup qatnashmagan run yangi
+  code tanlaganda login POST 400 qaytganini qayd etgan. Hozirgi
+  `tests/conftest.py::code` setup yo‘q bo‘lsa mavjud baseline’ni tekshiradi.
+- Git `a9d41f7b` davridagi Room qaydida yashirin `.pt-3.px-2` elementi
+  va o‘sha vaqtdagi Telegram failure formati tasvirlangan.
+  Joriy implementatsiyalar — `utils/base_pages/base_page.py::switch_filial`
+  va `telegram_bot/progress_details.py::_failed_entry_lines`.
+- Git `21bdc3c9`dagi order yozuvi Save tugmasini qisman matn bilan
+  tanlash sababini o‘sha UI’dagi ikonka bilan bog‘lagan. Eski DOM
+  izohidan bugungi render haqida xulosa chiqarilmaydi.
 
 ## Superseded Allure server lifecycle
 
@@ -496,6 +588,17 @@ Replaced by: `skills/smartup-guide/references/ui-patterns.md#list-va-grid-settin
 
 
 ## Skills auditida ajratilgan eski kontraktlar
+
+### Eski scheduler va UI timeout ko‘rsatmalari
+Status: superseded
+Superseded: 2026-11-16
+Source: avvalgi `telegram-ci.md` va `testing-debug.md` yozuvlari
+- Eski CI hujjatida dispatch har soatning 17-daqiqasida deb yozilgan.
+  Joriy [kunlik jadval](../../maintain-test-infra/references/telegram-ci.md#current-architecture)
+  bot konfiguratsiyasidan olinadi.
+- Eski debug hujjatida context uchun 10/20 soniya va helperlarda lokal
+  timeoutlar ko‘rsatilgan. [Joriy UI timeout](testing-debug.md#browser-va-page-object-uchun-ui-timeout)
+  context hamda page-objectlar ishlatadigan umumiy qiymatni ko‘rsatadi.
 
 ### Company mode, flow yo'llari va runner defaultlari
 Status: superseded

@@ -1,0 +1,24 @@
+{
+  "form_slug": "filial",
+  "state": "Организация (просмотр) on Продукты with FINANCE, TRADE and module switches visible above the footer.",
+  "url_pattern": "/anor/mr/filial_view?filial_id=<filial_id>",
+  "viewport": null,
+  "screenshot_pixels": {
+    "width": 2880,
+    "height": 1566
+  },
+  "entity": "filial-pw{code}",
+  "created_at": "2026-06-02",
+  "browser": "Playwright Chromium",
+  "dynamic_areas": [
+    "Filial name and ID",
+    "Product and module selections",
+    "Support chat widget"
+  ],
+  "source": "skills/smartup-guide/references/forms/filial.md",
+  "supporting_sources": [
+    "skills/smartup-guide/references/forms/screenshots/filial/filial__view-state.json",
+    "2f7559e3:scripts/debug_filial_view_fields.py",
+    "2f7559e3:.agents/skills/smartup-guide/references/forms/filial.md"
+  ]
+}

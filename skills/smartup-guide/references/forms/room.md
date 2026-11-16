@@ -2,20 +2,25 @@
 
 Room = **Рабочая зона**. Create test: `tests/smoke/test_setup/test_03_room.py` (`run_room`); attachment test: `tests/smoke/test_setup/test_21_room_attachment.py` (`run_room_attachment`).
 
-## Navigatsiya
+## Quick Lookup
+
+### Navigatsiya
 
 - Ro'yxat: **Справочники → Рабочие зоны** (user menyusida; admin'da filialga o'tilgach ko'rinadi). URL: `.../trade/trf/room_list`.
 - Yaratish: `Создать` → `Рабочая зона (создание)`; `c_rm_pw{code}` code + `room-pw{code}` nom + `Активный`.
 - Prikreplenie: room qatorini bosib → **`Прикрепление`** tugmasi → `Рабочая зона (прикрепление): room-pw{code}` (`.../anor/mrf/room_attachment?room_id=<id>`).
 
-## Create Form Locator/Loader Notes
+## Known Locators
+
+### Create Form Locator/Loader Notes
 
 Tags: room, locator, loader, helper
-- 2026-06-26 debug: `Создать` bosilgandan keyin `room+add` sahifasida blocking loader/title kech yuklanishi mumkin; heading assertdan oldin `BasePage(page).wait_for_loader()` chaqirilsin.
-- Label helper: `Код` va `Название` ketma-ket maydonlar. Keng card/col konteyneridagi birinchi inputni olish `Название` qiymatini `Код` inputiga yozib yuboradi. `BasePage.input(...)` labeldan keyingi birinchi real inputni target qilishi kerak.
-- Screenshot: `references/forms/screenshots/room/room__add-loader__desktop-20260626.png`.
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/smoke/test_setup/test_03_room.py:31`; `screenshots/room/room__add-loader__desktop-20260626.json`
+- Yaratishda `Создать`dan keyin setup loader va `Рабочая зона (создание)`ni kutadi. `Код` va `Название` alohida nomlangan inputlardan to‘ldiriladi.
 
-### View URLdan room IDni olish
+#### View URLdan room IDni olish
 
 Tags: room, view, id, data-store
 Status: live-ui-confirmed
@@ -27,24 +32,24 @@ Source: live UI; `tests/smoke/test_setup/test_03_room.py`
 - Setup test save'dan keyin view'ni ochib, `room_id`ni musbat integer sifatida
   tekshiradi va `data_store.json.room_id`ga saqlaydi.
 
-## Прикрепление tablari (link role)
+## Flow And Tests
+
+### Прикрепление tablari (link role)
 
 `Штаты`, **`Тип цены`**, `Типы оплат`, `Наборы ТМЦ`, `Скидки/наценки`, `Склады`, `Кассы`, `Расчетные счета`, `Проект`, `Юридические лица`, `Физические лица`, `Акции`, `Ограничения`, `Опросник`, `Технологические карты`.
 
 `run_room_attachment` ulaydigan: Типы оплат, Склады, Кассы, Физические лица (mijoz), **Тип цены (Акция)**.
 
-### Room attachment test arxitekturasi
-Tags: room, attachment, test, base-page, idempotent
-- `run_room_attachment` standart `authorization(page, who="user", code=code)` bilan userga o'tadi va defensive `navigate_to("Рабочие зоны")` qiladi.
-- Attachment sahifa sarlavhasi `b-page` ichida emas, `#kt_content`da va heading role'ga ega; sahifa ochilishi `base.expect_page(heading=..., root="#kt_content")` bilan tekshiriladi.
-- Sidebar linklarining accessible name'ida qo'shimcha matn/whitespace bo'lishi mumkin; `get_by_role("link", name=...)` partial match ishlaydi, `exact=True` timeout bergan.
-- Attachment bo'lim nomi (`Типы оплат`, `Склады`, `Кассы` va boshqalar) aktiv card'ning `H5` headingida, tegishli `b-grid`dan tashqarida turadi. Bo'lim almashganini `base.expect_page(heading="...", root="b-page")` bilan tekshir; `root=<grid selector>` ishlamaydi. `base.text("...")` esa sidebar linkdagi bir xil matn sabab aktiv bo'limni isbotlamaydi.
-- Типы оплат / Склады / Кассы alohida ma'noli Allure qadamlari bo'lgani uchun loopga yig'ilmaydi; har biri ochiq `with allure.step(...)` blokida bajariladi. `Доступные` grid holati raw locator bilan emas, boolean qaytaradigan `base.grid(state="empty", return_bool=True, root=...)` orqali aniqlanadi.
-- Mijoz va `Акция` qatorining Available/Attached holati raw `.tbl-row.filter(...).is_visible()` bilan emas, `base.grid(<row text>, return_bool=True)` orqali aniqlanadi; helper target qator ko'rinsa `True`, bo'lmasa `False` qaytaradi.
-- `Типы оплат`da `Доступные`/`Прикрепленные` bosilganda mavjud `table_payment_type` grid asinxron yangilanadi: clickdan darhol keyin loader ko'rinsa ham eski tabning qatorlari qisqa vaqt DOMda qoladi. `grid(state="empty", return_bool=True)` yoki `grid(..., return_bool=True)`dan oldin `base.wait_for_loader()` shart; 2026-07-14 live probe'da oldingi 4 qator sabab darhol tekshiruv `False`, loader tugagach `нет данных` sabab `True` qaytardi.
-- Qayta-runda `Доступные` bo'sh bo'lsa test shunchaki skip qilmaydi: `Прикрепленные`da 4 payment type, `Основной склад`, `Основная касса`, `natural_client-pw{code}` va `Акция` mavjudligini tekshiradi.
+#### Room attachment test arxitekturasi
 
-### Warehouse ID alohida setup testida olinadi
+Tags: room, attachment, test, base-page, idempotent
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/smoke/test_setup/test_21_room_attachment.py:40`
+- `run_room_attachment` user bilan kiradi va room qatoridagi `Прикрепление`dan ochiladi. `AutoBasePage.tab(name=..., section=True)` bo‘limni, `tab(name="Доступные")` va `tab(name="Прикрепленные")` tegishli ro‘yxatni tanlaydi.
+- To‘lov turlari, ombor va kassa uchun available grid bo‘shligi alohida tekshiriladi. Har birida loaderdan keyin attached ro‘yxatdagi nomlar tasdiqlanadi. Client va aksiya narxi uchun kerakli qator borligi tekshiriladi.
+
+#### Warehouse ID alohida setup testida olinadi
 
 Tags: room, attachment, warehouse, ownership, data-store
 Status: code-confirmed
@@ -57,10 +62,10 @@ Source: user; `tests/smoke/test_setup/test_21_room_attachment.py`;
   bajarilmaydi; bu ish setup runnerdagi alohida **22 - Warehouse** case'ga
   tegishli. UI kontrakti uchun [warehouse.md](warehouse.md)ga qarang.
 
-### Oddiy tablar patterni (Типы оплат / Склады / Кассы / Физические лица)
+#### Oddiy tablar patterni (Типы оплат / Склады / Кассы / Физические лица)
 `link → expect b-page text → "Доступные" → (grid checkall yoki kerakli qatorni bosish) → "Прикрепить" → confirm_biruni("Прикрепить N?" / "...nomi?") → "Прикрепленные"da tekshirish`.
 
-### "Тип цены" tab — ikki bosqichli ulash (MUHIM, MCP bilan 2026-06-16 tasdiqlangan)
+#### "Тип цены" tab — ikki bosqichli ulash (MUHIM, MCP bilan 2026-06-16 tasdiqlangan)
 "Доступные" boshida **bo'sh** (нет данных) — narx turini avval katalogdan room'ga qo'shish kerak. Shuning uchun ulash 2 bosqich:
 
 1. **Katalogdan Доступныега qo'shish**: `Тип цены` link → `Доступные` → **`Создать тип цены`** (→ `Цены (прикрепление)` sahifa, `.../anor/mkr/price_type_list+attach`, katalog: Промо/Акция/Возврат/Передача забаланс/Обмен) → kerakli qatorni (mas. `Акция`) bosish → qatorda **`Прикрепить`** → `confirm_biruni("Прикрепить Акция?")`. Bu room_attachment'ga qaytaradi va `Акция`ni **Доступные**ga qo'shadi.
@@ -70,12 +75,19 @@ Source: user; `tests/smoke/test_setup/test_21_room_attachment.py`;
 
 Setupdagi `Price Type UZB-pw{code}` room'ga narx turi FORMASI orqali ("Выбранных" rooms) ulanadi — bu Тип цены prikreplenie tabidan boshqa, alohida bog'lanish.
 
-## Nega kerak
-Room'ga `Акция` narx turi ulanmasa, aksiya chegirmasi order'ning "Акции" tabида `Тип цены акции не прикреплен к рабочей зоне...` xatosi bilan ishlamaydi. To'liq aksiya zanjiri: [action.md].
+## Business Rules
 
-## Debug Notes
+### Nega kerak
+Room'ga `Акция` narx turi ulanmasa, aksiya chegirmasi order'ning "Акции" tabида `Тип цены акции не прикреплен к рабочей зоне...` xatosi bilan ishlamaydi. To'liq aksiya zanjiri: [aksiya dosyesi](action.md).
 
-### 2026-07-14 qoidalarga mos refactor
-Tags: room, attachment, refactor, run-result
-- Raw `expect(page.locator(...))` tekshiruvlari BasePage helperlariga o'tkazildi, 3 ta attachment bo'limi alohida Allure step sifatida ochiq yozildi va oldindan attached holat uchun aniq verifikatsiya qo'shildi.
-- Joriy `test_21_room_attachment.py` saqlangan code (`NEW_CODE=0`) va `--headless` bilan mavjud attached state, `expect_page(root="#kt_content")` hamda boolean `grid(state="empty", return_bool=True)` / `grid(<row>, return_bool=True)` orqali **1 passed in 28.41s**.
+## Known Issues
+
+### Debug Notes
+
+#### 2026-07-14 qoidalarga mos refactor
+
+Eski root-scoped helper va run qaydi uchun [tarixiy qayd](../history.md#forma-testlarining-eski-qamrovi). Joriy test `Доступные`/ `Прикрепленные` almashgach loader tugashini kutib, gridni tekshiradi.
+
+## Screenshot Paths
+
+[Yaratish formasidagi loader](screenshots/room/room__add-loader__desktop-20260626.png).

@@ -15,10 +15,13 @@
 
 ## Qidiruv Kalitlari
 
-Tags: order, order-add, order-list, order-view, product, payment-type, contract-limit
+Qidiruv kalitlari: order, order-add, order-list, order-view, product, payment-type, contract-limit
 
 ### Order Navigation
 Tags: order, navigation
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/smoke/test_life_cycle/flow_order/flow_order_list.py::flow_order_list`; `tests/smoke/test_life_cycle/flow_order/flow_order_add.py::flow_order_main_page`; `tests/smoke/test_life_cycle/flow_order/order_regression.py::open_saved_order`
 - Qayerda: `Продажа > Заказы`.
 - URLlar:
   - list: `*/order_list`
@@ -28,6 +31,9 @@ Tags: order, navigation
 
 ### Mavjud Order Flowlar
 Tags: order, flow
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/smoke/test_life_cycle/flow_order/flow_order_list.py`; `tests/smoke/test_life_cycle/flow_order/flow_order_add.py`; `tests/smoke/test_life_cycle/flow_order/flow_order_view.py`
 - Qayerda: `tests/smoke/test_life_cycle/flow_order/`.
 - Flowlar:
   - `flow_order_list(page, add=True/find_row/view/edit/status)`
@@ -71,16 +77,19 @@ Source: user; historical Group A implementation removed 2026-07-31
 
 ### Minimal Order Setup Entitylar
 Tags: order, setup
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/smoke/test_setup/test_18_product.py`; `tests/smoke/test_setup/test_19_product_usa.py`; `tests/smoke/test_setup/test_23_init_balance.py`; `tests/smoke/test_life_cycle/test_order.py::run_order_basic`
 - Client: `natural_client-pw{code}`
 - Room: `room-pw{code}`
 - Robot: `robot-pw{code}`
 - Products:
   - `product-pw{code}` — `Price Type UZB-pw{code}`, 7000 UZS
   - `product-usa-pw{code}` — `Price Type USA-pw{code}`, 1 USD
-- Stock: Setup 19-qadam har ikkala productga 100 donadan boshlang'ich qoldiq
-  o'tkazadi; fresh run'da ikkala product order testiga tayyor.
-- Default payment type: `Наличные деньги`
-- Default status: `Черновик`
+- Stock: Setup 23-qadam har ikkala productga 100 donadan boshlang'ich qoldiq
+  o‘tkazishni ko‘zlaydi.
+- Lifecycle smoke case tanlaydigan to‘lov turi: `Наличные деньги`
+- Shu case tanlaydigan status: `Черновик`
 
 ### Order currency va price type mosligi
 Tags: order, currency, price-type, mobile, validation
@@ -94,69 +103,53 @@ Source: `test-results/logs/tests_smoke_test_groups_test_visit_grup_test_02_mobil
   `currency_id_uzb` ishlatiladi.
 
 ### Contract Limit Order Case
-Tags: order, contract, limit, error
-- Qoida: 500000 contract bilan quantity `100` product order summasi `700 000` bo'ladi.
-- Expected: save paytida Biruni error chiqadi, order add formadan chiqib ketmaydi.
-- Davomiy smoke: shu test ichida order listga qaytib quantity `1` bilan `7 000` order saqlanishi tekshiriladi.
-- View assert: contract, client, product, payment type, status va summa.
-- Muhim: limit testda quantity'ni mavjud stockga qarab kamaytirib yuborma; bu test maqsadini buzadi. Agar stock yetmasa, preconditionni tuzat: yangi initial balance qo'sh yoki bron qilingan orderlarni `Canceled/Отменен` statusga o'tkaz.
-- Debug/re-run paytida contract oldin ishlatilgan bo'lsa, qoldiq `500000` bo'lmasligi mumkin; error assertda exact qoldiqni hard-code qilma, lekin `сумма заказа = 700000` va limit error borligini tekshir.
+Eski Group A’dagi limit summalari va validatsiya matni [contract reference](contracts.md#contract-sum-limit) orqali topiladi.
 
 ### Contract + Payment Type Order Case
-Tags: order, contract, payment-type, auto-fill
-- Qoida: Contract `Типы оплат = Перечисление` bilan yaratilsa, order final sahifasida `Тип оплаты` auto-fill `Перечисление`.
-- Qoida: User `Тип оплаты` ni boshqa qiymatga o'zgartirishi mumkin; save validation payment typega emas, contract sum limitga bog'liq.
-- Testda ishlatish: auto-fill uchun input value tekshir. Keyin optional ravishda payment type o'zgartirilib ham save ishlashi tekshirilishi mumkin.
+To‘lov turining auto-fill va manual almashtirish case’i [contract reference](contracts.md#contract--payment-type)da.
 
 ### Order Edit Save As New
 Tags: order, edit, status
-- Yangi arxitekturada har edit testcase o'z orderini shu case ichida yaratadi.
-- Qoida: edit flowda yangi row/mahsulot qo'shilmaydi; main va product sahifalarida faqat `Далее` bosiladi.
-- Qoida: final sahifada mavjud qiymatlar tekshirilib, order statusi `Новый` qilib saqlanadi.
-- Testda ishlatish: edit main/product/final sahifalaridagi room, robot, client, contract, product, warehouse, price type, quantity, payment type va total qiymatlarini tekshir; save'dan keyin viewda order id saqlanganini va status `Новый` bo'lganini assert qil.
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/regression/legacy/orders/cases/test_01_create_edit_order.py::run_create_edit_order`
+
+- ORD-01 o‘z draft orderini yaratadi, saqlangan ID orqali editni ochadi,
+  miqdor, TTN va izohni almashtiradi. Qayta ochishda shu ID, uch dona va
+  300 USD tekshiriladi. `Новый` bilan saqlash boshqa, eski A-group case’i edi:
+  [A va B guruhlarining arxivdagi tekshiruvlari](history.md#order-va-contract-testlarining-eski-qamrovi).
 
 ### Consignment Order Case
-Tags: order, consignment, settings, view
-- Qayerda: `Главное > Настройки системы > Заказ`.
-- Sozlama switchining hozirgi UI matni `Разрешить консигнацию`, eski deploymentlarda `Разрешить выдачу консигнации`; label tarjimasi o'zgarishi mumkin. Shu sabab switch `BasePage.checkbox(ng_model="d.consignment_allow", ...)`, limit esa `BasePage.input(ng_model="d.consignment_day_limit", ...)` bilan boshqariladi. Bu raw click/fill emas, BasePage'ning qo'llab-quvvatlanadigan field strategiyasi.
-- Fresh DB qoida: konsignatsiya default o'chirilgan bo'ladi; konsignatsiya testi order yaratishdan oldin shu settingni yoqib, limitni `30` qilib saqlashi kerak.
-- Qoida: limit `30` saqlansa, order add final/3-formasida `Дата оплаты по консигнации` va `Сумма консигнации` kartasi ko'rinadi.
-- Create test maqsadi keyingi edit case uchun precondition ham yaratadi: quantity `5`, total/konsignatsiya `35 000` bo'lsin; quantity `1` bilan keyingi testda totalni kamaytirib bo'lmaydi.
-- Testda ishlatish: final formadagi Angular scope'dan **`q.consignment_day_limit == "30"`** o'qiladi (limit DOM textida/input `max` atributida ko'rinmaydi). `d.max_consignment_date` degan field **YO'Q** — max sana `delivery_date + limit` qilib client-side hisoblanadi; assertni `today` emas, formadagi haqiqiy `delivery_date`'dan hisoblash kerak. Batafsil: [forms/order-add.md](forms/order-add.md).
-- View assert: order viewda `Консигнация` tabi bosilib, `b-pg-grid[name="consignments"]` ichidagi sana/summa qatori `BasePage.grid(..., root=...)` bilan tekshiriladi.
+Konsignatsiya kartasi va uning fieldlari [order-add dossierida](forms/order-add.md). Oldingi B-group 30 kunlik limitni qanday tekshirgani — [A va B guruhlarining arxivdagi tekshiruvlari](history.md#order-va-contract-testlarining-eski-qamrovi).
 
 ### Order list view tugmasi
 Tags: order, order-list, view, locator
-- Hozirgi UI row action tugmasini `Просмотр` deb ko'rsatadi; eski deploymentlarda `Просмотреть` bo'lishi mumkin.
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/smoke/test_life_cycle/flow_order/flow_order_list.py::flow_order_list`
+- Helper tanlangan row ichida `Просмотр` yoki `Просмотреть` nomli tugmani kutadi.
 - Testda ishlatish: amount cellni qo'lda bosib global tugma qidirmang. `flow_order_list(page, find_row=<unique client>, view=True)` ishlating; flow ikkala matn variantini qabul qiladi va tugmani tanlangan row ichida qidiradi.
 
 ### Consignment Edit And Split Case
-Tags: order, consignment, edit, validation, split
-- Precondition: testcase Arrange qismida 5 dona order yaratiladi; debug rerun oldidan shu clientning faqat testcase yaratgan active orderi `Отменен` qilinadi.
-- Qoida: 5 dona (`35 000`) konsignatsiyali order editda quantity `4` ga tushirilsa total `28 000` bo'ladi; eski konsignatsiya totaldan katta qolsa `H02-ANOR279-006 — Ошибка` va `Общая сумма консигнаций не должна быть больше суммы заказа` chiqadi.
-- UI xatti-harakati: bu error product qadamidan final qadamga o'tishda chiqadi va `Дата оплаты по консигнации` / `Сумма консигнации` inputlari clear bo'ladi.
-- Limit qoida: delivery date + 31 kun kabi 30 kunlik limitdan katta konsignatsiya sanasi save confirm ochmaydi; valid max sana delivery date + 30 kun.
-- Split qoida: konsignatsiya sectionidagi `+` orqali ikkinchi row qo'shiladi; 4 dona order uchun `14 000 + 14 000` qilib ikki sanaga bo'lib save qilinadi. Dinamik `ng-repeat` rowlarda label-following locator modelni noto'g'ri rowga bog'lashi mumkin; `BasePage.input(ng_model="item.consignment_date|item.consignment_amount", index=...)` ishlatiladi va save oldidan ikkala row qayta tekshiriladi.
-- View assert: `Консигнация` tabidagi `b-pg-grid[name="consignments"]` ichida har bir sana o'zining `14 000` summasi bilan alohida row sifatida ko'rinishi kerak.
-- Data: create test `b_group_consignment_order_id`ni order view URLidagi `deal_id`dan saqlaydi, edit test esa stable topish uchun client keydan ham foydalanadi.
+B-group tarixiy case’i ikki sana bo‘yicha ajratilgan summalarni tekshirgan. Fixture, chegara va view assertionlari — [A va B guruhlarining arxivdagi tekshiruvlari](history.md#order-va-contract-testlarining-eski-qamrovi).
 
 ### Product Chiqmasa
 Tags: order, product, balance, booking, setup
-- Problem: order product qadamida tovar/product chiqmayapti.
-- Sabablar: zaxira/balans yo'q yoki product bron qilingan orderlarda band.
-- Fresh DB qoida: yangi server/bazada oldingi orderlar bo'lmaydi; order cleanup/cancel qadamiga testning majburiy preconditioni sifatida qaramang.
-- Asosiy yechim: mavjud ishlayotgan testni o'zgartirma; agar `order_list`da oldin yaratilgan orderlar bo'lsa, yangi order testlaridan oldin ularning statusini `Canceled/Отменен` ga o'tkaz.
-- Birinchi run holati: oldin yaratilgan order bo'lmasa cleanup qadam no-op bo'lishi kerak; order mavjudligini precondition sifatida qabul qilma.
-- Order statusini o'zgartirish uchun yangi DOM cleanup/helper yozma; mavjud `flow_order_list(page, find_row=..., status="Отменен")` flowidan foydalan.
-- Order cleanup boshida `base.navigate_to(tab="Продажа", name="Заказы")`dan keyin `base.expect_page(heading="Заказы", url="order_list")` bitta readiness check sifatida yetarli; uning ketidan faqat grid tayyorligini takror tekshirish maqsadida `base.text("Статус", root="b-grid")` yozilmaydi. `base.text` faqat `Статус`ning o'zi biznes assertion bo'lsa ishlatiladi.
-- Order list grid textlari `get_by_text(..., exact=True)` bilan topilmasligi mumkin; cleanupda client text body ichida bor-yo'qligini tekshir, keyin mavjud `flow_order_list(..., status="Отменен")` bilan birinchi active rowni cancel qil.
-- Agar cancellation mumkin bo'lmasa, order listdan productni band qilib turgan orderlarni o'chirish mumkin.
-- Faqat order listdan tozalash imkoni bo'lmasa: setup runnerdagi
-  `test_23_init_balance` (`test_23_init_balance.py` moduli) orqali balans qo'shib kel.
-- Test/debug uchun initial balance flow qo'shish oxirgi variant; u mavjud ishlayotgan testlarga ulanmasligi kerak.
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/regression/test_orders/business_cases/stock/test_cancel_reserve.py::run_cancel_reserve`; `tests/smoke/test_setup/test_23_init_balance.py::run_init_balance`
+
+- Diagnostikada shu mahsulot va ombor uchun mavjud hamda bronlangan miqdorni
+  tekshir. Stock regression case yangi order miqdorini baseline bilan
+  solishtiradi va aynan o‘zi yaratgan order bekor qilingach zaxirani qayta o‘qiydi.
+- Setup oqimida UZS va USD mahsulotlariga kirim beruvchi testcase — `test_23_init_balance`.
+  Mahsulot ko‘rinmayotganining aniq sababini qoldiq va order dalili bilan ajrat.
 
 ### Order ID
 Tags: order, view, data-store
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/smoke/test_life_cycle/flow_order/order_regression.py::open_saved_order`; `tests/regression/legacy/orders/cases/test_01_create_edit_order.py`
 - Qayerda: order view.
 - Locator: `ИД заказа` label textidan yaqin view value olinadi; yangi testlarda raw XPath yozilmaydi.
 - Data: group testcase IDni o'z create→view→edit oqimi ichida ishlatadi; sibling
@@ -175,15 +168,14 @@ Source: `test-results/traces/tests_smoke_test_groups_test_0_grup_test_create_bas
 
 ### Order List Накладные Reports
 Tags: order, invoice, report, locator
-- Qayerda: `Продажа > Заказы` listida kerakli row ochilgandan keyin row menu ichidagi `Накладные` dropdown; order view ichida emas.
-- Locator: bitta order uchun row-level button `#trade81-button-report_one`. Reportni ochish uchun `a.dropdown-item` markaziga emas, option nomi yozilgan `span[ng-click*="reportOne"]` yoki `span[ng-click*="chequeOne"]` elementiga click qilish kerak.
-- Qoida: HTML report sifatida ochiladigan `Накладные` optionlarini bosib tekshir; `Экспортировать заказ` yangi oyna ochmaydi, download sifatida `expect_download` bilan tekshiriladi.
-- Test har bir reportni ochib, reportga mos client/product/summa/order data ko'rinishini assert qiladi.
-- Foydalanuvchi manual tekshirgan joriy report ro'yxatida
-  `Чек-лист (80 мм)` uchun faqat yangi oyna ochilishi va yopilishi tekshiriladi,
-  chunki native print dialog Playwright tomonidan boshqarilmaydi.
-- Report popup ochilganda ba'zi HTML reportlar `window.print()` chaqirib native `Печать` dialogini ochadi; Playwright testlarida popupdan oldin `window.print` stub/no-op qilinsin.
-- UI dagi report nomi bo'shliqlari ham exact option hisoblanadi: 2026-07-21 holatida `Накладная № 4 (2012)` (`№4(2012)` emas).
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/regression/legacy/orders/cases/test_17_invoice_consistency.py::run_invoice_consistency`
+
+- ORD-17 o‘zi yaratgan orderning saqlangan miqdor va summasini o‘qiydi,
+  `Накладная № 4 (2012)` HTML reportini ochadi va mahsulot hamda yakuniy
+  summani solishtiradi. Eski B-group’dagi popup/download variantlari —
+  [A va B guruhlarining arxivdagi tekshiruvlari](history.md#order-va-contract-testlarining-eski-qamrovi).
 
 ### Custom Invoice Report Template
 Tags: order, invoice, report-template, admin

@@ -41,7 +41,7 @@ tekshirilishi kerak bo'lgan test case sifatida berilgan.
 
 Status: code-confirmed
 Verified: 2026-11-09
-Source: foydalanuvchining mustaqil guruh talabi; `tests/regression/test_orders/ordering.py` va [Order runnerlari](../../../tests/regression/test_orders/README.md).
+Source: foydalanuvchining mustaqil guruh talabi; `tests/regression/test_orders/helpers/ordering.py` va [Order runnerlari](../../../tests/regression/test_orders/README.md).
 
 Har yangi biznes oqimi uchun suite oxirida alohida runner yarating. Uning nomi va faylini
 `GROUP_NAMES` va `GROUP_RUNNERS`ga bir xil tartibda qo‘shing. Barcha tayyorlov va

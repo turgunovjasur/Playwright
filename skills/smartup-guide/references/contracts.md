@@ -2,56 +2,37 @@
 
 ## Qidiruv Kalitlari
 
-Tags: contract, contract-add, contract-list, contract-view, limit, payment-type, currency
+Qidiruv kalitlari: contract, contract-add, contract-list, contract-view, limit, payment-type, currency
 
 ### Contract Navigation
 Tags: contract, navigation
-- Qayerda: `Финансы > Договоры`
-- URLlar:
-  - list: `*/anor/mkf/contract_list`
-  - add: `*/anor/mkf/contract+add`
-  - view: `*/anor/mkf/contract_view`
-- Testda ishlatish: listda heading `Договоры`, add/view URL va `b-page` content tekshiriladi.
-- Form dossier: contract view uchun [forms/contract-view.md](forms/contract-view.md) o'qi.
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/smoke/test_forms/inventory/finansy.py:109`; [Contract view arxivi](forms/contract-view.md#screenshot-paths)
+- `Финансы → Справочники → Договоры` list yo‘li inventarda
+  `anor/mkf/contract_list` deb berilgan. Arxivdagi view manzili va readonly
+  maydonlar [contract-view dossierida](forms/contract-view.md).
 
 ### Minimal Order Contract
-Tags: contract, precondition, a-group
-- Qayerda: contract add forma.
-- Qoida: Contractlar order testlari uchun precondition bo'lishi mumkin.
-- Minimal qiymatlar:
-  - `Код`: `contract_code_{random}`
-  - `Номер`: session `code`
-  - `Название`: Faker company + `contract-pw{code}`
-  - client turi: `Физическое лицо`
-  - `Физическое лицо`: `natural_client-pw{code}`
-  - `Валюта`: `Узбекский сум`
-  - `Сумма договора`: `500000`
-- Testda ishlatish: `Код` input birinchi qidiriladi; `Номер` bilan almashtirilmaydi. Listda `contract_code` bilan qidir, viewda code/name/client/currency/amount tekshir.
-- Counterparty turi radio: `Физическое лицо` bosilgach `BasePage.radio("Физическое лицо", expect_checked=True)` bilan tanlangan holat tasdiqlanadi.
-- Data: `contract_code` va `contract_name` `data_store.json` ga saqlanadi.
+Eski Group A contract yaratish uchun kod, raqam, mijoz, valyuta va summani to‘ldirgan. Aniq fixture va assertionlar — [A va B guruhlarining arxivdagi tekshiruvlari](history.md#order-va-contract-testlarining-eski-qamrovi).
 
 ### Orderda Contract Tanlash
 Tags: contract, order, b-input
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/smoke/test_life_cycle/flow_order/flow_order_add.py::flow_order_main_page`; `flow_order_prepare_with_contract`
 - Qayerda: order add main page `Договор`.
-- Qoida: Order formasidagi `Договор` maydoni contract code bilan emas, `contract_name` bilan tanlanadi.
-- Testda ishlatish: `BasePage.b_input("Договор", value=contract_name, exact=False)`.
+- Qoida: Order helperi `Договор` maydoniga `contract_name` qiymatini uzatadi.
+- Testda ishlatish: `base.b_input(label="Договор", value=contract_name, exact=False)`.
 
 ### Contract Sum Limit
-Tags: contract, limit, order, error
-- Qayerda: contract add `Сумма договора`, order save.
-- Qoida: Oddiy sum limit contract tanlansa, order total amount contract limitdan oshmasligi kerak.
-- Testda ishlatish: 500000 contract bilan 700000 order save qilinganda Biruni error chiqishi va order saqlanmasligi tekshiriladi.
-- Error text: `Сумма заказа превышает сумму остатка по договору`, `Сумма остатка по договору: 500000`, `сумма заказа = 700000`.
+Limitdan oshgan va limit ichida qolgan order uchun tekshirilgan tarixiy testcase hamda kutilgan xato matni — [A va B guruhlarining arxivdagi tekshiruvlari](history.md#order-va-contract-testlarining-eski-qamrovi).
 
 ### Contract + Payment Type
-Tags: contract, payment-type, order, auto-fill
-- Qayerda: contract add `Типы оплат`.
-- Qoida: Contract `Сумма договора = 500000` va `Типы оплат = Перечисление` bilan yaratilsa, orderda contract tanlangandan keyin `Тип оплаты` auto-fill `Перечисление` bo'ladi.
-- Muhim: `Тип оплаты` auto-fill faqat qulaylik; user uni o'zgartirishi mumkin. Payment type o'zgarsa ham order ishlashi kerak, faqat contract sum limit tekshiriladi.
-- Testda ishlatish: payment type value inputda turadi, `#kt_content` text ichiga kirmasligi mumkin. Label bo'yicha input value tekshir.
+Contract tanlangach to‘lov turini tekshirish va o‘zgartirishning eski Group A case’i — [A va B guruhlarining arxivdagi tekshiruvlari](history.md#order-va-contract-testlarining-eski-qamrovi).
 
 ### Contract Currency
-Tags: contract, currency, product-filter, order
-- Qoida: Contract qaysi valyutada yaratilgan bo'lsa, orderda contract tanlanganda productlar contract valyutasi bo'yicha filterlanadi.
-- Qoida: Agar orderda product tanlangan bo'lsa va contract boshqa valyutali contractga almashtirilsa, tanlangan productlar o'chib ketadi.
-- Testda ishlatish: currency case yozilganda product grid/input reset bo'lishi alohida tekshirilsin.
+Ochiq savol: boshqa valyutadagi contract tanlanganda tanlangan TMC va
+productlar ro‘yxati qanday o‘zgaradi? Eski qaydda ikkala effekt kutilgan.
+Ularni tasdiqlaydigan assertion yoki trace topilmadi.
+[Tekshirilgan eski manba](history.md#order-va-contract-testlarining-eski-qamrovi).

@@ -1,6 +1,6 @@
 # PnL
 
-Tags: pnl, finance, menu, a2, migration, locator
+Qidiruv kalitlari: pnl, finance, menu, a2, migration, locator
 
 ## Quick Lookup
 

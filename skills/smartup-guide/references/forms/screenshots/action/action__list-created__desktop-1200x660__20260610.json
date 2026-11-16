@@ -1,0 +1,20 @@
+{
+  "form_slug": "action",
+  "state": "Акции list after creation, with one active quantity-based promotion offering a 10% discount.",
+  "url_pattern": "/anor/mcg/action_list",
+  "viewport": null,
+  "screenshot_pixels": {
+    "width": 1200,
+    "height": 683
+  },
+  "entity": "<promotion_name>",
+  "created_at": "2026-06-10",
+  "browser": null,
+  "dynamic_areas": [
+    "Promotion name, dates and status",
+    "Current filial in the navbar",
+    "Support chat widget"
+  ],
+  "source": "skills/smartup-guide/references/forms/action.md",
+  "notes": "The archive label says desktop-1200x660. The capture viewport was not independently recorded."
+}

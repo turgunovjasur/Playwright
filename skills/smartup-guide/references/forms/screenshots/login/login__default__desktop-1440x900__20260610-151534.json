@@ -1,0 +1,22 @@
+{
+  "form_slug": "login",
+  "state": "Russian sign-in card with empty login and password fields, Войти and the password-recovery and phone-login links.",
+  "url_pattern": "<company_url>/login.html",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "screenshot_pixels": {
+    "width": 1440,
+    "height": 900
+  },
+  "entity": null,
+  "created_at": "2026-06-10T15:15:34",
+  "browser": null,
+  "dynamic_areas": [
+    "Language selector",
+    "Login and password fields"
+  ],
+  "source": "skills/smartup-guide/references/forms/login.md",
+  "notes": "The filename records the viewport and local capture timestamp without a timezone."
+}

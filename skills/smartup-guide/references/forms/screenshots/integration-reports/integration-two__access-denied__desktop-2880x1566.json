@@ -1,0 +1,22 @@
+{
+  "form_slug": "integration-reports",
+  "state": "Пользователь не авторизован dialog showing Нет доступа к форме Интеграция с системой монолит over the dimmed page.",
+  "url_pattern": "/trade/rep/integration/integration_two",
+  "viewport": null,
+  "screenshot_pixels": {
+    "width": 2880,
+    "height": 1566
+  },
+  "entity": null,
+  "created_at": "2026-07-23",
+  "browser": null,
+  "dynamic_areas": [
+    "Current filial in the navbar",
+    "Support chat widget"
+  ],
+  "source": "skills/smartup-guide/references/forms/integration-reports.md",
+  "filial_context": "Администрирование",
+  "supporting_sources": [
+    "81e251f9:skills/smartup-guide/references/forms/integration-reports.md"
+  ]
+}

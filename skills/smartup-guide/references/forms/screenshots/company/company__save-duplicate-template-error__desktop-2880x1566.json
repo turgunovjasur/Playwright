@@ -1,0 +1,21 @@
+{
+  "form_slug": "company",
+  "state": "Ошибка dialog over the company creation form after save confirmation. The duplicate name shown is Подоходный налог.",
+  "url_pattern": "/a2/biruni/md/company_add",
+  "viewport": null,
+  "screenshot_pixels": {
+    "width": 2880,
+    "height": 1566
+  },
+  "entity": "autotest{code}",
+  "created_at": null,
+  "browser": null,
+  "dynamic_areas": [
+    "Company form values",
+    "Company identifier in the error message"
+  ],
+  "source": "skills/smartup-guide/references/forms/company.md",
+  "supporting_sources": [
+    "3bc5b83c:skills/smartup-guide/references/forms/company.md"
+  ]
+}

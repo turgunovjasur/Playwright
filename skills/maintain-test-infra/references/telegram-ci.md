@@ -12,25 +12,26 @@
 ## Current architecture
 
 Status: code-confirmed
-Verified: 2026-09-04
-Source: `scripts/telegram_ci_bot.py`; `.github/workflows/daily-smoke.yml`;
-`.github/workflows/run-smartup-suite.yml`; `scripts/telegram_progress.py`;
-`tests/smoke/progress.py`; `scripts/analyze_test_result.py`
+Verified: 2026-11-16
+Source: `telegram_bot/telegram_ci_bot.py`; `.github/workflows/daily-smoke.yml`;
+`.github/workflows/run-smartup-suite.yml`; `telegram_bot/telegram_progress.py`;
+`tests/smoke/progress.py`; `scripts/analyze_test_result.py`;
+`telegram_bot/scheduler.py`; `telegram_bot/telegram_ci_settings.py`; `telegram_bot/telegram_ci_config.json`
 
-- GitHub Actions test execution authoritysi bo'lib qoladi; har soatlik scheduling
-  authoritysi Hetznerdagi alohida `playwright-ci-bot` containeriga ko'chirilgan.
-  GitHub workflowda `schedule` event yo'q.
-- Server scheduler `Asia/Tashkent` vaqti bilan har `HH:17`da bitta
-  `workflow_dispatch` yuboradi: `suite=all`, `server=smartup`. Active workflow
-  mavjud bo'lsa slot skip qilinadi; o'tkazib yuborilgan slot catch-up qilinmaydi.
-- `all` dispatch `Online Smoke` va `Online Report`ni parallel reusable workflow
+- GitHub Actions testlarni bajaradi. Botdagi kunlik jadvalni
+  `HOURLY_SCHEDULE_ENABLED=1` yoqadi (mavjud env nomi saqlangan).
+  Vaqt, vaqt mintaqasi va server botning JSON konfiguratsiyasidan olinadi.
+  Repodagi jadval bo‘yicha har kuni Toshkent vaqti bilan 02:00 da
+  `suite=all`, `server=smartup` uchun dispatch yuboriladi. Faol workflow
+  bo‘lsa slot o‘tkaziladi. O‘tgan slot keyin qoplanmaydi.
+- `all` dispatch `Smoke` va `Report`ni parallel reusable workflow
   job sifatida boshlaydi. Forms job `if: always()` bilan Smoke tugagach, uning
   natijasidan qat'i nazar boshlanadi.
 - `Smoke` `scripts/run_tests.py setup-smoke`, `Report`
   `scripts/run_tests.py group-report`, `Forms` esa `scripts/run_tests.py forms`
   targetini bajaradi. Har job o'z Telegram progress/final xabari,
   `test-results`, HTML Allure reporti va artifactiga ega.
-- Telegram botning manual buyruqlari va hourly scheduler bir processda ishlaydi;
+- Telegram botning manual buyruqlari va kunlik scheduler bir processda ishlaydi;
   manual va scheduled dispatch bitta process-local lock bilan serialize qilinadi.
   Scheduler exceptioni Telegram polling loopini to'xtatmaydi.
 - Telegram bot manual flowida avval suite (`Smoke` yoki `Forms`), keyin server (`Online` yoki
@@ -39,8 +40,7 @@ Source: `scripts/telegram_ci_bot.py`; `.github/workflows/daily-smoke.yml`;
   `in_progress` GitHub Actions runlarini topib, force-cancel qiladi. Buyruq
   `/run` bilan bir xil `TELEGRAM_RUN_PASSWORD` orqali himoyalangan; parol xabari
   tekshiruvdan oldin chatdan best-effort o'chiriladi. Standalone ekvivalenti
-  `scripts/stop_ci_runs.py`; u `GITHUB_TOKEN` yoki `GITHUB_PAT` va ixtiyoriy
-  `GITHUB_REPOSITORY` environment qiymatidan foydalanadi.
+  `telegram_bot/stop_ci_runs.py`; u `GITHUB_TOKEN` yoki `GITHUB_PAT` qiymatini environmentdan, repository nomini botning JSON konfiguratsiyasidan oladi.
 - `/status` oxirgi scheduled yoki manual workflow holati va run linki bilan
   birga GitHub Jobs API'dan Smoke/Report/Forms job holatini ko'rsatadi. Active suite
   uchun `RUNNING` va joriy workflow stepi, tugagan suite uchun esa
@@ -54,7 +54,7 @@ Source: `scripts/telegram_ci_bot.py`; `.github/workflows/daily-smoke.yml`;
   hali ro'yxatda bo'lmasligi normal.
 - Workflow erkin URL qabul qilmaydi: `smartup` yoki `app3` keyidan URL hamda
   secret source ichkarida hosil qilinadi, boshqa key fail-closed rad etiladi.
-- Bot in-memory manual run bilan birga GitHub API orqali hourly/manual active
+- Bot in-memory manual run bilan birga GitHub API orqali scheduled/manual active
   workflow runlarni ham tekshiradi. Active run bo'lsa yangi manual dispatch
   queue'ga qo'shilmaydi va `Test jarayonda, yangi run boshlanmadi` mazmunidagi
   Telegram xabari bilan rad etiladi.
@@ -103,7 +103,7 @@ Source: `scripts/telegram_ci_bot.py`; `.github/workflows/daily-smoke.yml`;
   joriy/oldingi redacted xatosi bilan birga qolgan cooldown yoki artifactdagi
   Telegram talab qilgan kutish hamda retry vaqtini ko'rsatadi.
 - Pytest progress eventlari `tests/smoke/smoke_reporting.py` va
-  `scripts/telegram_progress.py` orqali group/runner/test/title asosida chiqadi;
+  `telegram_bot/telegram_progress.py` orqali group/runner/test/title asosida chiqadi;
   har bir event millisekund aniqligidagi UTC timestamp saqlaydi.
 - Canonical Forms runnerda har bir forma alohida pytest/Allure item bo'ladi;
   analyzer parametr IDidagi navbarni tanib, barcha beshta navbar coverage'ini
@@ -141,7 +141,7 @@ Source: `scripts/telegram_ci_bot.py`; `.github/workflows/daily-smoke.yml`;
 Status: code-confirmed
 Verified: 2026-08-18
 Source: user; `tests/smoke/progress.py`; `scripts/analyze_test_result.py`;
-`scripts/telegram_progress.py`
+`telegram_bot/telegram_progress.py`
 - Xato sodir bo'lgan vaqt server loglaridan tegishli yozuvni topish uchun
   Telegram xabarida va failure artifactida aniq saqlanib ko'rsatilishi kerak.
 - Final xabarning status belgisi faqat title'da bir marta ko'rsatiladi:
@@ -153,7 +153,7 @@ Source: user; `tests/smoke/progress.py`; `scripts/analyze_test_result.py`;
 ### Smoke va Forms final xabar formatlari
 Status: code-confirmed
 Verified: 2026-08-18
-Source: user; `scripts/telegram_progress.py`;
+Source: user; `telegram_bot/telegram_progress.py`;
 `tests/smoke/smoke_reporting.py`; `scripts/analyze_test_result.py`
 - To'liq final xabar tartibi: title, server/suite, bo'sh qatordan keyin
   vaqt/davomiylik va Smoke uchun test data kodi, yana bo'sh qatordan keyin
@@ -177,7 +177,7 @@ Source: user; `scripts/telegram_progress.py`;
 ### Smoke va Forms progress xabar formatlari
 Status: code-confirmed
 Verified: 2026-08-18
-Source: user; `scripts/telegram_progress.py`;
+Source: user; `telegram_bot/telegram_progress.py`;
 `tests/smoke/smoke_reporting.py`
 - `RUNNING` title'da faqat bitta `🟡` status belgisi bo'ladi. Server va suite'dan
   keyingi bo'sh blokda `Vaqt: HH:MM:SS UZT da boshlangan`, `Davomiylik` va
@@ -198,7 +198,7 @@ Source: user; `scripts/telegram_progress.py`;
 ### Legacy `setup-forms` final coverage
 Status: code-confirmed
 Verified: 2026-08-04
-Source: GitHub Actions runs `30528649258`, `30878853396`; `scripts/analyze_test_result.py`; `scripts/telegram_progress.py`
+Source: GitHub Actions runs `30528649258`, `30878853396`; `scripts/analyze_test_result.py`; `telegram_bot/telegram_progress.py`
 - Bu kesim eski birlashtirilgan `setup-forms` runlari va lokal compatibility
   targetiga tegishli. Joriy CI'da Smoke hamda Forms alohida final xabar oladi;
   Forms finali Setup metrikasini kutmaydi.
@@ -239,26 +239,24 @@ Source: GitHub Actions runs `30528649258`, `30878853396`; `scripts/analyze_test_
 
 ## Windows deploy
 
-- CMD: `run_telegram_ci_bot.bat` yoki `scripts\run_telegram_ci_bot.cmd`.
-- PowerShell: `scripts/run_telegram_ci_bot.ps1`.
-- Direct: `.venv\Scripts\python.exe scripts\telegram_ci_bot.py`.
+- Windows launcher: `telegram_bot/run_telegram_ci_bot.bat`.
+- Repo rootidan bevosita ishga tushirish: `.venv\Scripts\python.exe telegram_bot\telegram_ci_bot.py`.
 - Test/workflow kodi `main`ga push qilinsa serverdagi bot kodi o'zgarmagan
   holatda `git pull` shart emas; workflow GitHub'dagi yangi `main`ni checkout qiladi.
 - Bot script, launcher, dependency yoki env/config o'zgarsa serverda pull va
   doimiy process restart kerak.
-- Windows PowerShell 5.1 launcher `.ps1` fayli ASCII bo'lsin.
 - Task Scheduler action Python executable, arguments bot script, working
   directory repo root bo'lsin; task bot userining User-level env'larini ko'rsin.
 
 ## Hetzner Docker deploy
 
 - To‘liq server topologiyasi, project chegaralari va operator buyruqlari
-  `deploy/playwright-ci-bot/README.md`da hujjatlashtirilgan.
+  `telegram_bot/deploy/README.md`da hujjatlashtirilgan.
 - QA-Assistant va Namoz bot bilan bir VPSda Playwright CI bot alohida
   `/opt/playwright-ci-bot` katalogi va `playwright-ci-bot` Compose projectida
   ishlaydi. Boshqa projectlarning Compose, network, volume, database yoki
   containerlariga tegmaydi.
-- Compose fayli `deploy/playwright-ci-bot/docker-compose.yml`; servis faqat
+- Compose fayli `telegram_bot/deploy/docker-compose.yml`; servis faqat
   outbound Telegram/GitHub HTTPS ishlatadi, host port, database va persistent
   volume ochmaydi.
 - Bot containeri `0.25 CPU`, `128 MB` RAM, read-only root filesystem,
@@ -269,7 +267,7 @@ Source: GitHub Actions runs `30528649258`, `30878853396`; `scripts/analyze_test_
 - Cutoverdan oldin eski Windows polling processi to'xtatiladi. Bir Telegram bot
   tokeni bilan bir vaqtda faqat bitta `getUpdates` poller ishlashi mumkin.
 - Operator buyruqlari repo rootidan explicit Compose fayli bilan bajariladi:
-  `docker compose -f deploy/playwright-ci-bot/docker-compose.yml -p playwright-ci-bot ps`,
+  `docker compose -f telegram_bot/deploy/docker-compose.yml -p playwright-ci-bot ps`,
   `logs bot --tail 100`, `up -d --build`, `restart bot` va `stop`.
 - Deploy va rollback faqat `playwright-ci-bot` projectiga qo'llanadi;
   `/opt/qa-assistant` hamda `/opt/namoz-vaqti` kataloglarida Playwright bot

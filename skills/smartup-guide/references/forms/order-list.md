@@ -9,6 +9,10 @@ Source: `tests/smoke/test_life_cycle/flow_order/flow_order_list.py`; `references
 
 - [Quick Lookup](#quick-lookup)
 - [Screenshot Paths](#screenshot-paths)
+- [Known Locators](#known-locators)
+- [Flow And Tests](#flow-and-tests)
+- [Business Rules](#business-rules)
+- [Known Issues](#known-issues)
 - [Row Selection And View](#row-selection-and-view)
 - [Debug Evidence](#debug-evidence)
 - [Live UI Toolbar And Grid](#live-ui-toolbar-and-grid)
@@ -29,28 +33,34 @@ Source: `tests/smoke/test_life_cycle/flow_order/flow_order_list.py`; `references
 - Metadata:
   `references/forms/screenshots/order-list/order-list__row-actions-open__desktop-2880x1566__20260720.json`
 
-## Row Selection And View
+## Known Locators
+
+### Row Selection And View
 
 - Order qatori `.tbl-row`; qator yoki uning cell'i bosilganda pastdagi `.tbl-row-menu` ochiladi.
-- View actionining ko'rinadigan matni va exact accessible name'i `Просмотр`.
+- 2026-07-20 arxivlangan qator menyusida view actionining matni `Просмотр`. Joriy `flow_order_list` ikki variantni `^Просмотр(?:еть)?$` bilan row ichida qamrab oladi.
 - Tasdiqlangan locator: `get_by_role("button", name="Просмотр", exact=True)`; row ochilganda uni shu row scope'ida qidirish kerak.
-- `Просмотреть` exact locator order listda element topmaydi. Bu loader/race emas: row menu ochiq va `Просмотр` tugmasi ko'rinib turgan holatda locator text mismatch sabab timeout beradi.
+- `Просмотреть` exact locator ushbu arxiv holatida element topmagan. Bu loader/race emas: row menu ochiq va `Просмотр` tugmasi ko'rinib turgan holatda locator text mismatch sabab timeout beradi.
 - Edit actionining ko'rinadigan matni va exact accessible name'i `Редактировать`; `Изменить` exact locator order listda element topmaydi.
 - BasePage-first row patterni: `base.grid_controller(search=row_text)` bilan barcha sahifalar bo'yicha qidiruvni toraytirish, `row = base.grid(row_text, click=True)` bilan qatorni ochish, `base.text(root=row.locator(".tbl-row-menu"))` bilan action menu ko'rinishini kutish, keyin actionni `row` scope'ida bosish.
 - `flow_order_list` ichida eski `_order_grid_row` va `_ensure_order_grid_row_open` local raw-locator helperlari ishlatilmaydi; grid search/select uchun mavjud `BasePage.grid_controller` va `BasePage.grid` yagona pattern hisoblanadi.
 - `view`, `edit` yoki `status` actioni uchun `find_row` majburiy; action tugmasi faqat `base.grid(...)` qaytargan row scope'ida bosiladi. Butun `page` bo'yicha fallback qidiruv ishlatilmaydi, chunki boshqa/yashirin row actionini bosishi mumkin.
 - Order listga o'tish uchun alohida `flow_open_order_list` wrapperi yozilmaydi: caller `base.navigate_to(tab="Продажа", name="Заказы")` ni to'g'ridan-to'g'ri chaqiradi. Keyingi `flow_order_list(...)` o'z boshidagi `base.expect_page(heading="Заказы", url="order_list")` bilan page state'ni bir marta tekshiradi.
 
-## Debug Evidence
+## Known Issues
+
+### Debug Evidence
 
 - 2026-07-20 A-03 failure trace: `7 000` cell click muvaffaqiyatli bajarilgan va row action paneli ochilgan.
 - Failure screenshotda `Просмотр`, `Редактировать`, `Изменить статус` actionlari ko'ringan; test esa exact `Просмотреть` kutgani uchun 10 soniyada element topmagan.
 - Order save muvaffaqiyatli bo'lgan: URL `*/order_list`, gridda yangi draft row va `7 000` summa mavjud.
 - 2026-07-20 verificationda UI screenshotiga mos `Просмотр` va `Редактировать` locatorlari tasdiqlandi.
 
-## Live UI Toolbar And Grid
+## Business Rules
 
-### Order list asosiy boshqaruvlari
+### Live UI Toolbar And Grid
+
+#### Order list asosiy boshqaruvlari
 Tags: order, list, toolbar, grid, filter
 Status: live-ui-confirmed
 Verified: 2026-07-31
@@ -64,7 +74,7 @@ Source: live UI
 - Testda ishlatish: action ko'rinishini grantlar bo'yicha, create variantlar
   navigatsiyasini va grid default ustunlarini alohida assert qil.
 
-### List filter va widgetlar
+#### List filter va widgetlar
 Tags: order, list, filter, widget, status, payment-type
 Status: live-ui-confirmed
 Verified: 2026-07-31
@@ -77,7 +87,7 @@ Source: live UI
 - Testda ishlatish: har bir filter chegarasi, kombinatsiyasi, reset va widget
   drill-down natijasini grid rowlari/summary bilan solishtir.
 
-### Order settings modal
+#### Order settings modal
 Tags: order, list, settings, consignment, delivery-address
 Status: live-ui-confirmed
 Verified: 2026-07-31
@@ -90,7 +100,7 @@ Source: live UI
 - Testda ishlatish: valid/invalid day values, toggle persistence va yangi/edit
   orderga ta'sirini tekshir; faqat label matniga qarab biznes natija chiqarmang.
 
-### Orderni `Архив` statusiga o'tkazish
+#### Orderni `Архив` statusiga o'tkazish
 Tags: order, list, status, archive, confirmation, debt
 Status: live-ui-confirmed
 Verified: 2026-07-31
@@ -107,7 +117,7 @@ Source: live UI
   `Новый` bilan row tanlash rerunlarda noaniq: live muhitda bir xil uchta
   row mavjud edi.
 
-### Exact row ichidagi status action
+#### Exact row ichidagi status action
 Tags: order, list, row, status, modal, locator
 Status: live-ui-confirmed
 Verified: 2026-07-31
@@ -121,3 +131,7 @@ Source: live UI;
 - Testda ishlatish: order ID orqali `#status-btn-{order_id}`ni scope qil,
   cell ichidagi `.dropdown-toggle`ni ochib shu cell ichidagi `Архив` buttonini
   bos; row konteynerini yoki umumiy `Изменить статус` actionini bosma.
+
+## Flow And Tests
+
+`tests/smoke/test_life_cycle/flow_order/flow_order_list.py::flow_order_list` yaratish, qidirish, view, edit va status actionlarini boshqaradi. `tests/smoke/test_groups/test_a_grup/test_02_archive_base_order.py` yaratilgan order arxivlanishini tekshiradi.

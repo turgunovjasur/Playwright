@@ -1,5 +1,7 @@
 # Integration №3 NEON (`trade/rep/integration/integration_three`)
 
+## Quick Lookup
+
 ### Main parametrlar
 Status: live-ui-confirmed
 Verified: 2026-08-20
@@ -12,6 +14,8 @@ Source: live Chromium UI; `tests/smoke/test_groups/test_report_grup/test_02_inte
 - Report-02 HTML preview sheetlaridan tashqari `EXCEL` actioni orqali non-empty `.xlsx` downloadni ham tekshiradi.
 - Lokal XLSX save nomi setup `code`ga emas, run-local UUID suffixga bog'langan.
 
+## Business Rules
+
 ### Settings defaultlari
 Status: live-ui-confirmed
 Verified: 2026-08-20
@@ -22,11 +26,23 @@ Source: live Chromium UI; `tests/smoke/test_groups/test_report_grup/test_02_inte
 - Warehouses bo'limida warehouse name va address default checked.
 - Settings sahifasi `Настройки типов документов` mappingini `Заказ`dan `Инвентаризация расход`gacha ko'rsatadi.
 
+## Known Locators
+
 ### HTML preview sheetlari
-Status: live-ui-confirmed
-Verified: 2026-08-20
-Source: live Chromium UI; `tests/smoke/test_groups/test_report_grup/test_02_integration_three.py`
-- Preview `iframe.report-frame` ichida render bo'ladi; iframe `src` atributi bo'sh bo'lishi mumkin, shuning uchun `src*="integration_three"` locatoriga tayanilmaydi.
-- Aynan uchta `a.nav-link` bor: `Склады`, `Документы`, `Остатки`.
-- `Склады` default active va `#sheet1` visible; keyingi tablar mos ravishda `#sheet2` va `#sheet3`ni ko'rsatadi.
-- Archived UI evidence: `screenshots/integration-three/integration_three__report-sheets__desktop__20260611.png`.
+
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/smoke/test_groups/test_report_grup/test_02_integration_three.py:76`
+- Test `iframe.report-frame` ichida uchta `button.sheet-tab`ni matnlari va tartibi bo‘yicha tekshiradi: `Склады`, `Документы`, `Остатки`. Birinchi tabda `data-active="true"` kutiladi. Har bir tabga mos `#sheet1`, `#sheet2` yoki `#sheet3` ko‘rinishi tekshiriladi.
+
+## Screenshot Paths
+
+[Arxivlangan HTML preview va uchta sheet](screenshots/integration-three/integration_three__report-sheets__desktop__20260611.png).
+
+## Flow And Tests
+
+`tests/smoke/test_groups/test_report_grup/test_02_integration_three.py::run_report_integration_three_check` period va settings maydonlari, HTML preview va `EXCEL` orqali yuklangan `.xlsx` faylni tekshiradi.
+
+## Known Issues
+
+Preview iframe manzili bo‘sh bo‘lishi mumkin. Test uni `iframe.report-frame` selektori bilan topadi.

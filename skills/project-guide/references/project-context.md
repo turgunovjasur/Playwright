@@ -38,11 +38,12 @@ Source: repository layout; consumer importlari
 ## Runtime Konteksti
 
 Status: code-confirmed
-Verified: 2026-09-18
-Source: `tests/smoke/conftest.py`; `tests/smoke/smoke_config.py`; `scripts/smoke_environment.py`
+Verified: 2026-11-16
+Source: `tests/conftest.py::code`; `tests/smoke/smoke_config.py`; `scripts/smoke_environment.py`
 
-- `code` session-scoped: `NEW_CODE=1` yangi olti xonali qiymat yaratadi,
-  `NEW_CODE=0` esa `data_store.json.code`ni o'qiydi. Qiymat har testga alohida emas.
+- `code` session-scoped. Yakuniy tanlovda UI setup va `NEW_CODE=1` birga
+  bo‘lsa yangi olti xonali code yaratiladi. Qolgan holatda saqlangan
+  baseline’ning serveri va company kodi tekshiriladi.
 - Repo rootida `.env` bo'lsa direct pytest/PyCharm konfiguratsiyasi undan
   olinadi; bo'lmasa terminal yoki CI flaglari ishlaydi.
 - Mavjud company parametrlari: `--url <server_url> --company-code

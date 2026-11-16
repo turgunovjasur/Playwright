@@ -178,10 +178,9 @@ def test_XX_<nomi>(session_page: Page, code):
   ```
 
 ### code fixture
-- `NEW_CODE=1` (yoki `.env` yo'q muhitda `--new-code`) bo'lsa yangi `random.randint(100000, 999999)` yaratadi (6 xonali)
-- `NEW_CODE=0` bo'lsa runner yoki yakka testligidan qat'i nazar `test-results/data/data_store.json` dan `"code"` kalitini o'qiydi
-- Alohida `REUSE_CODE`/`--reuse-code` ishlatilmaydi; yangi/eski code tanlovining yagona source'i `NEW_CODE`
-- Agar `data_store.json` bo'lmasa: `pytest.exit()` bilan aniq xato beradi
+- Test `code`ni fixture parametridan oladi. `tests/conftest.py::code`
+  yakuniy tanlovda UI setup borligi va `NEW_CODE`ga qarab yangi baseline
+  yaratadi yoki mavjudining server/company qiymatlarini tekshiradi.
 
 ### Tanlov holatini tekshirish
 - Radio, checkbox yoki select option uchun faqat label/matn ko'rinishini emas, tanlangan holatini ham (`expect(...).to_be_checked()` yoki mos value assert) tekshir.
@@ -224,8 +223,8 @@ Source: user; `skills/write-test/SKILL.md:33`; `skills/write-test/references/pro
 - `who="user"` → `user-pw{code}@{company}` + `USER_PASSWORD`. Avvalgi `authorization_user(page, code)` o'rniga `authorization(page, who="user", code=code)` yoz.
 - `who="admin"` → `admin@{company}` + `COMPANY_PASSWORD`.
 - `who="head"` → `HEAD_ADMIN_EMAIL`/`HEAD_ADMIN_PASSWORD` (company yaratish uchun).
-- `authorization` code generatsiya qilmaydi va `data_store.json`dan code o'qimaydi; `who="user"` uchun `code=code` majburiy. Yangi/eski code tanlovining yagona source'i `NEW_CODE` boshqaradigan `code` fixture.
-- `authorization(...)` oxirida `dashboard(page)` orqali `Trade` heading ko'rinishini o'zi tekshiradi; undan keyin `expect(... "Trade" ...).to_be_visible()` ni qayta yozma.
+- `who="user"` chaqiruvida fixture bergan `code`ni uzat. `tests/shared/authorization.py`
+  shu qiymatdan login yasaydi. Oxirida `dashboard(page)` dashboard URLini tekshiradi.
 - Credentiallar tashqaridan uzatilmaydi; `authorization` ularni faqat `who` qiymatiga qarab o'zi tanlaydi.
 - Credentiallar `.env` dan olinadi (precedence: `.env` yutadi — `smoke_config.option_or_env`).
 
@@ -520,8 +519,8 @@ Source: user;
   `close_biruni_alert`, `click` va `confirm_biruni` ishlatiladi. Umumiy list
   gateway `flow_order_list`da qoladi; boshqa wizard flowlar faqat Flow
   admission gate'dan o'tsa saqlanadi.
-- Contract + `Типы оплат` case'ida `Тип оплаты` orderda auto-fill bo'lishini tekshir; user uni o'zgartirsa ham order ishlashi kerak, faqat contract sum limit tekshiriladi.
-- Contract valyutasi order productlarini filterlaydi; boshqa valyutali contractga almashtirilsa, oldin tanlangan productlar o'chishi kutiladi.
+- Contract to‘lov turi uchun tarixiy case va valyuta almashtirish bo‘yicha
+  ochiq savol [contract reference](../../smartup-guide/references/contracts.md)da.
 
 ### Form-opening smoke suite arxitekturasi
 Status: code-confirmed

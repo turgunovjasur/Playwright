@@ -38,7 +38,7 @@ check_url(
     page,
     expected_path,
     *,
-    timeout=15_000,
+    timeout=None,
     try_direct_url=True,
 )
 # returns: (check_result, "legacy" | "a2" | None)
@@ -46,7 +46,7 @@ check_url(
 
 - `page` — joriy Playwright sahifasi.
 - `expected_path` — forma definitionidagi inventory path.
-- `timeout` — expected path ochilishini kutish vaqti, millisekundlarda.
+- `timeout` — expected path ochilishini kutish vaqti, millisekundlarda. Berilmasa `DEFAULT_URL_TIMEOUT = UI_TIMEOUT_MS` ishlatiladi.
 - `try_direct_url` — menu navigatsiyasi muvaffaqiyatsiz bo'lsa direct URL
   diagnostikasini yoqadi.
 - `previous_url` kontraktga kirmaydi, saqlanmaydi va klassifikatsiyada

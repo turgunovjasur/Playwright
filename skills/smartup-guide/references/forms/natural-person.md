@@ -2,24 +2,37 @@
 
 ## Mundarija
 
+- [Quick Lookup](#quick-lookup)
+- [Screenshot Paths](#screenshot-paths)
+- [Known Locators](#known-locators)
+- [Flow And Tests](#flow-and-tests)
+- [Business Rules](#business-rules)
+- [Known Issues](#known-issues)
 - [URL Va Navigation](#url-va-navigation)
 - [Test Arxitekturasi](#test-arxitekturasi)
 - [Field Bilimlari](#field-bilimlari)
 - [List Va View Tekshiruv](#list-va-view-tekshiruv)
 - [Debug Notes](#debug-notes)
 
-## URL Va Navigation
+## Quick Lookup
 
-### Natural person add
+### URL Va Navigation
+
+#### Natural person add
 Tags: natural-person, setup, form, navigation
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/smoke/test_setup/flow_setup/flow_natural_person.py:9`; `tests/smoke/test_setup/test_0_setup_runner.py`
 - Navigation: `Справочники` -> `Физические лица` -> `Создать`.
 - URL pattern: `/anor/mr/person/natural_person+add`.
 - Test fayli: `tests/smoke/test_setup/test_05_natural_person.py`.
 - Runner: `tests/smoke/test_setup/test_0_setup_runner.py`, step `05 - Natural Person` va `20 - Natural Person For Client 1`.
 
-## Test Arxitekturasi
+## Flow And Tests
 
-### Alohida natural person flow
+### Test Arxitekturasi
+
+#### Alohida natural person flow
 Tags: natural-person, legal-person, helper
 Status: code-confirmed
 Verified: 2026-09-18
@@ -35,54 +48,46 @@ Source: `tests/smoke/test_setup/flow_setup/flow_natural_person.py`; `tests/smoke
   va person IDni saqlash testcase ichida qoladi.
 - Joriy smoke oqimi faqat `person_name` + `Код`ni ishlatadi; global
   `scope`/`mode` parametri yo'q.
-- **Base funksiya refactorlari (2026-07-01):**
-  - ✅ BAJARILDI: `_search_list(page, text)` olib tashlandi → hamma joyda `BasePage(page).grid_controller(search=text)` (aynan bir xil `o.searchValue` element+xatti-harakat; MCP tasdiqlagan). `_search_list` faqat shu faylda ishlatilgan edi.
-  - ✅ BAJARILDI: `create_natural_person` save flowi
-    `base.click(name="Сохранить", exact=True)` → `base.confirm_biruni()` →
-    `base.expect_page(heading="Физические лица")` ko'rinishida ochiq yoziladi.
-    `expect_page` loader overlay yo'qolishini ham kutgani uchun alohida
-    `wait_for_loader()` kerak emas.
-  - ✅ BAJARILDI (2026-07-14): `create_natural_person` va view tekshiruvi test faylidan `flow_natural_person.py` ga ko'chirildi; joriy `test_20_natural_person_for_client_1.py` boshqa test modulidan import qilmaydi.
+## Known Locators
 
-## Field Bilimlari
+### Field Bilimlari
 
-### Natural person add fields
+#### Natural person add fields
+
 Tags: natural-person, input, locator
-- Smoke branch: majburiy `d.first_name` (`Имя *`) va `d.code` (`Код`) to'ldiriladi. Qisqa entity patterni bo'yicha xodim kodi/nomi `c_n_p_pw{code}` / `natural_person-pw{code}`, client kodi/nomi `c_n_c_pw{code}` / `natural_client-pw{code}` bo'ladi. Keyingi user/contract/order flowlar ko'rinadigan nomni exact qidiradi.
-- **Locator tuzog'i (MCP 2026-06-30 tasdiqlangan):** `input(label="Имя")` shu formada xato tarzda `d.middle_name` ni topadi — "Имя" label DOMda first_name input'idan KEYIN keladi, shuning uchun `following::input` keyingi maydonga (middle_name) tushadi. Shu sabab `d.first_name` `input(ng_model="d.first_name", value=...)` (ng-model orqali) bilan to'ldiriladi. `input(label="Код")` esa to'g'ri `d.code` ga tushadi.
-- **"Имя" — b-input, oddiy textbox emas (MCP 2026-07-01):** `Имя *` maydoni `b-input` (placeholder "Поиск...", ism autocomplete). Shuning uchun `following::input` label bilan noaniq — ng-model ishonchli. `Фамилия`, `Отчество`, `Код` esa oddiy `textbox`.
-- **`Клиент` toggle FILIALga bog'liq (user tuzatishi 2026-07-01):** `Клиент` maydoni add formada faqat TO'G'RI filialga o'tilганda ko'rinadi. Shu sabab `test_natural_person`/`test_natural_person_for_client_1` wrapperlari `run_*` dan oldin `switch_filial(page, name=f"filial-pw{code}")` qiladi (setup zanjirida `run_room` allaqachon shu filialга o'tган). MCP tekshiruvida `red_test` ning DEFAULT filialida edim (switch_filial qilmagan) — shuning uchun `Клиент` ko'rinmadi va DOMda faqat `d.state` (`Активный`) hamda chat-widget `a.feedback.anonymous` checkboxlari bor edi. Xulosa: bu company-config emas, filial masalasi — standalone debug/MCP'da avval to'g'ri filialга `switch_filial` qilinmasa `Клиент` bo'lmaydi. Client testni standalone run qilганда `NEW_CODE=0` bilan mavjud filial-pw{code} kerak.
-- **Counterparty toggle'lari — base checkbox() (MCP, 2026-07-01/07-02):**
-  to'g'ri `filial-pw{code}`da add formada 4 ta `<label>` ichidagi checkbox bor:
-  `d.state` (`Активный`, default checked), `d.is_supplier` (`Поставщик`),
-  `d.is_client` (`Клиент`), `d.is_employee` (`Сотрудник`). Har biri `<label>`
-  ichida `input[type=checkbox]` + `<t>` label matnli. `Клиент` uchun
-  `BasePage(page).checkbox(label="Клиент", checked=True)`, `Активный` uchun
-  `checkbox(label="Активный", expect_checked=True)` ishlatiladi.
-  - ⚠️ **BUG topildi + tuzatildi (2026-07-02):** eski `_field_locator_by_label(target="switch")` `ancestor::label//input` ishlatardi va `<label>` element uchun (self hisobga olinmagani sabab) `following::` keyingi checkbox'ga siljib, `checkbox(label="Клиент")` aslida `d.is_employee` (Сотрудник = worker) ni tanlardi. MCP'da 4-ta toggle HAMMASI 1 ga siljigani tasdiqlandi. `checked=`+`expect_checked=` bir xil xato elementга tushgani uchun test "yashil" bo'lib bug maskalanardi. Tuzatish `base_page.py:521` → `(ancestor-or-self::label[1]//input[@type='checkbox'])[1]`. To'liq tafsilot: `references/ui-patterns.md` "Switch-label wrapper resolution bug + fix".
-- `Регион` legal persondagi kabi b-tree search (`_$bTree.searchValue`); avval input click/focus qilinadi, keyin `Ташкент` qidirilib hint ichidagi exact text/label yoki `.jstree-anchor` orqali `город Ташкент`/`Ташкент` optioni tanlanadi.
-- Add forma to'liq maydon inventari (MCP 2026-07-01): Пол (radio Мужской/Женский), Фамилия, Имя*, Отчество, Код, Дата рождения, Серийный номер паспорта (AA + 7 raqam), Статус (checkbox Активный), Регион, Адрес, Почтовый адрес, Юридическое лицо, Телефон, ИНН/ПНФЛ (+Поиск btn), GPS координаты, Телеграм, Email, Ответственный, Веб-сайт; pastda tablar: Характеристики (Группа/Категория/Тип), Расчетный счет, Файлы, Примечание.
-- Add forma screenshot: `references/forms/screenshots/natural-person/add-form-red_test-2026-07-01.png`.
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/smoke/test_setup/flow_setup/flow_natural_person.py:31`
+- `AutoBasePage.autocomplete(label="Имя", ng_model="d.first_name", ...)` person qidiruvining `:table_persons` javobini kuzatadi. `Код` alohida input. `client=True` bo‘lganda `Клиент` belgilanadi, har ikki oqim `Статус`ni tekshiradi.
+- Eski add formasidagi ko‘rinadigan maydonlar [arxiv rasmida](screenshots/natural-person/add-form-red_test-2026-07-01.png) qayd etilgan.
 
-## List Va View Tekshiruv
+##### Filial konteksti
+Status: user-reported
+Verified: pending
+Source: user — 2026-07-01, `Клиент` maydonining filialga bog‘liqligi bo‘yicha tuzatish
+- User kuzatuvida client belgisining ko‘rinishi tanlangan filialga bog‘liq. Xodim va mijozning standalone wrapperlari `filial-pw{code}`ga o‘tadi.
 
-### Natural person list
+## Business Rules
+
+### List Va View Tekshiruv
+
+#### Natural person list
+
 Tags: natural-person, list, grid, assert
-- Default list gridda `Дата создания`, `Название`, `Пол`, `Дата рождения`, `Группа`, `Категория`, `Статус` ko'rinadi; `Код` default ko'rinmaydi.
-- Test global searchda code bo'yicha filter qilishi mumkin, lekin row assert ko'rinadigan nom (`natural_person-pw{code}`, `natural_client-pw{code}` yoki director F.I.O.) va `Активный` statusni tekshiradi.
-- Row tanlanганда inline action toolbar chiqadi: `Просмотр` / `Изменить` / `Неактивный` / `Удалить`.
-- **Search dublikati (MCP 2026-07-01 tasdiqlangan):** listdagi qidiruv testda `_search_list` (`get_by_role("searchbox", name="Поиск")`) bilan qilinadi, lekin bu aynan `BasePage.grid_controller(search=text)` ishlatadigan element — `b-grid-controller` ichidagi `input[ng-model="o.searchValue"]` (`type=search`, placeholder "Поиск...", ko'rinadigan). Sahifadagi ikkinchi input `a.search.value` (placeholder "Поисковый запрос", `type=text`, KO'RINMAS/global) `searchbox` roliga kirmaydi, shuning uchun `get_by_role("searchbox")` faqat grid controller inputiga tushadi. Xulosa: `_search_list` = `grid_controller(search=)` dublikati, base funksiya bilan almashtirilsa bo'ladi.
-- View tugmasi: row tanlangandan keyin `Просмотр`.
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/smoke/test_setup/test_05_natural_person.py:43`; `tests/smoke/test_setup/test_20_natural_person_for_client_1.py:42`
+- Ikkala test listda `grid_controller(search=person_code)` orqali filtrlab, ko‘rinadigan ism va `Активный`ni bir qatorda tekshiradi. View ochishda aynan ismli qator tanlanadi va `Просмотр` bosiladi.
 
-### Natural person view
+#### Natural person view
+
 Tags: natural-person, view, assert
-- View URL pattern: `/anor/mr/person/natural_person_view?person_id=<id>`.
-- View heading bilan tab heading birga chiqishi mumkin; heading assertda `get_by_role("heading").filter(has_text="Физическое лицо (просмотр)")` ishlatiladi.
-- View strukturasi (MCP 2026-07-01): yuqorida `Закрыть` tugmasi; summary blok `nom (id)` + `Активный`; chap tomonda Пол/Имя/Фамилия/Отчество/Код/Дата рождения; ichki tablar: `Основная информация`, `Детали`, `Характеристика контрагента`, `Расчетный счет`, `Файлы`. Smoke `BasePage(page).text(full_name, "Активный")` — default `b-page` ichida nom va statusni tekshiradi (yetarli).
-- Joriy view assert yaratilgan person name va `Активный` statusini tekshiradi.
-- `natural_client-pw{code}` case uchun person viewdan keyin `Клиенты` listida ham client nomi borligi tekshiriladi.
+Status: code-confirmed
+Verified: 2026-11-16
+Source: `tests/smoke/test_setup/flow_setup/flow_natural_person.py:51`; `tests/smoke/test_setup/test_20_natural_person_for_client_1.py:47`; `tests/smoke/test_setup/test_05_natural_person.py:47`
+- View headingi `Физическое лицо (просмотр)`, routeda `natural_person_view` keladi. Testlar nom va `Активный`ni `include_input_values=True` bilan tekshiradi. Client testi keyin `Справочники → Клиенты` ro‘yxatida yaratilgan ismni qidiradi.
 
-### User person IDni view URLdan olish
+#### User person IDni view URLdan olish
 
 Tags: natural-person, user, view, id, data-store
 Status: code-confirmed
@@ -94,7 +99,7 @@ Source: user; `tests/smoke/test_setup/test_05_natural_person.py`
 - Setup test view URLdagi `person_id`ni `data_store.json.user_person_id`
   kaliti bilan saqlaydi; bu client person IDdan alohida.
 
-### Client person IDni view URLdan olish
+#### Client person IDni view URLdan olish
 
 Tags: natural-person, client, view, id, data-store
 Status: live-ui-confirmed
@@ -106,25 +111,16 @@ Source: live UI; `tests/smoke/test_setup/test_20_natural_person_for_client_1.py`
 - Client setup test view ochilgach `person_id`ni musbat integer sifatida
   tekshiradi va `data_store.json.client_person_id`ga saqlaydi.
 
-## Debug Notes
+## Known Issues
 
-### 2026-06-02 list/view verification
-Tags: natural-person, client, list, view, run-result
-- `test_01_authorization` + `test_03_filial` + `test_06_natural_person` + `test_18_natural_person_for_client_1` saqlangan code (`NEW_CODE=0`) va headless rejimda passed: 4 passed in 27.74s.
-- Natural person va natural client list/view assertlari o'tgan; session code durable bilim sifatida saqlanmaydi.
+### Debug Notes
 
-### 2026-07-01 base-funksiya refactor verification
-Tags: natural-person, client, refactor, run-result
-- `_search_list` → `grid_controller(search=)` va save flow refactoridan keyin:
-  `test_01_authorization` + `test_02_legal_person` + `test_03_filial` +
-  `test_04_room` + `test_06_natural_person` +
-  `test_18_natural_person_for_client_1` = **6 passed in 71.48s** (existing
-  company `red_test`, yangi code `608492`, headed).
-- `test_18` o'tishi `Клиент` toggle FILIALga bog'liqligini empirik tasdiqladi: `run_room` (test_04) `filial-pw{code}` ga o'tгач, `create_natural_person(client=True)` da `Клиент` ko'rindi va bosildi.
+<a id="2026-06-02-listview-verification"></a>
+<a id="2026-07-01-base-funksiya-refactor-verification"></a>
+<a id="2026-07-14-reusable-flow-refactor-verification"></a>
 
-### 2026-07-14 reusable flow refactor verification
-Tags: natural-person, flow, duplicate-code, run-result
-- `create_natural_person` va `check_natural_person_view` `tests/smoke/test_setup/flow_setup/flow_natural_person.py` ga ajratilgandan keyin mavjud filialda noyob person name/code bilan create -> list search -> row assert -> view assert oqimi **1 passed in 22.38s** (`NEW_CODE=0`, headless).
-- `client=True` branch ham noyob person name/code bilan create -> natural person list/view -> `Клиенты` list assert oqimida **1 passed in 23.93s** (`NEW_CODE=0`, headless).
-- Refactordan oldingi `natural_person_pw{code}` formatini saqlangan eski `code` bilan standalone qayta ishlatish serverda `Найден дубликат кода` xatosini bergan. Bu locator/refactor xatosi emas.
-- Oraliq uzun `code_natural_person_pw{code}` / `code_natural_client_pw{code}` formatida aynan `test_05_natural_person.py` saqlangan code (`NEW_CODE=0`) va headless rejimda **1 passed in 28.06s**, joriy `test_20_natural_person_for_client_1.py` esa **1 passed in 24.03s**. Keyin loyiha qoidasi bo'yicha ular qisqa `c_n_p_pw{code}` / `c_n_c_pw{code}` formatiga o'tkazildi.
+Eski create/view helperlari hamda oldingi runlar uchun [tarixiy qayd](../history.md#forma-testlarining-eski-qamrovi). Joriy client oqimida kerakli filial tanlangani va `Клиент` belgilangani yakunda `Клиенты` ro‘yxatidagi qator bilan tekshiriladi.
+
+## Screenshot Paths
+
+[Legacy yaratish formasining boshlang‘ich holati](screenshots/natural-person/add-form-red_test-2026-07-01.png).

@@ -1,0 +1,23 @@
+{
+  "form_slug": "legal-person",
+  "state": "Юридическое лицо (просмотр) on Контактные лица, showing one contact row with position, phone, date of birth and note.",
+  "url_pattern": "/anor/mr/person/legal_person_view?person_id=<person_id>",
+  "viewport": null,
+  "screenshot_pixels": {
+    "width": 2880,
+    "height": 1618
+  },
+  "entity": "<legal_person_name>",
+  "created_at": null,
+  "browser": "Playwright Chromium",
+  "dynamic_areas": [
+    "Legal-person summary, ID and identifiers",
+    "Contact names, positions, phones, dates of birth and notes",
+    "Support chat widget"
+  ],
+  "source": "skills/smartup-guide/references/forms/legal-person.md",
+  "supporting_sources": [
+    "skills/smartup-guide/references/forms/screenshots/legal-person/legal-person__view-state.json",
+    "2f7559e3:scripts/debug_legal_person_screenshots.py"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "form_slug": "init-balance",
+  "state": "Ввод начальных остатков ТМЦ (создание) with the warehouse and currency selected and one product row showing quantity, price and total.",
+  "url_pattern": "/anor/mkw/init_balance/init_inventory_balance+add",
+  "viewport": null,
+  "screenshot_pixels": {
+    "width": 2400,
+    "height": 1466
+  },
+  "entity": "product-pw{code}",
+  "created_at": "2026-07-09",
+  "browser": null,
+  "dynamic_areas": [
+    "Document number and date",
+    "Warehouse, currency, product row and totals",
+    "Support chat widget"
+  ],
+  "source": "skills/smartup-guide/references/forms/init-balance.md"
+}

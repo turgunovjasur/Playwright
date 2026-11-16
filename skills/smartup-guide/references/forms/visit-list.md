@@ -68,7 +68,7 @@ Source: live UI `*/a2/trade/tvt/visit_list`
 
 ### Row action va view
 
-Status: live-ui-and-test-confirmed
+Status: live-ui-confirmed
 Verified: 2026-08-27
 Source: live UI va dedicated Visit runner
 

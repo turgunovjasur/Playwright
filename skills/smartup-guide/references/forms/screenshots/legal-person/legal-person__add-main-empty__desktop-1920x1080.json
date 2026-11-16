@@ -1,0 +1,22 @@
+{
+  "form_slug": "legal-person",
+  "state": "Юридическое лицо (создание) with empty identity and contact fields, Активный enabled and Характеристики selected.",
+  "url_pattern": "/anor/mr/person/legal_person+add",
+  "viewport": null,
+  "screenshot_pixels": {
+    "width": 2880,
+    "height": 2052
+  },
+  "entity": null,
+  "created_at": null,
+  "browser": "Playwright Chromium",
+  "dynamic_areas": [
+    "Legal-person form fields",
+    "Support chat widget"
+  ],
+  "source": "skills/smartup-guide/references/forms/legal-person.md",
+  "supporting_sources": [
+    "skills/smartup-guide/references/forms/screenshots/legal-person/legal-person__view-state.json",
+    "2f7559e3:scripts/debug_legal_person_screenshots.py"
+  ]
+}

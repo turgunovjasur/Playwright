@@ -34,7 +34,7 @@ Avval `test-results/logs/` dagi tegishli log faylni o'qi.
 | `ElementNotFound` | Element yo'q | Page state tekshir, flow tartibini ko'r |
 | `AssertionError` | Qiymat mos kelmayapti | Kutilgan vs haqiqiy qiymatni solishtir |
 | `AssertionError: ... buzilgan JSON` (`JSONDecodeError` cause) | `data_store.json` buzilgan | Backup qil; qayta yaratish runi faqat aniq so'ralganda |
-| `pytest.exit` | `code` fixture topilmadi | User runni so'ragan bo'lsa avval `test_0_setup_runner.py` yoki `run_tests.sh` ishlatilsin |
+| `pytest.exit` (`code` fixture) | UI baseline to‘liq emas yoki boshqa muhitga tegishli | Xabardagi sababni va joriy server/company mosligini tekshir. Baseline tayyorlash uchun run ruxsati `run-smoke` bo‘yicha olinadi. |
 
 ### 3. Smartup kontekstini o'qi
 
@@ -75,6 +75,5 @@ Yechim: <nima qilish kerak>
 
 ## Bilimni yangilash
 
-Yangi, tasdiqlangan Smartup xatti-harakati topilsa `learn` qoidasi bo'yicha mos
-dossier/reference'ga provenance bilan yoz. Vaqtinchalik failure, taxmin yoki
-konkret session qiymatini doimiy qoida sifatida saqlama.
+Yangi xatti-harakatni dalili va owneri bilan bildir. Bilim bazasiga yozish
+tasdiqlangan bo‘lsa [learn](../learn/SKILL.md) orqali saqla.
