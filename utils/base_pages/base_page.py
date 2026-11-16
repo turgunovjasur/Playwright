@@ -86,6 +86,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def click(
         self,
         name=None,
@@ -126,6 +127,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def choice(self, label, option, *, index=0, root=None, timeout=UI_TIMEOUT_MS):
         """Label bilan bog'langan segmented button optionni tanlaydi."""
         self._validate_options(
@@ -271,6 +273,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def checkbox(
         self,
         locator=None,
@@ -334,6 +337,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def radio(
         self,
         label,
@@ -681,6 +685,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def switch_filial(self, name=None, timeout=UI_TIMEOUT_MS, *, first_filial=False):
         self._validate_options(
             'switch_filial',
@@ -738,6 +743,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def confirm_biruni(self, expected_text=None, button_name="да"):
         """Biruni confirm modalini barqaror tasdiqlaydi."""
         matcher = button_name if isinstance(button_name, re.Pattern) else re.compile(
@@ -757,6 +763,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def close_biruni_alert(self, *expected_text):
         """Ko'rinadigan Biruni error alertini tekshiradi va yopadi."""
         error_text = re.compile(r"ошибка|error|URL\s*:|Uri\s*:", re.IGNORECASE)
@@ -869,6 +876,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def grid_cell(self, row, index, *, expect_value=_UNSET, return_value=False, remove_spaces=False):
         """``grid()`` qaytargan row ichidagi bitta cellni tekshiradi yoki o'qiydi.
 
@@ -903,6 +911,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def grid_controller(
         self,
         *,
@@ -967,6 +976,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def grid_setting(self, *, menu_name, field_name, search_name=None, timeout=UI_TIMEOUT_MS):
         """Grid settingda ustunni va ixtiyoriy search maydonini yoqadi.
 
@@ -1029,6 +1039,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def text(self, *values, root="b-page", timeout=UI_TIMEOUT_MS, include_input_values=False):
         """Ko'rinadigan root ichida berilgan matnlar borligini tekshiradi.
 
@@ -1118,6 +1129,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def date_picker(
         self,
         label,
@@ -1184,6 +1196,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def multiselect(
         self,
         label=None,
@@ -1536,6 +1549,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def b_input(
         self,
         label=None,
@@ -1695,6 +1709,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def ui_select(
         self,
         label=None,
@@ -1789,6 +1804,7 @@ class BasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def input(
         self,
         locator=None,

@@ -15,7 +15,7 @@ _PAGE_ATTR = "_smartup_web_context"
 
 
 def begin_test(nodeid):
-    return _CURRENT.set({"nodeid": nodeid, "code": None, "contexts": [], "saved": {}, "used": {}, "observed": [], "outcomes": {}, "notes": []})
+    return _CURRENT.set({"nodeid": nodeid, "code": None, "contexts": [], "saved": {}, "used": {}, "observed": [], "actions": [], "outcomes": {}, "notes": []})
 
 
 def end_test(token):

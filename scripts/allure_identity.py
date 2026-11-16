@@ -6,6 +6,7 @@ import ast
 import hashlib
 import json
 from datetime import datetime, timezone
+from html import escape
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
@@ -49,13 +50,32 @@ def forms_history_id(full_name, parameters):
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
-def normalize_forms_results(results_dir: Path):
-    """Back up and normalize identity metadata without changing test outcomes."""
+def _show_skip_reason(result):
+    if result.get("status") != "skipped":
+        return False
+    message = (result.get("statusDetails") or {}).get("message") or ""
+    reason = message.removeprefix("Skipped:").strip() or "Pytest skip sababini ko‘rsatmagan."
+    if result.get("descriptionHtml"):
+        field = "descriptionHtml"
+        prefix = f"<p><strong>Skip sababi</strong></p><pre>{escape(reason)}</pre>"
+    else:
+        field = "description"
+        prefix = "**Skip sababi**\n\n" + "\n".join("    " + line for line in reason.splitlines())
+    previous = result.get(field) or ""
+    if previous == prefix or previous.startswith(prefix + "\n\n"):
+        return False
+    result[field] = prefix + ("\n\n" + previous if previous else "")
+    return True
+
+
+def prepare_report_results(results_dir: Path):
+    """Prepare skip descriptions and Forms identities, backing up changed records."""
     results_dir = Path(results_dir)
     changes = []
     for path in sorted(results_dir.glob("*-result.json")):
         original = path.read_bytes()
         result = json.loads(original)
+        changed = _show_skip_reason(result)
         history_id = forms_history_id(result.get("fullName"), result.get("parameters", []))
         if history_id is not None and (
             result.get("historyId") != history_id
@@ -68,6 +88,8 @@ def normalize_forms_results(results_dir: Path):
             # changing only the Allure 2 historyId field has no effect there.
             for parameter in result.get("parameters", []):
                 parameter["excluded"] = True
+            changed = True
+        if changed:
             changes.append((path, original, result))
     if not changes:
         return 0, None

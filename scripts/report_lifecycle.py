@@ -99,11 +99,12 @@ def _open_report(root_dir, report_dir, env, *, dry_run, background):
     return 0
 
 
-def generate_report(root_dir, env, *, open_report=False, dry_run=False, background=False):
+def generate_report(root_dir, env, *, open_report=False, dry_run=False, background=False,
+                    results_dir=ALLURE_RESULTS_DIR, report_dir=ALLURE_REPORT_DIR):
     """Allure report yaratadi va so'ralganda mavjud ochish rejimida ko'rsatadi."""
     root_dir = Path(root_dir)
-    results_dir = root_dir / ALLURE_RESULTS_DIR
-    report_dir = root_dir / ALLURE_REPORT_DIR
+    results_dir = root_dir / results_dir
+    report_dir = root_dir / report_dir
     config_path = root_dir / ALLURE_CONFIG_PATH
     try:
         command = build_generate_command(results_dir, report_dir, config_path, project_root=root_dir)

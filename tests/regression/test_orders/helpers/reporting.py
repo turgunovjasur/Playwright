@@ -883,7 +883,7 @@ def enrich_results(directory, *, started_at_ms=None, context=None):
         for scope in scopes:
             for node in _walk(scope):
                 for a in node.get("attachments", []):
-                    if a.get("name") == "API response":
+                    if a.get("name") == "API response" or a.get("name", "").startswith("API request / response · "):
                         data = _read_attachment(directory, a)
                         if isinstance(data, dict):
                             journal.append({"step": safe_text(node.get("name", "Tayyorlov")),

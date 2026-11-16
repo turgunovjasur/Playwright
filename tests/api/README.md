@@ -18,8 +18,11 @@ Repo rootidan ishga tushirish:
 
 Konfiguratsiya mavjud loyiha tartibida: root `.env` ustun; u bo'lmasa
 `--url`, `--company-code`, `--company-password`, `--new-code` va environment.
-`USER_PASSWORD` majburiy. To'liq yangi setup uchun `NEW_CODE=1` ishlatiladi.
-Parol yoki cookie kodga va API Allure attachmentlariga yozilmaydi.
+`USER_PASSWORD` majburiy. To‘liq API setup runneri PyCharm yoki CLI orqali
+ishga tushirilganda avtomatik yangi kod oladi.
+Har bir HTTP chaqiruvining `API request / response` ilovasida URL, headerlar,
+so‘rov tanasi, javob statusi va tanasi ko‘rinadi. Test ishlatgan parol va
+cookie qiymatlarini ham hisobotni ochgan kishi ko‘ra oladi.
 Parol tasdiqlangach login qayta yuboriladi; browser networkdagi kabi cookie
 jar saqlanadi, alohida server sessiyasi ochilmaydi.
 
@@ -46,9 +49,9 @@ Yakka qadam uchun `.env`da `NEW_CODE=0` qilib, oldingi API baseline'dan foydalan
 ./.venv/bin/python -m pytest -c tests/api/pytest.ini tests/api/setup/test_24_balance.py
 ```
 
-Yangi to‘liq setup uchun yangi code ishlating. Mahsulot qadamlari mavjud exact code’ni qidirib, nomini tekshirgach qayta ishlatadi; bu barcha create qadamlari uchun umumiy deduplication degani emas. Avtomatik server cleanup yo‘q.
+Mahsulot qadamlari mavjud exact code’ni qidirib, nomini tekshirgach qayta ishlatadi; bu barcha create qadamlari uchun umumiy deduplication degani emas. Avtomatik server cleanup yo‘q.
 
-`NEW_CODE=1` eski API baseline’ni hash nomi bilan `baseline-backups/`ga saqlab, yangi IDlar to‘plamini boshlaydi. `NEW_CODE=0` faqat mos server/company baseline’ni qabul qiladi.
+To‘liq runner yoki `NEW_CODE=1` bilan tanlangan qadam eski API baseline’ni hash nomi bilan `baseline-backups/`ga saqlab, yangi IDlar to‘plamini boshlaydi. Alohida qadam `NEW_CODE=0` bilan faqat mos server/company baseline’ni qabul qiladi.
 
 ## Aksiyalar setupdan ajratilgan — 04.11.2026
 

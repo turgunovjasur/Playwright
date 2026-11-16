@@ -32,17 +32,31 @@ def report_web_action(method):
     @wraps(method)
     def wrapped(self, *args, **kwargs):
         # Click navigatsiya qilishi mumkin: grid/form joyini amaldan oldin olamiz.
+        state = current_test()
+        if state is None:
+            return method(self, *args, **kwargs)
         location = None
-        if current_test() is not None:
-            try:
-                location = page_location(self.page)
-            except Exception:
-                reporting_note("Ayrim forma yo'llarini qayd etib bo'lmadi.")
-        result = method(self, *args, **kwargs)
-        if current_test() is None:
-            return result
+        action = None
         try:
+            location = page_location(self.page)
             arguments = signature.bind(self, *args, **kwargs)
+            inputs = {key: str(value) for key, value in arguments.arguments.items()
+                      if key != "self" and value is not None}
+            action = {"name": method.__name__, "inputs": inputs, "location": location}
+            state["actions"].append(action)
+        except Exception:
+            reporting_note("Ayrim UI amallarining parametrlarini qayd etib bo'lmadi.")
+        try:
+            result = method(self, *args, **kwargs)
+        except BaseException as error:
+            if action is not None:
+                action["error"] = str(error)
+            raise
+        if action is None:
+            return result
+        if isinstance(result, (str, int, float)):
+            action["result"] = result
+        try:
             arguments.apply_defaults()
             values = arguments.arguments
             if method.__name__ == "navigate_to":

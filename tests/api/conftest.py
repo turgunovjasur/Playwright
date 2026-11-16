@@ -4,14 +4,17 @@ import hashlib
 import json
 import os
 import random
+import re
 import time
 from pathlib import Path
 
 import pytest
 
 from scripts.api_setup_bridge import _expected_steps, record_setup_success
+from scripts.report_lifecycle import generate_report
 from tests.api.state import SetupState
 from tests.shared import config as run_config
+from utils.report_safety import safe_text
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -48,6 +51,7 @@ def pytest_configure(config):
         # setup results. A broad tests/api selection is deliberately ambiguous.
         raise pytest.UsageError("Setup va tashqi kurs integratsiyasini alohida runnerlarda Run qiling")
     config._api_setup_failure = None
+    config._api_failure_summary = ""
     config._api_default_baseline = (
         Path(config.getoption("--api-data-file")).resolve()
         == (ROOT / "test-results/api/data_store.json").resolve()
@@ -87,13 +91,42 @@ def pytest_sessionfinish(session, exitstatus):
     outcome = yield
     outcome.get_result()
     config = session.config
-    if config.option.collectonly or session.exitstatus != 0 or not config._api_default_baseline:
+    if config.option.collectonly or config._api_external_run:
         return
-    runner, expected = _expected_steps(ROOT, config._api_setup_environment)
+    if session.exitstatus == 0 and config._api_default_baseline:
+        _record_completed_setup(session)
+
+    if run_config.env_flag("SMARTUP_RUNNER"):
+        return
+    if (session.testscollected and run_config.env_flag("OPEN_REPORT")
+            and not run_config.env_flag("DEFER_ALLURE_REPORT")):
+        results = Path(config.option.allure_report_dir).resolve()
+        report_dir = ROOT / "test-results/api/allure-report"
+        env = os.environ.copy()
+        env.setdefault("ALLURE_HISTORY_PATH", str(ROOT / "test-results/api/allure-history/history.jsonl"))
+        if results.is_relative_to(report_dir.resolve()):
+            print("[ALLURE] Natijalar va HTML hisobot uchun alohida kataloglar kerak.")
+        else:
+            generate_report(ROOT, env, results_dir=results, report_dir=report_dir,
+                            open_report=True, background=True)
+    # PyCharm passes --no-summary, so pytest_terminal_summary is never called.
+    if config._api_failure_summary:
+        terminal = config.pluginmanager.getplugin("terminalreporter")
+        if terminal:
+            terminal.write_sep("=", "API setup xatosi", red=True)
+            terminal.write_line(config._api_failure_summary)
+
+
+def _is_complete_setup(session):
+    runner, expected = _expected_steps(ROOT, session.config._api_setup_environment)
     names = [item.name for item in session.items]
-    if (len(names) != len(expected) or set(names) != expected
-            or any(item.path.resolve() != runner.resolve() for item in session.items)):
-        # Leaf yoki tanlangan qadamlarni run qilish mumkin, lekin ular to‘liq setup emas.
+    return (len(names) == len(expected) and set(names) == expected
+            and all(item.path.resolve() == runner for item in session.items))
+
+
+def _record_completed_setup(session):
+    config = session.config
+    if not _is_complete_setup(session):
         return
     try:
         record_setup_success(
@@ -132,6 +165,33 @@ def pytest_runtest_makereport(item, call):
     report = outcome.get_result()
     if report.failed and item.config._api_setup_failure is None:
         item.config._api_setup_failure = item.nodeid
+        if not item.config._api_external_run and not run_config.env_flag("SMARTUP_RUNNER"):
+            item.config._api_failure_summary = _failure_summary(item, call, report)
+
+
+def _failure_summary(item, call, report):
+    listener = item.config.pluginmanager.getplugin("allure_listener")
+    result = listener.allure_logger.get_test(None) if listener else None
+    title = result.name if result and result.name else item.name
+    phases = {"setup": "Testni tayyorlash", "call": "Testni bajarish", "teardown": "Testni yakunlash"}
+    path = []
+    steps = result.steps if result and report.when == "call" else []
+    while steps:
+        failed = next((step for step in reversed(steps) if step.status in {"failed", "broken"}), None)
+        if failed is None:
+            break
+        path.append(failed.name)
+        steps = failed.steps
+    if call.excinfo:
+        reason = str(call.excinfo.value) or call.excinfo.typename
+    else:
+        reason = report.longreprtext
+    http_error = re.fullmatch(r"POST (\S+): HTTP (\d{3})(.*)", reason)
+    if http_error:
+        endpoint, status, detail = http_error.groups()
+        reason = f"Server POST {endpoint} so‘roviga HTTP {status} qaytardi.{detail}"
+    step = " → ".join(path) or phases[report.when]
+    return f"Test: {safe_text(title)}\nQadam: {safe_text(step)}\nXato: {safe_text(reason).strip()[:800]}"
 
 
 def pytest_runtest_setup(item):
@@ -140,14 +200,14 @@ def pytest_runtest_setup(item):
 
 
 @pytest.fixture(scope="session")
-def api_setup(pytestconfig):
+def api_setup(pytestconfig, request):
     path = Path(pytestconfig.getoption("--api-data-file")).resolve()
     ui_store = (ROOT / "test-results/data/data_store.json").resolve()
     if path == ui_store:
         raise pytest.UsageError("--api-data-file must not overwrite the UI data_store.json")
     url = os.environ["COMPANY_URL"].rstrip("/")
     company = os.environ["COMPANY_CODE"]
-    if run_config.env_flag("NEW_CODE"):
+    if run_config.env_flag("NEW_CODE") or _is_complete_setup(request.session):
         if path.exists():
             previous = path.read_bytes()
             backups = path.parent / "baseline-backups"

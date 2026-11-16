@@ -1,12 +1,10 @@
 """Biruni HTTP protocol observed in the setup browser network trace."""
 
-import json
 from html.parser import HTMLParser
 from urllib.parse import urlsplit
 
-import allure
-
 from tests.smoke.test_groups.test_visit_grup.flow_visit.base_api import APIError, BaseAPI
+from utils.report_safety import safe_text
 
 
 class SmartupAPI(BaseAPI):
@@ -36,17 +34,8 @@ class SmartupAPI(BaseAPI):
         else:
             kwargs["json"] = {} if payload is None else payload
         response = self.post("b/" + endpoint, **kwargs)
-        # Never attach cookies, credentials, request bodies or raw server errors.
-        allure.attach(
-            json.dumps({"method": "POST", "endpoint": endpoint,
-                        "status": response.status_code}, ensure_ascii=False),
-            name="API response", attachment_type=allure.attachment_type.JSON,
-        )
         if response.status_code != 200:
-            # Only this fixed, credential-free server message is safe to expose.
-            license_message = "Нет лицензии для входа в систему!"
-            reason = f" ({license_message})" if response.status_code == 401 and license_message.casefold() in response.text.casefold() else ""
-            raise APIError(f"POST {endpoint}: HTTP {response.status_code}{reason}")
+            raise _http_error(response, endpoint)
         if not response.text.strip():
             return None
         try:
@@ -54,7 +43,8 @@ class SmartupAPI(BaseAPI):
         except ValueError:
             raise APIError(f"POST {endpoint}: expected JSON/empty body, received non-JSON") from None
         if isinstance(result, dict) and (result.get("error") or result.get("errors")):
-            raise APIError(f"POST {endpoint}: server returned an application error")
+            reason = safe_text(response.text)
+            raise APIError(f"POST {endpoint}: server returned an application error" + (f" — {reason}" if reason else ""))
         if isinstance(result, list) and result and result[0] == "(^_^)":
             if len(result) < 3:
                 raise APIError(f"POST {endpoint}: incomplete model envelope")
@@ -138,11 +128,8 @@ class SmartupAPI(BaseAPI):
                     "-lang_code": "ru", **parameters},
             allow_redirects=False,
         )
-        allure.attach(json.dumps({"method": "GET", "endpoint": endpoint,
-                                  "status": response.status_code}),
-                      name="API report", attachment_type=allure.attachment_type.JSON)
         if response.status_code != 200:
-            raise APIError(f"GET {endpoint}: HTTP {response.status_code}")
+            raise _http_error(response, endpoint)
         parser = _ReportRows()
         parser.feed(response.text)
         if not parser.rows:
@@ -151,6 +138,11 @@ class SmartupAPI(BaseAPI):
 
     def close(self):
         self.session.close()
+
+
+def _http_error(response, endpoint):
+    reason = safe_text(response.text)
+    return APIError(f"{response.request.method} {endpoint}: HTTP {response.status_code}" + (f" — {reason}" if reason else ""))
 
 
 def require_fields(actual, **expected):

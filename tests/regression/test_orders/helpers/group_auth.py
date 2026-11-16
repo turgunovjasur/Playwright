@@ -134,6 +134,6 @@ class GroupLogin:
                 self.session_storage = page.evaluate('() => Object.fromEntries(Object.entries(sessionStorage).filter(([key]) => key !== "__pw_order_login_seeded"))')
                 self.storage = page.context.storage_state()
                 context = page_context(page)
-                self.metadata = {key: context.get(key, '') for key in ('server', 'company', 'profile', 'code')}
+                self.metadata = {key: context.get(key, '') for key in ('server', 'company', 'profile', 'code', 'login', 'password')}
                 self.metadata['authenticated_user_id'] = str(baseline['user_id'])
         _record(directory, {'kind': 'group_login', 'status': 'ready', 'mode': mode, 'duration_seconds': round(monotonic() - started, 3), 'business_requests_replayed': 0})

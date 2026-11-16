@@ -262,7 +262,8 @@ def record_test_report(item, report, call, data_path):
     sabab bo'lib qoladi; har fazaning xatosi pytest/Allure reportida saqlanadi.
     """
     try:
-        record_web_context_report(item, report, page_from_item(item))
+        page = item.funcargs.get("order_user_page") or item.funcargs.get("order_page") or page_from_item(item)
+        record_web_context_report(item, report, page)
     except Exception as error:
         reporting_warning(item.nodeid, "Webda tekshirish kontekstini yozish", error)
     result = getattr(item, _FINAL_RESULT_ATTR, {"event": "passed"})

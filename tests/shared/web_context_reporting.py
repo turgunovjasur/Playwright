@@ -1,7 +1,6 @@
 """Har testcase uchun bitta 'Webda tekshirish uchun' Allure attachmenti."""
 
 import os
-import re
 from html import escape
 
 import allure
@@ -10,12 +9,18 @@ from utils.base_pages.page_reporting import capture_filial
 from utils.report_context import current_test, page_location, remember_page, reporting_note
 
 
-_PRIVATE_KEY = re.compile(r"password|пароль|token|secret|session|cookie|authorization|api.?key|device_code", re.I)
 _LABELS = {
     "action_id": "Aksiya ID", "name": "Nom", "code": "Kod", "calc_kind": "Hisoblash turi",
     "rule_kind": "Shart turi", "threshold": "Chegara", "bonus_kind": "Bonus turi",
     "bonus_value": "Bonus qiymati", "product_name": "Mahsulot", "room_name": "Ish zonasi",
     "price_type_name": "Narx turi", "start_date": "Boshlanish sanasi", "end_date": "Tugash sanasi",
+}
+_ACTION_NAMES = {
+    "input": "Maydonni to‘ldirish yoki tekshirish", "b_input": "Maydondan qiymat tanlash",
+    "multiselect": "Ro‘yxatdan tanlash", "ui_select": "Ro‘yxatdan tanlash",
+    "click": "Bosish", "navigate_to": "Menyuni ochish", "navigate_to_form": "Formani ochish",
+    "switch_filial": "Filialni tanlash", "confirm_biruni": "Tasdiqlash",
+    "expect_page": "Sahifani tekshirish", "form_view": "Qiymatni tekshirish",
 }
 
 
@@ -28,12 +33,11 @@ def _table(values):
 
 
 def _data_rows(value, prefix=""):
-    """Faqat biznes data; credentiallar alohida aniq login bo'limida chiqadi."""
+    """Flatten the actual per-test values for the reproduction table."""
     if isinstance(value, dict):
         for key, item in value.items():
-            if not _PRIVATE_KEY.search(str(key)):
-                label = _LABELS.get(key, str(key))
-                yield from _data_rows(item, f"{prefix} / {label}" if prefix else label)
+            label = _LABELS.get(key, str(key))
+            yield from _data_rows(item, f"{prefix} / {label}" if prefix else label)
     elif isinstance(value, (list, tuple)):
         for index, item in enumerate(value, 1):
             yield from _data_rows(item, f"{prefix} [{index}]")
@@ -67,7 +71,9 @@ def render_context(state):
         html.append(f'<p><a href="{escape(server.rstrip("/") + "/login.html", quote=True)}" target="_blank" rel="noopener noreferrer">Smartup kirish sahifasini ochish</a></p>')
     for index, context in enumerate(state["contexts"], 1):
         html.append(f"<h3>Kirish ma'lumotlari {index if len(state['contexts']) > 1 else ''}</h3>")
-        identity_fields = [("Tasdiqlangan user ID", "authenticated_user_id")] if context.get("authenticated_user_id") else [("Login", "login"), ("Parol", "password")]
+        identity_fields = [("Login", "login"), ("Parol", "password")]
+        if context.get("authenticated_user_id"):
+            identity_fields.append(("Tasdiqlangan user ID", "authenticated_user_id"))
         fields = [("Profil", "profile"), ("Company", "company"), *identity_fields, ("Filial", "filial"), ("Kirish holati", "authorization")]
         html.append(_table([(label, context.get(key) or "Aniqlanmadi") for label, key in fields]))
     if not state["contexts"]:
@@ -75,8 +81,27 @@ def render_context(state):
     location = state.get("location", {})
     if location.get("menu") or location.get("route"):
         html.append("<h3>Webda topish</h3>" + _table([(label, location[key]) for label, key in [("Menyu", "menu"), ("Oxirgi forma yo'li", "route")] if location.get(key)] + list(location.get("ids", {}).items())))
+    if state.get("failure"):
+        html.append("<h3>Yiqilgan qadam</h3>" + _table(state["failure"].items()))
+    for title, key in [("Test parametrlari", "parameters"), ("Setup ma’lumotlari", "baseline")]:
+        if state.get(key):
+            html.append(f"<h3>{title}</h3>" + _table(_data_rows(state[key])))
+    if state.get("actions"):
+        html.append("<h3>Brauzerda takrorlash tartibi</h3><ol>")
+        for action in state["actions"]:
+            place = action["location"]
+            fields = [(label, place[k]) for label, k in [("Menyu", "menu"), ("Forma", "route"), ("Filial", "filial")] if place.get(k)]
+            fields.extend(place["ids"].items())
+            fields.extend(action["inputs"].items())
+            if "result" in action:
+                fields.append(("Natija", action["result"]))
+            if "error" in action:
+                fields.append(("Xato", action["error"]))
+            title = _ACTION_NAMES.get(action["name"], action["name"])
+            html.append(f"<li><b>{_text(title)}</b>{_table(fields)}</li>")
+        html.append("</ol>")
     for (file_name, key), value in state["saved"].items():
-        if key == "code" or _PRIVATE_KEY.search(key):
+        if key == "code":
             continue
         name = key if file_name == "data_store" else f"{file_name} / {key}"
         html.append(f"<h3>Test saqlagan ma'lumot: {_text(name)}</h3>" + _table(_data_rows(value, "" if isinstance(value, dict) else name)))
@@ -94,7 +119,7 @@ def render_context(state):
             values.extend((key, value) for key, value in row["ids"].items() if not isinstance(row["values"], dict) or key not in row["values"])
             html.append(f"<p>{_text(row['kind'])}</p>" + _table(values))
         html.append("</details>")
-    used = [(key, value) for (file_name, key), value in state["used"].items() if (file_name, key) not in state["saved"] and key != "code" and not _PRIVATE_KEY.search(key)]
+    used = [(key, value) for (file_name, key), value in state["used"].items() if (file_name, key) not in state["saved"] and key != "code"]
     if used:
         html.append("<details><summary>Test foydalangan mavjud ma'lumotlar</summary>")
         for key, value in used:
@@ -115,6 +140,20 @@ def record_report(item, report, page):
     state.setdefault("server", os.environ.get("COMPANY_URL", "Aniqlanmadi"))
     state.setdefault("company", os.environ.get("COMPANY_CODE", "Aniqlanmadi"))
     state["outcomes"][report.when] = report.outcome
+    if report.failed and "failure" not in state:
+        listener = item.config.pluginmanager.getplugin("allure_listener")
+        result = listener.allure_logger.get_test(None) if listener else None
+        steps = result.steps if result and report.when == "call" else []
+        path = []
+        while steps:
+            failed = next((s for s in reversed(steps) if s.status in {"broken", "failed"}), None)
+            if failed is None:
+                break
+            path.append(failed.name)
+            steps = failed.steps
+        message = getattr(report.longrepr, "reprcrash", None)
+        state["failure"] = {"Bosqich": report.when, "Qadam": " → ".join(path) or item.name,
+                            "Sabab": message.message if message else report.longreprtext}
     if report.when != "teardown":
         try:
             _capture_page(page)
@@ -123,4 +162,6 @@ def record_report(item, report, page):
     if item.funcargs.get("code") is not None:
         state["code"] = item.funcargs["code"]
     if report.when == "teardown":
+        state["parameters"] = getattr(getattr(item, "callspec", None), "params", {})
+        state["baseline"] = item.funcargs.get("business_baseline") or item.funcargs.get("api_business_baseline")
         allure.attach(render_context(state), name="Webda tekshirish uchun", attachment_type=allure.attachment_type.HTML)

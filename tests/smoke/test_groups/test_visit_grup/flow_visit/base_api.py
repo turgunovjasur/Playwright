@@ -4,6 +4,8 @@ from typing import Any
 
 import requests
 
+from utils.http_reporting import attach_exchange
+
 
 DEFAULT_API_TIMEOUT = (60, 240)
 
@@ -86,21 +88,26 @@ class BaseAPI:
         headers: dict[str, Any] = dict(self.default_headers)
         headers.update(dict(kwargs.pop("headers", {}) or {}))
         kwargs.setdefault("timeout", self.timeout)
+        url = self._url(request_path)
 
         try:
             response = self.session.request(
                 request_method,
-                self._url(request_path),
+                url,
                 headers=headers,
                 **kwargs,
             )
-        except requests.ConnectTimeout:
+        except requests.ConnectTimeout as exc:
+            attach_exchange(request_method, request_path, url, headers, kwargs, error=exc)
             timeout = kwargs.get("timeout")
             connect_timeout = timeout[0] if isinstance(timeout, tuple) else timeout
             raise APIConnectTimeout(method=request_method, path=request_path, connect_timeout=connect_timeout) from None
         except requests.RequestException as exc:
+            attach_exchange(request_method, request_path, url, headers, kwargs, response=exc.response, error=exc)
             raise APIError(f"API request bajarilmadi: {request_method} {request_path}") from exc
 
+        for hop in [*response.history, response]:
+            attach_exchange(request_method, request_path, url, headers, kwargs, response=hop)
         if response.status_code == 429:
             raise APIRateLimitError(self._retry_after(response))
         return response

@@ -165,6 +165,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def click(
         self,
         name=None,
@@ -345,6 +346,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def input(
         self,
         locator=None,
@@ -432,6 +434,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def b_input(
         self,
         label=None,
@@ -638,6 +641,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def date_picker(
         self,
         label,
@@ -779,6 +783,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def checkbox(
         self,
         locator=None,
@@ -853,6 +858,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def radio(
         self,
         label,
@@ -904,6 +910,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def choice(
         self,
         label,
@@ -927,6 +934,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def text(self, *values, root="b-page", timeout=UI_TIMEOUT_MS, include_input_values=False):
         """Matnni, opt-in bo'lsa stringlarni readonly input qiymatlarida ham tekshiradi."""
         self._validate_options(
@@ -1004,6 +1012,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def multiselect(
         self,
         label=None,
@@ -1150,6 +1159,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def ui_select(
         self,
         label=None,
@@ -1461,6 +1471,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def grid_controller(
         self,
         *,
@@ -1531,6 +1542,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def grid_setting(self, *, menu_name, field_name, search_name=None, timeout=UI_TIMEOUT_MS):
         """Grid settingda ustunni va ixtiyoriy search maydonini yoqadi.
 
@@ -1651,6 +1663,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def grid_cell(
         self,
         row,
@@ -1796,6 +1809,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def switch_filial(
         self,
         name=None,
@@ -1846,6 +1860,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def confirm_biruni(
         self,
         expected_text=None,
@@ -1870,6 +1885,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    @report_web_action
     def close_biruni_alert(self, *expected_text):
         """Ko'rinadigan A2/CDK error dialogini tekshiradi va yopadi."""
         alert = self._visible_error_locator(root="body")
