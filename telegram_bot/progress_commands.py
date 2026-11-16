@@ -87,6 +87,11 @@ def command_finish(args):
     result = "PASSED" if outcome in passed_values else "FAILED"
     if outcome == "cancelled":
         result = "CANCELLED"
+    for name, variable in (("API setup", "API_STATUS"), ("Order regression", "REGRESSION_STATUS")):
+        phase = state.get("phases", {}).get(name)
+        step_outcome = env_value(variable)
+        if phase and step_outcome in {"success", "failure", "cancelled"}:
+            phase["outcome"] = {"success": "passed", "failure": "failed", "cancelled": "cancelled"}[step_outcome]
     state["result"] = result
     state["status"] = ""
     state["current"] = ""

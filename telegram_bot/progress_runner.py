@@ -19,16 +19,20 @@ from .summaries import enrich_failed_result_from_summary, sync_summary_metrics
 
 
 def run_phase(command, phase, state):
-    """Sample the latest item even when pytest is silent during a long test."""
-    def publish(status, current="", *, boundary=False):
-        state.update(status=status, current=current)
+    """Sample an atomic pytest snapshot, including tests shorter than a poll."""
+    progress = state.setdefault("phases", {})[phase] = {"outcome": "running"}
+    state["status"] = phase
+
+    def publish(path, *, boundary=False):
+        if path.is_file():
+            progress.update(json.loads(path.read_text(encoding="utf-8")))
         save_state(state)
         if time.time() >= float(state.get("telegram_backoff_until") or 0):
             edit_progress(state, force=boundary)
 
-    publish(phase, boundary=True)
     with tempfile.TemporaryDirectory() as directory:
         path = Path(directory) / "current-test"
+        publish(path, boundary=True)
         env = os.environ.copy()
         env.pop("TELEGRAM_BOT_TOKEN", None)
         env.pop("TELEGRAM_CHAT_ID", None)
@@ -40,12 +44,9 @@ def run_phase(command, phase, state):
                     code = process.wait(timeout=PROGRESS_EDIT_INTERVAL_SECONDS)
                     break
                 except subprocess.TimeoutExpired:
-                    try:
-                        current = path.read_text(encoding="utf-8")
-                    except FileNotFoundError:
-                        current = ""
-                    publish(phase, current)
-    publish(f"{phase} {'xato bilan tugadi' if code else 'yakunlandi'}", boundary=True)
+                    publish(path)
+        progress["outcome"] = "failed" if code else "passed"
+        publish(path, boundary=True)
     return code
 
 

@@ -118,11 +118,6 @@ def _final_result_lines(state):
 
 
 def _generic_progress_lines(state):
-    if state.get("target") == MANUAL_SUITE:
-        lines = [f"Bosqich: {state['status']}"] if state.get("status") else []
-        if state.get("current"):
-            lines.append(f"Hozir tekshirilmoqda: {state['current']}")
-        return lines
     metrics = _result_metrics(state)
     lines = []
     test_started_epoch = state.get("test_started_epoch")
@@ -155,6 +150,38 @@ def _generic_progress_lines(state):
     if current:
         current = re.sub(r"^(\d+)\s*-\s*", r"\1 · ", current)
         lines.extend(["", "Hozir tekshirilmoqda:", current])
+    return lines
+
+
+def _manual_progress_lines(state):
+    phases = state["phases"]
+    lines = []
+    for name, phase in phases.items():
+        if phase["outcome"] == "running":
+            current = phase.get("current")
+            lines.append(f"▸ {name} · {current}" if current else f"▸ {name}")
+        elif phase["outcome"] == "passed":
+            lines.append(f"✓ {name} tugadi")
+        elif phase["outcome"] == "cancelled":
+            lines.append(f"⏹ {name} to‘xtatildi")
+        else:
+            lines.append(f"❌ {name} xato bilan tugadi")
+    if state.get("result") and "Order regression" not in phases and "API setup" in phases:
+        lines.append("⏭ Order regression boshlanmadi")
+    # During execution show the current phase. In the final message sum both.
+    shown = list(phases.values()) if state.get("result") else [next(reversed(phases.values()))]
+    total = sum(phase.get("total", 0) for phase in shown)
+    if total:
+        passed, failed, skipped = (sum(phase.get(key, 0) for phase in shown)
+                                   for key in ("passed", "failed", "skipped"))
+        completed = passed + failed + skipped
+        filled = 10 * completed // total
+        bar = "▰" * filled + "▱" * (10 - filled)
+        lines.extend(["", f"{bar}  {completed}/{total} test yakunlandi",
+                      f"✅ {passed} passed · ❌ {failed} failed · ⏭ {skipped} skip"])
+        last_failed = next((phase["last_failed"] for phase in reversed(shown) if phase.get("last_failed")), "")
+        if last_failed:
+            lines.extend(["", f"❌ Yiqilgan test · {last_failed}"])
     return lines
 
 
@@ -246,7 +273,15 @@ def render_message(state):
         f"Suite: {target_suite_label(target)}",
     ]
 
-    if finished:
+    manual_progress = target == MANUAL_SUITE and state.get("phases")
+    if manual_progress:
+        lines = [server_host(str(state.get("server") or ""))]
+        if finished and result != "PASSED":
+            lines.append(title_line(state))
+        lines.extend(_manual_progress_lines(state))
+        if finished and not state.get("report_url"):
+            lines.extend(["", "Allure hisoboti mavjud emas. CI bosqichlarini run havolasidan ko‘ring."])
+    elif finished:
         lines.extend(["", *_finished_time_lines(state)])
         run_code = str(state.get("run_code") or "").strip()
         if run_code and run_code != "not found" and target != "forms":
@@ -256,7 +291,7 @@ def render_message(state):
             lines.extend(final_coverage_lines(state))
 
     expandables = []
-    if not finished:
+    if not finished and not manual_progress:
         lines.extend(["", *_progress_time_lines(state), ""])
         forms_lines = forms_progress_lines(state)
         lines.extend(forms_lines or _generic_progress_lines(state))
