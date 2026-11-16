@@ -33,6 +33,7 @@ def parse_args():
     update.add_argument("--current")
 
     run = subparsers.add_parser("run")
+    run.add_argument("--phase", choices=("API setup", "Order regression"))
     run.add_argument("command", nargs=argparse.REMAINDER)
 
     finish = subparsers.add_parser("finish")

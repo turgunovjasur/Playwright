@@ -3,16 +3,50 @@
 from __future__ import annotations
 
 import json
+import os
+from pathlib import Path
 import subprocess
 import sys
+import tempfile
 import time
 
-from .constants import EVENT_PREFIX
+from .constants import EVENT_PREFIX, PROGRESS_EDIT_INTERVAL_SECONDS
 from .formatting import _utc_now_text, now_tashkent
 from .paths import ROOT
 from .progress_delivery import edit_progress
 from .progress_state import load_state, save_state, sync_run_code_from_data_store, update_from_event
 from .summaries import enrich_failed_result_from_summary, sync_summary_metrics
+
+
+def run_phase(command, phase, state):
+    """Sample the latest item even when pytest is silent during a long test."""
+    def publish(status, current="", *, boundary=False):
+        state.update(status=status, current=current)
+        save_state(state)
+        if time.time() >= float(state.get("telegram_backoff_until") or 0):
+            edit_progress(state, force=boundary)
+
+    publish(phase, boundary=True)
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / "current-test"
+        env = os.environ.copy()
+        env.pop("TELEGRAM_BOT_TOKEN", None)
+        env.pop("TELEGRAM_CHAT_ID", None)
+        env["SMARTUP_CURRENT_TEST_FILE"] = str(path)
+        env["PYTEST_ADDOPTS"] = (env.get("PYTEST_ADDOPTS", "") + " -p tests.shared.telegram_current_test").strip()
+        with subprocess.Popen(command, cwd=ROOT, env=env) as process:
+            while True:
+                try:
+                    code = process.wait(timeout=PROGRESS_EDIT_INTERVAL_SECONDS)
+                    break
+                except subprocess.TimeoutExpired:
+                    try:
+                        current = path.read_text(encoding="utf-8")
+                    except FileNotFoundError:
+                        current = ""
+                    publish(phase, current)
+    publish(f"{phase} {'xato bilan tugadi' if code else 'yakunlandi'}", boundary=True)
+    return code
 
 
 def command_run(args):
@@ -22,6 +56,8 @@ def command_run(args):
         return 2
 
     state = load_state()
+    if args.phase:
+        return run_phase(command, args.phase, state)
     now = now_tashkent()
     state["status"] = "Testlar boshlanmoqda"
     state["test_started_at"] = now.strftime("%Y-%m-%d %H:%M:%S UZT")

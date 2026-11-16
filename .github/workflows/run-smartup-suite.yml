@@ -148,18 +148,20 @@ jobs:
         id: api
         if: inputs.target == 'api-regression'
         env: &regression_env
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           COMPANY_URL: ${{ env.TEST_SERVER_URL }}
           COMPANY_CODE: ${{ env.TEST_COMPANY_CODE }}
           COMPANY_PASSWORD: ${{ env.TEST_COMPANY_PASSWORD }}
           HEADLESS: "1"
           DEFER_ALLURE_REPORT: "1"
-        run: python -u scripts/run_tests.py api-setup
+        run: python -u telegram_bot/telegram_progress.py run --phase "API setup" -- python -u scripts/run_tests.py api-setup
 
       - name: Order regression
         id: regression
         if: inputs.target == 'api-regression'
         env: *regression_env
-        run: python -u tests/regression/run.py
+        run: python -u telegram_bot/telegram_progress.py run --phase "Order regression" -- python -u tests/regression/run.py
 
       - name: Run test suite
         if: inputs.target != 'api-regression'

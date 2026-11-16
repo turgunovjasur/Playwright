@@ -116,6 +116,11 @@ def _final_result_lines(state):
 
 
 def _generic_progress_lines(state):
+    if state.get("target") == MANUAL_SUITE:
+        lines = [f"Bosqich: {state['status']}"] if state.get("status") else []
+        if state.get("current"):
+            lines.append(f"Hozir tekshirilmoqda: {state['current']}")
+        return lines
     metrics = _result_metrics(state)
     lines = []
     test_started_epoch = state.get("test_started_epoch")
