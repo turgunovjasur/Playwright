@@ -4,6 +4,7 @@ from urllib.parse import unquote, urlsplit
 import allure
 from playwright.sync_api import expect
 from tests.shared.navigation import open_form_from_list
+from tests.shared.list_search import find_list_record
 from utils.base_pages.auto_base_page import AutoBasePage
 from utils.base_pages.angular_base_page import _lookup_query_finished
 
@@ -27,36 +28,36 @@ def open_new_order(page):
 
 
 def existing_order(case):
-    """Resolve the same saved order before Add or stock/offer selection on retry.
+    """Resolve the same saved order before Add or stock/offer selection.
 
     This is identity recovery only. Each consumer still checks its own amounts,
     goods, status and unfinished business assertions on the returned View.
     """
-    from tests.regression.helpers.retry.reconcile import is_retry, ui_row, confirm_entity, allow_absent_ui_write
+    from tests.regression.helpers.retry.reconcile import is_retry, ui_row, confirm_entity
     from tests.regression.helpers.retry.state import ACTIVE
-    if not is_retry():
-        return None
     page, base = case.page, AutoBasePage(case.page)
-    with allure.step("Retry: Add’dan oldin shu TTNli order mavjudligini tekshirish"):
+    with allure.step("Yaratishdan oldin TTN bo‘yicha orderni qidirish"):
         base.navigate_to(tab="Продажа", name="Заказы")
         base.expect_page(heading="Заказы", url="order_list")
-        journal = ACTIVE.get()
-        previous = journal.previous("entity:order:" + case.reference)
-        pinned = getattr(journal.item.config, "_retry_plan", {}).get("saved_order")
-        if pinned and (pinned["reference"] != case.reference or
-                       (previous or {}).get("entity_id") != pinned["id"]):
-            raise AssertionError("Davom ettirilayotgan order IDsi yoki TTN mos emas")
-        if previous and previous.get("entity_id"):
-            identity = previous["entity_id"]
-        else:
-            row = ui_row(page, "trade/tdeal/order/order_list:table",
-                         ["deal_id", "delivery_number"], "delivery_number", case.reference)
-            if not row:
-                allow_absent_ui_write("anor/mdeal/order/order+add$save",
-                                      identity={"delivery_number": case.reference},
-                                      operation="order:" + case.reference)
-                return None
-            identity = str(row["deal_id"])
+        base.grid_setting(menu_name="Настройка таблицы", field_name="Номер ТТН", search_name="Номер ТТН")
+        row = find_list_record(base, "order_list", "delivery_number", case.reference)
+        identity = str(row["deal_id"]) if row else None
+        if is_retry():
+            journal = ACTIVE.get()
+            prior_id = (journal.previous("entity:order:" + case.reference) or {}).get("entity_id")
+            pinned = getattr(journal.item.config, "_retry_plan", {}).get("saved_order")
+            if pinned and (pinned["reference"] != case.reference or prior_id != pinned["id"]):
+                raise AssertionError("Davom ettirilayotgan order IDsi yoki TTN mos emas")
+            if prior_id and identity and identity != prior_id:
+                raise AssertionError("Ro‘yxatdagi TTN oldingi order ID siga mos kelmadi")
+            identity = prior_id or identity
+            if not identity:
+                # A list filter can hide a saved order. Check before issuing another Save.
+                saved = ui_row(page, "trade/tdeal/order/order_list:table",
+                               ["deal_id", "delivery_number"], "delivery_number", case.reference)
+                identity = str(saved["deal_id"]) if saved else None
+        if not identity:
+            return None
         base.open_route("trade/tdeal/order/order_view?deal_id=" + str(identity), heading="Заказ / Просмотр")
         base.form_view(label="ИД заказа", expect_value=str(identity))
         base.form_view(label="Номер ТТН", expect_value=case.reference)
@@ -89,7 +90,7 @@ def save_order_by_reference(page, reference):
     if is_retry():
         with allure.step("Retry: avvalgi TTN bilan saqlangan orderni serverdan qidirish"):
             row = ui_row(page, "trade/tdeal/order/order_list:table",
-                         ["deal_id", "delivery_number"], "delivery_number", reference)
+                         ["deal_id", "delivery_number"], "delivery_number", reference, document_kind="order")
             if row:
                 confirm_entity("order", reference, row["deal_id"])
                 from tests.regression.helpers.retry.state import ACTIVE

@@ -1,4 +1,4 @@
-"""One immediate retry for audited cases; dependency failures stay local.
+"""One immediate retry for Order regression cases; dependency failures stay local.
 
 Every attempt enters the complete pytest protocol, including Allure's wrapper.
 Only terminal copies of a provisional failure use the ``rerun`` outcome: the
@@ -11,15 +11,6 @@ import pytest
 from _pytest.runner import runtestprotocol
 
 from tests.regression.helpers.retry.state import day, read, write
-
-# Admission is explicit, not inferred from a group/setup marker or a saved ID.
-# These flows reconcile exact identities and stop on uncertain monetary writes.
-PILOT_CASES = frozenset({
-    "test_000_catalog", "test_001_prices", "test_002_stock",
-    "test_00_prepare_promotions", "test_00a_prepare_discount",
-    "test_01_prepare_ordinary_client", "test_02_prepare_promoted_client",
-    "test_03_partial_full_payment", "test_04_promoted_order_payment",
-})
 
 
 def enabled(config):
@@ -77,13 +68,10 @@ def finish_teardown(item):
 def eligibility(item, reports):
     """Return an explicit reason as well as the decision; default is no retry."""
     config = item.config
-    group = item.get_closest_marker("order_group").args[0]
     if config.getoption("order_retries", 1) != 1:
         return False, "Retry foydalanuvchi sozlamasida o‘chirilgan"
     if getattr(item, "_regression_attempt", 1) != 1:
         return False, "Bitta qayta urinish limiti tugadi"
-    if group != "payments" or item.name not in PILOT_CASES:
-        return False, "Bu testcase avtomatik retry pilotiga hali kiritilmagan"
     if getattr(config, "_retry_plan", None) or getattr(config, "_order_resume", None):
         return False, "Resume yoki tashqi retry ichida yana retry qilinmaydi"
     if config._order_environment_block or item.session.shouldstop or item.session.shouldfail:
@@ -127,9 +115,7 @@ def execute_protocol(item, nextitem):
     try:
         from tests.regression.helpers.retry.hooks import attach_attempt
         attach_attempt(SimpleNamespace(config=item.config, node=item))
-        group = item.get_closest_marker("order_group").args[0]
-        boundary = (group == "payments" and item.name in PILOT_CASES
-                    and getattr(item, "_regression_attempt", 1) == 1
+        boundary = (getattr(item, "_regression_attempt", 1) == 1
                     and item.config.getoption("order_retries", 1) == 1)
         item._order_boundary_active = boundary
         item._order_actual_nextitem = nextitem

@@ -84,7 +84,7 @@ def main():
     parser.add_argument("--group", choices=["product_limit", "bonus_limit"], help="Davom ettiriladigan guruh")
     parser.add_argument("--order-id", help="OL-09 davom ettiradigan saqlangan order IDsi")
     parser.add_argument("--order-retries", type=int, choices=(0, 1), default=1,
-                        help="SCN-003 pilotida yiqilgan testga darhol retry: 0 yoki 1")
+                        help="Barcha Order regression testlari uchun darhol retry soni: 0 yoki 1")
     parser.add_argument("--maxfail", type=int, default=0,
                         help="Yakuniy xatolar limiti; 0 — mustaqil testlarni davom ettirish")
     args = parser.parse_args()

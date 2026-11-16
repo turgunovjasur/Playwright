@@ -74,13 +74,18 @@ def _layout_preference(request, page_url, settings):
 def _preference_read(request, page_url):
     if not request.path.endswith('/b/biruni/m:load_user_large_setting'):
         return False
-    # These exact readonly debt-list preferences have a verified default fallback.
-    path = unquote(urlsplit(page_url).path)
-    suffix = '/anor/mdeal/order/offset/offset_detail_list'
-    if not path.endswith('/a2' + suffix):
+    # A visible list can continue with its default layout/sort. Match both
+    # its current route and the exact preference being read.
+    _, separator, route = unquote(urlsplit(page_url).path).rpartition('/a2/')
+    preferences = {
+        'anor/mdeal/order/offset/offset_detail_list': (':table', ':table&sort', ':table&filter'),
+        'anor/mdeal/return/return_reason_list': (':table',),
+        'trade/tcs/cashin_list': (':table&sort',),
+    }
+    if not separator or route not in preferences:
         return False
     data = json.loads(request.payload)
-    codes = {suffix + ':table' + ending for ending in ('', '&sort', '&filter')}
+    codes = {'/' + route + suffix for suffix in preferences[route]}
     return isinstance(data, dict) and set(data) == {'setting_code'} and data['setting_code'] in codes
 
 

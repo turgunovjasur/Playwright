@@ -13,6 +13,7 @@ import allure
 from playwright.sync_api import expect
 
 from tests.smoke.flows.flow_authorization import authorization
+from tests.shared.list_search import find_list_record
 from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Поставщики"), allure.story("A2 purchase tab")]
@@ -39,33 +40,48 @@ def run_supplier_purchase_tab(page, code):
         base.navigate_to(tab="Склад", name="Поставщики")
         base.expect_page(heading="Поставщики", url="/a2/anor/mkw/supplier_list")
 
-    with allure.step("2 - Supplier yaratish formasini ochish"):
-        base.click(name="Создать", exact=True)
-        base.expect_page(heading="Поставщик (создание)", url=re.compile(r"anor/mkw/supplier(?:\+|%2[bB])add(?:[?#]|$)"))
-
-    with allure.step("3 - Inline yuridik shaxs formasini ochish"):
-        base.b_input(label="Название").click()
-        expect(page.get_by_text("Загрузка...", exact=True)).to_be_hidden()
-        base.click(name="Добавить", exact=True, root="body")
-        base.expect_page(heading="Юридическое лицо (создание)", root="body")  # navigation: same-url - Inline legal-person drawer keeps the supplier create route.
-
-    with allure.step("4 - Test uchun noyob shaxsni saqlash"):
-        drawer = page.get_by_role("main").last
-        base.input(label="Код", value=supplier_code, root=drawer)
-        base.input(label="Полное название", value=supplier_name, root=drawer)
-        base.click(name="Сохранить", exact=True, root=drawer)
-        base.confirm_biruni("Сохранить")
-        expect(page.get_by_role("heading", name="Юридическое лицо (создание)", exact=True)).to_be_hidden()
-        base.expect_page(heading="Поставщик (создание)", url=re.compile(r"anor/mkw/supplier(?:\+|%2[bB])add(?:[?#]|$)"))
-        base.b_input(label="Название", expect_value=supplier_name)
-
+    existing = find_list_record(base, "supplier_list", "code", supplier_code)
     try:
-        with allure.step("5 - Supplierni saqlash va listda tekshirish"):
-            base.click(name="Сохранить", exact=True)
-            base.confirm_biruni("Сохранить")
-            # A successful save may precede a failed list assertion; cleanup still applies.
-            created = True
-            base.expect_page(heading="Поставщики", url="supplier_list")
+        if existing is None:
+            with allure.step("Supplier uchun yuridik shaxsni kod bo‘yicha qidirish"):
+                base.navigate_to(tab="Справочники", name="Юридические лица")
+                base.expect_page(heading="Юридические лица", url="legal_person_list")
+                person = find_list_record(base, "legal_person_list", "code", supplier_code)
+                if person and person["name"] != supplier_name:
+                    raise AssertionError(f"{supplier_code}: saqlangan yuridik shaxs nomi mos kelmadi")
+            with allure.step("Поставщики ro‘yxatiga qaytish"):
+                base.navigate_to(tab="Склад", name="Поставщики")
+                base.expect_page(heading="Поставщики", url="supplier_list")
+            with allure.step("2 - Supplier yaratish formasini ochish"):
+                base.click(name="Создать", exact=True)
+                base.expect_page(heading="Поставщик (создание)", url=re.compile(r"anor/mkw/supplier(?:\+|%2[bB])add(?:[?#]|$)"))
+
+            if person is None:
+                with allure.step("3 - Inline yuridik shaxs formasini ochish"):
+                    base.b_input(label="Название").click()
+                    expect(page.get_by_text("Загрузка...", exact=True)).to_be_hidden()
+                    base.click(name="Добавить", exact=True, root="body")
+                    base.expect_page(heading="Юридическое лицо (создание)", root="body")  # navigation: same-url - Inline legal-person drawer keeps the supplier create route.
+
+                with allure.step("4 - Test uchun noyob shaxsni saqlash"):
+                    drawer = page.get_by_role("main").last
+                    base.input(label="Код", value=supplier_code, root=drawer)
+                    base.input(label="Полное название", value=supplier_name, root=drawer)
+                    base.click(name="Сохранить", exact=True, root=drawer)
+                    base.confirm_biruni("Сохранить")
+                    expect(page.get_by_role("heading", name="Юридическое лицо (создание)", exact=True)).to_be_hidden()
+                    base.expect_page(heading="Поставщик (создание)", url=re.compile(r"anor/mkw/supplier(?:\+|%2[bB])add(?:[?#]|$)"))
+                    base.b_input(label="Название", expect_value=supplier_name)
+            else:
+                base.b_input(label="Название", value=supplier_name, exact=True)
+
+            with allure.step("5 - Supplierni saqlash"):
+                base.click(name="Сохранить", exact=True)
+                base.confirm_biruni("Сохранить")
+                # A successful save may precede a failed list assertion; cleanup still applies.
+                created = True
+                base.expect_page(heading="Поставщики", url="supplier_list")
+        with allure.step("Supplier yozuvini ro‘yxatda tekshirish"):
             base.grid_controller(search=supplier_code)
             base.grid(supplier_code, supplier_name, "Активный", click=True)
 

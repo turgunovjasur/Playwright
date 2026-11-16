@@ -5,6 +5,7 @@ from faker import Faker
 
 from tests.smoke.flows.flow_authorization import authorization
 from utils.data_store import save_data
+from tests.shared.list_search import find_list_record
 from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Legal Person")]
@@ -18,7 +19,7 @@ def run_legal_person(page, code):
     """Testcase: yangi yuridik shaxs (legal person) yaratish.
 
     1. Joriy company admini bilan authorization qilib, session code ni saqlash.
-    2. Справочники -> Юридические лица ro'yxatini ochish.
+    2. Юридические лица ro‘yxatida kodni qidirish. Topilsa, saqlangan nom bilan davom etish.
     3. "Создать" -> Код (c_l_p_pw{code}) va Полное название (faker nomi) ni kiritish,
        Статус = Активный bo'lishini tekshirish.
     4. Saqlab, Юридические лица ro'yxatiga qaytishni tasdiqlash.
@@ -29,7 +30,6 @@ def run_legal_person(page, code):
     """
     base = AutoBasePage(page)
     legal_code = f"c_l_p_pw{code}"
-    legal_name = f"{fake_ru.company()} legal_person-pw{code}"
 
     with allure.step("1 - Company admini bilan authorization"):
         authorization(page, who="admin")
@@ -39,17 +39,22 @@ def run_legal_person(page, code):
         base.navigate_to(tab="Справочники", name="Юридические лица")
         base.expect_page(heading="Юридические лица", url="legal_person_list")
 
-    with allure.step("3 - Yangi yuridik shaxs formasini to'ldirish"):
-        base.click(name="Создать")
-        base.expect_page(heading="Юридическое лицо (создание)", url=re.compile(r"anor/mr/person/legal_person(?:\+|%2[bB])add(?:[?#]|$)"))
-        base.input(label="Код", value=legal_code)
-        base.input(label="Полное название", value=legal_name)
-        base.checkbox(label="Статус", expect_checked=True)
+    existing = find_list_record(base, "legal_person_list", "code", legal_code)
+    if existing is None:
+        legal_name = f"{fake_ru.company()} legal_person-pw{code}"
+        with allure.step("3 - Yangi yuridik shaxs formasini to'ldirish"):
+            base.click(name="Создать")
+            base.expect_page(heading="Юридическое лицо (создание)", url=re.compile(r"anor/mr/person/legal_person(?:\+|%2[bB])add(?:[?#]|$)"))
+            base.input(label="Код", value=legal_code)
+            base.input(label="Полное название", value=legal_name)
+            base.checkbox(label="Статус", expect_checked=True)
 
-    with allure.step("4 - Saqlash va ro'yxatga qaytishni tasdiqlash"):
-        base.click(name="Сохранить", exact=True)
-        base.confirm_biruni("Сохранить")
-        base.expect_page(heading="Юридические лица", url="anor/mr/person/legal_person_list")
+        with allure.step("4 - Saqlash va ro'yxatga qaytishni tasdiqlash"):
+            base.click(name="Сохранить", exact=True)
+            base.confirm_biruni("Сохранить")
+            base.expect_page(heading="Юридические лица", url="anor/mr/person/legal_person_list")
+    else:
+        legal_name = existing["name"]
 
     with allure.step("5 - Ro'yxatda yaratilgan yuridik shaxsni tekshirish"):
         base.grid_controller(search=legal_code)

@@ -3,6 +3,7 @@ import re
 import allure
 
 from tests.smoke.flows.flow_authorization import authorization
+from tests.shared.list_search import find_list_record
 from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Sector")]
@@ -28,16 +29,20 @@ def run_sector(page, code):
         base.click(name="Наборы ТМЦ", role="link")
         base.expect_page(heading="Наборы ТМЦ", url="anor/mr/sector_list")
 
-    with allure.step("3 - Yangi to'plam formasini ochish va to'ldirish"):
-        base.click(name="Создать")
-        base.expect_page(heading="Набор ТМЦ (создание)", url=re.compile(r"anor/mr/sector(?:\+|%2[bB])add(?:[?#]|$)"))
-        base.input(label="Код", value=sector_code)
-        base.input(label="Название", value=sector_name)
-        base.multiselect(label="Рабочие зоны", value=f"room-pw{code}")
+    existing = find_list_record(base, "sector_list", "name", sector_name)
+    if existing is None:
+        with allure.step("3 - Yangi to'plam formasini ochish va to'ldirish"):
+            base.click(name="Создать")
+            base.expect_page(heading="Набор ТМЦ (создание)", url=re.compile(r"anor/mr/sector(?:\+|%2[bB])add(?:[?#]|$)"))
+            base.input(label="Код", value=sector_code)
+            base.input(label="Название", value=sector_name)
+            base.multiselect(label="Рабочие зоны", value=f"room-pw{code}")
 
-    with allure.step("4 - Saqlash va ro'yxatda tekshirish"):
-        base.click(name="Сохранить", exact=True)
-        base.expect_page(heading="Наборы ТМЦ", url="anor/mr/sector_list")
+        with allure.step("4 - Saqlash va ro'yxatda tekshirish"):
+            base.click(name="Сохранить", exact=True)
+            base.expect_page(heading="Наборы ТМЦ", url="anor/mr/sector_list")
+
+    with allure.step("Ro‘yxatdagi yozuvni tekshirish"):
         base.grid(sector_code, sector_name)
 
 # ----------------------------------------------------------------------------------------------------------------------

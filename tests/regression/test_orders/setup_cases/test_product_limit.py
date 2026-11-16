@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 
 import allure
 from playwright.sync_api import expect
+from tests.shared.list_search import find_list_record
 from utils.base_pages.auto_base_page import AutoBasePage
 
 from tests.api.client import APIError, positive_id, require_fields
@@ -144,7 +145,9 @@ def run_prepare_limit(case, directory):
         with allure.step("1 - TMZ limitlari ro‘yxatini ochish"):
             base.open_route(route + "_list", heading="Лимитирование ТМЦ")
         from tests.regression.helpers.retry.reconcile import is_retry, ui_row, allow_absent_ui_write
-        existing = ui_row(page, route + "_list:table", ["order_product_limit_id", "name"], "name", name) if is_retry() else None
+        existing = find_list_record(base, "order_product_limit_list", "name", name)
+        if existing is None and is_retry():
+            existing = ui_row(page, route + "_list:table", ["order_product_limit_id", "name"], "name", name)
         if not existing:
             allow_absent_ui_write("anor/mcg/order_product_limit/order_product_limit+add$save", identity={"name": name})
             with allure.step("2 - Alohida kunlik limit yaratish formasini ochish"):

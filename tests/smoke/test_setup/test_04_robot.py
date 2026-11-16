@@ -4,6 +4,7 @@ import allure
 
 from tests.smoke.flows.flow_authorization import authorization
 from utils.data_store import save_data
+from tests.shared.list_search import find_list_record
 from utils.base_pages.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
@@ -31,20 +32,24 @@ def run_robot(page, code):
         base.navigate_to(tab="Справочники", name="Штат")
         base.expect_page(heading="Штат", url="anor/mrf/robot_list")
 
-    with allure.step("2 - Yangi xodim formasini to'ldirish"):
-        base.click(name="Создать")
-        base.expect_page(heading="Штат (создание)", url=re.compile(r"anor/mrf/robot(?:\+|%2[bB])add(?:[?#]|$)"))
-        base.input(label="Код", value=robot_code)
-        base.input(label="Название", value=robot_name)
+    existing = find_list_record(base, "robot_list", "name", robot_name)
+    if existing is None:
+        with allure.step("2 - Yangi xodim formasini to'ldirish"):
+            base.click(name="Создать")
+            base.expect_page(heading="Штат (создание)", url=re.compile(r"anor/mrf/robot(?:\+|%2[bB])add(?:[?#]|$)"))
+            base.input(label="Код", value=robot_code)
+            base.input(label="Название", value=robot_name)
 
-    with allure.step("3 - ATS roli (Админ) va ish zonasini biriktirish"):
-        base.multiselect(label="Роли", value="Админ")
-        base.multiselect(label="Рабочие зоны", value=room_name)
-        base.checkbox(label="Статус", expect_checked=True)
+        with allure.step("3 - ATS roli (Админ) va ish zonasini biriktirish"):
+            base.multiselect(label="Роли", value="Админ")
+            base.multiselect(label="Рабочие зоны", value=room_name)
+            base.checkbox(label="Статус", expect_checked=True)
 
-    with allure.step("4 - Saqlash va ro'yxatda tekshirish"):
-        base.click(name="Сохранить", exact=True)
-        base.expect_page(heading="Штат", url="anor/mrf/robot_list")
+        with allure.step("4 - Saqlash va ro'yxatda tekshirish"):
+            base.click(name="Сохранить", exact=True)
+            base.expect_page(heading="Штат", url="anor/mrf/robot_list")
+
+    with allure.step("Ro‘yxatdagi yozuvni tekshirish"):
         base.grid(robot_name, robot_code, click=True)
 
     with allure.step("5 - View formasidan robot IDni olish va saqlash"):

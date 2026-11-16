@@ -77,8 +77,11 @@ Yakuniy `Qisqa QA natijasi`da dependencylar va mavjud bloklanish sababi ham chiq
 Boshlanmagan qadamlar taxmin qilib qo‘shilmaydi. Eski runlarda dependency yoki
 qadam dalili bo‘lmasa bu ochiq ko‘rsatiladi; eski hisobot avtomatik qayta yozilmaydi.
 
-Dependency boshqaruvi barcha 125 testga tegishli. Avtomatik bitta retry hozircha
-SCN-003 dagi 9 test uchun yoqilgan. `--order-retries=0` uni o‘chiradi.
+Har bir Order regression testida birinchi xatodan keyin keyingi test boshlanishidan
+oldin bir marta qayta urinish mumkin. `--order-retries=0` uni o‘chiradi.
+Retry birinchi urinishdagi TTN yoki kirim raqamini qayta ishlatadi. Serverda
+saqlanishi noaniq hujjatni qayta yuborish bloklanadi. Ikkala urinishning
+natijasi va dalillari Allure’da bitta test ostida saqlanadi.
 `--maxfail=0` mustaqil testlarni davom ettiradi; boshqa qiymat yakuniy xatolar limitidir.
 Bu hujjat PASS hisoboti emas; runtime tekshiruvi alohida bajariladi.
 

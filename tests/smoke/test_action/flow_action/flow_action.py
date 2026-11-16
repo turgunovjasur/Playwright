@@ -9,12 +9,21 @@ from playwright.sync_api import expect
 from utils.base_pages.auto_base_page import AutoBasePage
 
 
-def open_action_form(page):
-    """Aksiyalar ro'yxatidan yangi aksiya formasini ochadi."""
+def open_action_list(page):
+    """Aksiyalar ro'yxatini ochadi."""
     base = AutoBasePage(page)
     with allure.step("Aksiyalar ro'yxatini ochish"):
         base.navigate_to(tab="Справочники", name="Акции")
         base.expect_page(heading="Акции", url="anor/mcg/action_list")
+
+
+def open_action_form(page):
+    open_action_list(page)
+    open_action_create(page)
+
+
+def open_action_create(page):
+    base = AutoBasePage(page)
     with allure.step("Yangi aksiya formasini ochish"):
         base.click(name="Создать", exact=True)
         base.expect_page(heading="Акция (создание)", url=re.compile(r"anor/mcg/action(?:\+|%2[bB])add(?:[?#]|$)"))

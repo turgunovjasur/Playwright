@@ -132,7 +132,7 @@ def validate_and_order(config, items, initial):
         directory = run_directory(config)
         run = read(directory / "run.json")
         run.update(immediate_retry=True, retry_limit=config.getoption("order_retries", 1),
-                   retry_pilot="payments", maxfail=config.option.maxfail)
+                   maxfail=config.option.maxfail)
         write(directory / "run.json", run)
 
 

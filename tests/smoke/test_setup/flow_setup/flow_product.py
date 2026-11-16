@@ -2,6 +2,7 @@ import re
 
 import allure
 
+from tests.shared.list_search import find_list_record
 from utils.base_pages.auto_base_page import AutoBasePage
 
 
@@ -23,8 +24,7 @@ def create_product_with_price(
         base.expect_page(heading="ТМЦ", url="anor/mr/product/inventory_list")
 
     with allure.step(f"2 - {price_label} TMC yaratish formasini ochish va to'ldirish"):
-        base.grid_controller(search=product_code)
-        product_exists = base.grid(product_code, return_bool=True)
+        product_exists = find_list_record(base, "inventory_list", "code", product_code) is not None
         if not product_exists:
             base.click(name="Создать")
             base.expect_page(heading="ТМЦ (создание)", url=re.compile(r"anor/mr/product/inventory(?:\+|%2[bB])add(?:[?#]|$)"))

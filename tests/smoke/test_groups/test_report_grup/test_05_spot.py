@@ -6,6 +6,7 @@ import pytest
 
 from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.test_groups.test_report_grup.flow_report.report_helpers import generate_and_verify_download, open_report
+from tests.shared.list_search import find_list_record
 from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [
@@ -51,15 +52,20 @@ def run_report_spot_check(page):
     with allure.step("3 - Har bir run uchun yangi Spot2D templateini yaratish"):
         base.click(name="Шаблоны", exact=True)
         base.expect_page(heading="Шаблоны Spot2D", root=page)  # navigation: same-url - A2 opens the template list in a drawer.
-        base.click(name="Добавить", exact=True)
-        base.expect_page(heading="Шаблон Spot2D (создание)", root=page)  # navigation: same-url - A2 opens creation in a nested drawer.
-        base.input(label="Название", value=template_name)
-        base.b_input(label="Продуктовое направление", value="Группа")
-        base.checkbox(label="Подтипы характеристик", expect_checked=True)
-        base.checkbox(label="Активный", expect_checked=True, root=page.get_by_role("main").last)
-        base.text("Файл : delivery", "Файл : stocks", "Файл : clients", "Файл : receive", "Файл : warehouse", root=page)
-        base.click(name="Сохранить", exact=True)
-        base.expect_page(heading=re.compile(r"^\s*Spot2D\(\d+\)\s*$"), url="spot")
+        if find_list_record(base, "spot_template_list", "name", template_name) is None:
+            base.click(name="Добавить", exact=True)
+            base.expect_page(heading="Шаблон Spot2D (создание)", root=page)  # navigation: same-url - A2 opens creation in a nested drawer.
+            base.input(label="Название", value=template_name)
+            base.b_input(label="Продуктовое направление", value="Группа")
+            base.checkbox(label="Подтипы характеристик", expect_checked=True)
+            base.checkbox(label="Активный", expect_checked=True, root=page.get_by_role("main").last)
+            base.text("Файл : delivery", "Файл : stocks", "Файл : clients", "Файл : receive", "Файл : warehouse", root=page)
+            base.click(name="Сохранить", exact=True)
+            base.expect_page(heading=re.compile(r"^\s*Spot2D\(\d+\)\s*$"), url="spot")
+        else:
+            base.click(name="Закрыть", exact=True, root=page.get_by_role("main").last)
+            base.expect_page(heading=re.compile(r"^\s*Spot2D\(\d+\)\s*$"), url="spot")
+            base.b_input(label="Шаблон", value=template_name, clear=True)
 
     with allure.step("4 - Template tanlovi va Spot2D ZIP downloadini tekshirish"):
         base.b_input(label="Шаблон", expect_value=template_name)

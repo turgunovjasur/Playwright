@@ -17,6 +17,7 @@ from tests.regression.test_orders.helpers.flows.returns import _return_lot_row, 
 from tests.regression.test_orders.helpers.flows.settlement import allocate_to_order, change_order_status, post_cashin, read_debts, read_settlement, _number
 from tests.regression.test_orders.helpers.flows.stock import read_stock
 from tests.shared.navigation import open_form_from_list
+from tests.shared.list_search import find_list_record
 from utils.base_pages.auto_base_page import AutoBasePage
 from tests.regression.helpers.retry.checkpoints import value as retry_value, reuse, verified
 from tests.regression.helpers.retry.state import RetryBlocked
@@ -91,7 +92,9 @@ def run_prepare_reason(case):
         base.page_link(name="Причины возврата")
         base.expect_page(heading="Причины возврата", url="return_reason_list")
         from tests.regression.helpers.retry.reconcile import is_retry, ui_row, allow_absent_ui_write
-        existing = ui_row(page, "anor/mdeal/return/return_reason_list:table", ["reason_id", "name"], "name", reason["name"]) if is_retry() else None
+        existing = find_list_record(base, "return_reason_list", "name", reason["name"])
+        if existing is None and is_retry():
+            existing = ui_row(page, "anor/mdeal/return/return_reason_list:table", ["reason_id", "name"], "name", reason["name"])
     with allure.step('3 - Qaytarish sababini mavjudidan olish yoki yo‘q bo‘lsa yaratish'):
         case.workflow["return_reason"] = {**reason, "state": "pending"}
         case.checkpoint()
@@ -233,12 +236,18 @@ def _return(case, *, key, goods, bonus, credit, previous_credit, goods_remaining
     reference = source["reference"][-8:] + ("R1" if key == "partial_return" else "R2")
     from tests.regression.helpers.retry.reconcile import is_retry, ui_row, confirm_entity
     base = AutoBasePage(case.page)
-    saved = None
-    if is_retry():
+    with allure.step("Qaytarishni ro‘yxatda TTN orqali qidirish"):
         base.navigate_to(tab="Продажа", name="Возвраты")
         base.expect_page(heading="Возвраты", url="return_list")
-        saved = ui_row(case.page, "anor/mdeal/return/return_list:table",
-                       ["deal_id", "delivery_number", "order_deal_id"], "delivery_number", reference)
+        label = "Номер товарно-транспортной накладной"
+        base.grid_setting(menu_name="Настройка таблицы", field_name=label, search_name=label)
+        saved = find_list_record(base, "return_list", "delivery_number", reference)
+    if saved or is_retry():
+        confirmed = ui_row(case.page, "anor/mdeal/return/return_list:table",
+                           ["deal_id", "delivery_number", "order_deal_id"], "delivery_number", reference)
+        if saved and (not confirmed or str(saved["deal_id"]) != str(confirmed["deal_id"])):
+            raise RetryBlocked("Ro‘yxatdagi qaytarish IDsi tasdiqlanmadi")
+        saved = confirmed
     if saved:
         if str(saved["order_deal_id"]) != str(source["id"]):
             raise RetryBlocked("Return boshqa source orderga tegishli")

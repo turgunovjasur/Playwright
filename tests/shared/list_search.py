@@ -1,0 +1,56 @@
+"""Read the result of the search submitted through a Smartup list form."""
+from urllib.parse import unquote, urlsplit
+
+import allure
+
+from utils.base_pages import UI_TIMEOUT_MS
+
+
+def _has_filter(node, field, pattern):
+    if not isinstance(node, list):
+        return False
+    if len(node) == 3 and node[1:] == ["esearch", pattern]:
+        return field is None or node[0] == field
+    return any(_has_filter(child, field, pattern) for child in node if isinstance(child, list))
+
+
+def find_list_record(base, table, field, value, *, search_field=None):
+    """Return the exact row from this UI search, or None after a complete result."""
+    value = str(value)
+    if not value.strip():
+        raise ValueError("Ro‘yxat qidiruvi uchun qiymat bo‘sh")
+    escaped = value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    pattern = f"%{escaped}%"
+
+    def searched(response):
+        if not unquote(urlsplit(response.url).path).endswith("/" + table + ":table"):
+            return False
+        request = response.request
+        if request.method != "POST" or not request.post_data:
+            return False
+        params = (request.post_data_json or {}).get("p", {})
+        return _has_filter(params.get("filter"), None, pattern)
+
+    with allure.step(f"Ro‘yxatdagi Search orqali qidirish · {value}"):
+        with base.page.expect_response(searched, timeout=UI_TIMEOUT_MS) as pending:
+            base.grid_controller(search=value)
+        response = pending.value
+        if not response.ok:
+            raise AssertionError(f"{table} qidiruvi HTTP {response.status} qaytardi")
+        params = response.request.post_data_json["p"]
+        if not any(_has_filter(params["filter"], key, pattern) for key in (field, search_field) if key):
+            raise AssertionError(f"{table}: {field} qidiruv sozlamasida yoqilmagan")
+        result = response.json()
+        columns = params.get("column", [])
+        rows = result.get("data") if isinstance(result, dict) else None
+        if (not isinstance(rows, list) or field not in columns
+                or str(result.get("count")) != str(len(rows)) or int(params.get("offset", 0)) != 0):
+            raise AssertionError(f"{table}: {field} bo‘yicha natija to‘liq emas")
+        records = [dict(zip(columns, row, strict=True)) for row in rows]
+        matches = [row for row in records if str(row[field]) == value]
+        if len(matches) > 1:
+            raise AssertionError(f"{table}: {field}={value} bo‘yicha bir nechta yozuv topildi")
+        if matches:
+            allure.attach(value, name="Topilgan yozuv bilan davom etiladi", attachment_type=allure.attachment_type.TEXT)
+            return matches[0]
+        return None

@@ -1,5 +1,6 @@
 """One A2 reauthentication owner per regression page, independent of testcase."""
 from contextlib import contextmanager
+import re
 import sys
 from urllib.parse import urlsplit
 from weakref import WeakKeyDictionary
@@ -19,7 +20,7 @@ def _draft_values(page):
     # Values are compared only in memory, never written to Allure/logs. Exclude
     # the password modal and file inputs. This does not read Angular internals.
     return page.locator('main input:not([type="password"]):not([type="file"]), main textarea, main select').evaluate_all(
-        "elements => elements.map(e => ({name:e.name, type:e.type, value:e.value, checked:e.checked, disabled:e.disabled}))"
+        "elements => elements.filter(e => !e.closest('app-session-lock')).map(e => ({name:e.name, type:e.type, value:e.value, checked:e.checked, disabled:e.disabled}))"
     )
 
 
@@ -43,7 +44,7 @@ class SessionRecovery:
         self.failure = None
         self.recovering = False
         self.lock = page.locator('app-session-lock')
-        self.password_input = self.lock.get_by_placeholder('Пароль', exact=True)
+        self.password_input = self.lock.locator('input[type="password"], input[placeholder="Пароль"]').filter(visible=True)
 
     def capture(self, response):
         address = urlsplit(response.url)
@@ -83,7 +84,9 @@ class SessionRecovery:
         self.stage = 'identify_modal'
         self.event('observed', paths=sorted({urlsplit(r.url).path for r in batch}), idle_lock=not batch)
         expect(self.lock).to_have_count(1)
-        expect(self.lock.get_by_text(self.display_name, exact=True)).to_be_visible()
+        # The Angular dialog appends account details after a middle dot.
+        identity = re.compile(r'^' + re.escape(self.display_name) + r'(?:\s*·.*)?$')
+        expect(self.lock.get_by_text(identity)).to_be_visible()
         before_values = _draft_values(self.page)
         plan_error = None
         try:
@@ -98,17 +101,11 @@ class SessionRecovery:
             self.stage = 'password_fill'
             self.password_input.fill(self.password_value(), timeout=AUTH_TIMEOUT)
             self.stage = 'login_submit'
-            login_path = self.origin.path.rstrip('/') + '/b/biruni/s$log_in'
-            def is_login(response):
-                address = urlsplit(response.url)
-                return (address.scheme, address.netloc) == (self.origin.scheme, self.origin.netloc) and address.path == login_path and response.request.method == 'POST'
-            # Wait for authentication itself, never for an assumed read replay.
-            with self.page.expect_response(is_login, timeout=AUTH_TIMEOUT) as login:
-                self.lock.get_by_role('button', name='Войти', exact=True).click(timeout=AUTH_TIMEOUT)
-            if login.value.status in (401, 403):
-                raise RegressionEnvironmentError(f"Sessiya parolini tasdiqlash HTTP {login.value.status} bilan rad etildi")
-            if login.value.status != 200:
-                raise SessionRecoveryError(f'Parol tasdig‘i HTTP {login.value.status} bilan tugadi')
+            unlock_button = self.lock.get_by_role('button', name='Разблокировать', exact=True)
+            if unlock_button.is_visible():
+                unlock_button.click(timeout=AUTH_TIMEOUT)
+            else:
+                self.submit_legacy_login()
             expect(self.password_input).to_be_hidden(timeout=AUTH_TIMEOUT)
             if self.page.url != before_url:
                 raise SessionRecoveryError('Qayta kirishda sahifa o‘zgardi; test davom ettirilmadi')
@@ -140,6 +137,21 @@ class SessionRecovery:
         del self.rejected[:len(batch)]
         self.recovering = False
         self.event('recovered', user_id=self.user_id, resumed_read=plan.kind)
+
+    def submit_legacy_login(self):
+        login_path = self.origin.path.rstrip('/') + '/b/biruni/s$log_in'
+
+        def is_login(response):
+            address = urlsplit(response.url)
+            return ((address.scheme, address.netloc) == (self.origin.scheme, self.origin.netloc)
+                    and address.path == login_path and response.request.method == 'POST')
+
+        with self.page.expect_response(is_login, timeout=AUTH_TIMEOUT) as login:
+            self.lock.get_by_role('button', name='Войти', exact=True).click(timeout=AUTH_TIMEOUT)
+        if login.value.status in (401, 403):
+            raise RegressionEnvironmentError(f"Sessiya parolini tasdiqlash HTTP {login.value.status} bilan rad etildi")
+        if login.value.status != 200:
+            raise SessionRecoveryError(f'Parol tasdig‘i HTTP {login.value.status} bilan tugadi')
 
 
 @contextmanager

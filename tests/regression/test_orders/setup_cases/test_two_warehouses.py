@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 from tests.regression.helpers.retry.state import stable_uuid as uuid4
 from tests.shared.navigation import open_form_from_list
+from tests.shared.list_search import find_list_record
 from utils.base_pages.auto_base_page import AutoBasePage
 
 import allure
@@ -60,7 +61,9 @@ def run_prepare_two_warehouses(case, directory):
             base.navigate_to(tab="Склад", name="Склады")
             base.expect_page(heading="Склады", url="warehouse_list")
         from tests.regression.helpers.retry.reconcile import is_retry, ui_row, allow_absent_ui_write
-        existing = ui_row(case.page, "anor/mkw/warehouse_list:table", ["warehouse_id", "name"], "name", name) if is_retry() else None
+        existing = find_list_record(base, "warehouse_list", "name", name)
+        if existing is None and is_retry():
+            existing = ui_row(case.page, "anor/mkw/warehouse_list:table", ["warehouse_id", "name"], "name", name)
         if not existing:
             allow_absent_ui_write("anor/mkw/warehouse+add$save", identity={"name": name})
             with allure.step("2 - Alohida ikkinchi ombor yaratish formasini ochish"):
@@ -76,9 +79,9 @@ def run_prepare_two_warehouses(case, directory):
             saved = api.one("anor/mkw/warehouse_list:table", ["warehouse_id", "name", "state"],
                             filters=["name", "=", name])
             identity = positive_id(saved["warehouse_id"])
-            metadata["warehouses"].append({"id": identity, "name": name, "code": code, "created_in_run": True})
+            metadata["warehouses"].append({"id": identity, "name": name, "code": code, "created_in_run": existing is None})
             _persist(directory, metadata)
-            require_fields(api.model("anor/mkw/warehouse_view", warehouse_id=identity), name=name, state="A")
+            require_fields(api.model("anor/mkw/warehouse_view", warehouse_id=identity), name=name, code=code, state="A")
             after = attached()
             case.check("Oldingi ombor bog‘lanishlari va bitta yangi ombor", sorted(before | {identity}), sorted(after))
             metadata.update(warehouse_status="passed", room_warehouses_after=sorted(after))
@@ -116,12 +119,10 @@ def run_prepare_two_warehouse_stock(case, directory):
 
     persist()
     try:
-        for index, warehouse in enumerate(metadata["warehouses"]):
+        for warehouse in metadata["warehouses"]:
             minimum = Decimal("5")
             with allure.step(f'1 - {warehouse["name"]}: kirim preconditionini aniqlash'):
-                before = read_stock(case, warehouse["name"]) if index == 0 else None
-                if index == 1 and warehouse.get("created_in_run") is not True:
-                    raise APIError("5 dona fixed kirim faqat shu run yaratgan own ikkinchi omborga ruxsat")
+                before = None if warehouse.get("created_in_run") else read_stock(case, warehouse["name"])
                 quantity = max(Decimal("0"), minimum - before["available"]) if before else minimum
                 entry = {"warehouse_id": warehouse["id"], "warehouse": warehouse["name"],
                          "minimum_available": str(minimum), "added": str(quantity),

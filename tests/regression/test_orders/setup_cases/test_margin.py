@@ -19,6 +19,7 @@ import pytest
 from tests.api.client import APIError, positive_id, require_fields
 from tests.regression.test_orders.helpers.auth_recovery import RegressionSetupState
 from tests.regression.helpers.environment import authorization
+from tests.shared.list_search import find_list_record
 from tests.shared.navigation import open_form_from_list
 from utils.base_pages import UI_TIMEOUT_MS
 from utils.base_pages.auto_base_page import AutoBasePage
@@ -96,27 +97,32 @@ def run_prepare_margin(page, baseline, data, directory):
             with allure.step("3 - Skidkalar katalogini ochish"):
                 base.navigate_to(tab="Справочники", name="Скидки/наценки")
                 base.expect_page(heading="Скидки/наценки", url="anor/mkr/margin_list")
-            with allure.step("4 - Alohida aktiv 10% skidka yaratish"):
-                open_form_from_list(base.page, heading="Скидка/наценка (создание)", url=re.compile(r"margin(?:%2[Bb]|\+)add"))
-                base.input(label="Код", value=margin["code"])
-                base.input(label="Название", value=margin["name"])
-                base.input(label="Процент", value=margin["percent"])
-                base.radio(label="Скидка", expect_checked=True)
-                base.checkbox(label="Статус", expect_checked=True)
-            with allure.step('5 - Chegirmani saqlash, uning IDsi va saqlangan qiymatlarini tekshirish'):
-                base.click(name="Сохранить", exact=True)
-                base.expect_page(heading="Скидки/наценки", url="anor/mkr/margin_list")
+            existing = find_list_record(base, "margin_list", "name", margin["name"])
+            if existing is None:
+                with allure.step("4 - Alohida aktiv 10% skidka yaratish"):
+                    open_form_from_list(base.page, heading="Скидка/наценка (создание)", url=re.compile(r"margin(?:%2[Bb]|\+)add"))
+                    base.input(label="Код", value=margin["code"])
+                    base.input(label="Название", value=margin["name"])
+                    base.input(label="Процент", value=margin["percent"])
+                    base.radio(label="Скидка", expect_checked=True)
+                    base.checkbox(label="Статус", expect_checked=True)
+                with allure.step('5 - Chegirmani saqlash'):
+                    base.click(name="Сохранить", exact=True)
+                    base.expect_page(heading="Скидки/наценки", url="anor/mkr/margin_list")
+            else:
+                margin["preparation"] = "reused_existing"
+            with allure.step("Chegirma IDsi va qiymatlarini tekshirish"):
                 api = state.admin(head_filial=True)
                 saved = api.one("anor/mkr/margin_list:table", ["margin_id", "name"],
                                 filters=["name", "=", margin["name"]])
                 margin["id"] = positive_id(saved["margin_id"])
-                persist("created")
+                persist(margin["preparation"])
                 require_fields(api.model("anor/mkr/margin+edit", margin_id=margin["id"]),
                                margin_id=margin["id"], name=margin["name"], code=margin["code"],
                                state="A", percent_type="D", percent="10")
                 base.grid_controller(search=margin["name"])
                 base.grid(margin["name"], margin["code"], "Скидка", "Активный")
-                persist("created_verified")
+                persist("margin_verified")
         with allure.step("6 - Test uchun tayyorlangan filialda chegirmalar ro'yxatini ochish"):
             base.switch_filial(name=filial_name)
             base.navigate_to(tab="Справочники", name="Скидки/наценки")

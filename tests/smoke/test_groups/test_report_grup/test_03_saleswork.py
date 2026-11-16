@@ -7,6 +7,7 @@ import pytest
 
 from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.test_groups.test_report_grup.flow_report.report_helpers import generate_and_verify_download, open_report
+from tests.shared.list_search import find_list_record
 from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [
@@ -43,23 +44,28 @@ def run_report_saleswork_check(page):
     with allure.step("2 - Har bir run uchun yangi SalesWork templateini yaratish"):
         base.click(name="Шаблоны", exact=True)
         base.expect_page(heading="Шаблоны SalesWorks", root=page)  # navigation: same-url - A2 opens the template list in a drawer.
-        base.click(name="Создать", exact=True)
-        base.expect_page(heading="Шаблон Saleswork (Создание)", url=re.compile(r"saleswork_template(?:\+|%2[bB])add(?:[?#]|$)"))
-        base.input(label="Название", value=template_name)
-        base.b_input(label="Продуктовое направление", value="Группа")
-        base.checkbox(label="Активный", expect_checked=True)
-        base.checkbox(label="Подтипы характеристик", expect_checked=True)
-        base.radio(label="MarevenFoodCentral", expect_checked=True)
-        base.radio(label="KimberlyClark", expect_checked=False)
-        base.checkbox(label="ParentCompanies", expect_checked=True)
-        base.checkbox(label="Outlets", expect_checked=True)
-        base.checkbox(label="ArchivedStocks", expect_checked=True)
-        base.checkbox(label="LocalProducts", expect_checked=True)
-        base.checkbox(label="OutletDebts", expect_checked=False)
-        base.checkbox(label="SalOuts", expect_checked=True)
-        base.checkbox(label="SalIns", expect_checked=True)
-        base.click(name="Сохранить", exact=True)
-        base.expect_page(heading=re.compile(r"^\s*Saleswork\s*$"), url=re.compile(r"/trade/rep/integration/saleswork$"))
+        if find_list_record(base, "saleswork_template_list", "name", template_name) is None:
+            base.click(name="Создать", exact=True)
+            base.expect_page(heading="Шаблон Saleswork (Создание)", url=re.compile(r"saleswork_template(?:\+|%2[bB])add(?:[?#]|$)"))
+            base.input(label="Название", value=template_name)
+            base.b_input(label="Продуктовое направление", value="Группа")
+            base.checkbox(label="Активный", expect_checked=True)
+            base.checkbox(label="Подтипы характеристик", expect_checked=True)
+            base.radio(label="MarevenFoodCentral", expect_checked=True)
+            base.radio(label="KimberlyClark", expect_checked=False)
+            base.checkbox(label="ParentCompanies", expect_checked=True)
+            base.checkbox(label="Outlets", expect_checked=True)
+            base.checkbox(label="ArchivedStocks", expect_checked=True)
+            base.checkbox(label="LocalProducts", expect_checked=True)
+            base.checkbox(label="OutletDebts", expect_checked=False)
+            base.checkbox(label="SalOuts", expect_checked=True)
+            base.checkbox(label="SalIns", expect_checked=True)
+            base.click(name="Сохранить", exact=True)
+            base.expect_page(heading=re.compile(r"^\s*Saleswork\s*$"), url=re.compile(r"/trade/rep/integration/saleswork$"))
+        else:
+            base.click(name="Закрыть", exact=True, root=page.get_by_role("main").last)
+            base.expect_page(heading=re.compile(r"^\s*Saleswork\s*$"), url=re.compile(r"/trade/rep/integration/saleswork$"))
+            base.b_input(label="Шаблон", value=template_name, clear=True)
 
     with allure.step("3 - Template main formada tanlanganini tekshirish"):
         base.b_input(label="Шаблон", expect_value=template_name)

@@ -5,8 +5,9 @@ from pathlib import Path
 
 import allure
 
-from tests.smoke.test_action.flow_action.flow_action import fill_action_scope, open_action_form, select_action_product
+from tests.smoke.test_action.flow_action.flow_action import fill_action_scope, open_action_create, open_action_list, select_action_product
 from tests.smoke.flows.flow_authorization import authorization
+from tests.shared.list_search import find_list_record
 from utils.base_pages.auto_base_page import AutoBasePage
 from utils.data_store import save_data
 
@@ -39,37 +40,42 @@ def run_amount_bonus(page, code):
     start_date = base.date()
     end_date = base.date(days=30)
 
-    with allure.step("1 - Aksiya yaratish formasini ochish"):
-        open_action_form(page)
+    open_action_list(page)
+    existing = find_list_record(base, "action_list", "name", action_name)
+    if existing is None:
+        with allure.step("1 - Aksiya yaratish formasini ochish"):
+            open_action_create(page)
 
-    with allure.step("2 - Aksiyaning asosiy ma'lumotlarini to'ldirish"):
-        fill_action_scope(page, name=action_name, action_code=action_code, room=room_name, price_type=price_type_name, start_date=start_date, end_date=end_date)
-        base.ui_select(label="Тип акции", value="Сумма")
+        with allure.step("2 - Aksiyaning asosiy ma'lumotlarini to'ldirish"):
+            fill_action_scope(page, name=action_name, action_code=action_code, room=room_name, price_type=price_type_name, start_date=start_date, end_date=end_date)
+            base.ui_select(label="Тип акции", value="Сумма")
 
-    with allure.step("3 - Shartlar bosqichiga o'tish"):
-        base.click(name="Далее", exact=True)
-        base.expect_page(heading="Условия", url=re.compile(r"anor/mcg/action(?:\+|%2[bB])add(?:[?#]|$)"))
-        base.ui_select(label="Тип условия", expect_value="Обычный")
+        with allure.step("3 - Shartlar bosqichiga o'tish"):
+            base.click(name="Далее", exact=True)
+            base.expect_page(heading="Условия", url=re.compile(r"anor/mcg/action(?:\+|%2[bB])add(?:[?#]|$)"))
+            base.ui_select(label="Тип условия", expect_value="Обычный")
 
-    with allure.step("4 - Обычный shart va 100000 chegarasini belgilash"):
-        base.checkbox(label="Ассортимент", expect_checked=False)
-        base.ui_select(label="Тип условия", value="Обычный")
-        select_action_product(page, product_name=product_name, index=0)
-        base.input(label="Мин. значение", value="100000")
-        base.input(label="Макс. значение", expect_value="")
-        base.input(label="МТКП", value="1")
+        with allure.step("4 - Обычный shart va 100000 chegarasini belgilash"):
+            base.checkbox(label="Ассортимент", expect_checked=False)
+            base.ui_select(label="Тип условия", value="Обычный")
+            select_action_product(page, product_name=product_name, index=0)
+            base.input(label="Мин. значение", value="100000")
+            base.input(label="Макс. значение", expect_value="")
+            base.input(label="МТКП", value="1")
 
-    with allure.step("5 - 1 dona bonusni belgilash"):
-        base.ui_select(label="Тип бонуса", value="Кол-во")
-        select_action_product(page, product_name=product_name, index=1)
-        base.input(label="Значение", value="1")
-        base.ui_select(label="Тип условия", expect_value="Обычный")
-        base.input(label="Мин. значение", expect_value="100000")
+        with allure.step("5 - 1 dona bonusni belgilash"):
+            base.ui_select(label="Тип бонуса", value="Кол-во")
+            select_action_product(page, product_name=product_name, index=1)
+            base.input(label="Значение", value="1")
+            base.ui_select(label="Тип условия", expect_value="Обычный")
+            base.input(label="Мин. значение", expect_value="100000")
 
-    with allure.step("6 - Aksiyani saqlash va ro'yxatga qaytish"):
-        base.click(name="Завершить", exact=True)
-        base.confirm_biruni("Сохранить?")
-        base.expect_page(heading="Акции", url="anor/mcg/action_list")
+        with allure.step("6 - Aksiyani saqlash va ro'yxatga qaytish"):
+            base.click(name="Завершить", exact=True)
+            base.confirm_biruni("Сохранить?")
+            base.expect_page(heading="Акции", url="anor/mcg/action_list")
+    else:
+        start_date, end_date = existing["start_date"], existing["end_date"]
 
     with allure.step("7 - ID ustuni va saqlangan aksiya qiymatlarini tekshirish"):
         action_id_index = base.grid_setting(menu_name="Настройка таблицы", field_name="ИД", search_name="Название")

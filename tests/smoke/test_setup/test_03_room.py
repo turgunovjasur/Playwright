@@ -3,6 +3,7 @@ import re
 import allure
 from tests.smoke.flows.flow_authorization import authorization
 from utils.data_store import save_data
+from tests.shared.list_search import find_list_record
 from utils.base_pages.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
@@ -28,17 +29,21 @@ def run_room(page, code):
         base.navigate_to(tab="Справочники", name="Рабочие зоны")
         base.expect_page(heading="Рабочие зоны", url="trade/trf/room_list")
 
-    with allure.step("2 - Yangi ish zonasi formasini to'ldirish"):
-        base.click(name="Создать")
-        base.wait_for_loader()
-        base.expect_page(heading="Рабочая зона (создание)", url=re.compile(r"anor/mrf/room(?:\+|%2[bB])add(?:[?#]|$)"))
-        base.input(label="Код", value=room_code)
-        base.input(label="Название", value=room_name)
-        base.checkbox(label="Статус", expect_checked=True)
+    existing = find_list_record(base, "room_list", "name", room_name)
+    if existing is None:
+        with allure.step("2 - Yangi ish zonasi formasini to'ldirish"):
+            base.click(name="Создать")
+            base.wait_for_loader()
+            base.expect_page(heading="Рабочая зона (создание)", url=re.compile(r"anor/mrf/room(?:\+|%2[bB])add(?:[?#]|$)"))
+            base.input(label="Код", value=room_code)
+            base.input(label="Название", value=room_name)
+            base.checkbox(label="Статус", expect_checked=True)
 
-    with allure.step("3 - Saqlash va ro'yxatda tekshirish"):
-        base.click(name="Сохранить", exact=True)
-        base.expect_page(heading="Рабочие зоны", url="trade/trf/room_list")
+        with allure.step("3 - Saqlash va ro'yxatda tekshirish"):
+            base.click(name="Сохранить", exact=True)
+            base.expect_page(heading="Рабочие зоны", url="trade/trf/room_list")
+
+    with allure.step("Ro‘yxatdagi yozuvni tekshirish"):
         base.grid(room_name, room_code, click=True)
 
     with allure.step("4 - View formasidan room IDni olish va saqlash"):

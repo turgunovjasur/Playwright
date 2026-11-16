@@ -5,6 +5,7 @@ import allure
 from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.test_setup.flow_setup.flow_nps_survey import fill_nps_survey
 from utils.data_store import save_data
+from tests.shared.list_search import find_list_record
 from utils.base_pages.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
@@ -30,18 +31,22 @@ def run_price_type_usa(page, code):
         base.navigate_to(tab="Справочники", name="Цены")
         base.expect_page(heading="Цены", url="anor/mkr/price_type_list")
 
-    with allure.step("2 - Yangi narx turi formasini to'ldirish"):
-        base.click(name="Создать")
-        base.expect_page(heading="Цена (создание)", url=re.compile(r"anor/mkr/price_type(?:\+|%2[bB])add(?:[?#]|$)"))
-        base.input(label="Код", value=price_type_code)
-        base.input(label="Название", value=price_type_name)
-        base.multiselect(label="Рабочие зоны", value=room_name)
-        base.b_input(label="Валюта", value="Доллар США", clear=True)
-        base.radio(label="Цена продажи", expect_checked=True)
+    existing = find_list_record(base, "price_type_list", "name", price_type_name)
+    if existing is None:
+        with allure.step("2 - Yangi narx turi formasini to'ldirish"):
+            base.click(name="Создать")
+            base.expect_page(heading="Цена (создание)", url=re.compile(r"anor/mkr/price_type(?:\+|%2[bB])add(?:[?#]|$)"))
+            base.input(label="Код", value=price_type_code)
+            base.input(label="Название", value=price_type_name)
+            base.multiselect(label="Рабочие зоны", value=room_name)
+            base.b_input(label="Валюта", value="Доллар США", clear=True)
+            base.radio(label="Цена продажи", expect_checked=True)
 
-    with allure.step("3 - Saqlash va ro'yxatda tekshirish"):
-        base.click(name="Сохранить", exact=True)
-        base.expect_page(heading="Цены", url="anor/mkr/price_type_list")
+        with allure.step("3 - Saqlash va ro'yxatda tekshirish"):
+            base.click(name="Сохранить", exact=True)
+            base.expect_page(heading="Цены", url="anor/mkr/price_type_list")
+
+    with allure.step("Ro‘yxatdagi yozuvni tekshirish"):
         base.grid_controller(search=price_type_name)
         base.grid(price_type_name, click=True)
         save_data("price_type_name_USA", price_type_name)

@@ -18,10 +18,13 @@ CREATES = {
 }
 READ_ACTIONS = {"model", "table", "query", "find", "find_extra_data", "run", "session"}
 AUTH = {"biruni/s$log_in", "biruni/m:session"}
-UI_IDENTITIES = {
+DOCUMENT_CREATES = {
     "anor/mdeal/order/order+add$save": "delivery_number",
-    "anor/mdeal/return/return+add$save": "delivery_number",
     "trade/tcs/cashin+add$save_post": "cashin_number",
+}
+UI_IDENTITIES = {
+    **DOCUMENT_CREATES,
+    "anor/mdeal/return/return+add$save": "delivery_number",
     "anor/mcg/order_product_limit/order_product_limit+add$save": "name",
     "anor/mkw/warehouse+add$save": "name",
     "anor/mdeal/return/return_reason+add$save": "name",
@@ -209,7 +212,7 @@ def _contains_identity(value, fields):
 
 def _identity(value, field):
     if isinstance(value, dict):
-        if field in value and not isinstance(value[field], (dict, list)):
+        if value.get(field) not in (None, "") and not isinstance(value[field], (dict, list)):
             return {field: str(value[field])}
         for child in value.values():
             result = _identity(child, field)
@@ -221,6 +224,12 @@ def _identity(value, field):
             if result:
                 return result
     return {}
+
+
+def _sent_ui_write(operations, endpoint, identity):
+    return any(op.get("transport") == "ui" and op.get("endpoint") == endpoint
+               and (not op.get("identity") or not identity or op["identity"] == identity)
+               for op in operations.values())
 
 
 def bind_browser(context, journal):
@@ -238,17 +247,21 @@ def bind_browser(context, journal):
             route.continue_()
             return
         key = "ui:" + endpoint + ":" + digest(request.post_data or "")
-        identity = _identity(_payload(request), UI_IDENTITIES.get(endpoint, "deal_id"))
-        previous = [op for op in journal.source.get("operations", {}).values()
-                    if op.get("transport") == "ui" and op.get("endpoint") == endpoint
-                    and (not op.get("identity") or not identity or op["identity"] == identity)]
+        payload = _payload(request)
+        identity = _identity(payload, UI_IDENTITIES.get(endpoint, "deal_id"))
+        previous = _sent_ui_write(journal.source.get("operations", {}), endpoint, identity)
         allowed = getattr(journal, "allowed_ui", [])
         permission = next((entry for entry in allowed if entry["endpoint"] == endpoint
-                           and _contains_identity(_payload(request), entry["identity"])), None)
-        if previous and permission is None:
+                           and _contains_identity(payload, entry["identity"])), None)
+        # Every retry create needs a one-use lookup for this exact document.
+        # Even a changed payload may represent the first attempt's order/payment.
+        unchecked_create = journal.source and endpoint in DOCUMENT_CREATES and (
+            previous or permission is None or permission["identity"] != identity
+            or _sent_ui_write(journal.data["operations"], endpoint, identity)
+        )
+        if unchecked_create or (previous and permission is None):
             journal.blocked_reason = "Oldingi UI yozuvi serverdan tasdiqlanmagan; takroriy yozish yuborilmadi: " + endpoint
-            journal.event("write_blocked", endpoint=endpoint,
-                          reason="Oldingi UI yozuvi bor; saqlangan targetni tekshirmasdan takrorlanmaydi")
+            journal.event("write_blocked", endpoint=endpoint, reason=journal.blocked_reason)
             route.abort("blockedbyclient")
             return
         if permission:
@@ -273,7 +286,7 @@ def bind_browser(context, journal):
     context.on("response", response_received)
 
 
-def ui_row(page, table, columns, field, value):
+def ui_row(page, table, columns, field, value, *, document_kind=None):
     """Fresh authenticated, read-only lookup; no HTTP error is treated as absence."""
     journal = ACTIVE.get()
     if journal is None:
@@ -286,6 +299,10 @@ def ui_row(page, table, columns, field, value):
     if result.status != 200:
         raise RetryBlocked(f"Saqlangan yozuvni qidirish HTTP {result.status}; create bajarilmaydi")
     row = one_row(result.json(), columns, field, value)
+    if document_kind and journal.source:
+        prior = journal.previous(f"entity:{document_kind}:{value}")
+        if prior and prior.get("entity_id") and (not row or str(row[columns[0]]) != prior["entity_id"]):
+            raise RetryBlocked("Hujjat raqami va saqlangan ID serverda mos kelmadi; yangi hujjat yaratilmaydi")
     journal.event("ui_existing_found" if row else "ui_confirmed_absent", endpoint=table, field=field, value=str(value))
     return row
 
@@ -294,9 +311,7 @@ def allow_absent_ui_write(endpoint, *, identity, operation=None):
     journal = ACTIVE.get()
     if journal:
         operation = operation or endpoint + ":" + digest(identity)
-        previous = [op for op in journal.source.get("operations", {}).values()
-                    if op.get("transport") == "ui" and op.get("endpoint") == endpoint
-                    and (not op.get("identity") or op["identity"] == identity)]
+        previous = _sent_ui_write(journal.source.get("operations", {}), endpoint, identity)
         if previous and ("+add" in endpoint):
             raise RetryBlocked("Oldingi UI Save yuborilgan, ammo yozuv topilmadi; kechikkan commit ehtimoli sabab qayta Save bloklandi")
         journal.allowed_ui = getattr(journal, "allowed_ui", [])

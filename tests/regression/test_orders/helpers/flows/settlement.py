@@ -22,6 +22,7 @@ from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import expect
 
 from tests.shared.navigation import open_form_from_list
+from tests.shared.list_search import find_list_record
 from utils.base_pages.auto_base_page import AutoBasePage
 from utils.base_pages.angular_base_page import _lookup_query_finished
 
@@ -243,20 +244,23 @@ def post_cashin(page, *, client, number, amount, order_id=None, auto_offset=Fals
         base.navigate_to(tab="Финансы", name="Оплаты от клиентов")
         base.expect_page(heading="Оплаты от клиентов", url="cashin_list")
     from tests.regression.helpers.retry.reconcile import is_retry, ui_row, allow_absent_ui_write
-    existing = None
+    _columns(page, {"number": "Номер оплаты"}, search_name="Номер оплаты")
+    existing = find_list_record(base, "cashin_list", "cashin_number", number)
     if is_retry():
-        with allure.step("Retry: aynan shu to‘lov raqami bilan kirimni serverdan qidirish"):
-            existing = ui_row(page, "trade/tcs/cashin_list:table",
-                              ["cashin_id", "cashin_number", "amount", "client_name", "posted"],
-                              "cashin_number", number)
-            if existing and (_number(existing["amount"]) != Decimal(amount)
-                             or existing["client_name"] != client or existing["posted"] != "Y"):
-                raise AssertionError("Mavjud kirim klienti, summasi yoki posted holati mos emas; yangi kirim yaratilmadi")
-            if not existing:
-                allow_absent_ui_write("trade/tcs/cashin+add$save_post", identity={"cashin_number": number})
+        confirmed = ui_row(page, "trade/tcs/cashin_list:table",
+                           ["cashin_id", "cashin_number", "amount", "client_name", "posted"],
+                           "cashin_number", number, document_kind="cashin")
+        if existing and (not confirmed or str(existing["cashin_id"]) != str(confirmed["cashin_id"])):
+            raise AssertionError("Qidiruv natijasidagi to‘lov IDsi serverda tasdiqlanmadi")
+        existing = confirmed
+        if not existing:
+            allow_absent_ui_write("trade/tcs/cashin+add$save_post", identity={"cashin_number": number})
     if existing:
-        from tests.regression.helpers.retry.state import ACTIVE
-        page.goto(ACTIVE.get().ui_root + "/a2/trade/tcs/cashin_view?cashin_id=" + str(existing["cashin_id"]))
+        if (_number(existing["amount"]) != Decimal(amount)
+                or existing["client_name"] != client or existing["posted"] != "Y"):
+            raise AssertionError("Mavjud kirim klienti, summasi yoki posted holati mos emas; yangi kirim yaratilmadi")
+        base.open_route("trade/tcs/cashin_view?cashin_id=" + str(existing["cashin_id"]),
+                        heading="Оплата от клиента / Просмотр")
     else:
         with allure.step("Yangi kassa kirimi formasini ochish"):
             open_form_from_list(base.page, heading="Оплата от клиента / Создание", url=re.compile(r"cashin(?:\+|%2[bB])add"))

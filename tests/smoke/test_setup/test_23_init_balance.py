@@ -5,11 +5,48 @@ from playwright.sync_api import expect
 
 from tests.smoke.flows.flow_authorization import authorization
 from utils.base_pages import UI_TIMEOUT_MS
+from tests.shared.list_search import find_list_record
 from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("Init Balance")]
 
 # ----------------------------------------------------------------------------------------------------------------------
+
+def _ensure_posted_balance(base, number, currency, product_code, product_name, quantity, price):
+    table = "init_inventory_balance_list"
+    existing = find_list_record(base, table, "balance_number", number)
+    if existing is None:
+        with allure.step(f"{currency} · {number} qoldiq hujjatini yaratish"):
+            base.click(name="Создать")
+            base.expect_page(heading="Ввод начальных остатков ТМЦ (создание)", url=re.compile(r"init_inventory_balance(?:\+|%2[bB])add"))
+            base.input(label="Номер", value=number)
+            base.b_input(label="Склад", value="Основной склад", clear=True)
+            base.b_input(label="Валюта", value=currency, clear=True)
+            base.b_input(label="Название", value=product_code, expect_value=product_name)
+            base.input(label="Кол-во", value=quantity)
+            base.input(label="Цена", value=price)
+            base.click(name="Сохранить", exact=True)
+            base.confirm_biruni("Сохранить?")
+            base.expect_page(heading="Ввод начальных остатков ТМЦ", url=table)
+            existing = find_list_record(base, table, "balance_number", number)
+    if not existing or existing["warehouse_name"] != "Основной склад" or existing["currency_name"] != currency:
+        raise AssertionError(f"{number}: qoldiq hujjati, ombor yoki valyuta tasdiqlanmadi")
+
+    # The shorter UZS number can also match the USD document in the same grid.
+    cell = base.page.get_by_text(number, exact=True).filter(visible=True)
+    cell.click()
+    if existing["posted"] == "N":
+        with allure.step(f"{currency} · {number} qoldiq hujjatini o‘tkazish"):
+            base.click(name="Провести")
+            base.confirm_biruni(f"Провести документ № {number}?")
+            base.expect_page(heading="Ввод начальных остатков ТМЦ", url=table)
+            posted = find_list_record(base, table, "balance_number", number)
+            if not posted or posted["balance_id"] != existing["balance_id"] or posted["posted"] != "Y":
+                raise AssertionError(f"{number}: hujjat o‘tkazilgani tasdiqlanmadi")
+            cell.click()
+    elif existing["posted"] != "Y":
+        raise AssertionError(f"{number}: hujjat holati noma’lum")
+
 
 def run_init_balance(page, code):
     """UZS va USD mahsulotlari uchun boshlang'ich qoldiq yaratish.
@@ -32,27 +69,8 @@ def run_init_balance(page, code):
         base.navigate_to(tab="Склад", name="Ввод начальных остатков ТМЦ")
         base.expect_page(heading="Ввод начальных остатков ТМЦ", url="anor/mkw/init_balance/init_inventory_balance_list")
 
-    with allure.step("2 - UZS qoldiq hujjati formasini ochish va to'ldirish"):
-        base.click(name="Создать")
-        base.expect_page(heading="Ввод начальных остатков ТМЦ (создание)", url=re.compile(r"anor/mkw/init_balance/init_inventory_balance(?:\+|%2[bB])add(?:[?#]|$)"))
-        base.input(label="Номер", value=document_number)
-        base.b_input(label="Склад", value="Основной склад", clear=True)
-        base.b_input(label="Валюта", value="Узбекский сум", clear=True)
-        base.b_input(label="Название", value=f"c_p_pw{code}", expect_value=f"product-pw{code}")
-        base.input(label="Кол-во", value=quantity)
-        base.input(label="Цена", value="5000")
-
-    with allure.step("3 - UZS qoldiq hujjatini saqlash va ro'yxatda tekshirish"):
-        base.click(name="Сохранить", exact=True)
-        base.confirm_biruni("Сохранить?")
-        base.expect_page(heading="Ввод начальных остатков ТМЦ", url="init_inventory_balance_list")
-        base.grid(document_number, click=True)
-
-    with allure.step("4 - UZS qoldiq hujjatini o'tkazish"):
-        base.click(name="Провести")
-        base.confirm_biruni(f"Провести документ № {document_number}?")
-        base.expect_page(heading="Ввод начальных остатков ТМЦ", url="init_inventory_balance_list")
-        base.grid(document_number, click=True)
+    _ensure_posted_balance(base, document_number, "Узбекский сум", f"c_p_pw{code}",
+                           f"product-pw{code}", quantity, "5000")
 
     with allure.step("5 - UZS provodkalarida miqdor va summani tekshirish"):
         with page.expect_popup(timeout=UI_TIMEOUT_MS) as postings_page_info:
@@ -62,27 +80,8 @@ def run_init_balance(page, code):
         expect(postings_page.get_by_role("rowgroup")).to_contain_text("500 000")
         postings_page.close()
 
-    with allure.step("6 - USD qoldiq hujjati formasini ochish va to'ldirish"):
-        base.click(name="Создать")
-        base.expect_page(heading="Ввод начальных остатков ТМЦ (создание)", url=re.compile(r"anor/mkw/init_balance/init_inventory_balance(?:\+|%2[bB])add(?:[?#]|$)"))
-        base.input(label="Номер", value=document_usa_number)
-        base.b_input(label="Склад", value="Основной склад", clear=True)
-        base.b_input(label="Валюта", value="Доллар США", clear=True)
-        base.b_input(label="Название", value=f"c_p_usa_pw{code}", expect_value=f"product-usa-pw{code}")
-        base.input(label="Кол-во", value=quantity)
-        base.input(label="Цена", value="1")
-
-    with allure.step("7 - USD qoldiq hujjatini saqlash va ro'yxatda tekshirish"):
-        base.click(name="Сохранить", exact=True)
-        base.confirm_biruni("Сохранить?")
-        base.expect_page(heading="Ввод начальных остатков ТМЦ", url="init_inventory_balance_list")
-        base.grid(document_usa_number, click=True)
-
-    with allure.step("8 - USD qoldiq hujjatini o'tkazish"):
-        base.click(name="Провести")
-        base.confirm_biruni(f"Провести документ № {document_usa_number}?")
-        base.expect_page(heading="Ввод начальных остатков ТМЦ", url="init_inventory_balance_list")
-        base.grid(document_usa_number)
+    _ensure_posted_balance(base, document_usa_number, "Доллар США", f"c_p_usa_pw{code}",
+                           f"product-usa-pw{code}", quantity, "1")
 
 # ----------------------------------------------------------------------------------------------------------------------
 

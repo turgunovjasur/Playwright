@@ -19,6 +19,7 @@ def read_stock(case, warehouse, *, product_id=None):
                 observed.clear()
                 if response.status == 200:
                     observed.update(response.json())
+                    observed["columns"] = response.request.post_data_json.get("p", {}).get("column", [])
         except (ValueError, TypeError, AttributeError):
             observed.clear()
     case.page.on("response", capture)
@@ -62,6 +63,13 @@ def _read_stock(case, warehouse, *, product_id, observed):
                 expect(rows).to_have_count(0)
                 base.grid(state="empty", root=grid)
                 return {key: Decimal("0") for key in ("physical", "booked", "available")}
+            balances = observed.get("data", [])
+            columns = observed.get("columns", [])
+            if "warehouse_name" in columns and observed.get("count") == len(balances):
+                index = columns.index("warehouse_name")
+                if all(row[index] != warehouse for row in balances):
+                    expect(rows).to_have_count(len(balances))
+                    return {key: Decimal("0") for key in ("physical", "booked", "available")}
             expect(warehouse_rows.first).to_be_visible()
         result = {key: Decimal("0") for key in ("physical", "booked", "available")}
         matched = 0

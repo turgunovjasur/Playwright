@@ -1,3 +1,4 @@
+from decimal import Decimal
 import re
 
 import allure
@@ -5,6 +6,7 @@ import pytest
 
 from tests.smoke.flows.flow_authorization import authorization
 from tests.smoke.test_groups.test_a_grup.flow_settlement.flow_settlement import settlement_columns
+from tests.shared.list_search import find_list_record
 from utils.data_store import load_data
 from utils.base_pages.auto_base_page import AutoBasePage
 
@@ -42,22 +44,30 @@ def run_post_client_payment(page, code):
         base.navigate_to(tab="Финансы", name="Оплаты от клиентов")
         base.expect_page(heading="Оплаты от клиентов", url="cashin_list")
 
-    with allure.step("2 - Yangi client payment formasini ochish"):
-        base.click(name="Создать")
-        base.expect_page(heading="Оплата от клиента / Создание", url=re.compile(r"cashin(?:\+|%2[bB])add(?:[?#]|$)"))
+    number = f"GP-{load_data('group_0_order_id')}"
+    base.grid_setting(menu_name="Настройка таблицы", field_name="Номер оплаты", search_name="Номер оплаты")
+    existing = find_list_record(base, "cashin_list", "cashin_number", number)
+    if existing is None:
+        with allure.step("2 - Yangi client payment formasini ochish"):
+            base.click(name="Создать")
+            base.expect_page(heading="Оплата от клиента / Создание", url=re.compile(r"cashin(?:\+|%2[bB])add(?:[?#]|$)"))
 
-    with allure.step("3 - Client payment maydonlarini to'ldirish"):
-        base.b_input(label="Клиент", value=client)
-        base.form_view(label="Баланс", expect_value=str(baseline["prepayment"] - expected_debt), remove_spaces=True)
-        base.input(label="Сумма", value="7000")
-        base.b_input(label="Тип оплаты", value="Наличные деньги")
-        base.b_input(label="Касса", value="Основная касса")
-        base.checkbox(label="Провести взаимозачёт", expect_checked=False)
+        with allure.step("3 - Client payment maydonlarini to'ldirish"):
+            base.input(label="Номер оплаты", value=number)
+            base.b_input(label="Клиент", value=client)
+            base.form_view(label="Баланс", expect_value=str(baseline["prepayment"] - expected_debt), remove_spaces=True)
+            base.input(label="Сумма", value="7000")
+            base.b_input(label="Тип оплаты", value="Наличные деньги")
+            base.b_input(label="Касса", value="Основная касса")
+            base.checkbox(label="Провести взаимозачёт", expect_checked=False)
 
-    with allure.step("4 - Paymentni Провести qilish"):
-        base.click(name="Провести")
-        base.confirm_biruni(expected_text="Провести?")
-        base.expect_page(heading="Оплата от клиента / Создание", url=re.compile(r"cashin(?:\+|%2[bB])add(?:[?#]|$)"))
+        with allure.step("4 - Paymentni Провести qilish"):
+            base.click(name="Провести")
+            base.confirm_biruni(expected_text="Провести?")
+            base.expect_page(heading="Оплата от клиента / Создание", url=re.compile(r"cashin(?:\+|%2[bB])add(?:[?#]|$)"))
+    elif (existing["client_name"] != client or existing["posted"] != "Y"
+          or Decimal(str(existing["amount"]).replace(" ", "").replace(",", ".")) != payment_amount):
+        raise AssertionError(f"{number}: saqlangan to‘lovning klienti, summasi yoki holati mos kelmadi")
 
     with allure.step("5 - Debt va prepayment settlementda tekshiriladi"):
         base.navigate_to(tab="Продажа", name="Взаиморасчеты с клиентами")

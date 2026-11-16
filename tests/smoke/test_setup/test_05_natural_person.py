@@ -9,6 +9,7 @@ from tests.smoke.test_setup.flow_setup.flow_natural_person import (
     open_natural_person_view,
 )
 from utils.data_store import save_data
+from tests.shared.list_search import find_list_record
 from utils.base_pages.auto_base_page import AutoBasePage
 from utils.helper_utils import query_int_from_url
 
@@ -37,8 +38,9 @@ def run_natural_person(page, code):
     person_name = f"natural_person-pw{code}"
 
     open_natural_person_list(page, step_name="1 - Jismoniy shaxslar ro'yxatini ochish")
-    open_natural_person_create(page, step_name="2 - Yangi jismoniy shaxs formasini ochish")
-    create_natural_person(page, person_name, person_code, step_name="3 - Jismoniy shaxs ma'lumotlarini kiritib saqlash")
+    if find_list_record(base, "natural_person_list", "code", person_code, search_field="search_code") is None:
+        open_natural_person_create(page, step_name="2 - Yangi jismoniy shaxs formasini ochish")
+        create_natural_person(page, person_name, person_code, step_name="3 - Jismoniy shaxs ma'lumotlarini kiritib saqlash")
 
     with allure.step("4 - Ro'yxatda yaratilgan shaxsni tekshirish"):
         base.grid_controller(search=person_code)

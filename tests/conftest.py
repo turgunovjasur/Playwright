@@ -36,7 +36,7 @@ def pytest_addoption(parser):
     smartup = parser.getgroup("smartup")
     smartup.addoption(
         "--order-retries", type=int, choices=(0, 1), default=1,
-        help="Order pilot testlari uchun darhol retry soni: 0 yoki 1 (SCN-003)",
+        help="Barcha Order regression testlari uchun darhol retry soni: 0 yoki 1",
     )
     smartup.addoption(
         "--headless",
