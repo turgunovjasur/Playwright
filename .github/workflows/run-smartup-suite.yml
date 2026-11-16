@@ -23,7 +23,8 @@ on:
 
 jobs:
   suite:
-    runs-on: ubuntu-latest
+    # Playwright 1.58 provides Chromium and native dependencies for Ubuntu 24.04.
+    runs-on: ubuntu-24.04
     timeout-minutes: ${{ inputs.target == 'api-regression' && 350 || 90 }}
     env:
       TEST_SERVER_KEY: ${{ inputs.server_key }}
@@ -109,6 +110,7 @@ jobs:
         run: python telegram_bot/telegram_progress.py update --status "Playwright browser o‘rnatilmoqda"
 
       - name: Install Playwright browser
+        id: browser
         run: python -m playwright install --with-deps chromium
 
       - name: Select and mask company credentials
@@ -177,7 +179,7 @@ jobs:
             -s 2>&1 | tee test-results/ci-test-output.log
 
       - name: Generate Allure report
-        if: ${{ always() }}
+        if: ${{ always() && (inputs.target != 'api-regression' || steps.api.outcome == 'success' || steps.api.outcome == 'failure') }}
         id: report
         env:
           ALLURE_SINGLE_FILE: ${{ inputs.target == 'api-regression' && '1' || '0' }}
@@ -228,6 +230,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           REPORT_URL: ${{ steps.publish.outputs.url }}
           API_STATUS: ${{ steps.api.outcome }}
+          BROWSER_STATUS: ${{ steps.browser.outcome }}
           REGRESSION_STATUS: ${{ steps.regression.outcome }}
           JOB_STATUS: ${{ job.status }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -257,6 +260,9 @@ jobs:
 
           if [[ "$TEST_TARGET" == api-regression ]]; then
             SUMMARY="API setup: ${API_STATUS}. Order regression: ${REGRESSION_STATUS}."
+            if [[ "$BROWSER_STATUS" == failure ]]; then
+              SUMMARY="CI runnerda Chromium o‘rnatilmadi. API setup va Order regression boshlanmadi."
+            fi
           fi
           python telegram_bot/telegram_progress.py finish \
             --result "$JOB_STATUS" \
