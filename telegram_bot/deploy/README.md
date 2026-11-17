@@ -126,7 +126,12 @@ Brauzer uchun foydalanuvchi `qa`; viewer paroli deploy paytida botning run
 paroliga moslanadi. Run paroli o‘zgarsa viewer hashini ham yangilang.
 
 `reports` Compose servisi `report-storage/` ichidagi run-attempt HTML fayllarini
-o‘qishga beradi. CI alohida `ci` hisobida HTTPS PUT bilan joylaydi.
+o'qishga beradi. CI alohida `ci` hisobida HTTPS PUT bilan joylaydi.
+Publisher asl fayl yoniga `.html.view` yaratadi. Telegram havolasi Allure
+oynasini ochadi. Test kartasi, rasm va trace uchun brauzer asl fayldan
+kerakli baytlarni HTTP Range orqali oladi. Asl fayl, hisobot oynasi va
+biriktirmalar bir xil viewer paroli bilan himoyalangan. Publisher eski
+hisobotni o'chirganda uning `.view` faylini ham o'chiradi.
 GitHub Actions sozlamalari:
 
 - `ALLURE_REPORT_BASE_URL` repository variable — HTTPS manzili va

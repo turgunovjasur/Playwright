@@ -16,6 +16,8 @@ services:
     restart: unless-stopped
     volumes:
       - ./report_store.py:/app/report_store.py:ro
+      - ./report_view.py:/app/report_view.py:ro
+      - ./report-bridge.js:/app/report-bridge.js:ro
       - ../../report-storage:/reports
     cap_drop:
       - ALL
@@ -53,6 +55,7 @@ services:
       - "${ALLURE_BIND_ADDRESS:-127.0.0.1}:18086:8080"
     volumes:
       - ./reports-nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./report-viewer.html:/etc/nginx/report-viewer.html:ro
       - ../../report-storage:/reports
       - ../../report-auth:/auth:ro
     tmpfs:

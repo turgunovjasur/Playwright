@@ -6,10 +6,12 @@ import socketserver
 import time
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
+from report_view import VIEW_BUDGET, build_view
 
 ROOT = Path("/reports")
 INCOMING = ROOT / ".incoming"
 PENDING = INCOMING / "publisher.partial"
+VIEW_PENDING = INCOMING / "viewer.partial"
 SOCKET = INCOMING / "publisher.sock"
 REPORT = re.compile(r"([0-9]+)-([0-9]+)\.html", re.ASCII)
 KEEP = 3
@@ -33,6 +35,7 @@ def available():
 
 
 def remove_report(path):
+    path.with_suffix(".html.view").unlink(missing_ok=True)
     path.unlink()
     print(f"Removed Allure report {path.name}", flush=True)
 
@@ -76,7 +79,7 @@ class Publisher(BaseHTTPRequestHandler):
         if size > MAX_UPLOAD:
             return self.send_error(413)
         destination = ROOT / name
-        status = make_room(destination, size)
+        status = make_room(destination, size + VIEW_BUDGET)
         if status:
             return self.send_error(status)
         existed = destination.exists()
@@ -96,13 +99,23 @@ class Publisher(BaseHTTPRequestHandler):
                 os.fsync(out.fileno())
             if available() < MIN_FREE:
                 return self.send_error(507)
+            has_view = build_view(PENDING, VIEW_PENDING)
+            destination_view = destination.with_suffix(".html.view")
+            if not has_view:
+                destination_view.unlink(missing_ok=True)
             PENDING.replace(destination)
+            if has_view:
+                VIEW_PENDING.replace(destination_view)
             prune()
+        except ValueError as exc:
+            print(f"Invalid Allure report: {exc}", flush=True)
+            return self.send_error(422, "Invalid packed Allure report")
         except OSError as exc:
             if exc.errno not in (errno.ENOSPC, errno.EDQUOT):
                 raise
             return self.send_error(507)
         finally:
+            VIEW_PENDING.unlink(missing_ok=True)
             PENDING.unlink(missing_ok=True)
         self.send_response(204 if existed else 201)
         self.end_headers()
@@ -123,6 +136,18 @@ if __name__ == "__main__":
     INCOMING.mkdir(mode=0o700, exist_ok=True)
     SOCKET.unlink(missing_ok=True)
     PENDING.unlink(missing_ok=True)
+    VIEW_PENDING.unlink(missing_ok=True)
     with ReportServer(str(SOCKET), Publisher) as server:
         prune()
+        for report in reports():
+            view = report.with_suffix(".html.view")
+            if view.exists() and view.stat().st_mtime_ns >= report.stat().st_mtime_ns:
+                continue
+            try:
+                if available() >= MIN_FREE + VIEW_BUDGET and build_view(report, VIEW_PENDING):
+                    VIEW_PENDING.replace(view)
+            except (ValueError, OSError) as exc:
+                print(f"Could not index {report.name}: {exc}", flush=True)
+            finally:
+                VIEW_PENDING.unlink(missing_ok=True)
         server.serve_forever()

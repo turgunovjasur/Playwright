@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="uz"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Allure hisoboti</title>
+<style>html,body,iframe{margin:0;width:100%;height:100%;border:0}iframe{display:block}</style></head>
+<body><iframe title="Allure hisoboti" sandbox="allow-scripts allow-downloads"></iframe>
+<script>
+// Keep report-supplied HTML in an opaque frame. Only this fixed shell has
+// same-origin access. Its sole network destination is this report's archive.
+const frame = document.querySelector("iframe");
+const archive = new URL("packed/" + location.pathname.split("/").pop(), location.href);
+window.addEventListener("message", async event => {
+  if (event.source !== frame.contentWindow || event.origin !== "null" || !event.data) return;
+  const {hash, start, length, etag} = event.data;
+  if (typeof hash === "string") {
+    if ((!hash || hash.startsWith("#")) && hash !== location.hash)
+      history.replaceState(null, "", location.pathname + location.search + hash);
+    return;
+  }
+  const [port] = event.ports;
+  if (!port) return;
+  try {
+    if (!Number.isSafeInteger(start) || !Number.isSafeInteger(length) || start < 0 ||
+        length < 1 || start + length > 2 ** 32 || !/^"[a-f0-9]+-[a-f0-9]+"$/.test(etag))
+      throw new Error("Invalid report range");
+    const end = start + length - 1;
+    const response = await fetch(archive, {
+      headers: {Range: `bytes=${start}-${end}`, "If-Match": etag}, redirect: "error",
+    });
+    if (response.status !== 206 || response.headers.get("Content-Range")?.split("/")[0] !== `bytes ${start}-${end}`) {
+      await response.body?.cancel();
+      throw new Error("Report changed");
+    }
+    const bytes = await response.arrayBuffer();
+    if (bytes.byteLength !== length) throw new Error("Incomplete report data");
+    port.postMessage(bytes, [bytes]);
+  } catch {
+    port.postMessage(null);
+  } finally {
+    port.close();
+  }
+});
+window.addEventListener("hashchange", () => frame.contentWindow.postMessage({hash: location.hash}, "*"));
+frame.src = location.pathname + ".view" + location.search + location.hash;
+</script></body></html>

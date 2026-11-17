@@ -104,12 +104,13 @@ def monitor_run(
             if status == "completed":
                 records = github.delivery_statuses(workflow_run.run_id)
                 report = next((item for item in records if item.get("report_url")), {})
-                keyboard = report_keyboard(report["report_url"]) if report else None
-                outcome = (conclusion or "unknown").upper()
-                text = f"API setup + Regression · {outcome}\n{workflow_run.html_url}"
-                if not report:
-                    text += "\nAllure hisoboti mavjud emas."
-                telegram.send_message(chat_id, text, reply_markup=keyboard)
+                if report.get("status") not in {"delivered", "recovered", "fallback_sent", "sent_new"}:
+                    keyboard = report_keyboard(report["report_url"]) if report else None
+                    outcome = (conclusion or "unknown").upper()
+                    text = f"API setup + Regression · {outcome}\n{workflow_run.html_url}"
+                    if not report:
+                        text += "\nAllure hisoboti mavjud emas."
+                    telegram.send_message(chat_id, text, reply_markup=keyboard)
         except Exception as exc:
             status_errors += 1
             print(
