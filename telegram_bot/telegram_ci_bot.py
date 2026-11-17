@@ -14,6 +14,7 @@ import time
 
 from .bot_client import TelegramClient
 from .bot_state import ActiveRunStore, PendingStore
+from .constants import MANUAL_SUITE
 from .github_api import GitHubActionsClient
 from .handlers import handle_callback, handle_message
 from .scheduler import DailyScheduler, dispatch_daily_slot
@@ -48,7 +49,7 @@ def main():
             "Daily scheduler enabled: "
             f"time={config.daily_schedule.hour:02d}:{config.daily_schedule.minute:02d} "
             f"timezone={config.daily_schedule.timezone_name} "
-            f"suite=all server={config.daily_schedule.server_key}"
+            f"suite={MANUAL_SUITE} server={config.daily_schedule.server_key}"
         )
     else:
         print("Daily scheduler disabled; bot manual trigger rejimida.")

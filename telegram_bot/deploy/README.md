@@ -45,11 +45,11 @@ database yoki boshqa project volume/networklariga ulanmaydi.
 
 Production scheduling authoritysi GitHub cron emas, shu
 `playwright-ci-bot` containeridir. Bot har kuni `Asia/Tashkent` vaqti bilan
-`02:00`da `daily-smoke.yml` workflowiga `suite=all`, `server=smartup` dispatch
+`02:00`da `daily-smoke.yml` workflowiga `suite=api-regression`, `server=smartup` dispatch
 yuboradi.
 
-`all` bitta workflow run ichida Smoke va Reportni parallel boshlaydi; Forms
-Smoke tugagach ishlaydi. Active workflow mavjud bo‘lsa joriy slot skip qilinadi.
+Botdagi `/run` kabi, avval API setup bajariladi. U muvaffaqiyatli tugagach
+Order regression boshlanadi. Active workflow mavjud bo‘lsa joriy slot skip qilinadi.
 Container `02:00` vaqtida ishlamagan bo‘lsa, o‘tkazib yuborilgan slot keyin
 qoplanmaydi.
 

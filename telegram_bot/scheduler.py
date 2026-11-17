@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 import sys
 import time
 
+from .constants import MANUAL_SUITE
 from .models import RunRequest
 from .runs import find_busy_run
 
@@ -56,7 +57,7 @@ def dispatch_daily_slot(github, active_store, dispatch_lock, config, slot):
             return "skipped-active"
 
         workflow_run = github.dispatch(
-            RunRequest(suite_key="all", server_key=config.server_key)
+            RunRequest(suite_key=MANUAL_SUITE, server_key=config.server_key)
         )
 
     print(
