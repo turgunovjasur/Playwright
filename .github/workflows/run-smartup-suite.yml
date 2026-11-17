@@ -226,15 +226,33 @@ jobs:
         env:
           REPORT_BASE: ${{ vars.ALLURE_REPORT_BASE_URL }}
           UPLOAD_PASSWORD: ${{ secrets.ALLURE_UPLOAD_PASSWORD }}
+          REPORT_RUN_ID: ${{ github.run_id }}
+          REPORT_ATTEMPT: ${{ github.run_attempt }}
+        run: bash scripts/publish_allure_html.sh "$RUNNER_TEMP/report.html"
+
+      - name: Encrypt the HTML after a failed publish
+        id: backup
+        if: ${{ !cancelled() && steps.publish.outcome == 'failure' }}
+        env:
+          ALLURE_ARTIFACT_KEY: ${{ secrets.ALLURE_ARTIFACT_KEY }}
         run: |
-          set -eu
-          : "${REPORT_BASE:?Allure host is missing}" "${UPLOAD_PASSWORD:?Allure upload password is missing}"
-          file="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.html"
-          status=$(curl --proto '=https' --silent --show-error --fail --retry 2 --output /dev/null --write-out '%{http_code}' \
-            --user "ci:${UPLOAD_PASSWORD}" --upload-file "$RUNNER_TEMP/report.html" \
-            "${REPORT_BASE%/}/upload/${file}")
-          [[ "$status" == 201 || "$status" == 204 ]]
-          echo "url=${REPORT_BASE%/}/${file}" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          : "${ALLURE_ARTIFACT_KEY:?Missing Allure artifact key}"
+          umask 077
+          gpg --batch --pinentry-mode loopback --passphrase-fd 3 --symmetric \
+            --cipher-algo AES256 --compress-algo ZIP --compress-level 1 \
+            --output "$RUNNER_TEMP/report.html.gpg" "$RUNNER_TEMP/report.html" \
+            3<<<"$ALLURE_ARTIFACT_KEY"
+
+      - name: Save recoverable Allure HTML for 7 days
+        if: ${{ !cancelled() && steps.backup.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-html-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/report.html.gpg
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
 
       - name: Save Allure 3 history
         if: ${{ always() }}

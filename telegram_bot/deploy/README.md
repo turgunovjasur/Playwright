@@ -132,6 +132,17 @@ GitHub Actions sozlamalari:
 - `ALLURE_REPORT_BASE_URL` repository variable — HTTPS manzili va
   `/playwright-reports` prefiksi.
 - `ALLURE_UPLOAD_PASSWORD` repository secret — faqat CI publish paroli.
+- `ALLURE_ARTIFACT_KEY` repository secret — zaxira HTML faylini shifrlash
+  va ochish uchun alohida tasodifiy kalit. Kalit almashtirilsa, avvalgi
+  kalit bilan shifrlangan artefaktlarni ochish uchun o‘sha kalit kerak.
+
+Hetzner tayyor HTML faylini qabul qilmasa, CI asl run ichida
+`allure-html-<run_id>-<attempt>` nomli shifrlangan artefaktni 7 kun saqlaydi.
+Qayta yuklash uchun GitHub Actions → **Republish Allure report** →
+**Run workflow** ni tanlang. Asl test runining ID va urinish raqamini kiriting
+(birinchi urinish — `1`). Tayyor hisobot asl manziliga joylanadi va havolasi
+yangi workflow’ning Summary sahifasida chiqadi. Hetzner’ning hajm, disk
+zaxirasi va eng yangi uchta hisobotni saqlash qoidalari bunda ham amal qiladi.
 
 Hostda `report-auth/viewers` va `report-auth/publisher` Nginx htpasswd
 fayllari bo‘lishi kerak. Ularni Git tashqarisida saqlang.

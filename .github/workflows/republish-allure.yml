@@ -1,0 +1,60 @@
+name: Republish Allure report
+run-name: Republish Allure · ${{ inputs.run_id }} · attempt ${{ inputs.attempt }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Original API setup + Regression run ID
+        required: true
+        type: string
+      attempt:
+        description: Original run attempt
+        required: true
+        type: string
+        default: "1"
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  republish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      REPORT_RUN_ID: ${{ inputs.run_id }}
+      REPORT_ATTEMPT: ${{ inputs.attempt }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Download backup for the original workflow attempt
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [[ "$REPORT_RUN_ID" =~ ^[1-9][0-9]*$ && "$REPORT_ATTEMPT" =~ ^[1-9][0-9]*$ ]]
+          workflow=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$REPORT_RUN_ID" \
+            --jq 'select(.event == "workflow_dispatch") | .path')
+          [[ "$workflow" == ".github/workflows/daily-smoke.yml" ]]
+          gh run download "$REPORT_RUN_ID" --repo "$GITHUB_REPOSITORY" \
+            --name "allure-html-$REPORT_RUN_ID-$REPORT_ATTEMPT" --dir "$RUNNER_TEMP/backup"
+
+      - name: Restore original HTML
+        env:
+          ALLURE_ARTIFACT_KEY: ${{ secrets.ALLURE_ARTIFACT_KEY }}
+        run: |
+          set -euo pipefail
+          : "${ALLURE_ARTIFACT_KEY:?Missing Allure artifact key}"
+          umask 077
+          gpg --batch --pinentry-mode loopback --passphrase-fd 3 \
+            --output "$RUNNER_TEMP/report.html" --decrypt "$RUNNER_TEMP/backup/report.html.gpg" \
+            3<<<"$ALLURE_ARTIFACT_KEY"
+
+      - name: Publish Allure to Hetzner
+        env:
+          REPORT_BASE: ${{ vars.ALLURE_REPORT_BASE_URL }}
+          UPLOAD_PASSWORD: ${{ secrets.ALLURE_UPLOAD_PASSWORD }}
+        run: bash scripts/publish_allure_html.sh "$RUNNER_TEMP/report.html"
