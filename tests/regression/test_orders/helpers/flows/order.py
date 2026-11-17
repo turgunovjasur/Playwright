@@ -111,18 +111,31 @@ def save_order_by_reference(page, reference):
         confirm_entity("order", reference, saved["deal_id"])
     with allure.step("Unique TTN bo'yicha aynan yangi orderni topish"):
         column = base.grid_setting(menu_name="Настройка таблицы", field_name="Номер ТТН", search_name="Номер ТТН")
-        def searched(response):
-            return (response.status == 200
-                    and unquote(urlsplit(response.url).path).endswith('/trade/tdeal/order/order_list:table')
-                    and _lookup_query_finished(response.request, reference, "delivery_number"))
-
-        # The previous dataset may already contain this TTN. Select only after
-        # this exact search response and its rendered row have settled.
-        with page.expect_response(searched) as search_response:
-            base.grid_controller(search=reference)
-        search_response.value.finished()
         base.wait_for_loader()
-        expect(page.locator("smt-data-table:visible .smt-data-row")).to_have_count(1)
+        rows = page.locator("smt-data-table:visible .smt-data-row")
+        current_search = page.get_by_role("main").get_by_role("searchbox").input_value()
+        already_found = (
+            current_search == reference
+            and rows.count() == 1
+            and base.grid_cell(rows.first, column, return_value=True) == reference
+        )
+        if not already_found:
+            if current_search == reference:
+                # Let the grid apply the empty filter before submitting the same TTN again.
+                def cleared(response):
+                    return (unquote(urlsplit(response.url).path).endswith("/trade/tdeal/order/order_list:table")
+                            and _lookup_query_finished(response.request, "", "delivery_number"))
+
+                with page.expect_response(cleared) as pending:
+                    base.grid_controller(search="")
+                if not pending.value.ok:
+                    raise AssertionError(f"TTN qidiruvini tozalash HTTP {pending.value.status} qaytardi")
+                pending.value.finished()
+            found = find_list_record(base, "order_list", "delivery_number", reference,
+                                     also_match={"deal_id": saved["deal_id"]})
+            if found is None:
+                raise AssertionError(f"TTN {reference} qidiruvida saqlangan order {saved['deal_id']} topilmadi")
+        expect(rows).to_have_count(1)
         row = base.grid(reference)
         expect(base.grid_cell(row, column)).to_have_text(reference)
         base.grid(reference, click=True)
