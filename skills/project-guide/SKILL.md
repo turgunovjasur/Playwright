@@ -70,7 +70,7 @@ Smartup reference ownershipi:
 - `yoz`, `o'zgartir`, `tuzat`, `amalga oshir`, `qoidaga qo'sh` faqat aytilgan
   scope'ni implement qilishga ruxsat beradi; scope'ni kengaytirma.
 - Boshqa branch aniq aytilmasa kod tahriridan oldin branchni tekshir va
-  `dev1`da ishlagin.
+  `dev`da ishlagin.
 - Testlarni, collectionni yoki smoke targetni faqat foydalanuvchi aynan
   `run qil` desa ishlat; aks holda handoffda `run qilinmadi` de.
 - Secret, token, real credential, email, session code va PII'ni skillga yozma.

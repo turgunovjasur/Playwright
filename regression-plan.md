@@ -114,7 +114,7 @@ Oxirgi yangilanish: **2026-09-25 (Asia/Tashkent)**.
 
 ## Kelishilgan chegaralar
 
-- Barcha yangi ish `dev1`da; foydalanuvchi o'zgarishlarni working tree'dan ko'radi.
+- Barcha yangi ish `dev`da; foydalanuvchi o'zgarishlarni working tree'dan ko'radi.
 - Foydalanuvchi aytmaguncha commit qilinmaydi. Yangi ishlarni boshqa branchlarga
   tarqatish ushbu boshlang'ich tenglashtirishning davomiy avtomatik amali emas.
 - Mavjud smoke ssenariylari saqlanadi; umumiy infra uchun import/ulanishlar

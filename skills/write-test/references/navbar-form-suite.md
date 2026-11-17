@@ -269,7 +269,7 @@ tekshir. Failure bo'lsa log, trace, screenshot va Allure artefaktlarini
 
 ## Yakuniy checklist
 
-- [ ] Branch `dev1` yoki user tanlagan branch.
+- [ ] Branch [project-guide qoidasiga](../../project-guide/SKILL.md#governance) yoki foydalanuvchi tanloviga mos.
 - [ ] Operatsion va admin live inventory olingan.
 - [ ] Admin bucketda faqat admin-only formalar qolgan.
 - [ ] Legacy/A2 shell har definitionda to'g'ri.
