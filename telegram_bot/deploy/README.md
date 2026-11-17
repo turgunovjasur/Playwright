@@ -139,4 +139,11 @@ fayllari bo‘lishi kerak. Ularni Git tashqarisida saqlang.
 `telegram_bot/deploy/.env` ichidagi `ALLURE_BIND_ADDRESS` Docker ichki gateway
 manzilini tanlaydi. Mavjud TLS proxy `/playwright-reports/` prefiksini olib
 tashlab shu manzildagi 18086-portga uzatadi va upstreamga cookie yubormaydi.
-Serverdagi scoped retention eski HTML fayllarini yetti kundan keyin tozalaydi.
+`report-publisher` CI yuborgan HTML faylini qabul qiladi. Eng katta fayl hajmi
+4 GiB. Yuklash uchun joy oldindan ajratiladi va umumiy diskda kamida 5 GB
+(5 000 000 000 bayt) bo‘sh joy saqlanadi. Joy yetishmasa uploader eskirgan
+hisobotlarni o‘chiradi yoki HTTP 507 qaytaradi. Tugallanmagan upload e’lon qilinmaydi.
+Run raqami va urinish raqami bo‘yicha eng yangi uchta HTML qoladi. Publisher
+saqlash qoidasini ishga tushganda, muvaffaqiyatli uploaddan keyin va bo‘sh
+turganda har daqiqada tekshiradi. Eski yetti kunlik cron qoidasi o‘rnini shu
+servis egallaydi.

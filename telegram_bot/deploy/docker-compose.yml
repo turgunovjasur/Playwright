@@ -7,6 +7,23 @@ x-logging: &default-logging
     max-file: "3"
 
 services:
+  report-publisher:
+    image: python:3.12-slim
+    user: "101:101"
+    command: ["python", "-B", "-u", "/app/report_store.py"]
+    network_mode: none
+    read_only: true
+    restart: unless-stopped
+    volumes:
+      - ./report_store.py:/app/report_store.py:ro
+      - ../../report-storage:/reports
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 64m
+    logging: *default-logging
+
   bot:
     build:
       context: ../..
