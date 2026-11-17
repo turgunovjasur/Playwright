@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 
+from .constants import NIGHTLY_TARGETS
 from .formatting import _utc_now_text
 from .metrics import _metric_count
 from .paths import DATA_STORE_JSON, STATE_FILE
@@ -114,11 +115,13 @@ def update_from_event(state, event):
         result["form"] = dict(form)
         result["form_total"] = _metric_count(event, "form_total")
     state.setdefault("results", []).append(result)
+    if state.get("target") in NIGHTLY_TARGETS and event_name == "deselected":
+        return
     if isinstance(form, dict) and form:
         state["current"] = ""
         state["current_group"] = ""
         state["current_form"] = {}
-    elif event_name in {"passed", "skipped"}:
+    elif event_name in {"passed", "skipped"} or state.get("target") in NIGHTLY_TARGETS:
         state["current"] = ""
         state["current_group"] = ""
     else:

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import re
 
+from .constants import NIGHTLY_TARGETS
+
 
 def _summary_counts(summary):
     counts = {
@@ -29,9 +31,14 @@ def _result_counts(state):
     if not results:
         return summary_counts
     statuses = [str(item.get("status") or "").upper() for item in results]
+    failed_events = statuses.count("FAILED")
+    if state.get("target") in NIGHTLY_TARGETS:
+        # The hook reports pytest setup/teardown errors as failed items.
+        # Errors from the final summary are added separately in _result_metrics.
+        failed_events -= summary_counts["errors"]
     return {
         "passed": max(statuses.count("PASSED"), summary_counts["passed"]),
-        "failed": max(statuses.count("FAILED"), summary_counts["failed"]),
+        "failed": max(failed_events, summary_counts["failed"]),
         "errors": summary_counts["errors"],
         "skipped": max(statuses.count("SKIPPED"), summary_counts["skipped"]),
         "deselected": max(

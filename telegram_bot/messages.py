@@ -6,7 +6,7 @@ import html
 import re
 import time
 
-from .constants import MANUAL_SUITE, AI_CONFIDENCE_LABELS, MAX_MESSAGE_LENGTH, TASHKENT_TZ
+from .constants import MANUAL_SUITE, NIGHTLY_TARGETS, AI_CONFIDENCE_LABELS, MAX_MESSAGE_LENGTH, TASHKENT_TZ
 from .formatting import (
     _clock_text,
     format_duration,
@@ -16,7 +16,7 @@ from .formatting import (
     truncate_message,
 )
 from .metrics import _count_line, _metric_count, _progress_line, _result_metrics, _result_names
-from .progress_details import failed_block, final_coverage_lines, forms_progress_lines
+from .progress_details import _form_filial_label, failed_block, final_coverage_lines, forms_progress_lines
 
 
 def title_line(state):
@@ -153,6 +153,49 @@ def _generic_progress_lines(state):
     return lines
 
 
+def _progress_counts(passed, failed, skipped, total, noun="test"):
+    completed = passed + failed + skipped
+    lines = []
+    if total:
+        filled = min(10, 10 * completed // total)
+        bar = "▰" * filled + "▱" * (10 - filled)
+        lines.append(f"{bar}  {completed}/{total} {noun} yakunlandi")
+    lines.append(f"✅ {passed} passed · ❌ {failed} failed · ⏭ {skipped} skip")
+    return lines
+
+
+def _nightly_progress_lines(state, target):
+    finished = bool(state.get("result"))
+    name = target_label(target)
+    lines = [server_host(state.get("server"))]
+    if finished:
+        lines.append(title_line(state))
+        lines.extend(_finished_time_lines(state))
+        if target != "forms" and state.get("run_code") not in (None, "", "not found"):
+            lines.append(f"Test data kodi: {state['run_code']}")
+    else:
+        current = state.get("current") or state.get("status")
+        lines.append(f"▸ {name} · {current}" if current else f"▸ {name}")
+        if target == "forms" and state.get("current_form"):
+            filial = _form_filial_label(state["current_form"])
+            if filial:
+                lines.append(f"Filial: {filial}")
+
+    metrics = _result_metrics(state)
+    total = _metric_count(state, "current_test_total")
+    if target == "forms" and not total:
+        total = _metric_count(state, "current_form_total")
+    if total or metrics["completed"] or finished:
+        lines.append("")
+        lines.extend(_progress_counts(
+            metrics["passed"], metrics["failed_total"], metrics["skipped"], total,
+            "forma" if target == "forms" else "test",
+        ))
+    if finished and metrics["deselected"]:
+        lines.append(_count_line("Tanlanmagan", metrics["deselected"]))
+    return lines
+
+
 def _manual_progress_lines(state):
     phases = state["phases"]
     lines = []
@@ -174,11 +217,7 @@ def _manual_progress_lines(state):
     if total:
         passed, failed, skipped = (sum(phase.get(key, 0) for phase in shown)
                                    for key in ("passed", "failed", "skipped"))
-        completed = passed + failed + skipped
-        filled = 10 * completed // total
-        bar = "▰" * filled + "▱" * (10 - filled)
-        lines.extend(["", f"{bar}  {completed}/{total} test yakunlandi",
-                      f"✅ {passed} passed · ❌ {failed} failed · ⏭ {skipped} skip"])
+        lines.extend(["", *_progress_counts(passed, failed, skipped, total)])
         last_failed = next((phase["last_failed"] for phase in reversed(shown) if phase.get("last_failed")), "")
         if last_failed:
             lines.extend(["", f"❌ Yiqilgan test · {last_failed}"])
@@ -274,7 +313,9 @@ def render_message(state):
     ]
 
     manual_progress = target == MANUAL_SUITE and state.get("phases")
-    if manual_progress:
+    if target in NIGHTLY_TARGETS:
+        lines = _nightly_progress_lines(state, target)
+    elif manual_progress:
         lines = [server_host(str(state.get("server") or ""))]
         if finished and result != "PASSED":
             lines.append(title_line(state))
@@ -291,7 +332,7 @@ def render_message(state):
             lines.extend(final_coverage_lines(state))
 
     expandables = []
-    if not finished and not manual_progress:
+    if not finished and not manual_progress and target not in NIGHTLY_TARGETS:
         lines.extend(["", *_progress_time_lines(state), ""])
         forms_lines = forms_progress_lines(state)
         lines.extend(forms_lines or _generic_progress_lines(state))

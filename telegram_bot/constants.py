@@ -16,6 +16,7 @@ TELEGRAM_MAX_RETRY_WAIT_SECONDS = 10
 
 TASHKENT_TZ = timezone(timedelta(hours=5))
 
+NIGHTLY_TARGETS = {"setup-smoke", "group-report", "forms"}
 MANUAL_SUITE = "api-regression"
 MANUAL_SUITE_LABEL = "API setup + Regression"
 
