@@ -1400,8 +1400,7 @@ class AngularBasePage:
     ):
         """A2 skeleton/busy holati paydo bo'lsa, to'liq tugashini kutadi."""
         root = self._content_root(root)
-        skeleton = root.locator(".smt-skeleton:visible")
-        busy = root.locator("[aria-busy='true']:visible")
+        loaders = root.locator(".smt-skeleton:visible, [aria-busy='true']:visible")
         # A short auto-waiting assertion can start a locator handler and
         # expire while it authenticates. Observe DOM appearance without action
         # prechecks; the full completion assertions below may run the handler.
@@ -1429,8 +1428,7 @@ class AngularBasePage:
                 })""", appear_timeout,
             )
 
-        expect(skeleton).to_have_count(0, timeout=timeout)
-        expect(busy).to_have_count(0, timeout=timeout)
+        expect(loaders).to_have_count(0, timeout=timeout)
         return True
 
     # ------------------------------------------------------------------------------------------------------------------
