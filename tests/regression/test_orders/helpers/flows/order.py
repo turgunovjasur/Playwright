@@ -163,6 +163,21 @@ def save_edited_order(page, order_id, reference):
         return base.form_view(label="ИД заказа", expect_value=order_id, return_value=True).strip()
 
 
+def open_order_summary(page, *, expected_total=None):
+    """Yakunlashga o'tib, Order formasidagi yagona jami maydonini kutadi."""
+    base = AutoBasePage(page)
+    with allure.step("Order yakunlash bosqichini ochish"):
+        base.click(name="Далее", exact=True)
+        forms = page.locator("main form:visible")
+        total_label = page.locator("label").filter(has_text=re.compile(r"^\s*ИТОГО\s*$"), visible=True)
+        expect(forms.locator(total_label)).to_have_count(1)
+        summary_form = forms.filter(has=total_label)
+        if expected_total is None:
+            base.input(label="ИТОГО", root=summary_form)
+        else:
+            base.input(label="ИТОГО", root=summary_form, expect_value=str(expected_total))
+
+
 def reopen_order_goods(page):
     base = AutoBasePage(page)
     with allure.step("Saqlangan orderni tahrirga qayta ochish"):
@@ -171,6 +186,16 @@ def reopen_order_goods(page):
     with allure.step("Saqlangan mahsulotlar bosqichini ochish"):
         base.click(name="Далее", exact=True)
         base.text("Название", "Кол-во")
+
+
+def select_client_product(page, client, product, price_type):
+    """Klientni tanlab, mahsulot bosqichida kerakli narxdagi qatorni ochadi."""
+    base = AutoBasePage(page)
+    with allure.step("Klientni tanlab orderga mahsulot qo‘shish"):
+        base.b_input(label="Клиент", value=client, clear=True)
+        base.click(name="Далее", exact=True)
+        base.text("Название", "Кол-во")
+        return select_order_product(page, product, price_type)
 
 
 def select_order_product(page, product, price_type, *, warehouse="Основной склад", index=0):

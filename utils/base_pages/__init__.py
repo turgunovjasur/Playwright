@@ -1,3 +1,6 @@
 """Smartup page-object modullari va sahifa diagnostikasi."""
 
 UI_TIMEOUT_MS = 60_000
+A2_DOCUMENT_TIMEOUT_MS = 120_000
+A2_LOADER_APPEARANCE_MS = 8_000
+A2_ORDER_LOADER_APPEARANCE_MS = 250

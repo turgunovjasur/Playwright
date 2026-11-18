@@ -12,7 +12,7 @@ import allure
 import pytest
 from playwright.sync_api import expect
 
-from tests.regression.test_orders.helpers.flows.order import existing_order, open_new_order, promotion_card, save_order_by_reference, select_order_product
+from tests.regression.test_orders.helpers.flows.order import existing_order, open_new_order, promotion_card, save_order_by_reference, select_client_product
 from tests.regression.test_orders.helpers.flows.returns import _return_lot_row, archive_return, fill_return_items, finish_return, open_return_from_order, open_return_view, save_return_draft
 from tests.regression.test_orders.helpers.flows.settlement import allocate_to_order, change_order_status, post_cashin, read_debts, read_settlement, _columns, _number
 from tests.regression.test_orders.helpers.flows.stock import read_stock
@@ -136,9 +136,7 @@ def run_create_promoted_order(case):
         with allure.step('2 - Test klientiga 10 dona mahsulotdan order yaratish'):
             base.b_input(label="Рабочая зона", expect_value=case.room)
             base.b_input(label="Штат", expect_value=case.staff)
-            base.b_input(label="Клиент", value=case.client, clear=True)
-            base.click(name="Далее", exact=True)
-            select_order_product(page, case.product, case.price_type)
+            select_client_product(page, case.client, case.product, case.price_type)
             base.input(label="Кол-во", value="10", press_tab=True)
         with allure.step('3 - Boshqa mahsulotdan 1 dona bepul bonus va 10% chegirma aksiyalarini yoqish'):
             with page.expect_response(lambda response: response.request.method == "POST" and unquote(urlsplit(response.url).path).endswith("/order/order+add:find_extra_data")) as offers:

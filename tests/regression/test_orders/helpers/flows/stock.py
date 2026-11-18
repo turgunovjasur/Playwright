@@ -4,6 +4,7 @@ from urllib.parse import urlsplit, unquote
 import allure
 from playwright.sync_api import expect
 from tests.regression.test_orders.helpers.flows.settlement import _columns
+from utils.base_pages import A2_DOCUMENT_TIMEOUT_MS
 from utils.base_pages.auto_base_page import AutoBasePage
 
 
@@ -41,7 +42,7 @@ def _read_stock(case, warehouse, *, product_id, observed):
         raise ValueError("Stock readback uchun baseline product_id raqam bo'lishi kerak")
     with allure.step("Setup mahsuloti viewini aniq ID bilan ochish"):
         base.open_route(f"anor/mr/product/inventory_view?product_id={product_id}",
-                        heading="ТМЦ (просмотр)")
+                        heading="ТМЦ (просмотр)", timeout=A2_DOCUMENT_TIMEOUT_MS)
     with allure.step("Mahsulotning ombor qoldiqlarini ochish"):
         base.tab(name="Остатки")
         base.text("Доступный остаток", "Забронировано", "В наличии")

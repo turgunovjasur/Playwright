@@ -7,7 +7,7 @@ import pytest
 from playwright.sync_api import expect
 
 from tests.regression.test_orders.helpers.flows.order import (existing_order,
-    open_new_order, promotion_card, reopen_order_goods, save_edited_order,
+    open_new_order, open_order_summary, promotion_card, reopen_order_goods, save_edited_order,
     save_order_by_reference, select_order_product,
 )
 from utils.base_pages.auto_base_page import AutoBasePage
@@ -23,7 +23,6 @@ def _completion(case, quantity, discount_on):
     gross = Decimal(quantity) * Decimal("7000")
     discount = gross * Decimal("0.10") if discount_on else Decimal("0")
     expected = gross - discount
-    expect(case.page.locator("label").filter(has_text=re.compile(r"^\s*ИТОГО\s*$")).filter(visible=True)).to_have_count(1)
     base.input(label="ИТОГО", expect_value=format(expected.normalize(), "f"))
     base.input(label="Сумма скидки/наценки", expect_value=format((-discount).normalize(), "f"))
     case.check("Yakunlashdagi jami (so‘m)", expected,
@@ -87,7 +86,7 @@ def run_toggle_discount(case):
             select_order_product(page, case.product, case.price_type)
             base.input(label="Кол-во", value="10", press_tab=True)
         with allure.step("2 - Bank to‘lovi, Draft va unique TTNni belgilash"):
-            base.click(name="Далее", exact=True)
+            open_order_summary(page)
             base.b_input(label="Тип оплаты", value=case.promotions["payments"]["bank"]["name"], clear=True)
             base.input(label="Номер товарно-транспортной накладной", value=case.reference)
             base.ui_select(label="Статус", value="Черновик")
@@ -98,7 +97,7 @@ def run_toggle_discount(case):
             toggle = promotion_card(page, case.promotions["discount"]["name"]).get_by_role("switch")
             base.checkbox(locator=toggle, expect_checked=False)
             base.checkbox(locator=toggle, checked=True)
-            base.click(name="Далее", exact=True)
+            open_order_summary(page)
             _completion(case, 10, True)
         saved_order_id = save_order_by_reference(page, case.reference)
     case.remember_order(saved_order_id)
@@ -114,7 +113,7 @@ def run_toggle_discount(case):
             toggle = promotion_card(page, case.promotions["discount"]["name"]).get_by_role("switch")
             base.checkbox(locator=toggle, expect_checked=not desired)
             base.checkbox(locator=toggle, checked=desired)
-            base.click(name="Далее", exact=True)
+            open_order_summary(page)
             _completion(case, 10, desired)
         saved = save_edited_order(page, order_id, case.reference)
         case.check("Skidka tanlovi o‘zgarganda order ID", order_id, saved)
@@ -124,7 +123,7 @@ def run_toggle_discount(case):
     with allure.step("7 - Yakuniy reopen: ixtiyoriy tanlov saqlangan, jami 63 000"):
         base.tab(name=re.compile(r"^Акции"))
         base.checkbox(locator=promotion_card(page, case.promotions["discount"]["name"]).get_by_role("switch"), expect_checked=True)
-        base.click(name="Далее", exact=True)
+        open_order_summary(page)
         _completion(case, 10, True)
 
 
@@ -149,7 +148,7 @@ def run_quantity_boundary(case):
             select_order_product(page, case.product, case.price_type)
             base.input(label="Кол-во", value="9", press_tab=True)
         with allure.step("2 - Bank to‘lovi bilan A9: 63 000, skidka 0"):
-            base.click(name="Далее", exact=True)
+            open_order_summary(page)
             base.b_input(label="Тип оплаты", value=case.promotions["payments"]["bank"]["name"], clear=True)
             base.input(label="Номер товарно-транспортной накладной", value=case.reference)
             base.ui_select(label="Статус", value="Черновик")
@@ -168,7 +167,7 @@ def run_quantity_boundary(case):
         toggle = promotion_card(page, case.promotions["discount"]["name"]).get_by_role("switch")
         base.checkbox(locator=toggle, expect_checked=False)
         base.checkbox(locator=toggle, checked=True)
-        base.click(name="Далее", exact=True)
+        open_order_summary(page)
         _completion(case, 10, True)
     saved = save_edited_order(page, order_id, case.reference)
     case.check("9 donadan 10 donaga o‘tganda order ID", order_id, saved)
@@ -179,5 +178,5 @@ def run_quantity_boundary(case):
         base.input(label="Кол-во", expect_value="10")
         base.tab(name=re.compile(r"^Акции"))
         base.checkbox(locator=promotion_card(page, case.promotions["discount"]["name"]).get_by_role("switch"), expect_checked=True)
-        base.click(name="Далее", exact=True)
+        open_order_summary(page)
         _completion(case, 10, True)

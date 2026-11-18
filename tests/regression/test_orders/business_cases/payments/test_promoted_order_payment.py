@@ -7,7 +7,7 @@ import allure
 import pytest
 from playwright.sync_api import expect
 
-from tests.regression.test_orders.helpers.flows.order import existing_order, select_order_product, open_new_order, promotion_card, save_order_by_reference
+from tests.regression.test_orders.helpers.flows.order import existing_order, select_client_product, open_new_order, promotion_card, save_order_by_reference
 from tests.regression.test_orders.helpers.flows.settlement import (
     allocate_to_order, change_order_status, post_cashin, read_debts, read_settlement,
 )
@@ -56,9 +56,7 @@ def run_promoted_order_payment(case):
         with allure.step("2 - Own orderda 10 dona setup mahsuloti"):
             base.b_input(label="Рабочая зона", expect_value=case.room)
             base.b_input(label="Штат", expect_value=case.staff)
-            base.b_input(label="Клиент", value=case.client, clear=True)
-            base.click(name="Далее", exact=True)
-            select_order_product(page, case.product, case.price_type)
+            select_client_product(page, case.client, case.product, case.price_type)
             base.input(label="Кол-во", value="10", press_tab=True)
             expect(page.locator("smt-table:visible .smt-data-row [data-smt-col-key=price]").first).to_have_text(re.compile(r"^\s*7\s*000\s*$"))
         with allure.step("3 - B1 bonus va 10% skidkani tanlash; jami 63 000"):

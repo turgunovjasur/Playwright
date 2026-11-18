@@ -15,6 +15,7 @@ from playwright.sync_api import expect
 from tests.regression.helpers.environment import RegressionEnvironmentError, authorization
 from tests.regression.test_orders.helpers.auth_recovery import _record, verify_license
 from tests.shared.authorization import dashboard, install_announcement_handler
+from utils.base_pages import A2_DOCUMENT_TIMEOUT_MS, UI_TIMEOUT_MS
 from utils.base_pages.page_reporting import capture_filial
 from utils.report_context import page_context
 
@@ -74,7 +75,7 @@ class GroupLogin:
 
     def _filial(self, page, baseline):
         name = re.escape(str(baseline['filial_name']))
-        expect(page.locator('header').get_by_role('button', name=re.compile(r'^\s*(?:TRADE|SFA)\s*' + name + r'\s*$', re.I))).to_be_visible(timeout=30_000)
+        expect(page.locator('header').get_by_role('button', name=re.compile(r'^\s*(?:TRADE|SFA)\s*' + name + r'\s*$', re.I))).to_be_visible(timeout=UI_TIMEOUT_MS)
         page_context(page)['filial'] = ''
         capture_filial(page)
 
@@ -112,8 +113,9 @@ class GroupLogin:
                         page.add_init_script('(() => { const seed = ' + payload + '; if (window === window.top && location.origin === seed.origin && !sessionStorage.getItem("__pw_order_login_seeded")) { for (const [k,v] of Object.entries(seed.values)) sessionStorage.setItem(k,v); sessionStorage.setItem("__pw_order_login_seeded","1"); } })();')
                     install_announcement_handler(page)
                     page_context(page).update(self.metadata, authorization='Guruh sessiyasi qayta tasdiqlangan')
-                    page.goto(self.dashboard_url)
-                    page.wait_for_url(re.compile(r'dashboard|/auth/login(?:[?#]|$)|/login\.html'), timeout=30_000)
+                    page.goto(self.dashboard_url, wait_until="domcontentloaded", timeout=A2_DOCUMENT_TIMEOUT_MS)
+                    page.wait_for_url(re.compile(r'dashboard|/auth/login(?:[?#]|$)|/login\.html'),
+                                      wait_until='domcontentloaded', timeout=UI_TIMEOUT_MS)
                     if 'dashboard' not in page.url:
                         self.clear()
                         mode = 'expired_login'

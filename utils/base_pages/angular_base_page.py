@@ -8,7 +8,7 @@ from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import expect
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
-from utils.base_pages import UI_TIMEOUT_MS
+from utils.base_pages import A2_LOADER_APPEARANCE_MS, UI_TIMEOUT_MS
 from utils.date_utils import format_date, resolve_date
 from utils.helper_utils import first_non_admin_filial, label_pattern
 from utils.base_pages.page_diagnostics import expectation_gate, report_page_expectation
@@ -1284,7 +1284,7 @@ class AngularBasePage:
         self,
         timeout=UI_TIMEOUT_MS,
         *,
-        appear_timeout=8_000,
+        appear_timeout=A2_LOADER_APPEARANCE_MS,
         root=None,
     ):
         """A2 skeleton/busy holati paydo bo'lsa, to'liq tugashini kutadi."""

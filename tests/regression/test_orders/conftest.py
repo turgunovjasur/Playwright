@@ -16,6 +16,7 @@ from tests.regression.test_orders.helpers.models import OrderContext, _json_valu
 from tests.regression.test_orders.helpers.preparations.resources import resource_ready
 from tests.regression.test_orders.helpers.auth_recovery import order_session_recovery
 from tests.regression.helpers.session_recovery import bind_lookup_context, bind_grid_settings_context
+from utils.base_pages import A2_ORDER_LOADER_APPEARANCE_MS
 from utils.data_store import load_data_file
 from tests.regression.test_orders.helpers.ordering import (
     check_previous_steps, record_step, validate_and_order,
@@ -24,16 +25,12 @@ from tests.regression.test_orders.helpers.ordering import (
 
 @pytest.fixture(autouse=True)
 def order_loader_appearance_window(monkeypatch, request):
-    """Order uses a 250ms DOM-only appearance probe, not an assertion.
-
-    Full skeleton/busy completion assertions and response/value oracles remain.
-    The shared default stays 8000ms; pytest restores it after each case.
-    """
+    """Use the Order appearance window only for marked cases."""
     if request.node.get_closest_marker("order_group") is not None:
         from utils.base_pages.angular_base_page import AngularBasePage
         monkeypatch.setattr(
             AngularBasePage, "_wait_for_loader",
-            partialmethod(AngularBasePage._wait_for_loader, appear_timeout=250),
+            partialmethod(AngularBasePage._wait_for_loader, appear_timeout=A2_ORDER_LOADER_APPEARANCE_MS),
         )
 
 

@@ -4,7 +4,7 @@ import re
 import allure
 import pytest
 from playwright.sync_api import expect
-from tests.regression.test_orders.helpers.flows.order import existing_order, select_order_product, open_new_order, save_order_by_reference, promotion_card, reopen_order_goods
+from tests.regression.test_orders.helpers.flows.order import existing_order, select_client_product, open_new_order, save_order_by_reference, promotion_card, reopen_order_goods
 from utils.base_pages.auto_base_page import AutoBasePage
 from tests.regression.helpers.preparation.stock_guard import require_available
 
@@ -28,11 +28,8 @@ def run_quantity_discount(case):
         with allure.step("1 - Setup klienti, xona va shtatni tekshirib mahsulotga o'tish"):
             base.b_input(label="Рабочая зона", expect_value=case.room)
             base.b_input(label="Штат", expect_value=case.staff)
-            base.b_input(label="Клиент", value=case.client, clear=True)
-            base.click(name="Далее", exact=True)
-            base.text("Название", "Кол-во")
-        with allure.step("2 - Setup mahsulotidan 10 dona, narxi 7 000 so'm"):
-            select_order_product(page, case.product, case.price_type)
+            select_client_product(page, case.client, case.product, case.price_type)
+        with allure.step("2 - Miqdor va aksiyalarni tekshirish"):
             base.input(label="Кол-во", value="10", press_tab=True)
             base.tab(name=re.compile(r"^Акции"))
             card = promotion_card(page, case.promotions["discount"]["name"])

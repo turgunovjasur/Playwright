@@ -1,14 +1,14 @@
 """Katalogda tayyorlangan foizli skidka: aksiya tanlamasdan order round-trip."""
 from decimal import Decimal
-import re
 
 import allure
 import pytest
 from playwright.sync_api import expect
 
-from tests.regression.test_orders.business_cases.discounts.test_manual_discount import _number, _open_goods, _save_draft, _saved_amounts
-from tests.regression.test_orders.helpers.flows.order import reopen_order_goods
-from utils.base_pages import UI_TIMEOUT_MS
+from tests.regression.test_orders.helpers.discounts import (
+    check_saved_amounts, open_discount_goods, parse_amount, save_discount_draft,
+)
+from tests.regression.test_orders.helpers.flows.order import open_order_summary, reopen_order_goods
 from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [pytest.mark.regression, pytest.mark.order_positive,
@@ -33,37 +33,31 @@ def run_preset_discount(case):
     discount = gross * percent / Decimal("100")
     total = gross - discount
     base = AutoBasePage(case.page)
-    row = _open_goods(case, quantity)
+    row = open_discount_goods(case, quantity)
     with allure.step('1 - Foiz rejimida katalogdagi tayyor −10% chegirmani tanlash'):
         toggle = row.locator('[data-smt-col-key="margin"]').get_by_role("button", name="Скидка/наценка", exact=True)
         expect(toggle.locator('svg-icon[aria-label="percent-01-icon"]')).to_be_visible()
         base.ui_select(label="Скидка/наценка", value="-10")
         case.check('Mahsulot uchun tanlangan tayyor chegirma (%)', -percent,
-                   _number(base.ui_select(label="Скидка/наценка", return_value=True)))
+                   parse_amount(base.ui_select(label="Скидка/наценка", return_value=True)))
     with allure.step("2 - Yakunlash bosqichida chegirma 1 400 va jami 12 600"):
-        base.click(name="Далее", exact=True)
-        # Bosqich almashib bo‘lmaguncha eski grid maydonlarini qidirmaymiz.
-        expect(case.page.locator("label").filter(has_text=re.compile(r"^\s*ИТОГО\s*$")).filter(visible=True)).to_have_count(1, timeout=UI_TIMEOUT_MS)
+        open_order_summary(case.page, expected_total=total)
         base.input(label="Сумма скидки/наценки", expect_value=str(-discount))
-        base.input(label="ИТОГО", expect_value=str(total))
         case.check("Mahsulotlar chegirmasi (so'm)", -discount,
-                   _number(base.input(label="Сумма скидки/наценки", return_value=True)))
-    _save_draft(case, total)
+                   parse_amount(base.input(label="Сумма скидки/наценки", return_value=True)))
+    save_discount_draft(case, total)
     with allure.step('3 - Saqlangan order: 2 dona, narx 7 000, mahsulot chegirmasi −1 400, umumiy order chegirmasi 0 va jami 12 600 so‘m'):
-        _saved_amounts(case, quantity, -discount, total, 0, total)
+        check_saved_amounts(case, quantity, -discount, total, 0, total)
     reopen_order_goods(case.page)
     with allure.step("4 - Qayta ochilgan orderda 2 dona va tayyor −10% tanlovi saqlangan"):
         base.input(label="Кол-во", expect_value=str(quantity))
         base.ui_select(label="Скидка/наценка", expect_value="-10")
         case.check('Qayta ochilgan tayyor chegirma (%)', -percent,
-                   _number(base.ui_select(label="Скидка/наценка", return_value=True)))
+                   parse_amount(base.ui_select(label="Скидка/наценка", return_value=True)))
     with allure.step("5 - Qayta ochilgan yakuniy summa 12 600 va chegirma −1 400"):
-        base.click(name="Далее", exact=True)
-        # Bosqich almashib bo‘lmaguncha eski grid maydonlarini qidirmaymiz.
-        expect(case.page.locator("label").filter(has_text=re.compile(r"^\s*ИТОГО\s*$")).filter(visible=True)).to_have_count(1, timeout=UI_TIMEOUT_MS)
+        open_order_summary(case.page, expected_total=total)
         base.input(label="Сумма скидки/наценки", expect_value=str(-discount))
-        base.input(label="ИТОГО", expect_value=str(total))
         case.check("Qayta ochilgan chegirma (so'm)", -discount,
-                   _number(base.input(label="Сумма скидки/наценки", return_value=True)))
+                   parse_amount(base.input(label="Сумма скидки/наценки", return_value=True)))
         case.check("Qayta ochilgan jami (so'm)", total,
-                   _number(base.input(label="ИТОГО", return_value=True)))
+                   parse_amount(base.input(label="ИТОГО", return_value=True)))
