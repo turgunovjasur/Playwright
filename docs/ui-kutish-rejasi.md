@@ -2,7 +2,7 @@
 
 **Yangilangan sana:** 2026-11-18
 
-**Hozirgi holat:** 4-bosqichda A2 sonli maydonni tahrirlash usuli yangilandi. #3689 trace’i va UI Kit solishtirildi. Smartup’da yangi kod bilan amaliy tekshiruv kutilmoqda. 2-bosqichdagi bloklovchi loader savoli ochiq.
+**Hozirgi holat:** 5-bosqichda server select amallari UI Kit va Order trace’i bilan solishtirildi. Mavjud tanlash va tozalash amallari yaxshilandi. Alohida ochish, tanlamasdan qidirish va bo‘sh natijani tekshirish uchun API bo‘yicha qaror kerak. 2-bosqichdagi loader dalili va Smartup’da amaliy tasdiq ochiq.
 
 Reja Angular (A2) formalarini qamrab oladi. Maqsad — element sekin yuklanganda kerakli holatni kutish va u tayyor bo‘lishi bilan davom etish.
 
@@ -24,8 +24,8 @@ Reja Angular (A2) formalarini qamrab oladi. Maqsad — element sekin yuklanganda
 | 2 | Jarayonda | A2 skeleton, komponent spinneri va ichki vidjetning band holatini haqiqiy Angular forma yoki trace bilan solishtirish. | Tez ochilish, loader kech paydo bo‘lishi, loader tugamay qolishi va bitta vidjet bandligi uchun keyingi amal qachon bajarilishi yozilgan. |
 | 3 | Jarayonda | Umumiy kutishlarni A2 base funksiyalariga, takrorlangan UI qadamlarini tegishli flow’ga ko‘chirish. Dashboard va ombordagi 120 soniyalik kutishlarni birinchi bo‘lib baholash. | Umumiy UI timeoutlari base qatlamidan olinadi. Mahalliy istisno qolsa, sababi ro‘yxatda ko‘rsatilgan. Tez holat ortiqcha kutmaydi, timeout xabari esa qaysi holat kutilganini bildiradi. |
 | 4 | Tekshiruv kutilmoqda | Sonli input. UI Kit va Smartup buyurtma formasida 10 → 9 tahririni solishtirish. Maydon qiymati, oraliq 0 so‘rovi, Tab’dan keyingi hisob va yakuniy summani kuzatish. | Kiritish usulini umumiy input() metodiga qo‘llashdan oldin yana bitta sonli maydonda mosligi tekshirilgan. Summaga oid biznes tekshiruvi testda qolgan. |
-| 5 | Rejada | Serverdan qidiradigan select. UI Kit va A2 formada komponent amallarini ro‘yxatga olib, har birini mavjud `b_input()` imkoniyatiga solishtirish. Har bir amal uchun tayyorlik belgisi va yetishmayotgan imkoniyatni qayd etish. | Tasdiqlangan har bir amalni test aynan `b_input()` orqali bajara olishi tekshirilgan. Sekin qidiruv, kech kelgan eski javob, bo‘sh natija va yo‘qolmay qolgan spinner uchun kutiladigan holat ko‘rsatilgan. |
-| 6 | Rejada | O‘zgarishlarni statik tekshirish. Testlarni ishga tushirish so‘ralgach, ta’sirlangan ssenariylar va shu base funksiyalarini ishlatadigan boshqa formalarda tekshirish. | Run havolasi, natija va ochiq muammolar yozilgan. Sekin holat bilan birga odatiy tez holatda ortiqcha kutish paydo bo‘lmagani ham tekshirilgan. |
+| 5 | Jarayonda | Serverdan qidiradigan select. UI Kit va A2 formada komponent amallarini ro‘yxatga olib, har birini mavjud `b_input()` imkoniyatiga solishtirish. Har bir amal uchun tayyorlik belgisi va yetishmayotgan imkoniyatni qayd etish. | Tasdiqlangan har bir amalni test aynan `b_input()` orqali bajara olishi tekshirilgan. Sekin qidiruv, kech kelgan eski javob, bo‘sh natija va yo‘qolmay qolgan spinner uchun kutiladigan holat ko‘rsatilgan. |
+| 6 | Statik tekshirildi; run kutilmoqda | O‘zgarishlarni statik tekshirish. Testlarni ishga tushirish so‘ralgach, ta’sirlangan ssenariylar va shu base funksiyalarini ishlatadigan boshqa formalarda tekshirish. | Run havolasi, natija va ochiq muammolar yozilgan. Sekin holat bilan birga odatiy tez holatda ortiqcha kutish paydo bo‘lmagani ham tekshirilgan. |
 
 ## 1-bosqich natijalari
 
@@ -104,6 +104,33 @@ Test kartasida sessiyani tiklash vaqtida `get_box_quant` uchun 401 javobini qayt
 
 **Joriy qilingan o‘zgarish.** A2 `input()` Biruni sonli maydonida qiymatni bitta `fill` bilan almashtiradi. So‘ralgan `Tab`, maydon qiymatini tekshirish va umumiy UI kutishi saqlanadi. Order summasi uchun biznes tekshiruvi ssenariyda turadi. Amaliy tasdiq mezoni — yangi Smartup trace’da 10 → 9 uchun faqat 9 so‘rovi ketishi va `ИТОГО` 63 000 ga teng bo‘lishi. [A2 input](../utils/base_pages/angular_base_page.py#L350)
 
+## 5-bosqich — serverdan qidiradigan select
+
+**Qamrov.** UI Kit’dagi Single Data Select va 15-noyabrdagi Order `test_09_second_client_reuses_limit` trace’i solishtirildi. Trace faylining yo‘li va SHA-256 qiymati 2-bosqichda berilgan. UI Kit’da Role List so‘roviga 401 qaytganda ham “Ничего не найдено” chiqdi. Bu demo orqali haqiqiy bo‘sh 200 javobini tasdiqlab bo‘lmaydi. [UI Kit Data Select](https://uikit.greenwhite.uz/data-select) · [A2 b_input](../utils/base_pages/angular_base_page.py#L449)
+
+| UI amali | Mavjud imkoniyat va tayyorlik belgisi |
+|---|---|
+| Klient yoki mahsulotni qidirib tanlash | `value` yoki `search_text` tanlashgacha olib boradi. Server selectida so‘rov maydon kaliti va matniga mos kelishi, spinner yashirinishi va kerakli variant ko‘rinishi kutiladi. Odatiy tanlashdan so‘ng menyu yopiladi. `expect_value` yakuniy qiymatni ham tasdiqlaydi. `stop_after_select` esa ataylab bosishdan keyin qaytadi. |
+| Birinchi variant yoki aniq ombor/narx variantini tanlash | `select_first` ko‘rinadigan birinchi variantni oladi. `option_contains` tanlangan matn va qo‘shimcha belgilar mos keladigan bitta variantni kutadi. Sekin renderda endi avval birinchi qator ko‘rinadi, keyin zarur bo‘lsa scroll bilan navbatdagi sahifa kutiladi. |
+| Tanlovni tozalash, qiymatni o‘qish va tekshirish | `clear=True` yolg‘iz chaqirilganda Escape’dan so‘ng menyu yopilgani va qiymat bo‘shligi tekshiriladi. `return_value` o‘qiydi, `expect_value` esa kutilgan qiymatni kutadi. UI Kit rol maydonida tozalash va Escape brauzerda tekshirildi. |
+| Faqat ochish, qidirib ro‘yxatni tanlamasdan ko‘rish, mustaqil yopish | Demo’da ochish va Escape bilan yopish mumkin. Joriy `b_input()` parametrlarsiz input locatorini qaytaradi. `search_text` avtomatik tanlaydi. Uch amal uchun alohida public chaqiruv hozir yo‘q. |
+| Bo‘sh natijani tekshirish | Alohida assertion yo‘q. Taklif etiladigan shart — aynan shu qidiruvga muvaffaqiyatli javob kelgan, komponent spinneri tugagan, ro‘yxatda variant yo‘q va bo‘sh holat ko‘ringan. HTTP yoki sessiya xatosi alohida ko‘rsatilishi kerak. |
+| UI Kit’dagi qo‘shimcha rejimlar | Demo’da bir natijani avtomatik tanlash, All belgisi, pin, smart search tugmasi, qo‘shimcha tugmalar va disabled/required holatlari bor. Joriy metod tanlangan qiymatni tekshira oladi. Bu maxsus amallar uchun alohida parametr yo‘q. Ularning qaysi biri kerakligini Smartup formasida shu rejim uchraganda tasdiqlaymiz. |
+
+**Order dalili.** Quyidagi vaqtlar tegishli `fill` boshidan olingan. Mos so‘rov muvaffaqiyatli tugagach, kerakli variant bosilgan. Trace’dan olingan uchta haqiqiy payload mavjud `_lookup_query_finished` bilan ham solishtirildi: mos matn va kalit qabul qilindi, boshqa matn yoki kalit rad etildi.
+
+| Maydon | So‘rov boshlanishi va davomiyligi | Variantni bosish |
+|---|---|---|
+| Klient, `call@41331` | `persons`, +311 ms, 162 ms, HTTP 200 | +504 ms |
+| Mahsulot, `call@41467` | `inventory_products`, +318 ms, 216 ms, HTTP 200 | +585 ms |
+| To‘lov turi, `call@41729` | `payment_type`, +320 ms, 152 ms, HTTP 200 | +515 ms |
+
+**Locator tuzatishi.** Order kadrida `Выберите...` faqat ichki inputda edi. UI Kit’dagi `Search roles...` bitta komponentda ikki marta topildi. Eski locator `index=0` uchun hostning ajdodlaridan select qidirib, hech narsa topmadi. Endi avval har bir mos element eng yaqin selectga bog‘lanadi, keyin komponentlar orasidan indeks tanlanadi. Demo’da `Search roles...` uchun bitta, `Search users...` uchun 15 ta DOM mosligidan 8 ta alohida komponent chiqdi. Order’dagi ikkinchi mahsulot qatorini tanlash ham shu yo‘ldan foydalanadi. [Locator](../utils/base_pages/angular_base_page.py#L527) · [Mahsulot tanlovi](../tests/regression/test_orders/helpers/flows/order.py#L202)
+
+**Kutish qarori.** Sekin qidiruvda umumiy timeout ichida aynan so‘ralgan matnning javobi, keyin komponent holati kutiladi. Eski matn javobi yangi qidiruvni tugatmaydi. Bir xil kalit va aynan bir xil matn bilan takror so‘rovlarni hozirgi predicate ajratmaydi. Spinner yo‘qolmay qolsa tanlash kutishda to‘xtashi kerak. Bu nosozlik va teskari tartibda keladigan javoblar uchun real Order yozuvi hali yo‘q. Single va multi select so‘rovni tinglash qismini birga ishlatadi; har biri o‘z menyusi va variantini tekshiradi. [Ichki helper](../utils/base_pages/angular_base_page.py#L63)
+
+**Keyingi qaror.** Ochiq qolgan asosiy amallar uchun mavjud `b_input()`da mustaqil ochish, qidirish, yopish va bo‘sh natijani kutishni ifodalash taklif qilinadi. Bu Order’da klient, mahsulot yoki to‘lov turini tanlamasdan turib natijani tekshirish imkonini beradi. Public kontrakt kengayishi loyiha qoidasiga ko‘ra alohida tasdiqlanadi. [Loyiha qoidasi](../skills/project-guide/SKILL.md)
+
 ## Boshlang‘ich dalillar
 
 - Base qatlamidagi umumiy UI vaqti hozir 60 soniya. #3689 bo‘yicha ishchi nusxada dashboard va ombor oqimlari 120 soniyani o‘zi belgilaydi. Birinchi ko‘chirish nomzodlari shular. [Umumiy vaqt](../utils/base_pages/__init__.py) · [Dashboard](../tests/regression/test_orders/helpers/group_auth.py) · [Ombor](../tests/regression/test_orders/helpers/flows/stock.py)
@@ -124,3 +151,4 @@ Har bosqich boshlanganda holati **Jarayonda** deb belgilanadi. Yakunida sana, o�
 | 2026-11-18 | 2-bosqich alohida `codex/angular-order-kutish` branchida boshlandi. Order trace’idan yakuniy maydon va to‘lov selecti spinnerining vaqt tartibi yozildi. | Kechikadigan yoki tugamaydigan bloklovchi loader kuzatilgan yozuv bilan qolgan holatlarni tasdiqlash. |
 | 2026-11-18 | 3-bosqich boshlandi. Yakunlash qadami umumlashtirildi, dashboard va ombor navigatsiyasi base vaqtidan foydalanadi. | Klient va mahsulot tanlash, yakunlash va chegirma helperlari ajratildi. Qolgan ish — loader oynasi uchun dalil va amaliy tekshiruv. |
 | 2026-11-18 | 4-bosqichda #3689 asl trace’i va ikki UI Kit sonli maydoni solishtirildi. A2 input ichidagi oraliq tozalash olib tashlandi. | Smartup’da qayta tekshirish ruxsatini kutish. Navbatdagi tahlil — 5-bosqichdagi server select amallari. |
+| 2026-11-18 | 5-bosqichda UI Kit, Order trace’i va public API solishtirildi. Placeholder indeksi, sekin ro‘yxat va tozalash kutishlari yangilandi. Branchdagi Python sintaksisi va diff statik tekshirildi. | Yetishmayotgan select amallari uchun kontraktni kelishish. Smartup test runi uchun tasdiq kutilmoqda. |

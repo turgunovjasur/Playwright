@@ -60,6 +60,14 @@ def _lookup_query_finished(request, query, key_field):
     return f"%{escaped_query}%" in search_values if query else not search_values
 
 
+def _expect_lookup_query(page, query, key_field, *, timeout):
+    return page.expect_event(
+        "requestfinished",
+        predicate=lambda request: _lookup_query_finished(request, query, key_field),
+        timeout=timeout,
+    )
+
+
 class AngularBasePage:
     """Smartup A2 yangi Angular formalarining umumiy UI primitivlari.
 
@@ -517,9 +525,10 @@ class AngularBasePage:
                 f'smt-select[formcontrolname="{short_name}"]'
             ).nth(index)
         else:
-            select = root.get_by_placeholder(placeholder, exact=True).nth(index).locator(
-                "xpath=ancestor::*[self::smt-data-select or self::smt-select][1]"
-            )
+            # The host and its input can both expose the same placeholder.
+            select = root.get_by_placeholder(placeholder, exact=True).locator(
+                "xpath=ancestor-or-self::*[self::smt-data-select or self::smt-select][1]"
+            ).nth(index)
 
         trigger = select.locator("smt-select-trigger").first
         search = trigger.locator(
@@ -550,10 +559,8 @@ class AngularBasePage:
             key_field = select.get_attribute("smtkeyfield")
             current_query = search.input_value()
             if not dropdown.is_visible():
-                opening = self.page.expect_event(
-                    "requestfinished",
-                    predicate=lambda request: _lookup_query_finished(request, current_query, key_field),
-                    timeout=timeout,
+                opening = _expect_lookup_query(
+                    self.page, current_query, key_field, timeout=timeout,
                 ) if server_lookup else nullcontext()
                 with opening:
                     trigger.click(timeout=timeout)
@@ -562,10 +569,8 @@ class AngularBasePage:
             expect(loading).to_be_hidden(timeout=timeout)
             query = None if select_first else option_text if search_text is None else str(search_text)
             if query and current_query != query:
-                searching = self.page.expect_event(
-                    "requestfinished",
-                    predicate=lambda request: _lookup_query_finished(request, query, key_field),
-                    timeout=timeout,
+                searching = _expect_lookup_query(
+                    self.page, query, key_field, timeout=timeout,
                 ) if server_lookup else nullcontext()
                 with searching:
                     search.press("ControlOrMeta+A", timeout=timeout)
@@ -606,7 +611,9 @@ class AngularBasePage:
                     # product name may have its required metadata on a later page.
                     # Stay in the UI and bound pagination by the supplied timeout.
                     deadline = monotonic() + timeout / 1000
-                    while server_lookup and option.count() == 0 and options.count():
+                    if server_lookup:
+                        expect(options.first).to_be_visible(timeout=timeout)
+                    while server_lookup and option.count() == 0:
                         remaining = max(1, int((deadline - monotonic()) * 1000))
                         if monotonic() >= deadline:
                             break
@@ -626,6 +633,8 @@ class AngularBasePage:
 
         if clear and value is _UNSET and not has_search_query and not select_first:
             search.press("Escape", timeout=timeout)
+            expect(dropdown).to_be_hidden(timeout=timeout)
+            expect(search).to_have_value("", timeout=timeout)
 
         expected = expect_value
         if expected is _UNSET and value is not _UNSET and not select_first and not has_search_query:
@@ -1090,7 +1099,7 @@ class AngularBasePage:
         def search_dropdown(query):
             current_query = search.input_value()
             if menu_trigger.get_attribute("aria-expanded") != "true":
-                with self.page.expect_event("requestfinished", predicate=lambda request: _lookup_query_finished(request, current_query, key_field), timeout=timeout):
+                with _expect_lookup_query(self.page, current_query, key_field, timeout=timeout):
                     trigger.click(timeout=timeout)
             menu_id = menu_trigger.get_attribute("aria-controls")
             if not menu_id:
@@ -1101,7 +1110,7 @@ class AngularBasePage:
             if current_query != query:
                 # The old options remain visible while the debounced search loads.
                 # Wait for this field's exact query before clicking any option.
-                with self.page.expect_event("requestfinished", predicate=lambda request: _lookup_query_finished(request, query, key_field), timeout=timeout):
+                with _expect_lookup_query(self.page, query, key_field, timeout=timeout):
                     search.fill(query, timeout=timeout)
             expect(menu.get_by_text(re.compile(r"^\s*(?:Загрузка\.\.\.|Ищем результаты)\s*$")).filter(visible=True).first).to_be_hidden(timeout=timeout)
             expect(search).to_have_value(query, timeout=timeout)
