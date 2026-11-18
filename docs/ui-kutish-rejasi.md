@@ -2,15 +2,15 @@
 
 ## Asosiy reja — 30 bosqich
 
-2026-11-18 holatiga ko‘ra, 29 ta public metodning har biriga alohida bosqich ajratildi. 30-bosqich — yakuniy regression run. Uchta metod Order’da qisman tekshirildi. Navbatdagi metod — `autocomplete()`.
+2026-11-18 holatiga ko‘ra, 29 ta public metodning har biriga alohida bosqich ajratildi. 30-bosqich — yakuniy regression run. 1–3-metodlar Order’da qisman tekshirildi. 4-bosqichda ism yozish va qidiruv kutishi Smartup’da tekshirildi. Mavjud shaxsni tanlash bo‘yicha ochiq masala quyida qayd etilgan. Navbatdagi audit — `ui_select()`.
 
 | Bosqich | Metod yoki ish | Holat | Tekshiriladigan amallar |
 |---|---|---|---|
 | 1 | `input()` | Qisman tekshirildi (Order) | Matn yozish, almashtirish, tozalash, Tab va formatlangan qiymatni o‘qish. |
 | 2 | `b_input()` | Qisman tekshirildi (Order) | Menyuni ochish, qidirish, tanlash, tozalash, bo‘sh javob va komponentning qo‘shimcha rejimlari. |
 | 3 | `wait_for_loader()` | Qisman tekshirildi (Order) | Sahifa va lokal yuklanish belgilarining doirasi, kech chiqishi va timeout xabari. |
-| 4 | `autocomplete()` | Navbatdagi | Matn kiritish, takliflar kelishi, tanlash va natija topilmagandagi holat. |
-| 5 | `ui_select()` | Rejada | Ro‘yxatni ochish, qidirish, variant tanlash va qiymatni tekshirish. |
+| 4 | `autocomplete()` | Amaliy audit bajarildi, variant tanlash ochiq | Matn kiritish, takliflar kelishi, tanlash va natija topilmagandagi holat. |
+| 5 | `ui_select()` | Navbatdagi | Ro‘yxatni ochish, qidirish, variant tanlash va qiymatni tekshirish. |
 | 6 | `multiselect()` | Rejada | Bir nechta variant tanlash, tanlovni o‘qish, olib tashlash va tozalash. |
 | 7 | `date_picker()` | Rejada | Sana yozish, kalendardan tanlash va ko‘rsatilgan sanani tekshirish. |
 | 8 | `checkbox()` | Rejada | Belgilash, belgini olib tashlash va joriy holatni o‘qish. |
@@ -38,6 +38,18 @@
 | 30 | Yakuniy regression run | Boshlanmagan | #3689 da yiqilgan ssenariylar va o‘zgargan base funksiyalarini ishlatadigan boshqa A2 formalarida natijani tekshirish. |
 
 Komponent bosqichini yopishda UI Kit’dagi amallar Smartup formasida solishtiriladi. Har bir amal uchun base chaqiruvi, kutish sharti va dalil yoziladi. Jadvaldagi amallar boshlang‘ich ro‘yxat. Solishtirishda topilgan qo‘shimcha amallar ham tegishli qatorga kiritiladi. UI Kit analogi bo‘lmagan yordamchi metodlarda chaqiruvchi kod va tegishli Smartup xatti-harakati tekshiriladi.
+
+## 4-bosqich — ism maydonidagi autocomplete
+
+Setup’dagi jismoniy shaxs va klient yaratish ssenariylari bitta umumiy flow orqali `autocomplete()`ni chaqiradi. Ikkalasi yangi ism yozib, bo‘sh natijani kutadi. [Flow](../tests/smoke/test_setup/flow_setup/flow_natural_person.py#L30) · [A2 metodi](../utils/base_pages/angular_base_page.py#L312)
+
+| Amal | Brauzerda ko‘rilgan natija | Base qamrovi |
+|---|---|---|
+| Yozish va yopish | UI Kit’dagi Data Select rol maydonida yozish menyuni ochdi. Escape menyuni yopdi va qidiruv matni saqlandi. Smartup’dagi «Физическое лицо (создание) → Имя» maydoni ham `smt-data-select` ichidagi `smt-select-trigger` va inputdan iborat. | Mavjud `autocomplete()` shu amallarni bitta chaqiruvda bajaradi. [UI Kit misoli](https://uikit.greenwhite.uz/data-select) |
+| Yangi ism va sekin javob | Smartup’da noyob matn uchun `:table_persons` HTTP 200, `count=0`, `data=[]` qaytardi. «Ничего не найдено» ko‘rindi. Alohida kuzatuvda so‘rov kamida 1,2 s ushlanganida menyu ochiq turdi va «Ищем результаты» ko‘rindi. Javobdan keyin helper menyuni yopdi va ism maydonda qoldi. | Metod mos javob statusini tekshiradi va selectning mavjud bandlik helperini chaqiradi. Lokal HTTP 401 avval elementni kutish xatosiga olib keldi. Tuzatishdan so‘ng xabarda aynan HTTP 401 chiqdi. |
+| Mavjud ismni tanlash | Smartup’da ma’lum QA ismi uchun HTTP 200 va bitta variant qaytdi. Qatorni bosish mavjud shaxsni tahrirlashga o‘tish haqidagi tasdiq oynasini ochdi. «Нет» bosildi. Shu ismni odatdagi `autocomplete()` bilan yozish esa tanlashni ishga tushirmadi. | Mavjud metod qatorni tanlamaydi. Smartup ism maydonida `smtkeyfield` atributi ham topilmadi, shuning uchun kalitga tayanuvchi `b_input()` qidiruvini bu yerga bevosita ko‘chirish tekshirilmagan. |
+
+**Ochiq qaror.** Bitta komponent uchun tanlash kodini takrorlamaslik maqsadida `b_input()`ga chaqiruvchi bergan qidiruv javobi sharti bilan ishlash imkoniyatini ko‘rib chiqish kerak. Yangi ismni tanlamasdan qoldiradigan mavjud ikki setup ssenariysining xatti-harakati saqlanishi kerak. Tahrirlashga o‘tish haqidagi biznes dialogi formaga tegishli. Yangi public API alohida kelishiladi.
 
 ## Kod qayerda turadi?
 

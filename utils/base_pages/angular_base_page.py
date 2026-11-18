@@ -319,10 +319,15 @@ class AngularBasePage:
         self._validate_options('autocomplete', timeout=timeout)
         if query_response is None or not callable(query_response):
             raise ValueError('autocomplete(): server query_response predicate kerak')
-        with self.page.expect_response(query_response, timeout=timeout):
+        with self.page.expect_response(query_response, timeout=timeout) as pending:
             field = self.input(label=label, value=value, root=root)
+        response = pending.value
+        if not response.ok:
+            raise AssertionError(f"autocomplete(): lookup failed (HTTP {response.status})")
         dropdown = self.page.locator('.cdk-overlay-container smt-select-dropdown:visible').last
         expect(dropdown).to_be_visible(timeout=timeout)
+        select = field.locator('xpath=ancestor::smt-data-select[1]')
+        _wait_for_select_loading(select, dropdown, timeout)
         if empty_text is not None:
             expect(dropdown.get_by_text(empty_text, exact=True)).to_be_visible(timeout=timeout)
         field.press('Escape', timeout=timeout)
