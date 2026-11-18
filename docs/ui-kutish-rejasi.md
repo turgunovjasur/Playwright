@@ -1,22 +1,43 @@
-# Smartup Angular (A2) testlarida kutishlarni yaxshilash rejasi
+# Smartup Angular (A2) base funksiyalari bo‘yicha ish rejasi
 
-**Yangilangan sana:** 2026-11-18
+## Asosiy reja — 30 bosqich
 
-**Umumiy vazifa davom etmoqda.** Har bir Angular base funksiyasi ko‘rib chiqiladi. Har bir komponent uchun UI Kit’dagi amallar haqiqiy Smartup formasida solishtiriladi. Komponentning base funksiyasi qaysi amallarni bajara olishi, qaysilari yetishmasligi va sekin yuklanganda nimani kutishi shu rejada qayd etiladi.
+2026-11-18 holatiga ko‘ra, 29 ta public metodning har biriga alohida bosqich ajratildi. 30-bosqich — yakuniy regression run. Uchta metod Order’da qisman tekshirildi. Navbatdagi metod — `autocomplete()`.
 
-**Order bo‘yicha** 7 bosqichdan 6 tasi bajarildi. Yakuniy test runi rejada. Hozirgacha sonli input, server select va loader bo‘yicha amaliy dalil bor. Ushbu dalillar faqat quyida yozilgan amallarni qamrab oladi.
+| Bosqich | Metod yoki ish | Holat | Tekshiriladigan amallar |
+|---|---|---|---|
+| 1 | `input()` | Qisman tekshirildi (Order) | Matn yozish, almashtirish, tozalash, Tab va formatlangan qiymatni o‘qish. |
+| 2 | `b_input()` | Qisman tekshirildi (Order) | Menyuni ochish, qidirish, tanlash, tozalash, bo‘sh javob va komponentning qo‘shimcha rejimlari. |
+| 3 | `wait_for_loader()` | Qisman tekshirildi (Order) | Sahifa va lokal yuklanish belgilarining doirasi, kech chiqishi va timeout xabari. |
+| 4 | `autocomplete()` | Navbatdagi | Matn kiritish, takliflar kelishi, tanlash va natija topilmagandagi holat. |
+| 5 | `ui_select()` | Rejada | Ro‘yxatni ochish, qidirish, variant tanlash va qiymatni tekshirish. |
+| 6 | `multiselect()` | Rejada | Bir nechta variant tanlash, tanlovni o‘qish, olib tashlash va tozalash. |
+| 7 | `date_picker()` | Rejada | Sana yozish, kalendardan tanlash va ko‘rsatilgan sanani tekshirish. |
+| 8 | `checkbox()` | Rejada | Belgilash, belgini olib tashlash va joriy holatni o‘qish. |
+| 9 | `radio()` | Rejada | Guruh ichida variant tanlash va tanlangan holatni tekshirish. |
+| 10 | `choice()` | Rejada | Label orqali kerakli guruhni topish va uning variantini tanlash. |
+| 11 | `click()` | Rejada | To‘g‘ri tugma yoki elementni topish va bosish mumkin bo‘lguncha kutish. |
+| 12 | `tab()` | Rejada | Kerakli tab yoki bo‘limni ochish va faol holatni aniqlash. |
+| 13 | `action()` | Rejada | Menyu amalini topish va kerakli bandni tanlash. |
+| 14 | `page_link()` | Rejada | Formadagi havolani topish va ochish. |
+| 15 | `confirm_biruni()` | Rejada | Tasdiqlash dialogi matni, tugmalari va yopilishi. |
+| 16 | `close_biruni_alert()` | Rejada | Kutilgan xabarni aniqlash va ogohlantirishni yopish. |
+| 17 | `grid()` | Rejada | Qatorlar yuklanishi, bo‘sh jadval, qatorni belgilash va ochish. |
+| 18 | `grid_controller()` | Rejada | Qidirish, filtrlash, qayta yuklash va jadval boshqaruvlari. |
+| 19 | `grid_setting()` | Rejada | Sozlamani ochish, ustunni topish va o‘zgarish qo‘llanganini tekshirish. |
+| 20 | `grid_cell()` | Rejada | Qator va ustun bo‘yicha katak qiymatini o‘qish va kutish. |
+| 21 | `text()` | Rejada | Berilgan doirada matn va maydon qiymati ko‘rinishini tekshirish. |
+| 22 | `form_view()` | Rejada | Ko‘rish formasida labelga tegishli qiymatni o‘qish va tekshirish. |
+| 23 | `expect_page()` | Rejada | Sahifa manzili, sarlavha, bloklovchi loader va xato holati. |
+| 24 | `open_route()` | Rejada | Formani manzili orqali ochish va kerakli sahifa tayyorligini kutish. |
+| 25 | `navigate_to()` | Rejada | Asosiy menyudan maqsadli sahifaga o‘tish. |
+| 26 | `navigate_to_form()` | Rejada | Navigatsiya bo‘limi, menyu bandi va forma havolasi orqali o‘tish. |
+| 27 | `switch_filial()` | Rejada | Filialni almashtirish va faol filialni tasdiqlash. |
+| 28 | `hide_ui()` | Rejada | Yashirish yoki olib tashlash qayerda ishlatilganini va kuzatuvga ta’sirini tekshirish. |
+| 29 | `date()` | Rejada | Sana hisoblash va formatlashni chaqiruvchi metodlar bilan solishtirish. |
+| 30 | Yakuniy regression run | Boshlanmagan | #3689 da yiqilgan ssenariylar va o‘zgargan base funksiyalarini ishlatadigan boshqa A2 formalarida natijani tekshirish. |
 
-## Angular base funksiyalarining qamrovi
-
-| Audit holati | Mavjud metodlar |
-|---|---|
-| Order’da ayrim amallari tekshirildi | `input()`, `b_input()`, `wait_for_loader()` |
-| Tanlash va sana komponentlari — navbatda | `autocomplete()`, `ui_select()`, `multiselect()`, `date_picker()`, `checkbox()`, `radio()`, `choice()` |
-| Tugma, tab, menyu, havola va dialoglar — navbatda | `click()`, `tab()`, `action()`, `page_link()`, `confirm_biruni()`, `close_biruni_alert()` |
-| Jadval va formadagi qiymatlar — navbatda | `grid()`, `grid_controller()`, `grid_setting()`, `grid_cell()`, `text()`, `form_view()` |
-| Navigatsiya va yordamchi metodlar — vazifasi va kutishlari ko‘rib chiqiladi | `date()`, `hide_ui()`, `open_route()`, `expect_page()`, `navigate_to()`, `navigate_to_form()`, `switch_filial()` |
-
-Har bir komponent uchun UI amali, UI Kit misoli, Smartup formasi, mos base chaqiruvi va tayyorlik belgisi yoziladi. Smartup’da uchramagan yoki hali kuzatilmagan amal ochiq qoladi. Navigatsiya va yordamchi metodlar uchun ularning chaqiriladigan joylari hamda kerakli kutishlar tekshiriladi. Keyingi komponent — `autocomplete()`.
+Komponent bosqichini yopishda UI Kit’dagi amallar Smartup formasida solishtiriladi. Har bir amal uchun base chaqiruvi, kutish sharti va dalil yoziladi. Jadvaldagi amallar boshlang‘ich ro‘yxat. Solishtirishda topilgan qo‘shimcha amallar ham tegishli qatorga kiritiladi. UI Kit analogi bo‘lmagan yordamchi metodlarda chaqiruvchi kod va tegishli Smartup xatti-harakati tekshiriladi.
 
 ## Kod qayerda turadi?
 
@@ -27,19 +48,21 @@ Har bir komponent uchun UI amali, UI Kit misoli, Smartup formasi, mos base chaqi
 - **Test** ssenariyga xos amal va kutilgan biznes natijasini ifodalaydi. Masalan, miqdorni 9 ga o‘zgartirib, jami 63 000 bo‘lishini tekshiradi. Bitta testni o‘tkazish uchun maxsus locator yoki vaqt qiymati qo‘shishdan iloji boricha qochamiz.
 - **Mahalliy kutish** faqat shart aynan shu ssenariyga xos bo‘lib, uni base yoki mavjud flow orqali ishonchli ifodalashning amaliy yo‘li bo‘lmaganda qo‘llanadi. Bunda test kuzatiladigan natijani kutadi. Shu ehtiyoj boshqa testda ham uchrasa, umumlashtirish qayta ko‘rib chiqiladi.
 
-## Order bo‘yicha bosqichlar
+## Order bo‘yicha tekshiruv tarixi
+
+O0–O6 belgilari quyidagi Order yozuvlariga tegishli. O6 runi asosiy rejaning 30-bosqichiga kiritilgan.
 
 | № | Holat | Ish | Bosqichni yopish mezoni |
 |---|---|---|---|
-| 0 | Bajarildi | #3689 logi va tracelarini ko‘rish, UI Kit’dagi input va skeletonni brauzerda tekshirish. | Boshlang‘ich dalillar quyida qayd etilgan. #3689 tuzatishlari uchun CI tasdig‘i hali kutilmoqda. |
-| 1 | Bajarildi | A2 base funksiyalari va Angular Order ssenariylaridagi raqamli timeoutlar, majburiy pauzalar va takroriy UI qadamlarini topish. | Quyida kod joylari, iste’molchilar va har bir takror bo‘yicha qaror yozildi. |
-| 2 | Bajarildi | A2 skeleton, komponent spinneri va ichki vidjetning band holatini haqiqiy Angular forma yoki trace bilan solishtirish. | Tez ochilish, loader kech paydo bo‘lishi, loader tugamay qolishi va bitta vidjet bandligi uchun keyingi amal qachon bajarilishi yozilgan. |
-| 3 | Bajarildi | Umumiy kutishlarni A2 base funksiyalariga, takrorlangan UI qadamlarini tegishli flow’ga ko‘chirish. Dashboard va ombordagi 120 soniyalik kutishlarni birinchi bo‘lib baholash. | Umumiy UI timeoutlari base qatlamidan olinadi. Mahalliy istisno qolsa, sababi ro‘yxatda ko‘rsatilgan. Tez holat ortiqcha kutmaydi, timeout xabari esa qaysi holat kutilganini bildiradi. |
-| 4 | Bajarildi | Sonli input. UI Kit va Smartup buyurtma formasida 10 → 9 tahririni solishtirish. Maydon qiymati, oraliq 0 so‘rovi, Tab’dan keyingi hisob va yakuniy summani kuzatish. | Kiritish usulini umumiy input() metodiga qo‘llashdan oldin yana bitta sonli maydonda mosligi tekshirilgan. Summaga oid biznes tekshiruvi testda qolgan. |
-| 5 | Bajarildi | Serverdan qidiradigan select. UI Kit va A2 formada komponent amallarini ro‘yxatga olib, har birini mavjud `b_input()` imkoniyatiga solishtirish. Har bir amal uchun tayyorlik belgisi va yetishmayotgan imkoniyatni qayd etish. | Tasdiqlangan har bir amalni test aynan `b_input()` orqali bajara olishi tekshirilgan. Sekin qidiruv, kech kelgan eski javob, bo‘sh natija va yo‘qolmay qolgan spinner uchun kutiladigan holat ko‘rsatilgan. |
-| 6 | Rejada — test runi boshlanmagan | O‘zgarishlarni statik tekshirish. Testlarni ishga tushirish so‘ralgach, ta’sirlangan ssenariylar va shu base funksiyalarini ishlatadigan boshqa formalarda tekshirish. | Run havolasi, natija va ochiq muammolar yozilgan. Sekin holat bilan birga odatiy tez holatda ortiqcha kutish paydo bo‘lmagani ham tekshirilgan. |
+| O0 | Bajarildi | #3689 logi va tracelarini ko‘rish, UI Kit’dagi input va skeletonni brauzerda tekshirish. | Boshlang‘ich dalillar quyida qayd etilgan. #3689 tuzatishlari uchun CI tasdig‘i hali kutilmoqda. |
+| O1 | Bajarildi | A2 base funksiyalari va Angular Order ssenariylaridagi raqamli timeoutlar, majburiy pauzalar va takroriy UI qadamlarini topish. | Quyida kod joylari, iste’molchilar va har bir takror bo‘yicha qaror yozildi. |
+| O2 | Bajarildi | A2 skeleton, komponent spinneri va ichki vidjetning band holatini haqiqiy Angular forma yoki trace bilan solishtirish. | Tez ochilish, loader kech paydo bo‘lishi, loader tugamay qolishi va bitta vidjet bandligi uchun keyingi amal qachon bajarilishi yozilgan. |
+| O3 | Bajarildi | Umumiy kutishlarni A2 base funksiyalariga, takrorlangan UI qadamlarini tegishli flow’ga ko‘chirish. Dashboard va ombordagi 120 soniyalik kutishlarni birinchi bo‘lib baholash. | Umumiy UI timeoutlari base qatlamidan olinadi. Mahalliy istisno qolsa, sababi ro‘yxatda ko‘rsatilgan. Tez holat ortiqcha kutmaydi, timeout xabari esa qaysi holat kutilganini bildiradi. |
+| O4 | Bajarildi | Sonli input. UI Kit va Smartup buyurtma formasida 10 → 9 tahririni solishtirish. Maydon qiymati, oraliq 0 so‘rovi, Tab’dan keyingi hisob va yakuniy summani kuzatish. | Kiritish usulini umumiy input() metodiga qo‘llashdan oldin yana bitta sonli maydonda mosligi tekshirilgan. Summaga oid biznes tekshiruvi testda qolgan. |
+| O5 | Bajarildi | Serverdan qidiradigan select. UI Kit va A2 formada komponent amallarini ro‘yxatga olib, har birini mavjud `b_input()` imkoniyatiga solishtirish. Har bir amal uchun tayyorlik belgisi va yetishmayotgan imkoniyatni qayd etish. | Tasdiqlangan har bir amalni test aynan `b_input()` orqali bajara olishi tekshirilgan. Sekin qidiruv, kech kelgan eski javob, bo‘sh natija va yo‘qolmay qolgan spinner uchun kutiladigan holat ko‘rsatilgan. |
+| O6 | Rejada — test runi boshlanmagan | O‘zgarishlarni statik tekshirish. Testlarni ishga tushirish so‘ralgach, ta’sirlangan ssenariylar va shu base funksiyalarini ishlatadigan boshqa formalarda tekshirish. | Run havolasi, natija va ochiq muammolar yozilgan. Sekin holat bilan birga odatiy tez holatda ortiqcha kutish paydo bo‘lmagani ham tekshirilgan. |
 
-## 1-bosqich natijalari
+## Order O1 natijalari
 
 A2 base metodlari, ular chaqiradigan umumiy helperlar va `tests/regression/test_orders` ichidagi 78 ta Python fayli statik tekshirildi. Order katalogida `wait_for_timeout()` chaqiruvi topilmadi. Pytest assertionlari, brauzer amallari va navigatsiya sukut bo‘yicha bir xil `UI_TIMEOUT_MS` (60 s) oladi. Bu maksimal vaqt, shart bajarilishi bilan kutish tugaydi. [Umumiy qiymat](../utils/base_pages/__init__.py#L3) · [Assertionlar](../tests/conftest.py#L91) · [Brauzer konteksti](../tests/shared/browser.py#L20)
 
@@ -67,7 +90,7 @@ Quyidagi havolalar 1-bosqichdagi, refaktordan oldingi kodni ko‘rsatadi.
 
 **2-bosqichda birinchi tekshiruv** — Order’da `Далее` bosilgandan keyin eski bosqich qachon yopilishi, yangi `ИТОГО` maydoni qachon tayyor bo‘lishi va shu orada qaysi loader ko‘rinishini trace yoki haqiqiy formada solishtirish. Shu dalil flow uchun tayyorlik shartini belgilaydi. 1-bosqichdagi xulosalar kod tahliliga asoslangan.
 
-## 2-bosqich — Order yakunlash bosqichi
+## Order O2 — Order yakunlash bosqichi
 
 **Dalil.** 2026-11-15 dagi mahalliy `test_09_second_client_reuses_limit` yozuvi, birinchi urinish. Ssenariy Order yaratishda bonus takliflarini ko‘rgach, ikkinchi `Далее` bilan yakunlashga o‘tadi. Quyidagi vaqtlar `call@41643` click **chaqiruvi boshidan** hisoblangan. Playwright bosishni +27 ms da bajara boshlagan va +31 ms da tugatgan. DOM kadrlari orasidagi o‘zgarishning aniq millisekundini bu yozuv bermaydi. [Ssenariydagi qadam](../tests/regression/test_orders/business_cases/promotions/test_bonus_limit.py#L143)
 
@@ -99,7 +122,7 @@ Click boshidan yakuniy maydon qayd etilguncha olingan kadrlarda `.smt-skeleton`,
 
 Bu kechikishlar QA brauzerida boshqarildi. Doimiy server nosozligi yuz bergani haqida dalil yo‘q. Markerli guruhdagi 250 ms loaderning boshlanishini kuzatish oynasidir. Undan keyin boshlanadigan ish uchun flow maqsadli maydon yoki qiymatni ham kutadi. Kutish vaqtlari base qatlamida saqlandi.
 
-## 3-bosqich — joriy qilingan o‘zgarishlar
+## Order O3 — joriy qilingan o‘zgarishlar
 
 - **Trace qamrovi.** Asosiy ishchi nusxadagi `test-results/`, `output/`, `outputs/` hamda `local-ci-validation` worktree’dagi `test-results/` ZIP arxivlarida 53 ta noyob `.trace` oqimi ko‘rib chiqildi. Asosiy frame’ning A2 Order URL’i va `Далее` locatori birga qayd etilgan ikkita click bitta yozuvga tegishli. Ikkinchisi yuqorida tahlil qilingan yakunlash o‘tishi. Qidiruv boshqa selector orqali bosilgan yoki snapshoti yo‘q amallarni qamramaydi. Trace qidiruvidan keyingi boshqarilgan kuzatuv yuqorida berilgan.
 - **Yakunlash.** `open_order_summary()` bir marta bosadi, Order formasidagi bitta ko‘rinadigan `ИТОГО` labelini kutadi va maydonni mavjud `base.input()` orqali tekshiradi. Kutilgan summa berilsa, shu qiymatni ham kutadi. Qo‘lda chegirma, tayyor chegirma va aralash aksiyadagi 9 ta mahalliy locator tekshiruvi shu flow bilan almashtirildi. Aralash aksiya turida summa to‘lov parametrlari kiritilgach tekshiriladigan ssenariyning ketma-ketligi saqlandi. [Order flow](../tests/regression/test_orders/helpers/flows/order.py#L166)
@@ -110,7 +133,7 @@ Bu kechikishlar QA brauzerida boshqarildi. Doimiy server nosozligi yuz bergani h
 - **Chegirmalar.** Qo‘lda va tayyor chegirma testlari uchun umumiy mahsulot tayyorlash, summani o‘qish, qoralamani saqlash va saqlangan qiymatlarni tekshirish bitta modulga chiqarildi. [Umumiy helperlar](../tests/regression/test_orders/helpers/discounts.py)
 - **Tekshiruv.** O‘zgargan Python fayllari sintaksisi, importlar, flow chaqiriladigan joylar va diff statik tekshirildi. Testlar va collection ishga tushirilmadi. Jonli tekshiruvdan keyin global loader uchun kuzatish va yakuniy tekshiruv qamrovi kengaytirildi. Asosiy va jadval kutishlari o‘z lokal belgilariga qo‘shimcha ravishda shell loaderini ham ko‘radi. Timeout xabarida sahifa loaderi yoki tegishli qism bandligi ko‘rsatiladi.
 
-## 4-bosqich — sonli maydonni tahrirlash
+## Order O4 — sonli maydonni tahrirlash
 
 **Order dalili.** #3689 hisobotidagi `test_08_quantity_threshold` ssenariysi mavjud buyurtmada miqdorni 10 dan 9 ga o‘zgartirgan. Vaqtlar `call@34236` (`fill("9")`) boshiga nisbatan berilgan. Tarmoq so‘rovi boshlangan vaqt va HTTP javob holati bir qatorda keltirilgan. [#3689 Allure hisoboti](https://qa-assistant.uz/playwright-reports/44229787309-1.html) · [Order ssenariysi](../tests/regression/test_orders/business_cases/promotions/test_mandatory_conditions.py#L150)
 
@@ -129,7 +152,7 @@ Test kartasida sessiyani tiklash vaqtida `get_box_quant` uchun 401 javobini qayt
 
 **18-noyabr, jonli Order.** Saqlanmagan buyurtmaga narxi 7 000 bo‘lgan mahsulot qo‘shildi. A2 `input()` bilan 10, keyin 9 yozilib, har safar Tab bosildi. `get_box_quant` uchun ketma-ket `quant=10` va `quant=9` qayd etildi, ikkala javob HTTP 200. Orada nol so‘rovi kelmadi. Qator summasi 70 000 dan 63 000 ga o‘zgardi. Order flow’i `Далее`ni bosganda DOM kuzatuvchisi bosish vaqtida jami maydonini ko‘rmadi, birinchi kuzatuvda +58 ms, yakuniy kod bilan ikkinchi kuzatuvda +65 ms da unda 63 000 ni qayd etdi. Kuzatuvda sahifani bloklaydigan loader chiqmadi. `Кол-во кейсов` shu mahsulotda o‘chiq edi. Ikkinchi tahrirlanadigan sonli maydon bo‘yicha dalil yuqoridagi UI Kit kuzatuvidir.
 
-## 5-bosqich — serverdan qidiradigan select
+## Order O5 — serverdan qidiradigan select
 
 **Qamrov.** UI Kit’dagi Single Data Select va 15-noyabrdagi Order `test_09_second_client_reuses_limit` trace’i solishtirildi. Trace faylining yo‘li va SHA-256 qiymati 2-bosqichda berilgan. UI Kit’da Role List so‘roviga 401 qaytganda ham “Ничего не найдено” chiqdi. Bu demo orqali haqiqiy bo‘sh 200 javobini tasdiqlab bo‘lmaydi. [UI Kit Data Select](https://uikit.greenwhite.uz/data-select) · [A2 b_input](../utils/base_pages/angular_base_page.py#L552)
 
