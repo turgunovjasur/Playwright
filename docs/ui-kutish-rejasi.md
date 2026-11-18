@@ -2,7 +2,7 @@
 
 **Yangilangan sana:** 2026-11-18
 
-**Hozirgi holat:** 5-bosqichdagi to‘rtta A2 server select amali joriy qilindi. Ularning Smartup formasida amaliy tekshiruvi va 2-bosqichdagi bloklovchi loader dalili ochiq.
+**Hozirgi holat:** 5-bosqichning Smartup Order formasidagi tekshiruvi QA foydalanuvchisiga litsenziya biriktirilishini kutmoqda. UI Kit’da menyuni ochish, yopish va javob kelmagandagi kutish kuzatildi. 2-bosqichdagi Order loader dalili ham ochiq.
 
 Reja Angular (A2) formalarini qamrab oladi. Maqsad — element sekin yuklanganda kerakli holatni kutish va u tayyor bo‘lishi bilan davom etish.
 
@@ -24,7 +24,7 @@ Reja Angular (A2) formalarini qamrab oladi. Maqsad — element sekin yuklanganda
 | 2 | Jarayonda | A2 skeleton, komponent spinneri va ichki vidjetning band holatini haqiqiy Angular forma yoki trace bilan solishtirish. | Tez ochilish, loader kech paydo bo‘lishi, loader tugamay qolishi va bitta vidjet bandligi uchun keyingi amal qachon bajarilishi yozilgan. |
 | 3 | Jarayonda | Umumiy kutishlarni A2 base funksiyalariga, takrorlangan UI qadamlarini tegishli flow’ga ko‘chirish. Dashboard va ombordagi 120 soniyalik kutishlarni birinchi bo‘lib baholash. | Umumiy UI timeoutlari base qatlamidan olinadi. Mahalliy istisno qolsa, sababi ro‘yxatda ko‘rsatilgan. Tez holat ortiqcha kutmaydi, timeout xabari esa qaysi holat kutilganini bildiradi. |
 | 4 | Tekshiruv kutilmoqda | Sonli input. UI Kit va Smartup buyurtma formasida 10 → 9 tahririni solishtirish. Maydon qiymati, oraliq 0 so‘rovi, Tab’dan keyingi hisob va yakuniy summani kuzatish. | Kiritish usulini umumiy input() metodiga qo‘llashdan oldin yana bitta sonli maydonda mosligi tekshirilgan. Summaga oid biznes tekshiruvi testda qolgan. |
-| 5 | Tekshiruv kutilmoqda | Serverdan qidiradigan select. UI Kit va A2 formada komponent amallarini ro‘yxatga olib, har birini mavjud `b_input()` imkoniyatiga solishtirish. Har bir amal uchun tayyorlik belgisi va yetishmayotgan imkoniyatni qayd etish. | Tasdiqlangan har bir amalni test aynan `b_input()` orqali bajara olishi tekshirilgan. Sekin qidiruv, kech kelgan eski javob, bo‘sh natija va yo‘qolmay qolgan spinner uchun kutiladigan holat ko‘rsatilgan. |
+| 5 | QA litsenziyasi kutilmoqda | Serverdan qidiradigan select. UI Kit va A2 formada komponent amallarini ro‘yxatga olib, har birini mavjud `b_input()` imkoniyatiga solishtirish. Har bir amal uchun tayyorlik belgisi va yetishmayotgan imkoniyatni qayd etish. | Tasdiqlangan har bir amalni test aynan `b_input()` orqali bajara olishi tekshirilgan. Sekin qidiruv, kech kelgan eski javob, bo‘sh natija va yo‘qolmay qolgan spinner uchun kutiladigan holat ko‘rsatilgan. |
 | 6 | Statik tekshirildi; run kutilmoqda | O‘zgarishlarni statik tekshirish. Testlarni ishga tushirish so‘ralgach, ta’sirlangan ssenariylar va shu base funksiyalarini ishlatadigan boshqa formalarda tekshirish. | Run havolasi, natija va ochiq muammolar yozilgan. Sekin holat bilan birga odatiy tez holatda ortiqcha kutish paydo bo‘lmagani ham tekshirilgan. |
 
 ## 1-bosqich natijalari
@@ -142,6 +142,12 @@ UI Kit rol maydonida Escape’dan keyin qidiruv matni saqlandi. ArrowDown shu ma
 
 **Amaliy qabul mezoni.** Order’da mavjud klientni tanlamasdan qidirish, so‘ng mavjud bo‘lmagan klient uchun bo‘sh 200 javobini tekshirish va menyuni yopish. Ketma-ket ikki maydon bilan ishlaganda amal kerakli maydonga tegishi, qidiruv tanlovni tasdiqlamasligi va sessiya xatosi bo‘sh javob sifatida o‘tmasligi tekshiriladi. UI Kit’dagi qo‘shimcha rejimlarning Smartup’da ishlatilishi alohida kuzatiladi.
 
+### 18-noyabr — Smartup’da amaliy tekshiruv
+
+- **Order muhiti.** `validate_api_baseline()` mahalliy API setup natijasi, server va kompaniya mosligini tasdiqladi. Shu baseline’dagi QA foydalanuvchisi uchun login HTTP 200 qaytardi. Keyingi `m:session` so‘rovi HTTP 401 qaytardi va brauzerda “Нет лицензии для входа в систему!” ko‘rindi. `verify_license()` aynan shu baseline’dagi `ERP users` litsenziyasi faolligini va foydalanuvchi unga biriktirilmaganini ko‘rsatdi. [Baseline tekshiruvi](../scripts/api_setup_bridge.py#L106) · [Litsenziya tekshiruvi](../tests/regression/test_orders/helpers/auth_recovery.py#L37)
+- **UI Kit dalili.** Branchdagi `b_input(action="open")` rol maydonida bitta ko‘rinadigan menyu ochdi. `close`dan keyin ko‘rinadigan menyular soni nol bo‘ldi. Alohida qidiruvda kutilgan `requestfinished` 10 s ichida kelmadi va `expect_empty` timeout bilan tugadi. UI Kit’da spinner hamda “Ищем результаты” holati kuzatildi. Muvaffaqiyatli bo‘sh 200 javobi bu safar qayd etilmadi.
+- **Davom etish sharti.** Tasdiqlangan test foydalanuvchisiga faol `ERP users` litsenziyasi biriktirilgach, Order’da mavjud klientni tanlamasdan qidirish, boshqa maydon bilan ishlash, keyin noyob matn uchun bo‘sh 200 javobini tekshirish mumkin. Shu safar Order formasi ochilmadi. Litsenziya biriktirish va buyurtma saqlash bajarilmadi.
+
 ## Boshlang‘ich dalillar
 
 - Base qatlamidagi umumiy UI vaqti hozir 60 soniya. #3689 bo‘yicha ishchi nusxada dashboard va ombor oqimlari 120 soniyani o‘zi belgilaydi. Birinchi ko‘chirish nomzodlari shular. [Umumiy vaqt](../utils/base_pages/__init__.py) · [Dashboard](../tests/regression/test_orders/helpers/group_auth.py) · [Ombor](../tests/regression/test_orders/helpers/flows/stock.py)
@@ -164,3 +170,4 @@ Har bosqich boshlanganda holati **Jarayonda** deb belgilanadi. Yakunida sana, o�
 | 2026-11-18 | 4-bosqichda #3689 asl trace’i va ikki UI Kit sonli maydoni solishtirildi. A2 input ichidagi oraliq tozalash olib tashlandi. | Smartup’da qayta tekshirish ruxsatini kutish. Navbatdagi tahlil — 5-bosqichdagi server select amallari. |
 | 2026-11-18 | 5-bosqichda UI Kit, Order trace’i va public API solishtirildi. Placeholder indeksi, sekin ro‘yxat va tozalash kutishlari yangilandi. Branchdagi Python sintaksisi va diff statik tekshirildi. | Yetishmayotgan select amallari uchun kontraktni kelishish. Smartup test runi uchun tasdiq kutilmoqda. |
 | 2026-11-18 | 5-bosqichdagi open, search, expect_empty va close amallari A2 base metodiga qo‘shildi. Mavjud Order trace’i va UI Kit’dagi qayta qidirish harakati solishtirildi. | Yangi amallarni Smartup’da tekshirish uchun run ruxsati kutilmoqda. |
+| 2026-11-18 | 5-bosqichda Order’ga kirish tekshirildi. Login muvaffaqiyatli, sessiya uchun litsenziya biriktirilmagan. UI Kit’da ochish, yopish va javobni kutish kuzatildi. | Faol litsenziyali Order QA foydalanuvchisi bilan amaliy tekshiruvni davom ettirish. |
