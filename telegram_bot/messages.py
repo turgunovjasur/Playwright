@@ -15,7 +15,7 @@ from .formatting import (
     target_suite_label,
     truncate_message,
 )
-from .metrics import _count_line, _metric_count, _progress_line, _result_metrics, _result_names
+from .metrics import _count_line, _metric_count, _progress_line, _result_metrics, _result_names, phase_counts
 from .progress_details import _form_filial_label, failed_block, final_coverage_lines, forms_progress_lines
 
 
@@ -213,11 +213,9 @@ def _manual_progress_lines(state):
         lines.append("⏭ Order regression boshlanmadi")
     # During execution show the current phase. In the final message sum both.
     shown = list(phases.values()) if state.get("result") else [next(reversed(phases.values()))]
-    total = sum(phase.get("total", 0) for phase in shown)
-    if total:
-        passed, failed, skipped = (sum(phase.get(key, 0) for phase in shown)
-                                   for key in ("passed", "failed", "skipped"))
-        lines.extend(["", *_progress_counts(passed, failed, skipped, total)])
+    counts = phase_counts(shown)
+    if counts["total"]:
+        lines.extend(["", *_progress_counts(**counts)])
         last_failed = next((phase["last_failed"] for phase in reversed(shown) if phase.get("last_failed")), "")
         if last_failed:
             lines.extend(["", f"❌ Yiqilgan test · {last_failed}"])

@@ -50,7 +50,7 @@ def start_run(
             f"{request.suite_label} testi boshlanyapti...",
         )
         try:
-            route = encode_reply_chat(telegram.token, chat_id)
+            route = encode_reply_chat(telegram.token, chat_id, request.sender_id, request.sender_name)
             workflow_run = github.dispatch(request, telegram_reply_route=route)
         except Exception as exc:
             telegram.edit_message(chat_id, message_id, f"Testni boshlashda xato: {exc}")

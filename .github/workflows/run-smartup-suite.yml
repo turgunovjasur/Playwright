@@ -48,6 +48,23 @@ jobs:
       ALLURE_HISTORY_PATH: test-results/allure-history/history.jsonl
 
     steps:
+      - name: Keep encrypted requester for the completion notification
+        if: inputs.telegram_reply_route != ''
+        continue-on-error: true
+        env:
+          REPLY_ROUTE: ${{ inputs.telegram_reply_route }}
+        run: |
+          jq -n '{route: env.REPLY_ROUTE, server: env.TEST_SERVER_KEY}' > "$RUNNER_TEMP/owner-run.json"
+
+      - name: Save notification context for this attempt
+        if: inputs.telegram_reply_route != ''
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: owner-run-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/owner-run.json
+          retention-days: 1
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -56,6 +73,26 @@ jobs:
         with:
           python-version: "3.13"
           cache: pip
+
+      - name: Install Telegram routing dependency
+        if: inputs.telegram_reply_route != ''
+        run: python -m pip install -r telegram_bot/deploy/requirements.txt
+
+      - name: Resolve requesting Telegram chat
+        id: reply_chat
+        if: inputs.telegram_reply_route != ''
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_REPLY_ROUTE: ${{ inputs.telegram_reply_route }}
+        run: python -m telegram_bot.reply_chat
+
+      - name: Notify owner who started the run
+        if: inputs.telegram_reply_route != ''
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python -m telegram_bot.owner_notification started "$RUNNER_TEMP/owner-run.json"
 
       - name: Validate page navigation
         run: python scripts/validate_page_navigation.py
@@ -80,18 +117,6 @@ jobs:
           with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as output:
               output.write(f"TEST_SERVER_URL={servers[server_key]}\n")
           PY
-
-      - name: Install Telegram routing dependency
-        if: inputs.telegram_reply_route != ''
-        run: python -m pip install -r telegram_bot/deploy/requirements.txt
-
-      - name: Resolve requesting Telegram chat
-        id: reply_chat
-        if: inputs.telegram_reply_route != ''
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_REPLY_ROUTE: ${{ inputs.telegram_reply_route }}
-        run: python -m telegram_bot.reply_chat
 
       - name: Start Telegram progress
         env:

@@ -2,6 +2,7 @@
 
 import base64
 import hashlib
+import json
 import os
 import re
 
@@ -15,20 +16,34 @@ def _cipher(bot_token):
     return Fernet(base64.urlsafe_b64encode(key))
 
 
-def encode_reply_chat(bot_token, chat_id):
+def encode_reply_chat(bot_token, chat_id, sender_id=None, sender_name=""):
     if not re.fullmatch(r"-?[1-9][0-9]*", str(chat_id)):
         raise ValueError("Invalid Telegram chat ID")
-    return _cipher(bot_token).encrypt(str(chat_id).encode("ascii")).decode("ascii")
+    value = str(chat_id)
+    if sender_id is not None:
+        value = json.dumps([value, str(sender_id), sender_name], ensure_ascii=False)
+    return _cipher(bot_token).encrypt(value.encode("utf-8")).decode("ascii")
+
+
+def decode_requester(bot_token, route):
+    try:
+        value = json.loads(_cipher(bot_token).decrypt(route.encode("ascii")))
+    except (InvalidToken, UnicodeError, ValueError):
+        raise ValueError("Invalid Telegram reply route") from None
+    # Older bot versions encrypted only the numeric chat ID.
+    if type(value) is int and value:
+        return str(value), str(value) if value > 0 else "", ""
+    if isinstance(value, list) and len(value) == 3:
+        chat_id, sender_id, name = value
+        if (all(isinstance(item, str) for item in value)
+                and re.fullmatch(r"-?[1-9][0-9]*", chat_id)
+                and re.fullmatch(r"[1-9][0-9]*", sender_id)):
+            return chat_id, sender_id, " ".join(name.split())[:160]
+    raise ValueError("Invalid Telegram reply route")
 
 
 def decode_reply_chat(bot_token, route):
-    try:
-        value = _cipher(bot_token).decrypt(route.encode("ascii")).decode("ascii")
-    except (InvalidToken, UnicodeError):
-        raise ValueError("Invalid Telegram reply route") from None
-    if not re.fullmatch(r"-?[1-9][0-9]*", value):
-        raise ValueError("Invalid Telegram reply route")
-    return value
+    return decode_requester(bot_token, route)[0]
 
 
 if __name__ == "__main__":

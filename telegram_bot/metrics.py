@@ -7,6 +7,13 @@ import re
 from .constants import NIGHTLY_TARGETS
 
 
+def phase_counts(phases):
+    return {
+        key: sum(phase.get(key, 0) for phase in phases)
+        for key in ("passed", "failed", "skipped", "total")
+    }
+
+
 def _summary_counts(summary):
     counts = {
         "passed": 0,

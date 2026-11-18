@@ -309,7 +309,8 @@ def handle_callback(
     chat = message.get("chat") or {}
     chat_id = str(chat.get("id", ""))
     message_id = message.get("message_id")
-    pending_key = (chat_id, (callback.get("from") or {}).get("id"))
+    sender = callback.get("from") or {}
+    pending_key = (chat_id, sender.get("id"))
 
     if not isinstance(message_id, int):
         telegram.answer_callback(callback_id)
@@ -364,6 +365,9 @@ def handle_callback(
         request = RunRequest(
             suite_key=suite_key,
             server_key=server_key,
+            sender_id=sender.get("id"),
+            sender_name=" ".join(filter(None, [sender.get("first_name"), sender.get("last_name")]))
+            or sender.get("username", ""),
         )
         pending_stop_store.clear(pending_key)
         pending_store.set(pending_key, PendingRun(request=request, prompt_message_id=message_id))

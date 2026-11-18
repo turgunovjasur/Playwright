@@ -50,3 +50,11 @@ Umumiy API bir urinishni bajaradi. Bot cooldown/retry, jonli CI progress throttl
 va final xabarning retry/fallback siyosatlari o'z modullarida qoladi; umumiy
 transport o'zi qayta urinish qilmaydi. Run va stop paroli uchun ikkita mustaqil
 `PendingStore` instansiyasi ishlatiladi, ularning holati aralashmaydi.
+
+## Bot egasiga shaxsiy xabar
+
+GitHub repository secret `TELEGRAM_CHAT_ID` bot egasining shaxsiy Telegram
+chatini belgilaydi. Boshqa foydalanuvchi bot orqali run boshlaganda, workflow
+shu chatga boshlagan odam, server va run havolasini yuboradi. Run tugaganda
+GitHub natijasi, davomiyligi va mavjud test hisoblari keladi. Bot egasining
+o‘z runida qo‘shimcha xabar yuborilmaydi.

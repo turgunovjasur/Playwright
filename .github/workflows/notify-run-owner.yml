@@ -1,0 +1,59 @@
+name: Notify Telegram owner of CI result
+
+on:
+  workflow_run:
+    workflows: ["Daily Smoke, Report and Forms Tests"]
+    branches: [main]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  notify:
+    if: github.event.workflow_run.event == 'workflow_dispatch' && github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ github.event.workflow_run.id }}
+          pattern: "@(owner-run-${{ github.event.workflow_run.run_attempt }}|api-regression-results-telegram-status)"
+          path: ${{ runner.temp }}/owner-notification
+
+      - name: Check for a Telegram request on this attempt
+        id: request
+        env:
+          ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+        run: |
+          if [[ -f "$RUNNER_TEMP/owner-notification/owner-run-$ATTEMPT/owner-run.json" ]]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.request.outputs.found == 'true'
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        if: steps.request.outputs.found == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Telegram libraries
+        if: steps.request.outputs.found == 'true'
+        run: python -m pip install -r telegram_bot/deploy/requirements.txt
+
+      - name: Send final result
+        if: steps.request.outputs.found == 'true'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+        run: |
+          dir="$RUNNER_TEMP/owner-notification"
+          python -m telegram_bot.owner_notification finished "$dir/owner-run-$ATTEMPT/owner-run.json" \
+            "$dir/api-regression-results-telegram-status/telegram-delivery.json"

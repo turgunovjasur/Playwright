@@ -11,6 +11,8 @@ from .constants import TARGET_LABELS
 class RunRequest:
     suite_key: str
     server_key: str
+    sender_id: int | None = None
+    sender_name: str = ""
 
     @property
     def suite_label(self):

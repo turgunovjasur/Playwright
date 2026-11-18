@@ -18,6 +18,7 @@ from .constants import (
 from .environment import env_value, telegram_enabled
 from .formatting import now_tashkent, target_label
 from .messages import render_message, render_plain_message
+from .metrics import phase_counts
 from .paths import DELIVERY_FILE
 from .progress_state import save_state
 from .telegram_api import (
@@ -245,6 +246,9 @@ def delivery_payload(state, *, status, method, attempts, errors):
 
 
 def write_delivery_status(state, delivery):
+    if state.get("target") == MANUAL_SUITE:
+        delivery["run_attempt"] = env_value("GITHUB_RUN_ATTEMPT")
+        delivery["counts"] = phase_counts(state.get("phases", {}).values())
     state["telegram_delivery"] = delivery
     DELIVERY_FILE.parent.mkdir(parents=True, exist_ok=True)
     DELIVERY_FILE.write_text(
