@@ -17,7 +17,10 @@ def bind_lookup_context(monkeypatch):
         if controller is None or controller.recovering:
             return original(base, *args, **kwargs)
         arguments = parameters.bind(base, *args, **kwargs).arguments
-        selecting = 'value' in arguments or arguments.get('search_text') or arguments.get('select_first') or arguments.get('clear')
+        selecting = (
+            'value' in arguments or arguments.get('search_text') or arguments.get('select_first')
+            or arguments.get('clear') or arguments.get('action') in ('open', 'search', 'expect_empty')
+        )
         if not selecting:
             return original(base, *args, **kwargs)
         # Use the existing helper to resolve the input, not a second copy of its

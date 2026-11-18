@@ -2,7 +2,7 @@ import re
 import allure
 from contextlib import nullcontext
 from time import monotonic
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import unquote, urlsplit, urlunsplit
 
 from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import expect
@@ -445,12 +445,89 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    def _lookup_action(self, action, select, search, dropdown, query, timeout):
+        """Operate the active single-select without choosing a row."""
+        if action == "close":
+            if dropdown.is_visible():
+                if not select.locator(":focus-within").count():
+                    if self.page.locator("smt-data-select:focus-within, smt-select:focus-within").count():
+                        return search
+                    raise AssertionError("b_input(close): cannot identify the active dropdown")
+                search.press("Escape", timeout=timeout)
+                expect(dropdown).to_be_hidden(timeout=timeout)
+            return search
+
+        if action == "open":
+            search.click(timeout=timeout)
+            expect(search).to_be_focused(timeout=timeout)
+            expect(dropdown).to_be_visible(timeout=timeout)
+            return search
+
+        # Reopening an unchanged query requests the first page again. fill()
+        # with the same text need not trigger a lookup.
+        reopen = search.input_value(timeout=timeout) == query
+        if reopen and dropdown.is_visible() and select.locator(":focus-within").count():
+            search.press("Escape", timeout=timeout)
+            expect(dropdown).to_be_hidden(timeout=timeout)
+
+        key = select.get_attribute("smtkeyfield", timeout=timeout)
+        route = select.get_attribute("smtqueryname", timeout=timeout)
+        # Track starts as well as completions: a request already in flight
+        # for the same query must not satisfy this action.
+        started = set()
+
+        def remember(request):
+            if not _lookup_query_finished(request, query, key):
+                return
+            if route and not unquote(urlsplit(request.url).path).endswith(route):
+                return
+            if request.post_data_json["p"].get("offset", 0) == 0:
+                started.add(request)
+
+        self.page.on("request", remember)
+        try:
+            with self.page.expect_event(
+                "requestfinished", predicate=lambda request: request in started, timeout=timeout,
+            ) as finished:
+                if reopen:
+                    search.press("ArrowDown", timeout=timeout)
+                else:
+                    search.click(timeout=timeout)
+                    search.fill(query, timeout=timeout)
+        finally:
+            self.page.remove_listener("request", remember)
+
+        response = finished.value.response()
+        if response is None or not response.ok:
+            status = response.status if response is not None else "no response"
+            raise AssertionError(f"b_input({action}): lookup failed ({status})")
+
+        expect(search).to_have_value(query, timeout=timeout)
+        expect(dropdown).to_be_visible(timeout=timeout)
+        expect(select.locator('smt-icon[key="loader"]')).to_be_hidden(timeout=timeout)
+        rows = dropdown.locator("li:visible")
+        empty = dropdown.get_by_text("Ничего не найдено", exact=True)
+        result = response.json()
+        if not isinstance(result, dict) or not isinstance(result.get("data"), list):
+            raise AssertionError(f"b_input({action}): lookup response has no result rows")
+        if result["data"]:
+            if action == "expect_empty":
+                raise AssertionError("b_input(expect_empty): lookup returned records")
+            expect(rows.first).to_be_visible(timeout=timeout)
+        else:
+            if type(result.get("count")) is not int or result["count"] != 0:
+                raise AssertionError(f"b_input({action}): first page is empty without a zero total")
+            expect(empty).to_be_visible(timeout=timeout)
+            expect(rows).to_have_count(0, timeout=timeout)
+        return search
+
     @report_web_action
     def b_input(
         self,
         label=None,
         value=_UNSET,
         *,
+        action=None,
         ng_model=None,
         placeholder=None,
         expect_value=_UNSET,
@@ -468,6 +545,11 @@ class AngularBasePage:
         timeout=UI_TIMEOUT_MS,
     ):
         """A2 ``smt-data-select``dan option tanlaydi yoki joriy qiymatni tekshiradi.
+
+        A2 server select uchun action="open" va "close" menyuni boshqaradi.
+        "search" va "expect_empty" search_text bo‘yicha yangi so‘rovni kutadi,
+        menyuni ochiq qoldiradi va option tanlamaydi. Har bir amal input
+        Locatorini qaytaradi. action berilmasa odatdagi tanlash ishlaydi.
 
         ``select_first=True`` qidiruvsiz birinchi optionni tanlaydi. Non-empty
         ``search_text`` inputga yoziladi va shu matnga mos option ko'ringuncha
@@ -499,6 +581,18 @@ class AngularBasePage:
             index=index,
             timeout=timeout,
         )
+        if action is not None:
+            if action not in ("open", "close", "search", "expect_empty"):
+                raise ValueError(f"b_input(): unknown action {action!r}")
+            if (value is not _UNSET or expect_value is not _UNSET or clear or select_first
+                    or stop_after_select or option_contains or return_value or server_search
+                    or not exact or delay != 50):
+                raise ValueError("b_input(): action cannot be combined with selection or value options")
+            if action in ("search", "expect_empty"):
+                if not isinstance(search_text, str):
+                    raise ValueError(f"b_input({action}): search_text must be a string")
+            elif search_text is not None:
+                raise ValueError(f"b_input({action}): search_text is only used for search or expect_empty")
         if isinstance(option_contains, str):
             option_contains = (option_contains,)
         if not isinstance(option_contains, (tuple, list)) or any(
@@ -541,6 +635,11 @@ class AngularBasePage:
         dropdown = self.page.locator(
             ".cdk-overlay-container smt-select-dropdown:visible"
         ).last
+
+        if action is not None:
+            if not select.locator("xpath=self::smt-data-select").count():
+                raise ValueError("b_input(): action requires an A2 server data select")
+            return self._lookup_action(action, select, search, dropdown, search_text, timeout)
 
         if clear:
             search.click(timeout=timeout)
