@@ -655,7 +655,7 @@ def order_report_section(group, test):
 
 
 @lru_cache(maxsize=None)
-def _group_test_numbers(group):
+def group_test_numbers(group):
     """Number tests in runner source order without importing or executing them."""
     folder = "verification" if group == "recovery" else "runners"
     runner = Path(__file__).resolve().parent.parent / folder / f"test_{group}_runner.py"
@@ -670,7 +670,7 @@ def _group_test_numbers(group):
 def order_report_title(group, test, *, rerun=False):
     title = re.sub(r" · [A-Z][A-Z0-9-]*-[0-9]+[A-Z]?$", "", SPECS[group, test][0])
     scenario = GROUP_FEATURES[group].split(" · ", 1)[0]
-    number = _group_test_numbers(group)[test]
+    number = group_test_numbers(group)[test]
     if group in {"auto_offset", "prepayment_first"} and test == "test_002_stock":
         title = "Ombor qoldig‘ini tekshirish (2 dona mahsulot)"
     retry = " ↻" if rerun else ""

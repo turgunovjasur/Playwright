@@ -22,12 +22,22 @@ from .summaries import enrich_failed_result_from_summary, sync_summary_metrics
 
 def run_phase(command, phase, state):
     """Sample an atomic pytest snapshot, including tests shorter than a poll."""
-    progress = state.setdefault("phases", {})[phase] = {"outcome": "running"}
+    phases = state.setdefault("phases", {})
+    progress = {"outcome": "running", "total": phases.get(phase, {}).get("total", 0)}
+    phases[phase] = progress
     state["status"] = phase
 
     def publish(path, *, boundary=False):
         if path.is_file():
             progress.update(json.loads(path.read_text(encoding="utf-8")))
+            if phase == "API setup" and "Order regression" not in phases:
+                from tests.regression.test_orders.helpers.ordering import GROUP_NAMES
+                from tests.regression.test_orders.helpers.reporting import group_test_numbers
+
+                phases["Order regression"] = {
+                    "outcome": "pending",
+                    "total": sum(len(group_test_numbers(group)) for group in GROUP_NAMES),
+                }
         save_state(state)
         if time.time() >= float(state.get("telegram_backoff_until") or 0):
             edit_progress(state, force=boundary)

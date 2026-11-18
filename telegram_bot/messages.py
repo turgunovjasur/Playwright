@@ -200,7 +200,10 @@ def _manual_progress_lines(state):
     phases = state["phases"]
     lines = []
     for name, phase in phases.items():
-        if phase["outcome"] == "running":
+        if phase["outcome"] == "pending":
+            if state.get("result"):
+                lines.append(f"⏭ {name} boshlanmadi")
+        elif phase["outcome"] == "running":
             current = phase.get("current")
             lines.append(f"▸ {name} · {current}" if current else f"▸ {name}")
         elif phase["outcome"] == "passed":
@@ -211,12 +214,10 @@ def _manual_progress_lines(state):
             lines.append(f"❌ {name} xato bilan tugadi")
     if state.get("result") and "Order regression" not in phases and "API setup" in phases:
         lines.append("⏭ Order regression boshlanmadi")
-    # During execution show the current phase. In the final message sum both.
-    shown = list(phases.values()) if state.get("result") else [next(reversed(phases.values()))]
-    counts = phase_counts(shown)
+    counts = phase_counts(phases.values())
     if counts["total"]:
         lines.extend(["", *_progress_counts(**counts)])
-        last_failed = next((phase["last_failed"] for phase in reversed(shown) if phase.get("last_failed")), "")
+        last_failed = next((phase["last_failed"] for phase in reversed(phases.values()) if phase.get("last_failed")), "")
         if last_failed:
             lines.extend(["", f"❌ Yiqilgan test · {last_failed}"])
     return lines
