@@ -2,7 +2,7 @@
 
 ## Asosiy reja — 30 bosqich
 
-2026-11-18 holatiga ko‘ra, 29 ta public metodning har biriga alohida bosqich ajratildi. 30-bosqich — yakuniy regression run. 1–3-metodlar Order’da qisman tekshirildi. 4-bosqichda ism yozish va qidiruv kutishi Smartup’da tekshirildi. Mavjud shaxsni tanlash bo‘yicha ochiq masala quyida qayd etilgan. 5-bosqichda oddiy select va qidiruvli select solishtirildi. 6–9-bosqichlarda ko‘p tanlov, sana, checkbox va radio brauzerda tekshirildi. 10–29-bosqichlarning natijalari ham jadvalda. Qayta tekshirishda birinchi navbat — 6-bosqichdagi ikki tanlovdan keyin menyuning yangilanishi. 30-bosqichdagi test runi boshlanmagan.
+2026-11-18 holatiga ko‘ra, 29 ta public metodning har biriga alohida bosqich ajratildi. 30-bosqich — yakuniy regression run. 1–3-metodlar Order’da qisman tekshirildi. 4-bosqichda ism yozish va qidiruv kutishi Smartup’da tekshirildi. Mavjud shaxsni tanlash bo‘yicha ochiq masala quyida qayd etilgan. 5-bosqichda oddiy select va qidiruvli select solishtirildi. 6–9-bosqichlarda ko‘p tanlov, sana, checkbox va radio brauzerda tekshirildi. 10–29-bosqichlarning natijalari ham jadvalda. 6-bosqichda ikkita qiymatni bitta chaqiruvda tanlash base metodida tuzatildi va Smartup formasida tekshirildi. Keyingi ish — 5-bosqichdagi alohida qidirish. 30-bosqichdagi test runi boshlanmagan.
 
 | Bosqich | Metod yoki ish | Holat | Tekshiriladigan amallar |
 |---|---|---|---|
@@ -11,7 +11,7 @@
 | 3 | `wait_for_loader()` | Qisman tekshirildi (Order) | Sahifa va lokal yuklanish belgilarining doirasi, kech chiqishi va timeout xabari. |
 | 4 | `autocomplete()` | Amaliy audit bajarildi, variant tanlash ochiq | Matn kiritish, takliflar kelishi, tanlash va natija topilmagandagi holat. |
 | 5 | `ui_select()` | Audit bajarildi, alohida qidirish ochiq | Aksiya formasida tanlash va qiymatni o‘qish, UI Kit’da filtrlash va bo‘sh natija tekshirildi. |
-| 6 | `multiselect()` | Audit bajarildi, ikkita qiymatni ketma-ket tanlashda xato topildi | Bir nechta variant tanlash, tanlovni o‘qish, olib tashlash va tozalash. |
+| 6 | `multiselect()` | Ketma-ket tanlash tuzatildi va Smartup’da tekshirildi | Bir nechta variant tanlash, tanlovni o‘qish, olib tashlash va tozalash. |
 | 7 | `date_picker()` | Asosiy sana amallari tekshirildi | Sana yozish, kalendardan tanlash va ko‘rsatilgan sanani tekshirish. |
 | 8 | `checkbox()` | Audit bajarildi, oraliq holat ochiq | Belgilash, belgini olib tashlash va joriy holatni o‘qish. |
 | 9 | `radio()` | Tanlash va guruh holati tekshirildi | Guruh ichida variant tanlash va tanlangan holatni tekshirish. |
@@ -69,9 +69,13 @@ UI Kit Multi Data Select’dagi birinchi qidiruvda menyu triggerning `aria-contr
 
 | Amal | Smartup’da kuzatilgan natija | Base uchun xulosa |
 |---|---|---|
-| Faollashishni kutish | «Рабочие зоны» bo‘shligida «Тип цены» komponentida `disabled` bor, ichida qidiruv inputi yo‘q. Birinchi ish zonasi tanlangach, `disabled` olib tashlandi va input paydo bo‘ldi. | Ish zonasini tanlash flowga tegishli. Komponent ichida amal boshlanishidan oldin enabled holat va input tayyorligini shu chaqiruvning timeouti bilan kutish kerak. Hozir birinchi `input_value()` sahifa timeoutidan foydalanadi. |
-| Ikki variantni ketma-ket tanlash | Ikkita turli narx turi bitta `value=[a, b]` chaqiruvida berildi. Birinchi chip paydo bo‘ldi. Keyingi tanlovda helper DOM’da topilmagan menyu ID’sini kutib timeout berdi. Xuddi shu sahifada ikkinchi qiymat alohida chaqiruvda tanlangach ikkala chip ham o‘qildi. | Har bir tanlovdan keyin chipni tasdiqlash va keyingi qidiruvdan oldin triggerga ayni paytda bog‘langan menyuni qayta topish kerak. Ikkita tanlovni bitta chaqiruvda ishonchli bajarish ochiq. |
+| Faollashishni kutish | «Рабочие зоны» bo‘shligida «Тип цены» komponentida `disabled` bor, ichida qidiruv inputi yo‘q. Birinchi ish zonasi tanlangach, `disabled` olib tashlandi va input paydo bo‘ldi. | Ish zonasini tanlash flowga tegishli. Base qidiruv inputi tahrirlashga tayyor bo‘lishini kutadi. Inputni kutish va uning qiymatini o‘qishga metodning `timeout` qiymati qo‘llanadi. |
+| Ikki variantni ketma-ket tanlash | Ikkita turli narx turi bitta `value=[a, b]` chaqiruvida berildi. Birinchi chip paydo bo‘ldi. Keyingi tanlovda helper DOM’da topilmagan menyu ID’sini kutib timeout berdi. Xuddi shu sahifada ikkinchi qiymat alohida chaqiruvda tanlangach ikkala chip ham o‘qildi. | Tuzatishdan keyin xuddi shu formada ikkita turli narx turi bitta chaqiruvda tanlandi. Quyida yakuniy natija keltirilgan. |
 | Bittasini olib tashlash va tozalash | Birinchi chipning olib tashlash tugmasi bosilgach, ikkinchi chip qoldi. `clear=True, return_value=True` bo‘sh ro‘yxat qaytardi. | Qo‘shish, o‘qish va hammasini tozalash bor. Berilgan bitta chipni nomi bo‘yicha olib tashlash amali yetishmaydi. UI Kit’dagi All, yig‘ilgan chiplar va pin rejimlari bu Smartup maydonlarida tekshirilmagan. |
+
+**Tuzatish natijasi.** Angular `multiselect()` odatiy `value=[a, b]` chaqiruvida birinchi qiymatning chipi ko‘ringach, shu maydonning menyusi yopilganini kutadi. Ikkinchi qidiruvda locator triggerning joriy `aria-controls` bog‘lanishini kuzatadi. Qidiruv uchun mavjud, maydon va matnga mos so‘rov tugashini kutadigan helper ishlatiladi.
+
+Smartup «Акция (создание) → Тип цены» formasida `return_value=True` ikkala qiymatni berilgan tartibda qaytardi. Odatiy `close=True` bilan oxirida menyu yopildi. `close=False` bilan ikkala qiymat tanlandi va menyu ochiq qoldi. Forma saqlanmadi. Pytest va CI ishga tushirilmadi. Bitta chipni nomi bilan olib tashlash alohida ochiq amal bo‘lib qolmoqda.
 
 ## 7–9-bosqichlar — sana, checkbox va radio
 
@@ -102,7 +106,7 @@ UI Kit Multi Data Select’dagi birinchi qidiruvda menyu triggerning `aria-contr
 | 28 · `hide_ui()` | Role setup ishlatadigan yordamchi vidjet selektori Smartup brauzerida ikkita elementga mos tushdi, metod 2 qaytardi. | Bu bir martalik DOM amali. Keyin paydo bo‘ladigan elementlar uchun kutish yoki kuzatuvchi o‘rnatmaydi. [Chaqiruvchi](../tests/smoke/test_setup/test_08_role.py#L74) |
 | 29 · `date()` | Base hisobida 28.02.2024 + 1 kun → 29.02.2024, 31.12.2025 + 1 kun → 01.01.2026 chiqdi. | Bu UI kutishiga bog‘liq bo‘lmagan hisob. Sana maydonining amaliy tekshiruvi 7-bosqichda. |
 
-**Keyingi ish.** Avval 6-bosqichdagi ikkinchi tanlovni qayta ishlatiladigan base metodida barqarorlashtirish, keyin 5-bosqichdagi alohida qidirish va 12-bosqichdagi tabning faol holatini tekshirish. 30-bosqichdagi regression run alohida qoladi.
+**Keyingi ish.** 5-bosqichda tanlovni o‘zgartirmasdan qidirishni, so‘ng 12-bosqichda tabning faol holatini tekshirish. 30-bosqichdagi regression run alohida qoladi.
 
 ## Kod qayerda turadi?
 

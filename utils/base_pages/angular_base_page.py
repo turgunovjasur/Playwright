@@ -1223,78 +1223,66 @@ class AngularBasePage:
 
         selected_values = values_list(value)
         menu_trigger = select.locator('[role="button"][aria-haspopup="menu"]').first
-        key_field = select.get_attribute("smtkeyfield")
-        dropdown = None
+        # CDK can replace the overlay after a selection. Resolve the trigger's
+        # current aria-controls on each Playwright action, including retries.
+        menu = menu_trigger.locator("xpath=id(@aria-controls)")
+        key_field = select.get_attribute("smtkeyfield", timeout=timeout)
 
         def search_dropdown(query):
-            current_query = search.input_value()
-            if menu_trigger.get_attribute("aria-expanded") != "true":
+            expect(search).to_be_editable(timeout=timeout)
+            current_query = search.input_value(timeout=timeout)
+            if menu_trigger.get_attribute("aria-expanded", timeout=timeout) != "true":
                 with _expect_lookup_query(self.page, current_query, key_field, timeout=timeout):
                     trigger.click(timeout=timeout)
-            menu_id = menu_trigger.get_attribute("aria-controls")
-            if not menu_id:
-                raise AssertionError("A2 multiselect dropdownining aria-controls atributi topilmadi")
-            menu = self.page.locator(f'.cdk-overlay-container [id="{menu_id}"]')
             expect(menu).to_be_visible(timeout=timeout)
-            expect(search).to_be_visible(timeout=timeout)
             if current_query != query:
                 # The old options remain visible while the debounced search loads.
-                # Wait for this field's exact query before clicking any option.
                 with _expect_lookup_query(self.page, query, key_field, timeout=timeout):
                     search.fill(query, timeout=timeout)
             expect(menu.get_by_text(re.compile(r"^\s*(?:Загрузка\.\.\.|Ищем результаты)\s*$")).filter(visible=True).first).to_be_hidden(timeout=timeout)
             expect(search).to_have_value(query, timeout=timeout)
-            return menu
 
-        for option_text in selected_values:
-            matcher = (
-                re.compile(rf"^\s*{re.escape(option_text)}\s*$")
-                if exact
-                else re.compile(re.escape(option_text))
-            )
-            dropdown = search_dropdown(option_text)
-            options = dropdown.get_by_role("menuitemcheckbox")
-            option = options.filter(has_text=matcher).or_(
-                options.filter(has=self.page.get_by_text(matcher))
+        def matching_text(items, option_text):
+            pattern = re.escape(option_text)
+            matcher = re.compile(rf"^\s*{pattern}\s*$" if exact else pattern)
+            return items.filter(has_text=matcher).or_(
+                items.filter(has=self.page.get_by_text(matcher))
             ).first
+
+        def close_dropdown():
+            # Wait through a CDK remount until the trigger is closed or its
+            # currently controlled menu is ready to receive Escape.
+            collapsed = menu_trigger.locator('xpath=self::*[not(@aria-expanded="true")]')
+            expect(menu.or_(collapsed).first).to_be_visible(timeout=timeout)
+            if menu.is_visible():
+                menu.press("Escape", timeout=timeout)
+            expect(menu_trigger).not_to_have_attribute("aria-expanded", "true", timeout=timeout)
+            expect(menu).to_be_hidden(timeout=timeout)
+
+        options = menu.get_by_role("menuitemcheckbox")
+        for index_in_list, option_text in enumerate(selected_values):
+            search_dropdown(option_text)
+            option = matching_text(options, option_text)
             expect(option).to_be_visible(timeout=timeout)
             option.click(timeout=timeout)
+            if index_in_list + 1 < len(selected_values):
+                if expect_value is _UNSET:
+                    expect(matching_text(chips, option_text)).to_be_visible(timeout=timeout)
+                close_dropdown()
 
         if select_first:
-            dropdown = search_dropdown("")
-            option = dropdown.get_by_role("menuitemcheckbox").first
+            search_dropdown("")
+            option = options.first
             expect(option).to_be_visible(timeout=timeout)
             selected_values = [" ".join(option.inner_text(timeout=timeout).split())]
             option.click(timeout=timeout)
 
-        expected_values = (
-            selected_values
-            if expect_value is _UNSET and (value is not _UNSET or select_first)
-            else values_list(expect_value)
-        )
+        expected_values = selected_values if expect_value is _UNSET else values_list(expect_value)
         for option_text in expected_values:
-            matcher = (
-                re.compile(rf"^\s*{re.escape(option_text)}\s*$")
-                if exact else re.compile(re.escape(option_text))
-            )
-            selected = chips.filter(has_text=matcher).or_(
-                chips.filter(has=self.page.get_by_text(matcher))
-            ).first
-            expect(selected).to_be_visible(timeout=timeout)
+            expect(matching_text(chips, option_text)).to_be_visible(timeout=timeout)
 
-        if close and dropdown is not None:
-            # Selection can recreate the menu (for example, action rooms).
-            # Resolve its current ID instead of checking the detached menu.
-            menu_id = menu_trigger.get_attribute("aria-controls")
-            if menu_id:
-                dropdown = self.page.locator(f'.cdk-overlay-container [id="{menu_id}"]')
-            if dropdown.is_visible():
-                close_target = dropdown.get_by_role("menuitemcheckbox").first
-                if close_target.count() == 0:
-                    close_target = dropdown
-                close_target.press("Escape", timeout=timeout)
-                expect(dropdown).to_be_hidden(timeout=timeout)
-            expect(menu_trigger).not_to_have_attribute("aria-expanded", "true", timeout=timeout)
+        if close and selected_values:
+            close_dropdown()
         if return_value:
             return [" ".join(text.split()) for text in chips.all_inner_texts() if text.strip()]
         return select
