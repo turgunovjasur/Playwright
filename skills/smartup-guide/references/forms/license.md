@@ -68,6 +68,16 @@ Source: `tests/smoke/test_setup/test_10_buy_license.py:96`; `tests/smoke/test_se
   biriktiriladi. Smartup.online'da Buy skip bo'lgani uchun mavjud `ERP users`
   license hujjati precondition hisoblanadi.
 
+### Smartup.online A2 Order QA litsenziyasi
+
+Status: live-ui-confirmed
+Verified: 2026-11-18
+Source: Smartup.online A2 foydalanuvchi biriktirish oynasida tekshirildi
+
+- Joriy Order API baseline’dagi `license_id` uchun `Прикрепленные` ro‘yxatida maqsadli QA loginini tekshirish mumkin. `Доступные` tabida aynan shu login tanlanganda `Прикрепить 1` tugmasi chiqadi.
+- Joy band bo‘lsa, Smartup qo‘shimcha foydalanuvchini biriktirishni rad etadi. Tasdiqlangan test akkauntlari almashinuvida avvalgi loginni `Прикрепленные → Открепить 1` orqali ajratish bir joy bo‘shatadi. So‘ng maqsadli login `Доступные → Прикрепить 1` orqali biriktiriladi.
+- Har amal uchun tanlangan qator soni bitta. Qidiruv matni tablar orasida saqlanadi. Yakuniy dalil — `Прикрепленные` ro‘yxatida maqsadli loginning ko‘rinishi.
+
 ## Known Issues
 
 Tags: license, failure, router, base-page, dependency
