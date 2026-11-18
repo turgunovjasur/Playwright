@@ -2,9 +2,21 @@
 
 **Yangilangan sana:** 2026-11-18
 
-**7 bosqichdan 6 tasi bajarildi (0–5).** Order ochilishidagi global loader va yakunlashdagi balans so‘rovi alohida QA oynasida tekshirildi. 6-bosqichda kod statik tekshirildi. #3689 da yiqilgan Order testi va o‘zgargan base funksiyalarini ishlatadigan boshqa ssenariylarning yakuniy runi rejada.
+**Umumiy vazifa davom etmoqda.** Har bir Angular base funksiyasi ko‘rib chiqiladi. Har bir komponent uchun UI Kit’dagi amallar haqiqiy Smartup formasida solishtiriladi. Komponentning base funksiyasi qaysi amallarni bajara olishi, qaysilari yetishmasligi va sekin yuklanganda nimani kutishi shu rejada qayd etiladi.
 
-Reja Angular (A2) formalarini qamrab oladi. Maqsad — element sekin yuklanganda kerakli holatni kutish va u tayyor bo‘lishi bilan davom etish.
+**Order bo‘yicha** 7 bosqichdan 6 tasi bajarildi. Yakuniy test runi rejada. Hozirgacha sonli input, server select va loader bo‘yicha amaliy dalil bor. Ushbu dalillar faqat quyida yozilgan amallarni qamrab oladi.
+
+## Angular base funksiyalarining qamrovi
+
+| Audit holati | Mavjud metodlar |
+|---|---|
+| Order’da ayrim amallari tekshirildi | `input()`, `b_input()`, `wait_for_loader()` |
+| Tanlash va sana komponentlari — navbatda | `autocomplete()`, `ui_select()`, `multiselect()`, `date_picker()`, `checkbox()`, `radio()`, `choice()` |
+| Tugma, tab, menyu, havola va dialoglar — navbatda | `click()`, `tab()`, `action()`, `page_link()`, `confirm_biruni()`, `close_biruni_alert()` |
+| Jadval va formadagi qiymatlar — navbatda | `grid()`, `grid_controller()`, `grid_setting()`, `grid_cell()`, `text()`, `form_view()` |
+| Navigatsiya va yordamchi metodlar — vazifasi va kutishlari ko‘rib chiqiladi | `date()`, `hide_ui()`, `open_route()`, `expect_page()`, `navigate_to()`, `navigate_to_form()`, `switch_filial()` |
+
+Har bir komponent uchun UI amali, UI Kit misoli, Smartup formasi, mos base chaqiruvi va tayyorlik belgisi yoziladi. Smartup’da uchramagan yoki hali kuzatilmagan amal ochiq qoladi. Navigatsiya va yordamchi metodlar uchun ularning chaqiriladigan joylari hamda kerakli kutishlar tekshiriladi. Keyingi komponent — `autocomplete()`.
 
 ## Kod qayerda turadi?
 
@@ -15,7 +27,7 @@ Reja Angular (A2) formalarini qamrab oladi. Maqsad — element sekin yuklanganda
 - **Test** ssenariyga xos amal va kutilgan biznes natijasini ifodalaydi. Masalan, miqdorni 9 ga o‘zgartirib, jami 63 000 bo‘lishini tekshiradi. Bitta testni o‘tkazish uchun maxsus locator yoki vaqt qiymati qo‘shishdan iloji boricha qochamiz.
 - **Mahalliy kutish** faqat shart aynan shu ssenariyga xos bo‘lib, uni base yoki mavjud flow orqali ishonchli ifodalashning amaliy yo‘li bo‘lmaganda qo‘llanadi. Bunda test kuzatiladigan natijani kutadi. Shu ehtiyoj boshqa testda ham uchrasa, umumlashtirish qayta ko‘rib chiqiladi.
 
-## Bosqichlar
+## Order bo‘yicha bosqichlar
 
 | № | Holat | Ish | Bosqichni yopish mezoni |
 |---|---|---|---|
