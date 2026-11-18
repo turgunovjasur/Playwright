@@ -407,23 +407,26 @@ class AngularBasePage:
 
         expect(input_el).to_be_visible(timeout=UI_TIMEOUT_MS)
 
+        expected = expect_value
         if value is not _UNSET:
             input_el.click(timeout=UI_TIMEOUT_MS)
-            if clear:
+            is_biruni_number = input_el.evaluate(
+                """el => Boolean(el.closest('smt-input[smtbehavior="biruni-number"]'))""",
+                timeout=UI_TIMEOUT_MS,
+            )
+            # Clearing a numeric field separately sends an intermediate zero quantity.
+            if clear and not is_biruni_number:
                 input_el.press("ControlOrMeta+A", timeout=UI_TIMEOUT_MS)
                 input_el.press("Backspace", timeout=UI_TIMEOUT_MS)
             input_el.fill(str(value), timeout=UI_TIMEOUT_MS)
             if press_tab:
                 input_el.press("Tab", timeout=UI_TIMEOUT_MS)
 
-        expected = expect_value
-        if expected is _UNSET and value is not _UNSET:
-            expected = str(value)
-            if input_el.locator(
-                "xpath=ancestor::smt-input[@smtbehavior='biruni-number']"
-            ).count():
-                expected = _whitespace_agnostic_pattern(expected, exact=True)
-        elif isinstance(expected, str):
+            if expected is _UNSET:
+                expected = str(value)
+                if is_biruni_number:
+                    expected = _whitespace_agnostic_pattern(expected, exact=True)
+        if isinstance(expect_value, str):
             expected = _whitespace_agnostic_pattern(expected, exact=True)
         if expected is not _UNSET:
             expect(input_el).to_have_value(expected, timeout=UI_TIMEOUT_MS)

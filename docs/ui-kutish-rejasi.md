@@ -2,7 +2,7 @@
 
 **Yangilangan sana:** 2026-11-18
 
-**Hozirgi holat:** 2-bosqichda kechikkan yoki tugamagan bloklovchi loader uchun trace dalili ochiq. 3-bosqichda Order yakunlash flow’i va ikki navigatsiya uchun umumiy vaqt joriy qilindi. Amaliy tekshiruv kutilmoqda.
+**Hozirgi holat:** 4-bosqichda A2 sonli maydonni tahrirlash usuli yangilandi. #3689 trace’i va UI Kit solishtirildi. Smartup’da yangi kod bilan amaliy tekshiruv kutilmoqda. 2-bosqichdagi bloklovchi loader savoli ochiq.
 
 Reja Angular (A2) formalarini qamrab oladi. Maqsad — element sekin yuklanganda kerakli holatni kutish va u tayyor bo‘lishi bilan davom etish.
 
@@ -23,7 +23,7 @@ Reja Angular (A2) formalarini qamrab oladi. Maqsad — element sekin yuklanganda
 | 1 | Bajarildi | A2 base funksiyalari va Angular Order ssenariylaridagi raqamli timeoutlar, majburiy pauzalar va takroriy UI qadamlarini topish. | Quyida kod joylari, iste’molchilar va har bir takror bo‘yicha qaror yozildi. |
 | 2 | Jarayonda | A2 skeleton, komponent spinneri va ichki vidjetning band holatini haqiqiy Angular forma yoki trace bilan solishtirish. | Tez ochilish, loader kech paydo bo‘lishi, loader tugamay qolishi va bitta vidjet bandligi uchun keyingi amal qachon bajarilishi yozilgan. |
 | 3 | Jarayonda | Umumiy kutishlarni A2 base funksiyalariga, takrorlangan UI qadamlarini tegishli flow’ga ko‘chirish. Dashboard va ombordagi 120 soniyalik kutishlarni birinchi bo‘lib baholash. | Umumiy UI timeoutlari base qatlamidan olinadi. Mahalliy istisno qolsa, sababi ro‘yxatda ko‘rsatilgan. Tez holat ortiqcha kutmaydi, timeout xabari esa qaysi holat kutilganini bildiradi. |
-| 4 | Rejada | Sonli input. UI Kit va Smartup buyurtma formasida 10 → 9 tahririni solishtirish. Maydon qiymati, oraliq 0 so‘rovi, Tab’dan keyingi hisob va yakuniy summani kuzatish. | Kiritish usulini umumiy input() metodiga qo‘llashdan oldin yana bitta sonli maydonda mosligi tekshirilgan. Summaga oid biznes tekshiruvi testda qolgan. |
+| 4 | Tekshiruv kutilmoqda | Sonli input. UI Kit va Smartup buyurtma formasida 10 → 9 tahririni solishtirish. Maydon qiymati, oraliq 0 so‘rovi, Tab’dan keyingi hisob va yakuniy summani kuzatish. | Kiritish usulini umumiy input() metodiga qo‘llashdan oldin yana bitta sonli maydonda mosligi tekshirilgan. Summaga oid biznes tekshiruvi testda qolgan. |
 | 5 | Rejada | Serverdan qidiradigan select. UI Kit va A2 formada komponent amallarini ro‘yxatga olib, har birini mavjud `b_input()` imkoniyatiga solishtirish. Har bir amal uchun tayyorlik belgisi va yetishmayotgan imkoniyatni qayd etish. | Tasdiqlangan har bir amalni test aynan `b_input()` orqali bajara olishi tekshirilgan. Sekin qidiruv, kech kelgan eski javob, bo‘sh natija va yo‘qolmay qolgan spinner uchun kutiladigan holat ko‘rsatilgan. |
 | 6 | Rejada | O‘zgarishlarni statik tekshirish. Testlarni ishga tushirish so‘ralgach, ta’sirlangan ssenariylar va shu base funksiyalarini ishlatadigan boshqa formalarda tekshirish. | Run havolasi, natija va ochiq muammolar yozilgan. Sekin holat bilan birga odatiy tez holatda ortiqcha kutish paydo bo‘lmagani ham tekshirilgan. |
 
@@ -87,6 +87,23 @@ Click boshidan yakuniy maydon qayd etilguncha olingan kadrlarda `.smt-skeleton`,
 - **Chegirmalar.** Qo‘lda va tayyor chegirma testlari uchun umumiy mahsulot tayyorlash, summani o‘qish, qoralamani saqlash va saqlangan qiymatlarni tekshirish bitta modulga chiqarildi. [Umumiy helperlar](../tests/regression/test_orders/helpers/discounts.py)
 - **Tekshiruv.** O‘zgargan Python fayllari sintaksisi, importlar, flow chaqiriladigan joylar va diff statik tekshirildi. Testlar va collection ishga tushirilmadi. Loader kuzatish oynasi bo‘yicha qaror uchun kechikish dalili kerak.
 
+## 4-bosqich — sonli maydonni tahrirlash
+
+**Order dalili.** #3689 hisobotidagi `test_08_quantity_threshold` ssenariysi mavjud buyurtmada miqdorni 10 dan 9 ga o‘zgartirgan. Vaqtlar `call@34236` (`fill("9")`) boshiga nisbatan berilgan. Tarmoq so‘rovi boshlangan vaqt va HTTP javob holati bir qatorda keltirilgan. [#3689 Allure hisoboti](https://qa-assistant.uz/playwright-reports/44229787309-1.html) · [Order ssenariysi](../tests/regression/test_orders/business_cases/promotions/test_mandatory_conditions.py#L150)
+
+| Vaqt | Kuzatuv |
+|---|---|
+| −54 ms | Mahsulot qatorida `quantity` qiymati 10. Miqdor va quti miqdori (`quantity_box`) maydonlari `smt-input[smtbehavior="biruni-number"]` ichida joylashgan. |
+| −27…−2 ms | `Backspace` bosilgan. −10 ms da `get_box_quant` so‘rovi `quant="0"` bilan boshlangan va HTTP 401 qaytargan. `after@call@34230` kadrida input bo‘sh. |
+| 0…+57 ms | `fill("9")` bajarilgan. +21 ms da ayni endpointga `quant="9"` yuborilgan va HTTP 200 qaytgan. `Tab` +26 ms da bosilgan. +57 ms da maydon qiymati 9 ekani tasdiqlangan. |
+| +90…+220 ms | `Далее` bosilgach, `before@call@34260` kadrida `ИТОГО` qiymati `63 000` bo‘lgan. Bu qayd etilgan qiymat. Hisobning aynan qachon tugagani va uni `Tab` hodisasi boshlagani trace’dan aniqlanmaydi. |
+
+Test kartasida sessiyani tiklash vaqtida `get_box_quant` uchun 401 javobini qayta ishlash qo‘llanmagani qayd etilgan. Miqdorni almashtirishdagi ortiqcha so‘rovni bartaraf qilish sessiyani tiklash muammosini hal qilganini ushbu trace tasdiqlamaydi.
+
+**UI Kit solishtiruvi.** Brauzerda ikki Biruni maydoni tekshirildi: `precision=14, scale=2, fillwithzero` va `precision=10, scale=2`. Ikkalasida 10 dan 9 ga o‘tishda `Backspace` va keyingi `fill` ikkita `input` hodisasini berdi (bo‘sh qiymat, so‘ng 9). Bevosita `fill("9")` faqat 9 hodisasini berdi. `Tab`dan keyin har ikkisining ko‘rsatilgan va model qiymati 9 bo‘ldi. Birinchi maydonga 1234.50 va ataylab 0 kiritish ham tekshirildi. Order’dagi ikkinchi maydonning DOM turi ko‘rildi, uning tahriri ushbu CI trace’da bajarilmagan. [UI Kit Input](https://uikit.greenwhite.uz/input)
+
+**Joriy qilingan o‘zgarish.** A2 `input()` Biruni sonli maydonida qiymatni bitta `fill` bilan almashtiradi. So‘ralgan `Tab`, maydon qiymatini tekshirish va umumiy UI kutishi saqlanadi. Order summasi uchun biznes tekshiruvi ssenariyda turadi. Amaliy tasdiq mezoni — yangi Smartup trace’da 10 → 9 uchun faqat 9 so‘rovi ketishi va `ИТОГО` 63 000 ga teng bo‘lishi. [A2 input](../utils/base_pages/angular_base_page.py#L350)
+
 ## Boshlang‘ich dalillar
 
 - Base qatlamidagi umumiy UI vaqti hozir 60 soniya. #3689 bo‘yicha ishchi nusxada dashboard va ombor oqimlari 120 soniyani o‘zi belgilaydi. Birinchi ko‘chirish nomzodlari shular. [Umumiy vaqt](../utils/base_pages/__init__.py) · [Dashboard](../tests/regression/test_orders/helpers/group_auth.py) · [Ombor](../tests/regression/test_orders/helpers/flows/stock.py)
@@ -106,3 +123,4 @@ Har bosqich boshlanganda holati **Jarayonda** deb belgilanadi. Yakunida sana, o�
 | 2026-11-18 | 1-bosqich bajarildi. A2 va Order kutishlari, 250 ms fixture, qayta ishlatiladigan helperlar va takrorlangan Order qadamlari yozildi. Testlar ishga tushirilmadi. | 2-bosqich — Order bosqichi almashishida loader va kerakli maydon tayyorligi orasidagi bog‘lanishni tekshirish. |
 | 2026-11-18 | 2-bosqich alohida `codex/angular-order-kutish` branchida boshlandi. Order trace’idan yakuniy maydon va to‘lov selecti spinnerining vaqt tartibi yozildi. | Kechikadigan yoki tugamaydigan bloklovchi loader kuzatilgan yozuv bilan qolgan holatlarni tasdiqlash. |
 | 2026-11-18 | 3-bosqich boshlandi. Yakunlash qadami umumlashtirildi, dashboard va ombor navigatsiyasi base vaqtidan foydalanadi. | Klient va mahsulot tanlash, yakunlash va chegirma helperlari ajratildi. Qolgan ish — loader oynasi uchun dalil va amaliy tekshiruv. |
+| 2026-11-18 | 4-bosqichda #3689 asl trace’i va ikki UI Kit sonli maydoni solishtirildi. A2 input ichidagi oraliq tozalash olib tashlandi. | Smartup’da qayta tekshirish ruxsatini kutish. Navbatdagi tahlil — 5-bosqichdagi server select amallari. |
