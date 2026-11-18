@@ -2,7 +2,7 @@
 
 ## Asosiy reja — 30 bosqich
 
-2026-11-18 holatiga ko‘ra, 29 ta public metodning har biriga alohida bosqich ajratildi. 30-bosqich — yakuniy regression run. 1–3-metodlar Order’da qisman tekshirildi. 4-bosqichda ism yozish va qidiruv kutishi Smartup’da tekshirildi. Mavjud shaxsni tanlash bo‘yicha ochiq masala quyida qayd etilgan. Navbatdagi audit — `ui_select()`.
+2026-11-18 holatiga ko‘ra, 29 ta public metodning har biriga alohida bosqich ajratildi. 30-bosqich — yakuniy regression run. 1–3-metodlar Order’da qisman tekshirildi. 4-bosqichda ism yozish va qidiruv kutishi Smartup’da tekshirildi. Mavjud shaxsni tanlash bo‘yicha ochiq masala quyida qayd etilgan. 5-bosqichda oddiy select va qidiruvli select solishtirildi. 6–9-bosqichlarda ko‘p tanlov, sana, checkbox va radio brauzerda tekshirildi. 10–29-bosqichlarning natijalari ham jadvalda. Qayta tekshirishda birinchi navbat — 6-bosqichdagi ikki tanlovdan keyin menyuning yangilanishi. 30-bosqichdagi test runi boshlanmagan.
 
 | Bosqich | Metod yoki ish | Holat | Tekshiriladigan amallar |
 |---|---|---|---|
@@ -10,31 +10,31 @@
 | 2 | `b_input()` | Qisman tekshirildi (Order) | Menyuni ochish, qidirish, tanlash, tozalash, bo‘sh javob va komponentning qo‘shimcha rejimlari. |
 | 3 | `wait_for_loader()` | Qisman tekshirildi (Order) | Sahifa va lokal yuklanish belgilarining doirasi, kech chiqishi va timeout xabari. |
 | 4 | `autocomplete()` | Amaliy audit bajarildi, variant tanlash ochiq | Matn kiritish, takliflar kelishi, tanlash va natija topilmagandagi holat. |
-| 5 | `ui_select()` | Navbatdagi | Ro‘yxatni ochish, qidirish, variant tanlash va qiymatni tekshirish. |
-| 6 | `multiselect()` | Rejada | Bir nechta variant tanlash, tanlovni o‘qish, olib tashlash va tozalash. |
-| 7 | `date_picker()` | Rejada | Sana yozish, kalendardan tanlash va ko‘rsatilgan sanani tekshirish. |
-| 8 | `checkbox()` | Rejada | Belgilash, belgini olib tashlash va joriy holatni o‘qish. |
-| 9 | `radio()` | Rejada | Guruh ichida variant tanlash va tanlangan holatni tekshirish. |
-| 10 | `choice()` | Rejada | Label orqali kerakli guruhni topish va uning variantini tanlash. |
-| 11 | `click()` | Rejada | To‘g‘ri tugma yoki elementni topish va bosish mumkin bo‘lguncha kutish. |
-| 12 | `tab()` | Rejada | Kerakli tab yoki bo‘limni ochish va faol holatni aniqlash. |
-| 13 | `action()` | Rejada | Menyu amalini topish va kerakli bandni tanlash. |
-| 14 | `page_link()` | Rejada | Formadagi havolani topish va ochish. |
-| 15 | `confirm_biruni()` | Rejada | Tasdiqlash dialogi matni, tugmalari va yopilishi. |
-| 16 | `close_biruni_alert()` | Rejada | Kutilgan xabarni aniqlash va ogohlantirishni yopish. |
-| 17 | `grid()` | Rejada | Qatorlar yuklanishi, bo‘sh jadval, qatorni belgilash va ochish. |
-| 18 | `grid_controller()` | Rejada | Qidirish, filtrlash, qayta yuklash va jadval boshqaruvlari. |
-| 19 | `grid_setting()` | Rejada | Sozlamani ochish, ustunni topish va o‘zgarish qo‘llanganini tekshirish. |
-| 20 | `grid_cell()` | Rejada | Qator va ustun bo‘yicha katak qiymatini o‘qish va kutish. |
-| 21 | `text()` | Rejada | Berilgan doirada matn va maydon qiymati ko‘rinishini tekshirish. |
-| 22 | `form_view()` | Rejada | Ko‘rish formasida labelga tegishli qiymatni o‘qish va tekshirish. |
-| 23 | `expect_page()` | Rejada | Sahifa manzili, sarlavha, bloklovchi loader va xato holati. |
-| 24 | `open_route()` | Rejada | Formani manzili orqali ochish va kerakli sahifa tayyorligini kutish. |
-| 25 | `navigate_to()` | Rejada | Asosiy menyudan maqsadli sahifaga o‘tish. |
-| 26 | `navigate_to_form()` | Rejada | Navigatsiya bo‘limi, menyu bandi va forma havolasi orqali o‘tish. |
-| 27 | `switch_filial()` | Rejada | Filialni almashtirish va faol filialni tasdiqlash. |
-| 28 | `hide_ui()` | Rejada | Yashirish yoki olib tashlash qayerda ishlatilganini va kuzatuvga ta’sirini tekshirish. |
-| 29 | `date()` | Rejada | Sana hisoblash va formatlashni chaqiruvchi metodlar bilan solishtirish. |
+| 5 | `ui_select()` | Audit bajarildi, alohida qidirish ochiq | Aksiya formasida tanlash va qiymatni o‘qish, UI Kit’da filtrlash va bo‘sh natija tekshirildi. |
+| 6 | `multiselect()` | Audit bajarildi, ikkita qiymatni ketma-ket tanlashda xato topildi | Bir nechta variant tanlash, tanlovni o‘qish, olib tashlash va tozalash. |
+| 7 | `date_picker()` | Asosiy sana amallari tekshirildi | Sana yozish, kalendardan tanlash va ko‘rsatilgan sanani tekshirish. |
+| 8 | `checkbox()` | Audit bajarildi, oraliq holat ochiq | Belgilash, belgini olib tashlash va joriy holatni o‘qish. |
+| 9 | `radio()` | Tanlash va guruh holati tekshirildi | Guruh ichida variant tanlash va tanlangan holatni tekshirish. |
+| 10 | `choice()` | Qisman — UI Kit va Smartup kodi tekshirildi | Label orqali kerakli guruhni topish va uning variantini tanlash. |
+| 11 | `click()` | Brauzerda tekshirildi | To‘g‘ri tugma yoki elementni topish va bosish mumkin bo‘lguncha kutish. |
+| 12 | `tab()` | Smartup’da ishladi, UI Kit varianti farq qiladi | Kerakli tab yoki bo‘limni ochish va faol holatni aniqlash. |
+| 13 | `action()` | Qisman — bevosita amal va menyu tekshirildi | Menyu amalini topish va kerakli bandni tanlash. |
+| 14 | `page_link()` | Smartup’da tekshirildi | Formadagi havolani topish va ochish. |
+| 15 | `confirm_biruni()` | Rad etish ikkala UI’da tekshirildi | Tasdiqlash dialogi matni, tugmalari va yopilishi. |
+| 16 | `close_biruni_alert()` | UI Kit dialogi va Smartup sahifa xatosi solishtirildi | Kutilgan xabarni aniqlash va ogohlantirishni yopish. |
+| 17 | `grid()` | Qator tanlash va bo‘sh holat tekshirildi | Qatorlar yuklanishi, bo‘sh jadval, qatorni belgilash va ochish. |
+| 18 | `grid_controller()` | Qidirish, yangilash va sozlama menyusi tekshirildi | Qidirish, filtrlash, qayta yuklash va jadval boshqaruvlari. |
+| 19 | `grid_setting()` | Qisman — dialog ochildi | Sozlamani ochish, ustunni topish va o‘zgarish qo‘llanganini tekshirish. |
+| 20 | `grid_cell()` | Matnli katak tekshirildi | Qator va ustun bo‘yicha katak qiymatini o‘qish va kutish. |
+| 21 | `text()` | Sahifa matni tekshirildi | Berilgan doirada matn va maydon qiymati ko‘rinishini tekshirish. |
+| 22 | `form_view()` | Readonly maydon tekshirildi | Ko‘rish formasida labelga tegishli qiymatni o‘qish va tekshirish. |
+| 23 | `expect_page()` | URL va sarlavha tekshirildi | Sahifa manzili, sarlavha, bloklovchi loader va xato holati. |
+| 24 | `open_route()` | Ikkita ro‘yxat formasi ochildi | Formani manzili orqali ochish va kerakli sahifa tayyorligini kutish. |
+| 25 | `navigate_to()` | Menyudan o‘tish tekshirildi | Asosiy menyudan maqsadli sahifaga o‘tish. |
+| 26 | `navigate_to_form()` | Menyu ustuni orqali o‘tish tekshirildi | Navigatsiya bo‘limi, menyu bandi va forma havolasi orqali o‘tish. |
+| 27 | `switch_filial()` | Qisman — bitta filial mavjud | Filialni almashtirish va faol filialni tasdiqlash. |
+| 28 | `hide_ui()` | Yashirish amali tekshirildi | Yashirish yoki olib tashlash qayerda ishlatilganini va kuzatuvga ta’sirini tekshirish. |
+| 29 | `date()` | Sana chegaralari tekshirildi | Sana hisoblash va formatlashni chaqiruvchi metodlar bilan solishtirish. |
 | 30 | Yakuniy regression run | Boshlanmagan | #3689 da yiqilgan ssenariylar va o‘zgargan base funksiyalarini ishlatadigan boshqa A2 formalarida natijani tekshirish. |
 
 Komponent bosqichini yopishda UI Kit’dagi amallar Smartup formasida solishtiriladi. Har bir amal uchun base chaqiruvi, kutish sharti va dalil yoziladi. Jadvaldagi amallar boshlang‘ich ro‘yxat. Solishtirishda topilgan qo‘shimcha amallar ham tegishli qatorga kiritiladi. UI Kit analogi bo‘lmagan yordamchi metodlarda chaqiruvchi kod va tegishli Smartup xatti-harakati tekshiriladi.
@@ -50,6 +50,59 @@ Setup’dagi jismoniy shaxs va klient yaratish ssenariylari bitta umumiy flow or
 | Mavjud ismni tanlash | Smartup’da ma’lum QA ismi uchun HTTP 200 va bitta variant qaytdi. Qatorni bosish mavjud shaxsni tahrirlashga o‘tish haqidagi tasdiq oynasini ochdi. «Нет» bosildi. Shu ismni odatdagi `autocomplete()` bilan yozish esa tanlashni ishga tushirmadi. | Mavjud metod qatorni tanlamaydi. Smartup ism maydonida `smtkeyfield` atributi ham topilmadi, shuning uchun kalitga tayanuvchi `b_input()` qidiruvini bu yerga bevosita ko‘chirish tekshirilmagan. |
 
 **Ochiq qaror.** Bitta komponent uchun tanlash kodini takrorlamaslik maqsadida `b_input()`ga chaqiruvchi bergan qidiruv javobi sharti bilan ishlash imkoniyatini ko‘rib chiqish kerak. Yangi ismni tanlamasdan qoldiradigan mavjud ikki setup ssenariysining xatti-harakati saqlanishi kerak. Tahrirlashga o‘tish haqidagi biznes dialogi formaga tegishli. Yangi public API alohida kelishiladi.
+
+## 5-bosqich — bitta variant tanlash
+
+2026-11-18 kuni UI Kit’dagi Select misoli va Smartup A2 «Акция (создание)» formasidagi «Тип акции» maydoni brauzerda solishtirildi. Aksiya saqlanmadi. [UI Kit Select](https://uikit.greenwhite.uz/select) · [Smartup formasi](https://smartup.online/a2/anor/mcg/action%2Badd) · [A2 ui_select()](../utils/base_pages/angular_base_page.py#L1305)
+
+| Amal | Brauzerda kuzatilgan natija | Base qamrovi va kutish sharti |
+|---|---|---|
+| Oddiy ro‘yxatni ochish va tanlash | Smartup’da `smt-select-trigger` ichidagi `span.truncate` dastlab «Кол-во»ni ko‘rsatdi. Qidiruv inputi yo‘q. Ro‘yxat ochilganda beshta variant ko‘rindi, jumladan «Кол-во» va «Кол-во кейс». Escape tanlamasdan yopdi. | `ui_select(label="Тип акции", value="Сумма", return_value=True)` «Сумма» qaytardi va menyu yopildi. Shu metod bilan «Кол-во» qayta tanlandi. To‘liq matn bo‘yicha tanlash ikki o‘xshash variantni ajratdi. |
+| Qidirib tanlash | UI Kit’dagi Country maydonida qidiruv inputi bor. `search_text="Cana", value="Canada"` berilganda metod «Canada»ni tanladi va o‘qidi. | Metod maydon, trigger va variant ko‘rinishini, bosishdan keyin menyu yopilishini hamda input qiymati yoki trigger matni mosligini kutadi. Smartup’dagi «Тип акции»da qidirish amali mavjud emas. |
+| Faqat filtrlash va bo‘sh natija | UI Kit’da inputga mos kelmaydigan matn yozilganda «Ничего не найдено» chiqdi. Escape menyuni yopdi. Faqat `search_text="Japan"` berilganda esa helper menyuni ochmadi, oldingi «Canada» qiymati qoldi. | Kodda qidiruv `value` berilgan shox ichida bajariladi. Alohida qidirish, uning bo‘sh natijasini kutish va tanlovni tozalash uchun public amal yo‘q. |
+
+**Base bo‘yicha qaror.** Oddiy tanlashda mavjud variant va yakuniy qiymat tekshiruvlari qayta ishlatiladi. Qidirishni alohida qo‘llashda base aynan ochilgan komponentdagi mos variant yoki bo‘sh natijani kutishi kerak. Hozir dropdown sahifadagi oxirgi ko‘rinadigan menyu orqali olinadi. Bir nechta overlay bilan ishlashi bu auditda tekshirilmagan. UI Kit’da qo‘shimcha All, pin va clear sozlamalari ham bor. Ularning «Тип акции»da ishlatilishi tasdiqlanmagan. Testga lokal timeout qo‘shish talab etilmadi.
+
+## 6-bosqich — ko‘p variant tanlash
+
+UI Kit Multi Data Select’dagi birinchi qidiruvda menyu triggerning `aria-controls` atributi orqali bog‘landi. Avval «Загрузка… / Ищем результаты», keyin «Ничего не найдено» ko‘rindi. Jonli Smartup A2 «Акция (создание)» formasida xuddi shu `smt-multi-data-select` komponenti haqiqiy variantlar bilan tekshirildi. [UI Kit Multi Data Select](https://uikit.greenwhite.uz/multi-data-select) · [A2 multiselect()](../utils/base_pages/angular_base_page.py#L1158)
+
+| Amal | Smartup’da kuzatilgan natija | Base uchun xulosa |
+|---|---|---|
+| Faollashishni kutish | «Рабочие зоны» bo‘shligida «Тип цены» komponentida `disabled` bor, ichida qidiruv inputi yo‘q. Birinchi ish zonasi tanlangach, `disabled` olib tashlandi va input paydo bo‘ldi. | Ish zonasini tanlash flowga tegishli. Komponent ichida amal boshlanishidan oldin enabled holat va input tayyorligini shu chaqiruvning timeouti bilan kutish kerak. Hozir birinchi `input_value()` sahifa timeoutidan foydalanadi. |
+| Ikki variantni ketma-ket tanlash | Ikkita turli narx turi bitta `value=[a, b]` chaqiruvida berildi. Birinchi chip paydo bo‘ldi. Keyingi tanlovda helper DOM’da topilmagan menyu ID’sini kutib timeout berdi. Xuddi shu sahifada ikkinchi qiymat alohida chaqiruvda tanlangach ikkala chip ham o‘qildi. | Har bir tanlovdan keyin chipni tasdiqlash va keyingi qidiruvdan oldin triggerga ayni paytda bog‘langan menyuni qayta topish kerak. Ikkita tanlovni bitta chaqiruvda ishonchli bajarish ochiq. |
+| Bittasini olib tashlash va tozalash | Birinchi chipning olib tashlash tugmasi bosilgach, ikkinchi chip qoldi. `clear=True, return_value=True` bo‘sh ro‘yxat qaytardi. | Qo‘shish, o‘qish va hammasini tozalash bor. Berilgan bitta chipni nomi bo‘yicha olib tashlash amali yetishmaydi. UI Kit’dagi All, yig‘ilgan chiplar va pin rejimlari bu Smartup maydonlarida tekshirilmagan. |
+
+## 7–9-bosqichlar — sana, checkbox va radio
+
+| Bosqich | UI Kit va Smartup dalili | Base qamrovi va ochiq joy |
+|---|---|---|
+| 7 · `date_picker()` | UI Kit «Birth Date» va Smartup «Акция → Срок действия»da bir xil ertangi sana yozildi. Ikkalasida `DD.MM.YYYY` qiymati tasdiqlandi. UI Kit «Due date» va Smartup «Дата начала»da kalendardan «Сегодня» bosildi va `18.11.2026` qaytdi. | Yozishda Enter’dan so‘ng overlay yopilishi va input qiymati kutiladi. Bugungi sanani tanlashda natija kutiladi. UI Kit kalendarida boshqa kunlar va «Очистить» ham bor. Istalgan kunni kalendardan bosish va tozalash public metodda yo‘q. [UI Kit](https://uikit.greenwhite.uz/date-picker) · [Base](../utils/base_pages/angular_base_page.py#L787) |
+| 8 · `checkbox()` | UI Kit checkbox va Smartup «Физическое лицо → Клиент» brauzerda bir xil holatlardan o‘tdi — `False → True → False`. Smartup’da element `span[role=checkbox]`. UI Kit’da `aria-checked="mixed"` bo‘lgan namunada base `False` qaytardi. | Belgilash va olib tashlashda base yakuniy holatni kutadi. Qisman belgilangan holatni o‘chirilgan holatdan ajratib o‘qish ochiq. «Клиент» maydonida oraliq holat kuzatilmadi. [UI Kit](https://uikit.greenwhite.uz/checkbox) · [Base](../utils/base_pages/angular_base_page.py#L929) |
+| 9 · `radio()` | UI Kit’da «Blue» tanlangach «Red» belgisi yechildi. Smartup «Физическое лицо → Пол»da «Женский» tanlangach «Мужской» belgisi yechildi. «Мужской» qayta tanlandi. | Mavjud metod variantni tanlaydi va ikkala holatni ham tekshiradi. `return_value=True` bilan ham sukut bo‘yicha tanlangan holat kutiladi. Tanlanmagan variantni tekshirishda `expect_checked=False` berildi. Klaviatura bilan boshqarish tekshirilmagan. [UI Kit](https://uikit.greenwhite.uz/radio) · [Base](../utils/base_pages/angular_base_page.py#L1004) |
+
+## 10–29-bosqichlar — 18-noyabrdagi tekshiruvlar
+
+| Bosqich | Qayerda va nima tekshirildi | Base kutishi yoki ochiq joy |
+|---|---|---|
+| 10 · `choice()` | UI Kit Button Group’da «Day» bosilgach uning `aria-pressed` qiymati true, «Week»niki false bo‘ldi. Smartup’dagi yagona chaqiruvchi company security formasida sessiyalar soni sozlamasini tanlaydi. Loyiha dossieriga ko‘ra, bosish uni darhol saqlaydi. Ko‘rilgan 52 ta noyob mahalliy trace oqimida security forma selektori yoki shu label bilan kadr topilmadi. | Metod tugmani bosish bilan tugaydi. Smartup’dagi faol variantning DOM belgisini jonli sozlamani almashtirmasdan tasdiqlash ochiq. [UI Kit](https://uikit.greenwhite.uz/button-group) · [Base](../utils/base_pages/angular_base_page.py#L1056) · [Smartup dossier](../skills/smartup-guide/references/forms/company.md#company-viewda-security-sozlamalar-har-doim) |
+| 11 · `click()` | UI Kit’da tugma guruhidagi «Day», Smartup «Акции»da «Создать» bosildi. Ikkinchi holatda «Акция (создание)» ochildi. | Tugma ko‘rinishi va bosilishi base’da kutiladi. Keyingi forma tayyorligini chaqiruvchi `expect_page()` bilan tekshiradi. |
+| 12 · `tab()` | Smartup «Физическое лицо (просмотр) → Детали»da metod muvaffaqiyatli qaytdi. UI Kit Tab Bar’dagi «Profile» bosilgach tanlangan tugmada `bg-brand-50` va `text-brand-700` bor edi. Helper kutgan `border-b-brand-600` yo‘qligidan assertion yiqildi. | Faol tabni faqat bitta bezak klassiga bog‘lash barcha variantni qamramaydi. Barqaror semantik belgi ikkala ko‘rinishda aniqlanishi kerak. [UI Kit](https://uikit.greenwhite.uz/tab-bar) · [Base](../utils/base_pages/angular_base_page.py#L262) |
+| 13 · `action()` | Smartup jismoniy shaxslar ro‘yxatida tanlangan qator uchun «Просмотр» bosilib, ko‘rish formasi ochildi. UI Kit Dropdown Button’da trigger menyusi «Edit», «Duplicate», «Archive» bandlarini chiqardi. | Bevosita tugma va menyu tuzilishi tekshirildi. Smartup’da dropdown ichidagi biznes amalini bajarish ochiq. [UI Kit](https://uikit.greenwhite.uz/dropdown-button) |
+| 14 · `page_link()` | «Акции» ro‘yxatidan «Конструктор отчетов по акциям» havolasi `/a2/anor/rep/mbi/mcg/action`ga o‘tdi. | Yagona ko‘rinadigan aniq nomli havola va loader kutiladi. Manzil va sarlavha ham kuzatildi. |
+| 15 · `confirm_biruni()` | UI Kit Modal Confirm va Smartup’da mavjud ism qatori tanlanganda «Да / Нет» dialogi chiqdi. `button_name="Нет"` ikkala dialogni yopdi. | Base ko‘rinadigan dialog, tugma va yopilishni kutdi. Smartup’da ism bo‘yicha tahrirlashga o‘tish rad etildi. [UI Kit](https://uikit.greenwhite.uz/modal-confirm) |
+| 16 · `close_biruni_alert()` | UI Kit HTTP xato misolida «USR-409» matni tekshirildi va «Закрыть» dialogni yopdi. Smartup’da faqat audit brauzerida `action_list:model` uchun HTTP 500 qaytarildi. «Ошибка / Не удалось загрузить» main ichida chiqdi, bitta alert va nol dialog kuzatildi. | Dialogni yopish shu yuzaga qo‘llanmaydi. Sahifani ochish tekshiruvida main ichidagi yuklanish xatosi ham aniqlanishini alohida tekshirish kerak. Smartup’dagi modal xatoni yopish ochiq. [UI Kit](https://uikit.greenwhite.uz/alert-dialog) |
+| 17–18 · `grid()`, `grid_controller()` | «Акции»da «Нет результатов», qidirish, qidiruvni tozalash, reload va sozlama menyusi tekshirildi. «Физические лица» ochilganda dastlab qatorlar soni 0 edi. Keyin ikkita qator chiqdi va ulardan biri matni bilan tanlandi. UI Kit Data Table’da Local Filters, Custom Actions va boshqa rejimlar ko‘rindi. | Natijani tekshiradigan flow kerakli qator yoki aniq bo‘sh xabarni kutadi. `return_bool=True` faqat shu ondagi ko‘rinishni qaytaradi. Barcha satrlarni belgilash va filtrni qo‘llash bu auditda bajarilmadi. [UI Kit](https://uikit.greenwhite.uz/data-table) |
+| 19 · `grid_setting()` | Smartup «Акции → Настройка таблицы»da dialog, faol ustunlar ro‘yxati, «Отменить» va «Сохранить» ko‘rindi. | Dialog ochilishi tekshirildi. Ustunni o‘zgartirib saqlash va yangilangan jadvalni tasdiqlash ochiq. |
+| 20 · `grid_cell()` | «Физические лица» qatorida `.smt-data-cell` topilmadi, oltita `[data-smt-col-key]` katak topildi. Base birinchi matnli katakni mavjud muqobil locator bilan o‘qib, kutilgan qiymatga mosligini tasdiqladi. | Katak ko‘rinishi, joylashuvi va matn uchun mavjud kutish ishladi. Tahrirlanadigan katak bu kuzatuvga kirmadi. |
+| 21–22 · `text()`, `form_view()` | «Акции» asosiy kontentidagi matn tasdiqlandi. «Физическое лицо (просмотр) → Имя» qiymati readonly maydondan o‘qilib, o‘sha qiymat `expect_value` bilan qayta tekshirildi. | Ko‘rish formasida label bilan bog‘langan maydon va `readonly` atributi kutiladi. |
+| 23–24 · `expect_page()`, `open_route()` | «Акции» va «Заказы» ro‘yxatlari relative route orqali ochildi. URL va sarlavhalar tasdiqlandi. | Sarlavha ochilgach qatorlar alohida yuklanishi mumkin. Sahifa xatosi bo‘yicha ochiq masala 16-qatorga yozilgan. |
+| 25–26 · `navigate_to()`, `navigate_to_form()` | Oddiy menyudan «Справочники → Акции» va ustun bilan «Справочники → Маркетинг → Акции» bir xil `action_list` manzilini ochdi. | Ustun berilganda aniq guruh va shu guruhdagi menuitem kutiladi. Qo‘shish ikonkasidan o‘tish ochiq. |
+| 27 · `switch_filial()` | QA foydalanuvchisida ro‘yxatda bitta filial ko‘rindi. Nomi bilan qayta tanlash va trigger matnini tasdiqlash ishladi. | Boshqa filialga o‘tish va uning kontenti yangilanishi uchun ikkita filialga kirishi bor profil kerak. |
+| 28 · `hide_ui()` | Role setup ishlatadigan yordamchi vidjet selektori Smartup brauzerida ikkita elementga mos tushdi, metod 2 qaytardi. | Bu bir martalik DOM amali. Keyin paydo bo‘ladigan elementlar uchun kutish yoki kuzatuvchi o‘rnatmaydi. [Chaqiruvchi](../tests/smoke/test_setup/test_08_role.py#L74) |
+| 29 · `date()` | Base hisobida 28.02.2024 + 1 kun → 29.02.2024, 31.12.2025 + 1 kun → 01.01.2026 chiqdi. | Bu UI kutishiga bog‘liq bo‘lmagan hisob. Sana maydonining amaliy tekshiruvi 7-bosqichda. |
+
+**Keyingi ish.** Avval 6-bosqichdagi ikkinchi tanlovni qayta ishlatiladigan base metodida barqarorlashtirish, keyin 5-bosqichdagi alohida qidirish va 12-bosqichdagi tabning faol holatini tekshirish. 30-bosqichdagi regression run alohida qoladi.
 
 ## Kod qayerda turadi?
 
