@@ -68,6 +68,14 @@ def _expect_lookup_query(page, query, key_field, *, timeout):
     )
 
 
+def _wait_for_select_loading(select, dropdown, timeout):
+    # The Order client lookup shows its loading message in the overlay,
+    # while other selects can show a loader icon on the field itself.
+    icon = select.locator('smt-icon[key="loader"]')
+    message = dropdown.locator("p:not(li p)").filter(has_text=re.compile(r"^\s*Ищем результаты\s*$"))
+    expect(icon.or_(message).filter(visible=True)).to_have_count(0, timeout=timeout)
+
+
 class AngularBasePage:
     """Smartup A2 yangi Angular formalarining umumiy UI primitivlari.
 
@@ -457,20 +465,37 @@ class AngularBasePage:
                 expect(dropdown).to_be_hidden(timeout=timeout)
             return search
 
+        key = select.get_attribute("smtkeyfield", timeout=timeout)
+
+        def refresh_text(text):
+            # Order can start with a selected client. Clicking it or pressing
+            # ArrowDown leaves the list closed. Edit and restore the query
+            # without clearing the selection or choosing a row.
+            partial = text[:-1] if len(text) > 1 else text + text
+            try:
+                # Waiting for the edit prevents the component debounce from
+                # coalescing both inputs back into the previous, cached query.
+                with _expect_lookup_query(self.page, partial, key, timeout=timeout):
+                    search.fill(partial, timeout=timeout)
+            finally:
+                search.fill(text, timeout=timeout)
+
         if action == "open":
-            search.click(timeout=timeout)
+            if not (dropdown.is_visible() and select.locator(":focus-within").count()):
+                search.click(timeout=timeout)
+                text = search.input_value(timeout=timeout)
+                if text and not dropdown.is_visible():
+                    with _expect_lookup_query(self.page, text, key, timeout=timeout):
+                        refresh_text(text)
             expect(search).to_be_focused(timeout=timeout)
             expect(dropdown).to_be_visible(timeout=timeout)
             return search
 
-        # Reopening an unchanged query requests the first page again. fill()
-        # with the same text need not trigger a lookup.
         reopen = search.input_value(timeout=timeout) == query
-        if reopen and dropdown.is_visible() and select.locator(":focus-within").count():
+        if reopen and not query and dropdown.is_visible() and select.locator(":focus-within").count():
             search.press("Escape", timeout=timeout)
             expect(dropdown).to_be_hidden(timeout=timeout)
 
-        key = select.get_attribute("smtkeyfield", timeout=timeout)
         route = select.get_attribute("smtqueryname", timeout=timeout)
         # Track starts as well as completions: a request already in flight
         # for the same query must not satisfy this action.
@@ -489,7 +514,9 @@ class AngularBasePage:
             with self.page.expect_event(
                 "requestfinished", predicate=lambda request: request in started, timeout=timeout,
             ) as finished:
-                if reopen:
+                if reopen and query:
+                    refresh_text(query)
+                elif reopen:
                     search.press("ArrowDown", timeout=timeout)
                 else:
                     search.click(timeout=timeout)
@@ -504,7 +531,7 @@ class AngularBasePage:
 
         expect(search).to_have_value(query, timeout=timeout)
         expect(dropdown).to_be_visible(timeout=timeout)
-        expect(select.locator('smt-icon[key="loader"]')).to_be_hidden(timeout=timeout)
+        _wait_for_select_loading(select, dropdown, timeout)
         rows = dropdown.locator("li:visible")
         empty = dropdown.get_by_text("Ничего не найдено", exact=True)
         result = response.json()
@@ -663,9 +690,8 @@ class AngularBasePage:
                 ) if server_lookup else nullcontext()
                 with opening:
                     trigger.click(timeout=timeout)
-            loading = select.locator('smt-icon[key="loader"]')
             expect(dropdown).to_be_visible(timeout=timeout)
-            expect(loading).to_be_hidden(timeout=timeout)
+            _wait_for_select_loading(select, dropdown, timeout)
             query = None if select_first else option_text if search_text is None else str(search_text)
             if query and current_query != query:
                 searching = _expect_lookup_query(
@@ -680,7 +706,7 @@ class AngularBasePage:
                         search.fill(query, timeout=timeout)
 
             expect(dropdown).to_be_visible(timeout=timeout)
-            expect(loading).to_be_hidden(timeout=timeout)
+            _wait_for_select_loading(select, dropdown, timeout)
             options = dropdown.locator("li:visible")
             if select_first:
                 option = options.first
