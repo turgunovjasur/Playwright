@@ -1426,19 +1426,26 @@ class AngularBasePage:
     ):
         """A2 skeleton/busy holati paydo bo'lsa, to'liq tugashini kutadi."""
         root = self._content_root(root)
-        loaders = root.locator(".smt-skeleton:visible, [aria-busy='true']:visible")
+        # The shell renders its full-page overlay outside main and grid roots.
+        shell_selector = 'app-global-page-loader [aria-busy="true"]'
+        loaders = root.locator(".smt-skeleton:visible, [aria-busy='true']:visible").or_(
+            self.page.locator(shell_selector).filter(visible=True)
+        )
         # A short auto-waiting assertion can start a locator handler and
         # expire while it authenticates. Observe DOM appearance without action
         # prechecks; the full completion assertions below may run the handler.
         if appear_timeout > 0:
             root.locator(":scope").evaluate_all(
-                """(roots, windowMs) => new Promise(resolve => {
-                    const visible = () => roots.some(root =>
-                        [...root.querySelectorAll('.smt-skeleton, [aria-busy="true"]')].some(node => {
-                            const box = node.getBoundingClientRect();
-                            return getComputedStyle(node).visibility === 'visible'
-                                && box.width > 0 && box.height > 0;
-                        }));
+                """(roots, [windowMs, shellSelector]) => new Promise(resolve => {
+                    const visibleNode = node => {
+                        const box = node.getBoundingClientRect();
+                        return getComputedStyle(node).visibility === 'visible'
+                            && box.width > 0 && box.height > 0;
+                    };
+                    const visible = () =>
+                        [...document.querySelectorAll(shellSelector)].some(visibleNode)
+                        || roots.some(root =>
+                            [...root.querySelectorAll('.smt-skeleton, [aria-busy="true"]')].some(visibleNode));
                     if (visible()) { resolve(); return; }
                     let timer;
                     const finish = () => {
@@ -1447,14 +1454,14 @@ class AngularBasePage:
                         resolve();
                     };
                     const observer = new MutationObserver(() => { if (visible()) finish(); });
-                    roots.forEach(root => observer.observe(root, {
+                    observer.observe(document.documentElement, {
                         subtree: true, childList: true, attributes: true
-                    }));
+                    });
                     timer = setTimeout(finish, windowMs);
-                })""", appear_timeout,
+                })""", [appear_timeout, shell_selector],
             )
 
-        expect(loaders).to_have_count(0, timeout=timeout)
+        expect(loaders, "A2 sahifa loaderi yoki tekshirilayotgan qism band").to_have_count(0, timeout=timeout)
         return True
 
     # ------------------------------------------------------------------------------------------------------------------
