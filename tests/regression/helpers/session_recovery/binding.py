@@ -19,19 +19,22 @@ def bind_lookup_context(monkeypatch):
         arguments = parameters.bind(base, *args, **kwargs).arguments
         selecting = (
             'value' in arguments or arguments.get('search_text') or arguments.get('select_first')
-            or arguments.get('clear') or arguments.get('action') in ('open', 'search', 'expect_empty')
+            or arguments.get('clear') or arguments.get('action') in ('open', 'search', 'expect_empty', 'preview', 'enter_new')
         )
         if not selecting:
             return original(base, *args, **kwargs)
         # Use the existing helper to resolve the input, not a second copy of its
         # label/model/root logic. The probe does not clear or select anything.
         target = {key: arguments[key] for key in ('label', 'ng_model', 'placeholder', 'index', 'root', 'timeout') if key in arguments}
+        if arguments.get('action') == 'enter_new' and target.get('label') is not None:
+            target.pop('ng_model', None)  # Shared flow supplies this hint for the legacy form.
         field = original(base, **target)
         select = field.locator('xpath=ancestor::smt-data-select[1]')
         if select.count() != 1:
             return original(base, *args, **kwargs)
         previous = controller.lookup
-        controller.lookup = LookupContext(field, select.get_attribute('smtkeyfield'))
+        key = select.get_attribute('smtkeyfield') or select.get_attribute('smtdisplayfield')
+        controller.lookup = LookupContext(field, key)
         try:
             return original(base, *args, **kwargs)
         finally:

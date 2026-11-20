@@ -122,7 +122,7 @@ def _safe_response_message(response):
         return ""
     if _LICENSE_401_MESSAGE.casefold() in clean.casefold():
         return _LICENSE_401_MESSAGE
-    if clean.casefold() in {"unauthorized", "401 unauthorized"}:
+    if clean.casefold() in {"unauthorized", "401 unauthorized", "статус филиала неактивный"}:
         return clean
     return ""
 
@@ -136,7 +136,7 @@ def _auth_ui_state(page):
         return "login_redirect"
 
     try:
-        lock = page.locator("#closing-session .cs-lock.open").first
+        lock = page.locator("#closing-session .cs-lock.open, app-session-lock").filter(visible=True).first
         if lock.is_visible():
             return "session_lock"
     except Exception:

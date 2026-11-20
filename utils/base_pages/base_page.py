@@ -1555,6 +1555,8 @@ class BasePage:
         label=None,
         value=_UNSET,
         *,
+        action=None,
+        lookup_route=None,
         ng_model=None,
         placeholder=None,
         expect_value=_UNSET,
@@ -1590,6 +1592,11 @@ class BasePage:
         stop_after_select=True option bosilgach input Locatorini qaytaradi;
         keyingi tekshiruvlarni bajarmaydi, return_value bilan berilmaydi.
         """
+        if action == "enter_new" and isinstance(search_text, str):
+            # On this shell the editable name is a plain input.
+            return self.autocomplete(label, search_text, ng_model=ng_model, root=root, timeout=timeout)
+        if action is not None or lookup_route is not None:
+            raise ValueError("b_input(): unsupported legacy lookup action or route")
         self._validate_options(
             'b_input',
             return_value=return_value,

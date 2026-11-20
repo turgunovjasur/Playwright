@@ -35,8 +35,8 @@ def save_discount_draft(case, total):
     base = AutoBasePage(case.page)
     with allure.step(f"{total} so'mlik orderga alohida TTN raqami berib saqlashga tayyorlash"):
         base.b_input(label="Тип оплаты", value="Наличные деньги", clear=True)
-        base.input(label="ИТОГО", expect_value=str(total))
-        case.check("Saqlashdan oldingi jami (so'm)", Decimal(total), parse_amount(base.input(label="ИТОГО", return_value=True)))
+        actual_total = base.input(label="ИТОГО", expect_value=str(total), return_value=True)
+        case.check("Saqlashdan oldingi jami (so'm)", Decimal(total), parse_amount(actual_total))
         base.input(label="Номер товарно-транспортной накладной", value=case.reference)
         base.ui_select(label="Статус", value="Черновик")
     case.remember_order(save_order_by_reference(case.page, case.reference))
@@ -50,8 +50,8 @@ def check_saved_amounts(case, quantity, line_discount, line_total, order_discoun
     base.form_view(label="Статус", expect_value="Черновик")
     base.form_view(label="Валюта", expect_value="Узбекский сум")
     for label, expected in (("Сумма заказа", total), ("Сумма скидки/наценки на заказ", order_discount)):
-        base.form_view(label=label, expect_value=str(expected), remove_spaces=True)
-        case.check(f"Saqlangan order: {label}", Decimal(expected), parse_amount(base.form_view(label=label, return_value=True, remove_spaces=True)))
+        actual = base.form_view(label=label, expect_value=str(expected), return_value=True, remove_spaces=True)
+        case.check(f"Saqlangan order: {label}", Decimal(expected), parse_amount(actual))
     grid = page.locator("smt-table:visible").last
     expect(grid.locator(".smt-data-row")).to_have_count(1)
     row = base.grid(case.product, root=grid)

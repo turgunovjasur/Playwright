@@ -178,12 +178,20 @@ def _context(page, baseline, promotions, directory, node, *, client=None):
     case.checkpoint()
     try:
         login = page._order_group_login
-        with order_session_recovery(page, baseline, directory, on_authenticated=lambda: login.refresh_cookies(page)):
+        with order_session_recovery(
+            page, baseline, directory, on_authenticated=lambda: login.refresh_cookies(page)
+        ) as recovery:
             login.authorize(page, baseline, directory)
             if "prepare" not in node.name and node.name not in {"test_000_catalog", "test_001_prices", "test_002_stock"}:
                 from tests.regression.helpers.preparation.readiness import verify_retry_preparations
                 verify_retry_preparations(case, node, directory)
             yield case
+            # Pytest resumes a yield fixture after recording the call result.
+            # A handler error already reported by the call is not a cleanup error.
+            report = getattr(node, "rep_call", None)
+            if (recovery.failure is not None and report is not None and report.failed
+                    and str(recovery.failure) in str(report.longrepr)):
+                recovery.failure = None
     finally:
         case.checkpoint()
         allure.attach(ledger_path.read_text(encoding="utf-8"),

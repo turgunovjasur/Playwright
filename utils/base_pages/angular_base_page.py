@@ -1,6 +1,5 @@
 import re
 import allure
-from contextlib import nullcontext
 from time import monotonic
 from urllib.parse import unquote, urlsplit, urlunsplit
 
@@ -19,6 +18,11 @@ from utils.report_context import record_filial
 
 
 _UNSET = object()
+_MODEL_LOAD_ERROR = "main app-page-model-load-error [role='alert']"
+_PAGE_ERRORS = (
+    ".alert-danger:visible, [role='dialog']:visible [data-testid*='error' i]:visible, "
+    f"smt-alert-dialog:has(.bg-error-100):visible, {_MODEL_LOAD_ERROR}:visible"
+)
 
 
 def _whitespace_agnostic_pattern(value, *, exact=False):
@@ -220,11 +224,12 @@ class AngularBasePage:
                 matcher = name if isinstance(name, re.Pattern) else (
                     self._label_pattern(name) if exact else re.compile(re.escape(name))
                 )
-                smt_tab = root.locator("smt-tab-button:not([role='tab'])").filter(
-                    has_text=matcher,
-                    has_not=self.page.get_by_role("tab"),
+                smt_tabs = root.locator("smt-tab-button:not([role='tab'])").filter(
+                    has_not=self.page.get_by_role("tab")
                 )
-                target = target.or_(smt_tab)
+                # A count badge can follow the label inside the same button.
+                label = self.page.locator("button > span.truncate").filter(has_text=matcher)
+                target = target.or_(smt_tabs.filter(has=label)).or_(smt_tabs.filter(has_text=matcher))
         target = target.nth(index)
         expect(target).to_be_visible(timeout=timeout)
         target.click(timeout=timeout)
@@ -263,12 +268,20 @@ class AngularBasePage:
         """A2 bo'lim/status tabini tanlaydi va aktiv holatini tekshiradi."""
         self._validate_options('tab', section=section, timeout=timeout)
         target = self.click(name=name, role='tab', exact=True, root=root, timeout=timeout)
-        # smt-tab-button native ARIA tab emas; active state ichki button'da.
-        styled = target.locator('button')
-        if styled.count():
-            expect(styled).to_have_class(re.compile(r'\bborder-b-brand-600\b'), timeout=timeout)
+        # Native tabs expose selection through ARIA. UI Kit's tab bar changes
+        # only the inner button's classes across its light and dark themes.
+        if (target.get_attribute("role", timeout=timeout) == "tab"
+                or target.get_attribute("aria-selected", timeout=timeout) is not None):
+            expect(target).to_have_attribute("aria-selected", "true", timeout=timeout)
         else:
-            expect(target).to_have_attribute('aria-selected', 'true', timeout=timeout)
+            button = target.locator("button")
+            active = button.locator(
+                "css=:scope:is(.text-brand-700, .text-brand-400, .bg-gray-50.text-gray-700, "
+                ".bg-white.shadow-tab-white, .bg-white.ring-gray-300.shadow-xs, "
+                ".bg-brand-600.text-white, .bg-gray-modern-800.text-white, "
+                ".bg-brand-950.text-brand-300, .border-b-brand-600)"
+            )
+            expect(active, f"Tab {name!r} faol holatga o'tishini kutish").to_be_visible(timeout=timeout)
         self.wait_for_loader(timeout=timeout)
         return target
 
@@ -305,35 +318,6 @@ class AngularBasePage:
         link.click(timeout=timeout)
         self.wait_for_loader(timeout=timeout)
         return link
-
-    # ------------------------------------------------------------------------------------------------------------------
-
-    @report_web_action
-    def autocomplete(self, label, value, *, ng_model=None, query_response=None,
-                     empty_text=None, root=None, timeout=UI_TIMEOUT_MS):
-        """Server autocomplete'ga custom qiymat yozib, javobdan keyin overlayni yopadi.
-
-        query_response typed query javobiga mos predicate; boshlang'ich bo'sh
-        query javobi bilan aralashtirilmaydi. ng_model legacy locator hintidir.
-        """
-        self._validate_options('autocomplete', timeout=timeout)
-        if query_response is None or not callable(query_response):
-            raise ValueError('autocomplete(): server query_response predicate kerak')
-        with self.page.expect_response(query_response, timeout=timeout) as pending:
-            field = self.input(label=label, value=value, root=root)
-        response = pending.value
-        if not response.ok:
-            raise AssertionError(f"autocomplete(): lookup failed (HTTP {response.status})")
-        dropdown = self.page.locator('.cdk-overlay-container smt-select-dropdown:visible').last
-        expect(dropdown).to_be_visible(timeout=timeout)
-        select = field.locator('xpath=ancestor::smt-data-select[1]')
-        _wait_for_select_loading(select, dropdown, timeout)
-        if empty_text is not None:
-            expect(dropdown.get_by_text(empty_text, exact=True)).to_be_visible(timeout=timeout)
-        field.press('Escape', timeout=timeout)
-        expect(dropdown).to_be_hidden(timeout=timeout)
-        expect(field).to_have_value(str(value), timeout=timeout)
-        return field
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -458,8 +442,18 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def _lookup_action(self, action, select, search, dropdown, query, timeout):
+    def _lookup_action(self, action, select, search, dropdown, query, timeout, *, lookup_route=None):
         """Operate the active single-select without choosing a row."""
+        if action == "preview":
+            previous = search.input_value(timeout=timeout)
+            self._lookup_action("search", select, search, dropdown, query, timeout, lookup_route=lookup_route)
+            if previous != query:
+                self._lookup_action("search", select, search, dropdown, previous, timeout, lookup_route=lookup_route)
+            search.press("Escape", timeout=timeout)
+            expect(dropdown).to_be_hidden(timeout=timeout)
+            expect(search).to_have_value(previous, timeout=timeout)
+            return search
+
         if action == "close":
             if dropdown.is_visible():
                 if not select.locator(":focus-within").count():
@@ -470,7 +464,9 @@ class AngularBasePage:
                 expect(dropdown).to_be_hidden(timeout=timeout)
             return search
 
-        key = select.get_attribute("smtkeyfield", timeout=timeout)
+        key = select.get_attribute("smtkeyfield", timeout=timeout) or select.get_attribute(
+            "smtdisplayfield", timeout=timeout
+        )
 
         def refresh_text(text):
             # Order can start with a selected client. Clicking it or pressing
@@ -501,7 +497,7 @@ class AngularBasePage:
             search.press("Escape", timeout=timeout)
             expect(dropdown).to_be_hidden(timeout=timeout)
 
-        route = select.get_attribute("smtqueryname", timeout=timeout)
+        route = lookup_route or select.get_attribute("smtqueryname", timeout=timeout)
         # Track starts as well as completions: a request already in flight
         # for the same query must not satisfy this action.
         started = set()
@@ -560,6 +556,7 @@ class AngularBasePage:
         value=_UNSET,
         *,
         action=None,
+        lookup_route=None,
         ng_model=None,
         placeholder=None,
         expect_value=_UNSET,
@@ -569,6 +566,7 @@ class AngularBasePage:
         clear=False,
         exact=True,
         server_search=False,
+        smart_search=_UNSET,
         select_first=False,
         stop_after_select=False,
         delay=50,
@@ -581,7 +579,10 @@ class AngularBasePage:
         A2 server select uchun action="open" va "close" menyuni boshqaradi.
         "search" va "expect_empty" search_text bo‘yicha yangi so‘rovni kutadi,
         menyuni ochiq qoldiradi va option tanlamaydi. Har bir amal input
-        Locatorini qaytaradi. action berilmasa odatdagi tanlash ishlaydi.
+        Locatorini qaytaradi. "enter_new" bo‘sh natijani kutib yangi matnni
+        maydonda qoldiradi. lookup_route server so‘rovining yo‘lini aniqlashtiradi.
+        "preview" qidiruvdan keyin avvalgi qiymatni tiklab, menyuni yopadi.
+        action berilmasa odatdagi tanlash ishlaydi.
 
         ``select_first=True`` qidiruvsiz birinchi optionni tanlaydi. Non-empty
         ``search_text`` inputga yoziladi va shu matnga mos option ko'ringuncha
@@ -595,6 +596,8 @@ class AngularBasePage:
         Remote ro‘yxatda mos variant topilmasa keyingi sahifalar UI scroll orqali
         timeout ichida yuklanadi. Berilmasa mavjud tanlash qoidasi saqlanadi.
 
+        smart_search=True/False mavjud «Умный поиск» tugmasining rejimini tanlaydi.
+        Berilmasa maydon joriy rejimini saqlaydi.
         exact option matni va string assertioniga taalluqli; regex o'zicha ishlaydi.
         clear=True tanlovsiz ham maydonni tozalaydi. Default native input
         Locator, return_value=True esa uning string qiymatini qaytaradi.
@@ -607,6 +610,7 @@ class AngularBasePage:
             clear=clear,
             exact=exact,
             server_search=server_search,
+            smart_search=smart_search,
             select_first=select_first,
             stop_after_select=stop_after_select,
             delay=delay,
@@ -614,17 +618,17 @@ class AngularBasePage:
             timeout=timeout,
         )
         if action is not None:
-            if action not in ("open", "close", "search", "expect_empty"):
+            if action not in ("open", "close", "search", "expect_empty", "enter_new", "preview"):
                 raise ValueError(f"b_input(): unknown action {action!r}")
             if (value is not _UNSET or expect_value is not _UNSET or clear or select_first
                     or stop_after_select or option_contains or return_value or server_search
                     or not exact or delay != 50):
                 raise ValueError("b_input(): action cannot be combined with selection or value options")
-            if action in ("search", "expect_empty"):
+            if action in ("search", "expect_empty", "enter_new", "preview"):
                 if not isinstance(search_text, str):
                     raise ValueError(f"b_input({action}): search_text must be a string")
             elif search_text is not None:
-                raise ValueError(f"b_input({action}): search_text is only used for search or expect_empty")
+                raise ValueError(f"b_input({action}): search_text is not used for this action")
         if isinstance(option_contains, str):
             option_contains = (option_contains,)
         if not isinstance(option_contains, (tuple, list)) or any(
@@ -636,24 +640,24 @@ class AngularBasePage:
         if stop_after_select and return_value:
             raise ValueError("b_input(): stop_after_select va return_value birga berilmaydi")
         root = self._resolve_root(root)
+        if action == "enter_new" and label is not None:
+            ng_model = None  # Shared flows can supply a model hint for the legacy input.
         if sum(source is not None for source in (label, ng_model, placeholder)) != 1:
             raise ValueError("b_input(): label, ng_model yoki placeholder dan aynan bittasini bering")
         if label is not None:
             control = self._control(label, index=index, root=root, timeout=timeout)
-            select = control.locator("smt-data-select, smt-select").first
+            select = control.locator("smt-data-select").first
         elif ng_model is not None:
             model_name = str(ng_model)
             short_name = model_name.removeprefix("d.")
             select = root.locator(
                 f'smt-data-select[formcontrolname="{model_name}"], '
-                f'smt-data-select[formcontrolname="{short_name}"], '
-                f'smt-select[formcontrolname="{model_name}"], '
-                f'smt-select[formcontrolname="{short_name}"]'
+                f'smt-data-select[formcontrolname="{short_name}"]'
             ).nth(index)
         else:
             # The host and its input can both expose the same placeholder.
             select = root.get_by_placeholder(placeholder, exact=True).locator(
-                "xpath=ancestor-or-self::*[self::smt-data-select or self::smt-select][1]"
+                "xpath=ancestor-or-self::*[self::smt-data-select][1]"
             ).nth(index)
 
         trigger = select.locator("smt-select-trigger").first
@@ -668,10 +672,23 @@ class AngularBasePage:
             ".cdk-overlay-container smt-select-dropdown:visible"
         ).last
 
+        if smart_search is not _UNSET:
+            toggle = select.get_by_role("button").filter(has=self.page.locator('smt-icon[key="search-smart"]'))
+            expect(toggle).to_have_attribute("aria-pressed", re.compile(r"^(true|false)$"), timeout=timeout)
+            requested = "true" if smart_search else "false"
+            if toggle.get_attribute("aria-pressed", timeout=timeout) != requested:
+                toggle.click(timeout=timeout)
+            expect(toggle).to_have_attribute("aria-pressed", requested, timeout=timeout)
+
         if action is not None:
-            if not select.locator("xpath=self::smt-data-select").count():
-                raise ValueError("b_input(): action requires an A2 server data select")
-            return self._lookup_action(action, select, search, dropdown, search_text, timeout)
+            lookup_action = "expect_empty" if action == "enter_new" else action
+            self._lookup_action(lookup_action, select, search, dropdown, search_text, timeout,
+                                lookup_route=lookup_route)
+            if action == "enter_new":
+                search.press("Escape", timeout=timeout)
+                expect(dropdown).to_be_hidden(timeout=timeout)
+                expect(search).to_have_value(search_text, timeout=timeout)
+            return search
 
         if clear:
             search.click(timeout=timeout)
@@ -686,29 +703,31 @@ class AngularBasePage:
                 str(search_text) if has_search_query
                 else str(value) if value is not _UNSET else None
             )
-            server_lookup = select.locator("xpath=self::smt-data-select").count() > 0
             key_field = select.get_attribute("smtkeyfield")
-            current_query = search.input_value()
-            if not dropdown.is_visible():
-                opening = _expect_lookup_query(
-                    self.page, current_query, key_field, timeout=timeout,
-                ) if server_lookup else nullcontext()
-                with opening:
-                    trigger.click(timeout=timeout)
-            expect(dropdown).to_be_visible(timeout=timeout)
-            _wait_for_select_loading(select, dropdown, timeout)
-            query = None if select_first else option_text if search_text is None else str(search_text)
-            if query and current_query != query:
-                searching = _expect_lookup_query(
-                    self.page, query, key_field, timeout=timeout,
-                ) if server_lookup else nullcontext()
-                with searching:
-                    search.press("ControlOrMeta+A", timeout=timeout)
-                    search.press("Backspace", timeout=timeout)
-                    if server_search:
-                        search.press_sequentially(query, delay=delay, timeout=timeout)
-                    else:
-                        search.fill(query, timeout=timeout)
+            if (lookup_route or not key_field) and not select_first and option_text:
+                self._lookup_action("search", select, search, dropdown, option_text, timeout,
+                                    lookup_route=lookup_route)
+            else:
+                query_field = key_field or select.get_attribute("smtdisplayfield", timeout=timeout)
+                current_query = search.input_value(timeout=timeout)
+                if not dropdown.is_visible():
+                    with _expect_lookup_query(
+                        self.page, current_query, query_field, timeout=timeout,
+                    ):
+                        trigger.click(timeout=timeout)
+                expect(dropdown).to_be_visible(timeout=timeout)
+                _wait_for_select_loading(select, dropdown, timeout)
+                query = None if select_first else option_text if search_text is None else str(search_text)
+                if query and current_query != query:
+                    with _expect_lookup_query(
+                        self.page, query, query_field, timeout=timeout,
+                    ):
+                        search.press("ControlOrMeta+A", timeout=timeout)
+                        search.press("Backspace", timeout=timeout)
+                        if server_search:
+                            search.press_sequentially(query, delay=delay, timeout=timeout)
+                        else:
+                            search.fill(query, timeout=timeout)
 
             expect(dropdown).to_be_visible(timeout=timeout)
             _wait_for_select_loading(select, dropdown, timeout)
@@ -741,9 +760,8 @@ class AngularBasePage:
                     # product name may have its required metadata on a later page.
                     # Stay in the UI and bound pagination by the supplied timeout.
                     deadline = monotonic() + timeout / 1000
-                    if server_lookup:
-                        expect(options.first).to_be_visible(timeout=timeout)
-                    while server_lookup and option.count() == 0:
+                    expect(options.first).to_be_visible(timeout=timeout)
+                    while option.count() == 0:
                         remaining = max(1, int((deadline - monotonic()) * 1000))
                         if monotonic() >= deadline:
                             break
@@ -790,17 +808,23 @@ class AngularBasePage:
         date="today",
         *,
         auto_fill=False,
+        calendar=False,
+        clear=False,
         index=0,
         root=None,
         timeout=UI_TIMEOUT_MS,
     ):
-        """A2 ``smt-date-picker``da bugungi yoki ``DD.MM.YYYY`` sanani tanlaydi."""
+        """Read an autofilled date, choose a calendar day, clear, or enter the date."""
         self._validate_options(
             'date_picker',
             auto_fill=auto_fill,
+            calendar=calendar,
+            clear=clear,
             index=index,
             timeout=timeout,
         )
+        if sum((auto_fill, calendar, clear)) > 1 or (clear and date != "today"):
+            raise ValueError("date_picker(): use one operation and omit date when clearing")
         root = self._resolve_root(root)
         control = self._control(label, index=index, root=root, timeout=timeout)
         picker = control.locator("smt-date-picker").first
@@ -810,29 +834,56 @@ class AngularBasePage:
         expect(trigger).to_be_visible(timeout=timeout)
         expect(input_el).to_be_visible(timeout=timeout)
 
-        expected = resolve_date(date).strftime("%d.%m.%Y")
+        target = resolve_date(date)
+        expected = "" if clear else target.strftime("%d.%m.%Y")
         if auto_fill:
             expect(input_el).to_have_value(expected, timeout=timeout)
             return input_el
 
-        if date == "today":
+        overlay = self.page.get_by_test_id("smt-date-picker-overlay").filter(visible=True)
+        if clear or calendar or date == "today":
             trigger.click(timeout=timeout)
-            overlay = self.page.locator(
-                ".cdk-overlay-container .cdk-overlay-pane:visible"
-            ).last
             expect(overlay).to_be_visible(timeout=timeout)
-            today = overlay.get_by_role("button", name="Сегодня", exact=True)
-            expect(today).to_be_visible(timeout=timeout)
-            today.click(timeout=timeout)
+            if calendar:
+                self._pick_calendar_day(overlay, target, timeout)
+            else:
+                command = "Очистить" if clear else "Сегодня"
+                overlay.get_by_role("button", name=command, exact=True).click(timeout=timeout)
         else:
             input_el.click(timeout=timeout)
             input_el.press("ControlOrMeta+A", timeout=timeout)
             input_el.fill(expected, timeout=timeout)
             input_el.press("Enter", timeout=timeout)
-            expect(self.page.locator('[data-testid="smt-date-picker-overlay"]')).to_be_hidden(timeout=timeout)
 
+        expect(overlay).to_be_hidden(timeout=timeout)
         expect(input_el).to_have_value(expected, timeout=timeout)
         return input_el
+
+    def _pick_calendar_day(self, overlay, target, timeout):
+        previous = overlay.get_by_role("button").filter(has=self.page.locator('smt-icon[key="chevron-left"]'))
+        following = overlay.get_by_role("button").filter(has=self.page.locator('smt-icon[key="chevron-right"]'))
+        year_label = previous.locator("xpath=..").locator(":scope > span")
+        year = int(year_label.inner_text(timeout=timeout))
+        deadline = monotonic() + timeout / 1000
+        while year != target.year:
+            remaining = int((deadline - monotonic()) * 1000) if timeout else 0
+            if timeout and remaining <= 0:
+                raise AssertionError(f"date_picker(): calendar did not reach year {target.year}")
+            forward = target.year > year
+            (following if forward else previous).click(timeout=remaining)
+            year += 1 if forward else -1
+            expect(year_label).to_have_text(str(year), timeout=remaining)
+        month = overlay.get_by_test_id("smt-month-picker-cell").nth(target.month - 1)
+        month.click(timeout=timeout)
+        days = overlay.get_by_test_id("smt-calendar-day")
+        # The Monday-first grid can still show the preceding month during redraw.
+        # Keep both the expected position and the day number in the click locator.
+        expect(month).to_have_class(re.compile(r"\bbg-blue-light-600\b"), timeout=timeout)
+        offset = target.replace(day=1).weekday()
+        day = days.nth(offset + target.day - 1).and_(
+            overlay.get_by_role("button", name=str(target.day), exact=True)
+        )
+        day.click(timeout=timeout)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -899,29 +950,41 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    def _toggle_value(self, toggle, *, timeout=UI_TIMEOUT_MS):
+        # A visible ARIA control can still be waiting for its first state.
+        ready = toggle.and_(self.page.locator(
+            'input[type="checkbox"], input[type="radio"], '
+            '[aria-checked="true"], [aria-checked="false"], [aria-checked="mixed"]'
+        ))
+        return ready.evaluate("""element => {
+            if (element.matches('input[type="checkbox"], input[type="radio"]'))
+                return element.indeterminate ? "mixed" : element.checked;
+            const state = element.getAttribute("aria-checked");
+            return state === "mixed" ? state : state === "true";
+        }""", timeout=timeout)
+
+    def _definite_toggle(self, toggle):
+        # Playwright checked=False alone also accepts an ARIA mixed checkbox.
+        return toggle.and_(self.page.locator(
+            'input[type="checkbox"]:not(:indeterminate), input[type="radio"], '
+            ':not(input[type="checkbox"], input[type="radio"]):is([aria-checked="true"], [aria-checked="false"])'
+        ))
+
+    def _expect_toggle(self, toggle, expected, *, timeout=UI_TIMEOUT_MS):
+        if expected == "mixed":
+            expect(toggle).to_be_checked(indeterminate=True, timeout=timeout)
+        else:
+            expect(self._definite_toggle(toggle)).to_be_checked(checked=expected, timeout=timeout)
+
     def _set_toggle(self, toggle, checked, *, timeout=UI_TIMEOUT_MS):
-        role = toggle.get_attribute("role")
-        if role in {"switch", "checkbox", "radio"}:
-            current = (toggle.get_attribute("aria-checked") or "").lower() == "true"
-            if current != checked:
-                toggle.click()
-            expect(toggle).to_have_attribute(
-                "aria-checked",
-                "true" if checked else "false",
-                timeout=timeout,
-            )
-            return
-
-        input_type = (toggle.get_attribute("type") or "").lower()
-        if input_type in {"checkbox", "radio"}:
-            if toggle.is_checked() != checked:
-                toggle.set_checked(checked)
-            expect(toggle).to_be_checked(timeout=timeout) if checked else expect(
-                toggle
-            ).not_to_be_checked(timeout=timeout)
-            return
-
-        raise AssertionError("Angular toggle role yoki checkbox/radio input emas")
+        current = self._toggle_value(toggle, timeout=timeout)
+        if current == "mixed":
+            toggle.click(timeout=timeout)
+            expect(self._definite_toggle(toggle)).to_be_visible(timeout=timeout)
+            current = self._toggle_value(toggle, timeout=timeout)
+        if current != checked:
+            toggle.click(timeout=timeout)
+        self._expect_toggle(toggle, checked, timeout=timeout)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -938,11 +1001,12 @@ class AngularBasePage:
         index=0,
         root=None,
     ):
-        """A2 checkbox/switch controlini canonical API bilan boshqaradi."""
+        """Set True/False, or assert/read True, False or "mixed" on an A2 checkbox."""
+        if expect_checked is not _UNSET and not isinstance(expect_checked, bool) and expect_checked != "mixed":
+            raise TypeError('checkbox(): expect_checked must be True, False or "mixed"')
         self._validate_options(
             'checkbox',
             checked=checked,
-            expect_checked=expect_checked,
             return_value=return_value,
             index=index,
         )
@@ -976,26 +1040,11 @@ class AngularBasePage:
         expect(toggle).to_be_visible(timeout=UI_TIMEOUT_MS)
 
         if checked is not _UNSET:
-            self._set_toggle(toggle, bool(checked))
-
-        expected = checked if checked is not _UNSET else expect_checked
-        if expected is not _UNSET:
-            role = toggle.get_attribute("role")
-            if role:
-                expect(toggle).to_have_attribute(
-                    "aria-checked",
-                    "true" if expected else "false",
-                    timeout=UI_TIMEOUT_MS,
-                )
-            else:
-                expect(toggle).to_be_checked(timeout=UI_TIMEOUT_MS) if expected else expect(
-                    toggle
-                ).not_to_be_checked(timeout=UI_TIMEOUT_MS)
-
+            self._set_toggle(toggle, checked)
+        elif expect_checked is not _UNSET:
+            self._expect_toggle(toggle, expect_checked)
         if return_value:
-            if toggle.get_attribute("role"):
-                return (toggle.get_attribute("aria-checked") or "").lower() == "true"
-            return toggle.is_checked()
+            return self._toggle_value(toggle)
         return toggle
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -1006,12 +1055,22 @@ class AngularBasePage:
         label,
         *,
         click=False,
-        expect_checked=True,
+        press=None,
+        expect_checked=_UNSET,
         return_value=False,
         index=0,
         root=None,
     ):
-        """A2 semantic radio controlini tanlaydi yoki holatini tekshiradi."""
+        """A2 radio variantini bosadi, klaviaturada boshqaradi yoki holatini tekshiradi.
+
+        Space va Enter nomlangan variantni tanlaydi. Tab va Shift+Tab fokusni
+        undan ko‘chiradi va tanlov saqlanganini kutadi. Boshqa chaqiruvlarda
+        expect_checked sukut bo‘yicha True. return_value nomlangan variantga tegishli.
+        """
+        if press is not None and press not in ("Space", "Enter", "Tab", "Shift+Tab"):
+            raise ValueError("radio(): press must be Space, Enter, Tab or Shift+Tab")
+        if click and press is not None:
+            raise ValueError("radio(): choose either click or press")
         self._validate_options(
             'radio',
             click=click,
@@ -1026,6 +1085,10 @@ class AngularBasePage:
             index=index,
             root=root,
         )
+        moves_focus = press in ("Tab", "Shift+Tab")
+        if expect_checked is _UNSET:
+            expect_checked = self._toggle_value(radio) if moves_focus else True
+
         if click:
             label_el = radio.locator("xpath=ancestor::label[1]")
             if label_el.count() > 0 and label_el.first.is_visible():
@@ -1033,21 +1096,22 @@ class AngularBasePage:
             else:
                 radio.click(timeout=UI_TIMEOUT_MS)
 
-        if expect_checked is not _UNSET:
-            if radio.get_attribute("role") == "radio":
-                expect(radio).to_have_attribute(
-                    "aria-checked",
-                    "true" if expect_checked else "false",
-                    timeout=UI_TIMEOUT_MS,
-                )
-            elif expect_checked:
-                expect(radio).to_be_checked(timeout=UI_TIMEOUT_MS)
-            else:
-                expect(radio).not_to_be_checked(timeout=UI_TIMEOUT_MS)
+        elif press is not None:
+            target = radio
+            # The named native input is outside the tab order in smt-radio-group.
+            # Its label contains the role=radio element reached by the keyboard.
+            if radio.evaluate("""el => el.matches('input[type="radio"][tabindex="-1"]')""", timeout=UI_TIMEOUT_MS):
+                target = radio.locator("xpath=ancestor::label[1]").locator('[role="radio"][tabindex="0"]')
+            expect(target).to_be_enabled(timeout=UI_TIMEOUT_MS)
+            target.focus(timeout=UI_TIMEOUT_MS)
+            expect(target).to_be_focused(timeout=UI_TIMEOUT_MS)
+            target.press(press, timeout=UI_TIMEOUT_MS)
+            if moves_focus:
+                expect(target).not_to_be_focused(timeout=UI_TIMEOUT_MS)
+
+        self._expect_toggle(radio, expect_checked)
         if return_value:
-            if radio.get_attribute("role") == "radio":
-                return (radio.get_attribute("aria-checked") or "").lower() == "true"
-            return radio.is_checked()
+            return self._toggle_value(radio)
         return radio
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -1056,22 +1120,40 @@ class AngularBasePage:
     def choice(
         self,
         label,
-        option,
+        option=None,
         *,
         index=0,
         root=None,
         timeout=UI_TIMEOUT_MS,
     ):
-        """``smt-control`` ichidagi segmented button optionni tanlaydi."""
+        """Pick a group option, or read the pressed option when option is omitted."""
         self._validate_options(
             'choice',
             index=index,
             timeout=timeout,
         )
-        control = self._control(label, index=index, root=root, timeout=timeout)
-        button = control.get_by_role("button", name=option, exact=True).first
+        root = self._resolve_root(root)
+        pattern = self._label_pattern(label)
+        named_group = self.page.get_by_role("group", name=pattern)
+        controls = root.locator("smt-control").filter(
+            has=self.page.locator("label").filter(has_text=pattern, visible=True),
+            has_not=named_group,
+        )
+        group = controls.or_(root.get_by_role("group", name=pattern)).filter(visible=True).nth(index)
+        buttons = group.get_by_role("button")
+        # Smartup's plain segmented controls use colors; UI Kit exposes ARIA.
+        active = buttons.and_(self.page.locator(
+            '[aria-pressed="true"], button:not([aria-pressed]).bg-brand-600.text-white'
+        )).filter(visible=True)
+        if option is None:
+            expect(active).to_have_count(1, timeout=timeout)
+            return active.inner_text(timeout=timeout).strip()
+        button = group.get_by_role("button", name=option, exact=True).first
         expect(button).to_be_visible(timeout=timeout)
-        button.click(timeout=timeout)
+        chosen = active.and_(button)
+        if not chosen.is_visible():
+            button.click(timeout=timeout)
+        expect(chosen).to_be_visible(timeout=timeout)
         return button
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -1164,6 +1246,7 @@ class AngularBasePage:
         expect_value=_UNSET,
         return_value=False,
         clear=False,
+        remove=None,
         select_first=False,
         index=0,
         close=True,
@@ -1175,6 +1258,7 @@ class AngularBasePage:
 
         select_first=True qidiruvni tozalab birinchi ko'rinadigan variantni
         tanlaydi va chipini tekshiradi; value bilan birga berilmaydi.
+        remove bitta chipni aniq nomi bo‘yicha olib tashlaydi.
         return_value=True tanlangan chip matnlarini ro'yxat qilib qaytaradi.
         """
         self._validate_options(
@@ -1187,6 +1271,9 @@ class AngularBasePage:
             exact=exact,
             timeout=timeout,
         )
+        if remove is not None and (not isinstance(remove, str) or not remove.strip()
+                                   or clear or select_first or value is not _UNSET):
+            raise ValueError("multiselect(): remove needs one chip name and no other selection action")
         if select_first and value is not _UNSET:
             raise ValueError("multiselect(): select_first va value birga berilmaydi")
         root = self._resolve_root(root)
@@ -1220,6 +1307,12 @@ class AngularBasePage:
             for _ in range(clear_buttons.count()):
                 clear_buttons.first.click(timeout=timeout)
             expect(chips).to_have_count(0, timeout=timeout)
+
+        if remove is not None:
+            chip = chips.filter(has_text=re.compile(rf"^\s*{re.escape(remove)}\s*$"))
+            expect(chip).to_have_count(1, timeout=timeout)
+            chip.get_by_role("button", name="Remove this tag", exact=True).click(timeout=timeout)
+            expect(chip).to_have_count(0, timeout=timeout)
 
         selected_values = values_list(value)
         menu_trigger = select.locator('[role="button"][aria-haspopup="menu"]').first
@@ -1281,7 +1374,7 @@ class AngularBasePage:
         for option_text in expected_values:
             expect(matching_text(chips, option_text)).to_be_visible(timeout=timeout)
 
-        if close and selected_values:
+        if close and (selected_values or remove is not None):
             close_dropdown()
         if return_value:
             return [" ".join(text.split()) for text in chips.all_inner_texts() if text.strip()]
@@ -1298,36 +1391,39 @@ class AngularBasePage:
         ng_model=None,
         expect_value=_UNSET,
         return_value=False,
+        clear=False,
         search_text=None,
         exact=True,
         index=0,
         root=None,
         timeout=UI_TIMEOUT_MS,
     ):
-        """Qidiruvdan keyin valuega mos optionni tanlaydi; component Locator qaytaradi.
+        """A2 ``smt-select``da qidiruvdan keyin valuega mos optionni tanlaydi; component Locator qaytaradi.
 
         search_text faqat qidiruv uchun. exact tanlash va assertionga taalluqli.
-        Faqat search_text berilsa tanlov o'zgarmaydi.
+        Faqat search_text berilsa mos variant yoki bo'sh natija kutiladi.
+        Keyin oldingi matn tiklanadi va menyu tanlovsiz yopiladi.
         """
         self._validate_options(
             'ui_select',
             return_value=return_value,
+            clear=clear,
             exact=exact,
             index=index,
             timeout=timeout,
         )
+        if clear and (value is not _UNSET or search_text is not None):
+            raise ValueError("ui_select(): clear cannot be combined with a selection or search")
         root = self._resolve_root(root)
         if label is not None and ng_model is not None:
             raise ValueError("ui_select(): label yoki ng_model dan faqat bittasini bering")
         if label is not None:
             control = self._control(label, index=index, root=root, timeout=timeout)
-            select = control.locator("smt-data-select, smt-select").first
+            select = control.locator("smt-select").first
         elif ng_model is not None:
             model_name = str(ng_model)
             short_name = model_name.removeprefix("d.")
             select = root.locator(
-                f'smt-data-select[formcontrolname="{model_name}"], '
-                f'smt-data-select[formcontrolname="{short_name}"], '
                 f'smt-select[formcontrolname="{model_name}"], '
                 f'smt-select[formcontrolname="{short_name}"]'
             ).nth(index)
@@ -1338,12 +1434,56 @@ class AngularBasePage:
         selected = trigger.locator("input:not([type='checkbox']):not([type='radio'])").first
         expect(select).to_be_visible(timeout=timeout)
         expect(trigger).to_be_visible(timeout=timeout)
-        searchable = selected.count() > 0
+        caption = trigger.locator("span.truncate").first
+        # An empty non-searchable select keeps a zero-height caption. Its
+        # visible trigger still accepts clicks to reopen the dropdown.
+        field = selected.filter(visible=True)
+        expect(field.or_(caption).first).to_be_attached(timeout=timeout)
+        searchable = field.is_visible()
         if not searchable:
-            selected = trigger.locator("span.truncate").first
-        expect(selected).to_be_visible(timeout=timeout)
+            selected = caption
         if search_text is not None and not searchable:
             raise ValueError("ui_select(): search_text qidiruv inputi mavjud select uchun beriladi")
+
+        if clear:
+            icon = trigger.get_by_test_id("smt-select-trigger-icon").filter(
+                has=self.page.locator('svg-icon[aria-label="x-01-icon"]')
+            )
+            trigger.hover(timeout=timeout)
+            placeholder = caption.and_(self.page.locator(".text-gray-500"))
+            already_empty = (
+                selected.input_value(timeout=timeout) == "" if searchable else placeholder.count() > 0
+            )
+            if not already_empty or icon.is_visible():
+                icon.click(timeout=timeout)
+                expect(icon).to_be_hidden(timeout=timeout)
+                if searchable:
+                    expect(selected).to_have_value("", timeout=timeout)
+                    selected.press("Escape", timeout=timeout)
+                else:
+                    trigger.press("Escape", timeout=timeout)
+                    expect(placeholder).to_be_attached(timeout=timeout)
+                dropdown = self.page.locator(".cdk-overlay-container smt-select-dropdown:visible")
+                expect(dropdown).to_have_count(0, timeout=timeout)
+
+        if value is _UNSET and search_text is not None:
+            query = str(search_text)
+            previous = selected.input_value(timeout=timeout)
+            dropdown = self.page.locator(".cdk-overlay-container smt-select-dropdown:visible")
+            selected.click(timeout=timeout)
+            expect(selected).to_be_focused(timeout=timeout)
+            selected.fill(query, timeout=timeout)
+            expect(dropdown).to_have_count(1, timeout=timeout)
+            options = dropdown.locator("li:visible").filter(has_text=re.compile(re.escape(query), re.I))
+            empty = dropdown.get_by_text("Ничего не найдено", exact=True)
+            expect(options.first.or_(empty).first).to_be_visible(timeout=timeout)
+            # Escape closes this component but leaves the query in its input.
+            # Restore the displayed label without choosing an option.
+            if previous != query:
+                selected.fill(previous, timeout=timeout)
+            selected.press("Escape", timeout=timeout)
+            expect(dropdown).to_be_hidden(timeout=timeout)
+            expect(selected).to_have_value(previous, timeout=timeout)
 
         if value is not _UNSET:
             option_text = str(value)
@@ -1416,8 +1556,15 @@ class AngularBasePage:
         *,
         appear_timeout=A2_LOADER_APPEARANCE_MS,
         root=None,
+        stop_on_model_error=False,
     ):
         """A2 skeleton/busy holati paydo bo'lsa, to'liq tugashini kutadi."""
+        deadline = monotonic() + timeout / 1000 if timeout else None
+
+        def remaining_ms():
+            # Playwright treats zero as unlimited, including at an expired deadline.
+            return max(1, int((deadline - monotonic()) * 1000)) if deadline is not None else 0
+
         root = self._content_root(root)
         # The shell renders its full-page overlay outside main and grid roots.
         shell_selector = 'app-global-page-loader [aria-busy="true"]'
@@ -1427,16 +1574,19 @@ class AngularBasePage:
         # A short auto-waiting assertion can start a locator handler and
         # expire while it authenticates. Observe DOM appearance without action
         # prechecks; the full completion assertions below may run the handler.
+        if timeout:
+            appear_timeout = min(appear_timeout, remaining_ms())
         if appear_timeout > 0:
+            page_selector = f"{shell_selector}, {_MODEL_LOAD_ERROR}" if stop_on_model_error else shell_selector
             root.locator(":scope").evaluate_all(
-                """(roots, [windowMs, shellSelector]) => new Promise(resolve => {
+                """(roots, [windowMs, pageSelector]) => new Promise(resolve => {
                     const visibleNode = node => {
                         const box = node.getBoundingClientRect();
                         return getComputedStyle(node).visibility === 'visible'
                             && box.width > 0 && box.height > 0;
                     };
                     const visible = () =>
-                        [...document.querySelectorAll(shellSelector)].some(visibleNode)
+                        [...document.querySelectorAll(pageSelector)].some(visibleNode)
                         || roots.some(root =>
                             [...root.querySelectorAll('.smt-skeleton, [aria-busy="true"]')].some(visibleNode));
                     if (visible()) { resolve(); return; }
@@ -1451,10 +1601,19 @@ class AngularBasePage:
                         subtree: true, childList: true, attributes: true
                     });
                     timer = setTimeout(finish, windowMs);
-                })""", [appear_timeout, shell_selector],
+                })""", [appear_timeout, page_selector],
             )
 
-        expect(loaders, "A2 sahifa loaderi yoki tekshirilayotgan qism band").to_have_count(0, timeout=timeout)
+        if stop_on_model_error:
+            # A failed model can replace the form while its loader is still present.
+            ready = self.page.locator("html").filter(has_not=loaders)
+            error = self.page.locator(f"{_MODEL_LOAD_ERROR}:visible")
+            expect(ready.or_(error).first, "A2 sahifa loaderi band").to_be_attached(timeout=remaining_ms())
+            if error.is_visible():
+                expectation_gate(self.page, "application_error")
+                expect_no_application_error(self.page, f"{_MODEL_LOAD_ERROR}:visible", timeout=0)
+                expectation_gate(self.page, "loader")
+        expect(loaders, "A2 sahifa loaderi yoki tekshirilayotgan qism band").to_have_count(0, timeout=remaining_ms())
         return True
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -1483,7 +1642,7 @@ class AngularBasePage:
         """A2 sahifani URL → loader → error yo'qligi → heading tartibida tekshiradi.
 
         Loader va error tekshiruvi global; ``root`` heading uchun ishlatiladi.
-        Error kuzatuvi 2,4 soniyagacha; ``check_no_error=False`` uni o'chiradi.
+        Forma yuklanish xatosi loader va sarlavhani kutishda ham hisobga olinadi.
         """
         self._validate_options(
             'expect_page',
@@ -1501,16 +1660,11 @@ class AngularBasePage:
 
         if check_unblocked:
             expectation_gate(self.page, "loader")
-            self._wait_for_loader(timeout=timeout, root=self.page)
+            self._wait_for_loader(timeout=timeout, root=self.page, stop_on_model_error=check_no_error)
 
         if check_no_error:
             expectation_gate(self.page, "application_error")
-            expect_no_application_error(
-                self.page,
-                ".alert-danger:visible, [role='dialog']:visible [data-testid*='error' i], "
-                "smt-alert-dialog:has(.bg-error-100):visible",
-                timeout=timeout,
-            )
+            expect_no_application_error(self.page, _PAGE_ERRORS, timeout=timeout)
 
         scope = self._content_root(root)
         if heading is not None:
@@ -1519,8 +1673,14 @@ class AngularBasePage:
             text_heading = scope.get_by_text(
                 heading, exact=not isinstance(heading, re.Pattern)
             ).filter(visible=True).first
-            target = role_heading.or_(text_heading).first
-            expect(target).to_be_visible(timeout=timeout)
+            target = role_heading.filter(visible=True).or_(text_heading)
+            if check_no_error:
+                # Errors can arrive after the initial application-error observation.
+                expect(target.or_(self.page.locator(_PAGE_ERRORS)).first).to_be_visible(timeout=timeout)
+                expectation_gate(self.page, "application_error")
+                expect_no_application_error(self.page, _PAGE_ERRORS, timeout=0)
+                expectation_gate(self.page, "heading")
+            expect(target.first).to_be_visible(timeout=timeout)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -1625,15 +1785,23 @@ class AngularBasePage:
             open_setting=open_setting,
         )
         root = self._content_root(None if root == "b-grid-controller" else root)
+        reload_button = root.locator('smt-data-table-menu smt-button-group-item[smtvalue="reload"] button').first
         if search is not None:
+            query = str(search)
             field = root.locator("input[type='search']").filter(visible=True).first
             expect(field).to_be_visible(timeout=UI_TIMEOUT_MS)
+            # A2 restores the applied search when returning from an edit form.
+            # Submitting the same text again can be deduplicated by the grid.
+            if query and field.input_value(timeout=UI_TIMEOUT_MS) == query and reload_button.is_visible():
+                reload_button.click(timeout=UI_TIMEOUT_MS)
+                self._wait_for_loader(timeout=UI_TIMEOUT_MS, root=root)
+                return
             field.click(timeout=UI_TIMEOUT_MS)
             field.press("ControlOrMeta+A", timeout=UI_TIMEOUT_MS)
             field.press("Backspace", timeout=UI_TIMEOUT_MS)
-            if str(search):
-                field.fill(str(search), timeout=UI_TIMEOUT_MS)
-            expect(field).to_have_value(str(search), timeout=UI_TIMEOUT_MS)
+            if query:
+                field.fill(query, timeout=UI_TIMEOUT_MS)
+            expect(field).to_have_value(query, timeout=UI_TIMEOUT_MS)
             field.press("Enter", timeout=UI_TIMEOUT_MS)
             self._wait_for_loader(timeout=UI_TIMEOUT_MS, root=root)
             return
@@ -1661,7 +1829,7 @@ class AngularBasePage:
 
         action = None
         if reload:
-            action = root.locator('smt-data-table-menu smt-button-group-item[smtvalue="reload"] button').first
+            action = reload_button
         elif open_filter:
             action = root.locator("smt-data-table-filter button").first
         elif open_setting:
@@ -1674,6 +1842,13 @@ class AngularBasePage:
         action.click(timeout=UI_TIMEOUT_MS)
         if reload:
             self._wait_for_loader(timeout=UI_TIMEOUT_MS, root=root)
+        elif open_filter:
+            panel = self.page.locator("smt-data-table-filter-modal").filter(visible=True)
+            expect(panel.get_by_role("button", name="Закрыть фильтры", exact=True)).to_be_visible(
+                timeout=UI_TIMEOUT_MS
+            )
+            # Smartup opens the panel before loading its field definitions.
+            self._wait_for_loader(root=panel, timeout=UI_TIMEOUT_MS)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -1708,11 +1883,11 @@ class AngularBasePage:
         expect(setting_dialog).to_be_visible(timeout=timeout)
         active_fields = setting_dialog.locator(".smt-main-list")
         active_field = active_fields.get_by_title(field_name, exact=True)
-        if active_field.count() == 0:
-            inactive_field = setting_dialog.get_by_role("button", name=field_name, exact=True).first
-            expect(inactive_field).to_be_visible(timeout=timeout)
+        inactive_field = setting_dialog.get_by_role("button", name=field_name, exact=True).filter(visible=True).first
+        expect(active_field.filter(visible=True).or_(inactive_field).first).to_be_visible(timeout=timeout)
+        if not active_field.is_visible():
             inactive_field.click(timeout=timeout)
-        expect(active_fields.get_by_title(field_name, exact=True)).to_be_visible(timeout=timeout)
+        expect(active_field).to_be_visible(timeout=timeout)
 
         # A settings Save refreshes the list. Its response can arrive after
         # another settings Save or a search and reset both rows and selection.
@@ -1780,21 +1955,15 @@ class AngularBasePage:
             self._set_toggle(search_option.get_by_role("checkbox"), True, timeout=timeout)
             save_settings(search_dialog)
 
-        self.wait_for_loader(timeout=timeout)
-
-        # Headerda selection/action uchun texnik ``div`` ham bo'lishi mumkin,
-        # rowdagi ``.smt-data-cell`` esa faqat haqiqiy data ustunlarini sanaydi.
-        # Indeks grid_cell() bilan bir xil koordinata tizimida bo'lishi uchun
-        # faqat data-smt-col-key mavjud headerlarni hisoblaymiz.
-        headers = grid.locator(".smt-grid-header").first.locator(
-            ":scope > div[data-smt-col-key]"
+        # Calculate the grid_cell() index from one rendered header row. The
+        # grid can replace that row after Save, including between locator reads.
+        headers = grid.locator(".smt-grid-header:visible").first.locator(":scope > div[data-smt-col-key]")
+        header = headers.filter(has_text=_whitespace_agnostic_pattern(field_name, exact=True), visible=True).first
+        return header.evaluate(
+            """element => Array.from(element.parentElement.querySelectorAll(':scope > div[data-smt-col-key]'))
+                .indexOf(element)""",
+            timeout=timeout,
         )
-        expected_header = _whitespace_agnostic_pattern(field_name, exact=True)
-        expect(headers.filter(has_text=expected_header).first).to_be_visible(timeout=timeout)
-        for index in range(headers.count()):
-            if expected_header.search(headers.nth(index).inner_text()):
-                return index
-        raise AssertionError(f"grid_setting(): saqlangandan keyin '{field_name}' ustuni topilmadi")
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -1816,16 +1985,22 @@ class AngularBasePage:
             remove_spaces=remove_spaces,
         )
 
-        cells = row.locator(".smt-data-cell")
-        if cells.count() == 0:
-            cells = row.locator("[role='cell'], [data-smt-col-key]")
-        cell = cells.nth(index)
+        # Resolve both row layouts again if the table re-renders while waiting.
+        primary = self.page.locator(".smt-data-cell")
+        fallback = row.filter(has_not=primary).locator("[role='cell'], [data-smt-col-key]")
+        cell = row.locator(".smt-data-cell").or_(fallback).nth(index)
         expect(cell).to_be_visible(timeout=UI_TIMEOUT_MS)
         # A2 rows below the viewport may defer rendering their inner text.
         # A trial click scrolls without clicking and re-resolves a replaced row
         # while async table refresh is finishing (scroll_into_view uses a handle).
         cell.click(trial=True, timeout=UI_TIMEOUT_MS)
+        if expect_value is _UNSET and not return_value:
+            return cell
+
         field = cell.locator("input:not([type='checkbox']):not([type='radio']):not([type='hidden']), textarea").filter(visible=True)
+        # The editor host can appear before its native input becomes visible.
+        if cell.locator("smt-input").filter(visible=True).count() == 1:
+            expect(field.first).to_be_visible(timeout=UI_TIMEOUT_MS)
         has_field = field.count() == 1
         if expect_value is not _UNSET:
             expected = _whitespace_agnostic_pattern(expect_value) if remove_spaces else str(expect_value)
@@ -1834,7 +2009,7 @@ class AngularBasePage:
             else:
                 expect(cell).to_contain_text(expected, timeout=UI_TIMEOUT_MS)
         if return_value:
-            value = (field.input_value() if has_field else cell.inner_text()).strip()
+            value = (field.input_value(timeout=UI_TIMEOUT_MS) if has_field else cell.inner_text(timeout=UI_TIMEOUT_MS)).strip()
             return re.sub(r"\s+", "", value) if remove_spaces else " ".join(value.split())
         return cell
 
@@ -1926,9 +2101,9 @@ class AngularBasePage:
         target = item
         if add_icon:
             item_row = item.locator("xpath=ancestor::*[self::li or @role='menuitem'][1]")
-            add_target = item_row.get_by_role("button").or_(item_row.get_by_role("link")).filter(
-                has_text=re.compile(r"^\s*(\+|создать|add)\s*$", re.IGNORECASE)
-            ).first
+            add_target = item_row.get_by_role("menuitem").filter(
+                has=self.page.locator('smt-icon[key="plus"]')
+            )
             expect(add_target).to_be_visible(timeout=timeout)
             target = add_target
         target.click(timeout=timeout)

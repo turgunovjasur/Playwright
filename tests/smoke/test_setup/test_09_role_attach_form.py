@@ -4,11 +4,10 @@ import allure
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 from tests.smoke.flows.flow_authorization import authorization
-from utils.base_pages import UI_TIMEOUT_MS
+from utils.base_pages import ROLE_FORMS_GRANT_TIMEOUT_MS
 from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("User")]
-ROLE_FORMS_LOADER_TIMEOUT = UI_TIMEOUT_MS
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -63,14 +62,14 @@ def run_role_attach_form(page):
             and urlsplit(unquote(response.url)).path.endswith(
                 "/biruni/md/role_form_list$access_generate_all"
             ),
-            timeout=ROLE_FORMS_LOADER_TIMEOUT,
+            timeout=ROLE_FORMS_GRANT_TIMEOUT_MS,
         ) as grant_response:
             base.confirm_biruni(expected_text="Разрешить доступ ко всем формам?")
         response = grant_response.value
         response.finished()
         if not response.ok:
             raise AssertionError(f"Barcha formalarga ruxsat berish: HTTP {response.status}")
-        base.wait_for_loader(timeout=ROLE_FORMS_LOADER_TIMEOUT)
+        base.wait_for_loader()
         base.expect_page(heading="Роль (Просмотр)")  # navigation: same-url - Granting permissions updates the already-open role view.
 
     with allure.step("6 - Ruxsatlar berilganini tekshirish"):

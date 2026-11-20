@@ -3,6 +3,7 @@
 import allure
 import pytest
 
+from utils.base_pages import ROLE_PERMISSIONS_SAVE_TIMEOUT_SECONDS
 from tests.api.client import APIError
 from tests.smoke.test_setup.test_08_role import ROLE_PERMISSIONS
 
@@ -39,7 +40,7 @@ def run_role(api_setup):
             row["function_id"] for row in functions
             if str(row["function_id"]) in expected_enabled
         ]
-        api.call("trade/tr/role+edit:save", payload, timeout=(60, 1_200))
+        api.call("trade/tr/role+edit:save", payload, timeout=(60, ROLE_PERMISSIONS_SAVE_TIMEOUT_SECONDS))
     with allure.step("3 - Verify every requested permission was persisted"):
         actual = api.model("trade/tr/role+edit", role_id=s["role_id"])["functions"]
         enabled = {str(row["function_id"]) for row in actual if row["state"] == "Y"}

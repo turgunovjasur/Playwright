@@ -1,9 +1,9 @@
 import re
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 import allure
 from tests.smoke.flows.flow_authorization import authorization
-from utils.base_pages import UI_TIMEOUT_MS
+from utils.base_pages import ROLE_PERMISSIONS_SAVE_TIMEOUT_SECONDS, UI_TIMEOUT_MS
 from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [allure.epic("Smoke"), allure.feature("Setup"), allure.story("User")]
@@ -87,7 +87,14 @@ def run_role(page):
 
         page.on("requestfailed", on_request_failed)
         try:
-            base.click(name="Сохранить", exact=True)
+            with page.expect_response(
+                lambda response: response.request.method == "POST"
+                and unquote(urlsplit(response.url).path).endswith("/trade/tr/role+edit:save"),
+                timeout=ROLE_PERMISSIONS_SAVE_TIMEOUT_SECONDS * 1_000,
+            ) as saved:
+                base.click(name="Сохранить", exact=True)
+            if not saved.value.ok:
+                raise AssertionError(f"Rol ruxsatlarini saqlash: HTTP {saved.value.status}")
             try:
                 base.expect_page(heading="Роли", url="role_list", timeout=UI_TIMEOUT_MS)
             except AssertionError:

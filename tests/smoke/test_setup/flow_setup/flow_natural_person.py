@@ -31,11 +31,9 @@ def create_natural_person(page: Page, name: str, person_code: str, *, step_name:
     """Ochiq create formani to'ldirib, jismoniy shaxsni saqlaydi."""
     base = AutoBasePage(page)
     with allure.step(step_name):
-        base.autocomplete(
-            label="Имя", value=name, ng_model="d.first_name",
-            query_response=lambda response: response.url.endswith(":table_persons")
-            and name in (response.request.post_data or "").replace("\\", ""),
-            empty_text="Ничего не найдено",
+        base.b_input(
+            label="Имя", ng_model="d.first_name", action="enter_new",
+            search_text=name, lookup_route=":table_persons",
         )
         base.input(label="Код", value=person_code)
         if client:
