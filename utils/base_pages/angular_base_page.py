@@ -12,17 +12,14 @@ from utils.date_utils import format_date, resolve_date
 from utils.helper_utils import first_non_admin_filial, label_pattern
 from utils.base_pages.page_diagnostics import expectation_gate, report_page_expectation
 from utils.base_pages.page_errors import expect_no_application_error, observe_module_load_errors
-from utils.base_pages.page_reporting import report_web_action
+from utils.base_pages.angular_requests import AngularPageRequests
+from utils.base_pages.angular_page_errors import ERROR_MARKER, angular_action, check_observed_error, watch_errors
 from utils.base_pages.page_values import expect_text_or_readonly_value
 from utils.report_context import record_filial
 
 
 _UNSET = object()
 _MODEL_LOAD_ERROR = "main app-page-model-load-error [role='alert']"
-_PAGE_ERRORS = (
-    ".alert-danger:visible, [role='dialog']:visible [data-testid*='error' i]:visible, "
-    f"smt-alert-dialog:has(.bg-error-100):visible, {_MODEL_LOAD_ERROR}:visible"
-)
 
 
 def _whitespace_agnostic_pattern(value, *, exact=False):
@@ -91,6 +88,8 @@ class AngularBasePage:
 
     def __init__(self, page):
         self.page = page
+        if not hasattr(page, "_smartup_page_requests"):
+            page._smartup_page_requests = AngularPageRequests(page)
 
     def _validate_options(self, method, **options):
         """Public helper flag/index/timeout kontrakti; ikkala page'da bir xil."""
@@ -185,7 +184,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    @report_web_action
+    @angular_action
     def click(
         self,
         name=None,
@@ -263,7 +262,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    @report_web_action
+    @angular_action
     def tab(self, name, *, section=False, root=None, timeout=UI_TIMEOUT_MS):
         """A2 bo'lim/status tabini tanlaydi va aktiv holatini tekshiradi."""
         self._validate_options('tab', section=section, timeout=timeout)
@@ -287,7 +286,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    @report_web_action
+    @angular_action
     def action(self, name, *, menu=None, root=None, timeout=UI_TIMEOUT_MS):
         """Bevosita action tugmasini yoki smt-dropdown-button actionini bosadi."""
         self._validate_options('action', timeout=timeout)
@@ -308,7 +307,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    @report_web_action
+    @angular_action
     def page_link(self, name, *, root=None, timeout=UI_TIMEOUT_MS):
         """A2 parent formaning yagona ko'rinadigan linkini exact nom bilan ochadi."""
         self._validate_options('page_link', timeout=timeout)
@@ -321,7 +320,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    @report_web_action
+    @angular_action
     def open_route(self, route, *, heading=None, timeout=UI_TIMEOUT_MS):
         """Joriy A2 app prefixidagi relative route'ni ochadi."""
         self._validate_options('open_route', timeout=timeout)
@@ -351,7 +350,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    @report_web_action
+    @angular_action
     def input(
         self,
         locator=None,
@@ -549,7 +548,7 @@ class AngularBasePage:
             expect(rows).to_have_count(0, timeout=timeout)
         return search
 
-    @report_web_action
+    @angular_action
     def b_input(
         self,
         label=None,
@@ -801,7 +800,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    @report_web_action
+    @angular_action
     def date_picker(
         self,
         label,
@@ -988,7 +987,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    @report_web_action
+    @angular_action
     def checkbox(
         self,
         locator=None,
@@ -1049,7 +1048,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    @report_web_action
+    @angular_action
     def radio(
         self,
         label,
@@ -1116,7 +1115,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    @report_web_action
+    @angular_action
     def choice(
         self,
         label,
@@ -1158,7 +1157,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    @report_web_action
+    @angular_action
     def text(self, *values, root="b-page", timeout=UI_TIMEOUT_MS, include_input_values=False):
         """Matnni, opt-in bo'lsa stringlarni readonly input qiymatlarida ham tekshiradi."""
         self._validate_options(
@@ -1179,7 +1178,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    @report_web_action
+    @angular_action
     def form_view(
         self,
         label,
@@ -1236,7 +1235,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    @report_web_action
+    @angular_action
     def multiselect(
         self,
         label=None,
@@ -1382,7 +1381,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    @report_web_action
+    @angular_action
     def ui_select(
         self,
         label=None,
@@ -1550,6 +1549,12 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    def _visible_loaders(self, root):
+        # The shell renders its full-page overlay outside main and grid roots.
+        return root.locator(".smt-skeleton:visible, [aria-busy='true']:visible").or_(
+            self.page.locator('app-global-page-loader [aria-busy="true"]:visible')
+        )
+
     def _wait_for_loader(
         self,
         timeout=UI_TIMEOUT_MS,
@@ -1566,18 +1571,15 @@ class AngularBasePage:
             return max(1, int((deadline - monotonic()) * 1000)) if deadline is not None else 0
 
         root = self._content_root(root)
-        # The shell renders its full-page overlay outside main and grid roots.
         shell_selector = 'app-global-page-loader [aria-busy="true"]'
-        loaders = root.locator(".smt-skeleton:visible, [aria-busy='true']:visible").or_(
-            self.page.locator(shell_selector).filter(visible=True)
-        )
+        loaders = self._visible_loaders(root)
         # A short auto-waiting assertion can start a locator handler and
         # expire while it authenticates. Observe DOM appearance without action
         # prechecks; the full completion assertions below may run the handler.
         if timeout:
             appear_timeout = min(appear_timeout, remaining_ms())
         if appear_timeout > 0:
-            page_selector = f"{shell_selector}, {_MODEL_LOAD_ERROR}" if stop_on_model_error else shell_selector
+            page_selector = f"{shell_selector}, {_MODEL_LOAD_ERROR}, {ERROR_MARKER}" if stop_on_model_error else shell_selector
             root.locator(":scope").evaluate_all(
                 """(roots, [windowMs, pageSelector]) => new Promise(resolve => {
                     const visibleNode = node => {
@@ -1607,8 +1609,9 @@ class AngularBasePage:
         if stop_on_model_error:
             # A failed model can replace the form while its loader is still present.
             ready = self.page.locator("html").filter(has_not=loaders)
-            error = self.page.locator(f"{_MODEL_LOAD_ERROR}:visible")
+            error = self.page.locator(ERROR_MARKER).or_(self.page.locator(f"{_MODEL_LOAD_ERROR}:visible")).first
             expect(ready.or_(error).first, "A2 sahifa loaderi band").to_be_attached(timeout=remaining_ms())
+            check_observed_error(self.page)
             if error.is_visible():
                 expectation_gate(self.page, "application_error")
                 expect_no_application_error(self.page, f"{_MODEL_LOAD_ERROR}:visible", timeout=0)
@@ -1627,7 +1630,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    @report_web_action
+    @angular_action
     @report_page_expectation
     def expect_page(
         self,
@@ -1639,7 +1642,7 @@ class AngularBasePage:
         *,
         check_no_error=True,
     ):
-        """A2 sahifani URL → loader → error yo'qligi → heading tartibida tekshiradi.
+        """A2 sahifaning manzili, ko‘rinadigan sarlavhasi va loaderini tekshiradi.
 
         Loader va error tekshiruvi global; ``root`` heading uchun ishlatiladi.
         Forma yuklanish xatosi loader va sarlavhani kutishda ham hisobga olinadi.
@@ -1658,33 +1661,35 @@ class AngularBasePage:
             expectation_gate(self.page, "url")
             expect(self.page).to_have_url(pattern, timeout=timeout)
 
-        if check_unblocked:
-            expectation_gate(self.page, "loader")
-            self._wait_for_loader(timeout=timeout, root=self.page, stop_on_model_error=check_no_error)
-
         if check_no_error:
-            expectation_gate(self.page, "application_error")
-            expect_no_application_error(self.page, _PAGE_ERRORS, timeout=timeout)
+            watch_errors(self.page)
 
-        scope = self._content_root(root)
+        if check_unblocked:
+            self.page._smartup_page_requests.wait_for_confirmation(timeout)
+
         if heading is not None:
             expectation_gate(self.page, "heading")
-            role_heading = scope.get_by_role("heading").filter(has_text=heading).first
+            scope = self._content_root(root)
+            role_heading = scope.get_by_role("heading").filter(has_text=heading, visible=True)
             text_heading = scope.get_by_text(
                 heading, exact=not isinstance(heading, re.Pattern)
-            ).filter(visible=True).first
-            target = role_heading.filter(visible=True).or_(text_heading)
+            ).filter(visible=True)
+            ready = self.page.locator("html").filter(has=role_heading.or_(text_heading))
+            if check_unblocked:
+                ready = ready.filter(has_not=self._visible_loaders(self.page))
             if check_no_error:
-                # Errors can arrive after the initial application-error observation.
-                expect(target.or_(self.page.locator(_PAGE_ERRORS)).first).to_be_visible(timeout=timeout)
-                expectation_gate(self.page, "application_error")
-                expect_no_application_error(self.page, _PAGE_ERRORS, timeout=0)
-                expectation_gate(self.page, "heading")
-            expect(target.first).to_be_visible(timeout=timeout)
+                ready = ready.or_(self.page.locator(ERROR_MARKER))
+            expect(ready.first, "A2 sahifa sarlavhasi va loader holati").to_be_attached(timeout=timeout)
+        elif check_unblocked:
+            # A URL can change before Angular mounts its form or starts loading.
+            expectation_gate(self.page, "loader")
+            self._wait_for_loader(timeout=timeout, root=self.page, stop_on_model_error=check_no_error)
+        if check_no_error:
+            check_observed_error(self.page)
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    @report_web_action
+    @angular_action
     def grid(
         self,
         text=None,
@@ -1738,7 +1743,18 @@ class AngularBasePage:
             return rows.filter(has_text=row_text).first.is_visible()
 
         expect(grid).to_be_visible(timeout=UI_TIMEOUT_MS)
-        self._wait_for_loader(timeout=UI_TIMEOUT_MS, root=grid)
+        # When the requested row is still missing, its appearance is the
+        # readiness signal. A row already on screen can predate a refresh.
+        row_text = _whitespace_agnostic_pattern(text) if remove_spaces and text is not None else text
+        row = rows.filter(has_text=row_text).first if text is not None else None
+        rendered = self.page._smartup_page_requests.grid_result_rendered(grid)
+        if not rendered and row is not None and not row.is_visible():
+            expect(row).to_be_visible(timeout=UI_TIMEOUT_MS)
+            rendered = True
+        if rendered:
+            self._wait_for_loader(timeout=UI_TIMEOUT_MS, root=grid, appear_timeout=0)
+        else:
+            self._wait_for_loader(timeout=UI_TIMEOUT_MS, root=grid)
 
         if state == "empty":
             expect(no_data).to_be_visible(timeout=UI_TIMEOUT_MS)
@@ -1750,8 +1766,6 @@ class AngularBasePage:
             self._set_toggle(toggle, True)
             return toggle
 
-        row_text = _whitespace_agnostic_pattern(text) if remove_spaces else text
-        row = rows.filter(has_text=row_text).first
         expect(row).to_be_visible(timeout=UI_TIMEOUT_MS)
         for value in contains:
             expected = _whitespace_agnostic_pattern(value) if remove_spaces else value
@@ -1766,7 +1780,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    @report_web_action
+    @angular_action
     def grid_controller(
         self,
         *,
@@ -1787,6 +1801,7 @@ class AngularBasePage:
         root = self._content_root(None if root == "b-grid-controller" else root)
         reload_button = root.locator('smt-data-table-menu smt-button-group-item[smtvalue="reload"] button').first
         if search is not None:
+            self.page._smartup_page_requests.wait_for_initial_table(UI_TIMEOUT_MS)
             query = str(search)
             field = root.locator("input[type='search']").filter(visible=True).first
             expect(field).to_be_visible(timeout=UI_TIMEOUT_MS)
@@ -1852,7 +1867,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    @report_web_action
+    @angular_action
     def grid_setting(self, *, menu_name, field_name, search_name=None, timeout=UI_TIMEOUT_MS):
         """Grid settingda ustunni va ixtiyoriy search maydonini yoqadi.
 
@@ -1934,7 +1949,7 @@ class AngularBasePage:
             if response is None or response.status != 200:
                 raise AssertionError("grid_setting(): table refresh failed after Save")
             expect(dialog).not_to_be_visible(timeout=timeout)
-            self.wait_for_loader(timeout=timeout)
+            self._wait_for_loader(timeout=timeout, appear_timeout=0)
 
         save_settings(setting_dialog)
 
@@ -1967,7 +1982,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    @report_web_action
+    @angular_action
     def grid_cell(
         self,
         row,
@@ -2015,7 +2030,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    @report_web_action
+    @angular_action
     def navigate_to(
         self,
         tab="Главное",
@@ -2045,7 +2060,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    @report_web_action
+    @angular_action
     def navigate_to_form(
         self,
         *,
@@ -2119,7 +2134,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    @report_web_action
+    @angular_action
     def switch_filial(
         self,
         name=None,
@@ -2170,7 +2185,7 @@ class AngularBasePage:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    @report_web_action
+    @angular_action
     def confirm_biruni(
         self,
         expected_text=None,
@@ -2190,12 +2205,13 @@ class AngularBasePage:
             expect(confirm).to_contain_text(expected_text, timeout=UI_TIMEOUT_MS)
         button = confirm.get_by_role("button", name=matcher).first
         expect(button).to_be_visible(timeout=UI_TIMEOUT_MS)
-        button.click(timeout=UI_TIMEOUT_MS)
-        expect(confirm).to_be_hidden(timeout=UI_TIMEOUT_MS)
+        with self.page._smartup_page_requests.confirming():
+            button.click(timeout=UI_TIMEOUT_MS)
+            expect(confirm).to_be_hidden(timeout=UI_TIMEOUT_MS)
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    @report_web_action
+    @angular_action
     def close_biruni_alert(self, *expected_text):
         """Ko'rinadigan A2/CDK error dialogini tekshiradi va yopadi."""
         alert = self._visible_error_locator(root="body")

@@ -10,6 +10,8 @@ from scripts.smoke_environment import CREATED_COMPANY_PASSWORD, check_requireman
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
+DESKTOP_WIDTH = 1920
+DESKTOP_HEIGHT = 1080
 
 _LOCAL_DOTENV_EXISTS = False
 
@@ -90,11 +92,7 @@ def configure_environment(config):
 
 def browser_launch_options():
     """Chromium launch uchun Playwright optionlarini tayyorlaydi."""
-    headless = env_flag("HEADLESS")
-    return {
-        "headless": headless,
-        "args": [] if headless else ["--start-maximized"],
-    }
+    return {"headless": env_flag("HEADLESS")}
 
 
 def browser_context_options():
@@ -104,7 +102,7 @@ def browser_context_options():
         "timezone_id": "Asia/Tashkent",
     }
     if env_flag("HEADLESS"):
-        options["viewport"] = {"width": 1920, "height": 1080}
+        options.update(viewport={"width": DESKTOP_WIDTH, "height": DESKTOP_HEIGHT}, device_scale_factor=1)
     else:
         options["no_viewport"] = True
     return options

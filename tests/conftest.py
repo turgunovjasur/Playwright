@@ -13,9 +13,10 @@ from scripts.result_retention import prune_results
 from scripts.report_lifecycle import generate_report, generate_test_summary, show_trace
 from tests.shared import config as run_config, reporting
 from tests.shared.authorization import authorization
-from tests.shared.browser import browser_context, browser_page
+from tests.shared.browser import browser_context, browser_page, chromium_session
 from tests.shared.forms_shutdown import arm_forms_shutdown
 from utils.base_pages import UI_TIMEOUT_MS
+from utils.base_pages.angular_page_errors import check_observed_error, stop_watching
 from utils.data_store import data_file, load_data_file, write_data_file
 from utils.logger import get_logger, write_failure_log
 from utils.report_context import begin_test, end_test
@@ -158,13 +159,8 @@ def session_browser():
     Nima qaytaradi: bir marta ishga tushirilgan Playwright `Browser` obyekti.
     """
     with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(
-            **run_config.browser_launch_options()
-        )
-        try:
+        with chromium_session(playwright.chromium) as browser:
             yield browser
-        finally:
-            browser.close()
 
 
 @pytest.fixture(scope="session")
@@ -307,6 +303,20 @@ def pytest_runtest_protocol(item, nextitem):
         yield
     finally:
         end_test(token)
+
+
+@pytest.hookimpl(wrapper=True)
+def pytest_runtest_call(item):
+    """Attribute late A2 errors to this test, including after its last base action."""
+    page = item.funcargs.get("order_user_page") or item.funcargs.get("order_page") or reporting.page_from_item(item)
+    try:
+        result = yield
+        if page is not None:
+            check_observed_error(page)
+        return result
+    finally:
+        if page is not None and not page.is_closed():
+            stop_watching(page)
 
 
 @pytest.hookimpl(tryfirst=True)

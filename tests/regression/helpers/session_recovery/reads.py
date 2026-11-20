@@ -13,6 +13,14 @@ class SessionRecoveryError(RuntimeError):
     """Authentication/read recovery failed; the testcase must remain failed."""
 
 
+ORDER_EDIT_QUANTITY = '/b/anor/mdeal/order/order+edit:get_box_quant'
+ORDER_ADD_PERSONS = '/b/anor/mdeal/order/order+add:persons'
+
+
+def observed_form_read(path):
+    return path.endswith((ORDER_EDIT_QUANTITY, ORDER_ADD_PERSONS))
+
+
 @dataclass(frozen=True)
 class ReadRequest:
     method: str
@@ -32,6 +40,22 @@ class ReadRequest:
 
     def matches(self, response):
         return response.status == 200 and self == self.from_response(response)
+
+    def resolved_by(self, completed):
+        if self == completed:
+            return True
+        if not unquote(self.path).endswith(ORDER_EDIT_QUANTITY) or self.url != completed.url:
+            return False
+        # Clearing the quantity briefly requests zero before the typed value.
+        # Only a later positive quantity for the very same line supersedes it.
+        before, after = json.loads(self.payload), json.loads(completed.payload)
+        fields = {'deal_id', 'modified_id', 'product_id', 'quant'}
+        if not all(isinstance(body, dict) and set(body) == fields for body in (before, after)):
+            return False
+        quantity = str(after['quant'])
+        return (before['quant'] == '0' and quantity.isascii() and quantity.isdigit()
+                and int(quantity) > 0
+                and all(before[k] == after[k] for k in fields - {'quant'}))
 
 
 @dataclass
@@ -102,9 +126,25 @@ class ResumeRead:
     lookup: LookupContext | None = None
     settings: GridSettingsContext | None = None
     query: str | None = field(default=None, repr=False)
+    started_at: float = 0
 
-    def run(self, page, successful, timeout):
+    def run(self, page, successful, timeout, completed_forms):
         if self.request is None:
+            return
+        if self.kind == 'form_read':
+            def resolves(request, started_at):
+                return 0 < self.started_at < started_at and self.request.resolved_by(request)
+
+            completed = completed_forms.get(self.request.path)
+            if completed and resolves(*completed):
+                return
+
+            def is_later_read(response):
+                return (response.status == 200 and response.request.method == 'POST'
+                        and response.url == self.request.url
+                        and resolves(ReadRequest.from_response(response), response.request.timing['startTime']))
+
+            page.wait_for_event('response', predicate=is_later_read, timeout=timeout)
             return
         if self.kind == 'settings':
             # Replay only the UI layout Save. No order/payment call is sent here.
@@ -175,6 +215,11 @@ def prepare_resume(page, responses, lookup, settings=None):
             # Do not replay it. Authentication, route/draft and the original
             # business assertions still have to succeed before the case passes.
             continue
+        route = unquote(urlsplit(page.url).path)
+        if (path.endswith('/b/trade/tr/plugin:get_user_data')
+                and route.endswith('/a2/trade/tdeal/order/order_view') and request.payload == '{}'):
+            # The contact widget reads email/phone independently of the order.
+            continue
         # An active b_input supplies the exact control/key/query. This is a
         # lookup capability, not an endpoint-name guess; no option is selected.
         if lookup is not None:
@@ -182,6 +227,10 @@ def prepare_resume(page, responses, lookup, settings=None):
             if _table_query(request) and _lookup_query_finished(response.request, query, lookup.key_field):
                 reads.append(ResumeRead('lookup', request, lookup=lookup, query=query))
                 continue
+        if (observed_form_read(path)
+                and route.replace('/a2/', '/b/', 1) == path.rsplit(':', 1)[0]):
+            reads.append(ResumeRead('form_read', request, started_at=response.request.timing['startTime']))
+            continue
         if operation.startswith('table') and _table_query(request):
             reads.append(ResumeRead('table', request))
         elif operation == 'model' and unquote(urlsplit(page.url).path).replace('/a2/', '/b/', 1) == path.removesuffix(':model'):

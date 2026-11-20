@@ -2,13 +2,13 @@
 from contextlib import contextmanager
 import re
 import sys
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 from weakref import WeakKeyDictionary
 
 import allure
 from playwright.sync_api import expect
 
-from .reads import ReadRequest, SessionRecoveryError, prepare_resume
+from .reads import ReadRequest, SessionRecoveryError, observed_form_read, prepare_resume
 from tests.regression.helpers.environment import RegressionEnvironmentError
 
 
@@ -41,6 +41,7 @@ class SessionRecovery:
         self.grid_settings = None
         self.rejected = []
         self.successful = set()
+        self.completed_forms = {}
         self.failure = None
         self.recovering = False
         self.lock = page.locator('app-session-lock')
@@ -53,8 +54,15 @@ class SessionRecovery:
         # No UI actions, API calls, or credential payload inspection in listener.
         if response.status == 401:
             self.rejected.append(response)
-        elif self.recovering and response.status == 200 and '/biruni/s$log_in' not in address.path:
-            self.successful.add(ReadRequest.from_response(response))
+        elif response.status == 200:
+            if response.request.method == 'POST' and observed_form_read(unquote(address.path)):
+                # The form can complete its own read before the lock handler starts.
+                started = response.request.timing['startTime']
+                previous = self.completed_forms.get(address.path)
+                if previous is None or started > previous[1]:
+                    self.completed_forms[address.path] = ReadRequest.from_response(response), started
+            if self.recovering and '/biruni/s$log_in' not in address.path:
+                self.successful.add(ReadRequest.from_response(response))
 
     def event(self, status, **details):
         self.record({'kind': 'ui_session_lock', 'status': status,
@@ -126,7 +134,7 @@ class SessionRecovery:
             raise plan_error
         self.stage = 'resume_read'
         with allure.step('Uzilgan o‘qishni tiklash va ayni qadamdan davom etish'):
-            plan.run(self.page, self.successful, AUTH_TIMEOUT)
+            plan.run(self.page, self.successful, AUTH_TIMEOUT, self.completed_forms)
             if plan.kind == 'lookup' and _draft_values(self.page) != before_values:
                 raise SessionRecoveryError('Qidiruvni tiklashda formadagi qiymatlar o‘zgardi')
         # A second denial during login/reload must not disappear in clear().

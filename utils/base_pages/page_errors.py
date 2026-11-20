@@ -2,10 +2,10 @@
 
 import re
 from contextlib import contextmanager
+from time import monotonic, sleep
 from urllib.parse import urlsplit
 
 from playwright.sync_api import Error as PlaywrightError
-from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 
 APPLICATION_ERROR_OBSERVATION_MS = 4_800
@@ -14,17 +14,14 @@ APPLICATION_ERROR_OBSERVATION_MS = 4_800
 def expect_no_application_error(page, selector, *, timeout):
     """Qisqa kuzatishda error ko'rinsa, uni yopmasdan matni bilan yiqiladi."""
     error = page.locator(selector).first
-    if timeout == 0:
-        if not error.is_visible():
+    deadline = monotonic() + min(timeout, APPLICATION_ERROR_OBSERVATION_MS) / 1000
+    # wait_for() can start a session-lock handler and then time out mid-login.
+    # This short observation must leave handlers to the next actual UI action.
+    while not error.is_visible():
+        remaining = deadline - monotonic()
+        if remaining <= 0:
             return
-    else:
-        try:
-            error.wait_for(
-                state="visible",
-                timeout=min(timeout, APPLICATION_ERROR_OBSERVATION_MS),
-            )
-        except PlaywrightTimeoutError:
-            return
+        sleep(min(0.1, remaining))
 
     try:
         error_text = " ".join(error.inner_text(timeout=2_000).split())

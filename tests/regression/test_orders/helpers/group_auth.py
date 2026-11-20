@@ -113,6 +113,8 @@ class GroupLogin:
                         page.add_init_script('(() => { const seed = ' + payload + '; if (window === window.top && location.origin === seed.origin && !sessionStorage.getItem("__pw_order_login_seeded")) { for (const [k,v] of Object.entries(seed.values)) sessionStorage.setItem(k,v); sessionStorage.setItem("__pw_order_login_seeded","1"); } })();')
                     install_announcement_handler(page)
                     page_context(page).update(self.metadata, authorization='Guruh sessiyasi qayta tasdiqlangan')
+                    # A fresh context downloads the A2 modules again. Wait for
+                    # the document and the existing dashboard/filial checks.
                     page.goto(self.dashboard_url, wait_until="domcontentloaded", timeout=A2_DOCUMENT_TIMEOUT_MS)
                     page.wait_for_url(re.compile(r'dashboard|/auth/login(?:[?#]|$)|/login\.html'),
                                       wait_until='domcontentloaded', timeout=UI_TIMEOUT_MS)

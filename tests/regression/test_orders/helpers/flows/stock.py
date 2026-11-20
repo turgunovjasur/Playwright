@@ -41,6 +41,7 @@ def _read_stock(case, warehouse, *, product_id, observed):
     if not product_id.isdigit():
         raise ValueError("Stock readback uchun baseline product_id raqam bo'lishi kerak")
     with allure.step("Setup mahsuloti viewini aniq ID bilan ochish"):
+        # This full document navigation also downloads the A2 module graph.
         base.open_route(f"anor/mr/product/inventory_view?product_id={product_id}",
                         heading="ТМЦ (просмотр)", timeout=A2_DOCUMENT_TIMEOUT_MS)
     with allure.step("Mahsulotning ombor qoldiqlarini ochish"):
