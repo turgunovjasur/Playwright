@@ -1,9 +1,11 @@
 """Browser context va page uchun umumiy yaratish/yopish tartibi."""
 
+import json
 import os
 import sys
 from contextlib import contextmanager
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
@@ -25,7 +27,7 @@ def chromium_session(chromium):
     else:
         # The temporary default profile owns Chromium's native zoom preference.
         # Test data still lives in separate contexts created by browser_context().
-        with chromium.launch_persistent_context("", no_viewport=True, **options) as profile:
+        with chromium.launch_persistent_context("", **config.browser_context_options(), **options) as profile:
             settings = profile.pages[0]
             settings.goto(_ZOOM_SETTINGS)
             browser = profile.browser
@@ -115,6 +117,69 @@ def browser_context(browser, trace_path, *, storage_state=None):
                 print(f"[CLEANUP] {message}. Asl xato saqlandi.")
             else:
                 raise RuntimeError(message) from cleanup_errors[0][1]
+
+
+@contextmanager
+def order_attempt_page(browser, trace_path, storage_state):
+    """One visible Chromium window, with a fresh background tab per attempt."""
+    if config.env_flag("HEADLESS"):
+        with browser_context(browser, trace_path, storage_state=storage_state) as context:
+            with browser_page(context) as page:
+                yield page
+        return
+
+    profile = browser.contexts[0]
+    previous, = profile.pages
+    settings = _pending_zoom_settings.pop(browser, None)
+    session = profile.new_cdp_session(previous)
+    try:
+        with profile.expect_event("page") as created:
+            session.send("Target.createTarget", {"url": "about:blank", "background": True})
+        page = created.value
+        if settings is not None:
+            _enter_fullscreen(page)
+            _fit_profile_zoom(page, settings)
+    finally:
+        session.detach()
+    previous.close()
+
+    state = storage_state or {}
+    server = os.environ.get("COMPANY_URL")
+    origins = {entry["origin"] for entry in state.get("origins", [])}
+    if server:
+        url = urlsplit(server)
+        origins.add(f"{url.scheme}://{url.netloc}")
+    session = profile.new_cdp_session(page)
+    try:
+        profile.clear_cookies()
+        for origin in origins:
+            session.send("Storage.clearDataForOrigin", {"origin": origin, "storageTypes": "all"})
+        if state.get("cookies"):
+            profile.add_cookies(state["cookies"])
+        for entry in state.get("origins", []):
+            # Seed only this fresh tab, once per origin, before application boot.
+            page.add_init_script("""(() => {
+                const seed = """ + json.dumps(entry) + """;
+                if (location.origin !== seed.origin || window !== window.top ||
+                    sessionStorage.getItem('__pw_local_seeded')) return;
+                for (const item of seed.localStorage) localStorage.setItem(item.name, item.value);
+                sessionStorage.setItem('__pw_local_seeded', '1');
+            })()""")
+    finally:
+        session.detach()
+    profile.set_default_timeout(UI_TIMEOUT_MS)
+    profile.set_default_navigation_timeout(UI_TIMEOUT_MS)
+    if server and os.environ.get("GITHUB_ACTIONS") != "true":
+        enable_asset_cache(page, server, config.ROOT_DIR / "test-results" / "angular-cache")
+    reporting.install_auth_diagnostics(page)
+    profile.tracing.start(screenshots=True, snapshots=True, sources=True)
+    try:
+        yield page
+    finally:
+        try:
+            profile.tracing.stop(path=trace_path)
+        finally:
+            page.goto("about:blank", wait_until="commit")
 
 
 @contextmanager

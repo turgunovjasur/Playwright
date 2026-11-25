@@ -15,10 +15,11 @@ class SessionRecoveryError(RuntimeError):
 
 ORDER_EDIT_QUANTITY = '/b/anor/mdeal/order/order+edit:get_box_quant'
 ORDER_ADD_PERSONS = '/b/anor/mdeal/order/order+add:persons'
+SURVEY_DATA = '/b/trade/tr/plugin:get_survey_data'
 
 
 def observed_form_read(path):
-    return path.endswith((ORDER_EDIT_QUANTITY, ORDER_ADD_PERSONS))
+    return path.endswith((ORDER_EDIT_QUANTITY, ORDER_ADD_PERSONS, SURVEY_DATA))
 
 
 @dataclass(frozen=True)
@@ -227,6 +228,11 @@ def prepare_resume(page, responses, lookup, settings=None):
             if _table_query(request) and _lookup_query_finished(response.request, query, lookup.key_field):
                 reads.append(ResumeRead('lookup', request, lookup=lookup, query=query))
                 continue
+        if path == SURVEY_DATA:
+            # The shell polls again after login. Require its own later,
+            # identical successful read without sending a survey request.
+            reads.append(ResumeRead('form_read', request, started_at=response.request.timing['startTime']))
+            continue
         if (observed_form_read(path)
                 and route.replace('/a2/', '/b/', 1) == path.rsplit(':', 1)[0]):
             reads.append(ResumeRead('form_read', request, started_at=response.request.timing['startTime']))

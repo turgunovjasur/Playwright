@@ -31,10 +31,10 @@ def open_discount_goods(case, quantity):
     return row
 
 
-def save_discount_draft(case, total):
+def save_discount_draft(case, total, *, payment_type="Наличные деньги"):
     base = AutoBasePage(case.page)
     with allure.step(f"{total} so'mlik orderga alohida TTN raqami berib saqlashga tayyorlash"):
-        base.b_input(label="Тип оплаты", value="Наличные деньги", clear=True)
+        base.b_input(label="Тип оплаты", value=payment_type, clear=True)
         actual_total = base.input(label="ИТОГО", expect_value=str(total), return_value=True)
         case.check("Saqlashdan oldingi jami (so'm)", Decimal(total), parse_amount(actual_total))
         base.input(label="Номер товарно-транспортной накладной", value=case.reference)

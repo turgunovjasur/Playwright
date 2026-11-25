@@ -91,6 +91,49 @@ def order_user_page(session_browser, regression_case_dir, request, order_group_l
 
 
 @pytest.fixture(scope="module")
+def order_settings_page(session_browser, api_business_baseline, order_group_login, regression_run_dir, request):
+    """Fresh branch-authenticated settings page for acquisition and finalization."""
+    from tests.regression.test_orders.helpers.preparations.consignment_setting import order_settings_lock
+    delivery = request.module.GROUP == "delivery_address"
+    logs = regression_run_dir / ("delivery-address-settings" if delivery else "consignment-settings")
+
+    @contextmanager
+    def open_page():
+        with settings_browser.new_context(storage_state=order_group_login.snapshot()) as context:
+            page = context.new_page()
+            order_group_login.authorize(page, api_business_baseline, logs)
+            yield page
+    with order_settings_lock(api_business_baseline, delivery_addresses=delivery):
+        # Finance settings must stay outside the business trace and visible window.
+        with session_browser.browser_type.launch(headless=True) as settings_browser:
+            yield open_page
+
+
+@pytest.fixture(scope="module")
+def consignment_enabled(order_settings_page, api_business_baseline):
+    from tests.regression.test_orders.helpers.preparations.consignment_setting import temporary_consignment
+    with temporary_consignment(order_settings_page, api_business_baseline["filial_id"]) as enabled:
+        yield enabled
+
+
+@pytest.fixture(scope="module")
+def consignment_bank_binding(order_settings_page, api_business_baseline, workflow_data):
+    from tests.regression.test_orders.setup_cases.test_consignment_bank import ConsignmentBankBinding
+    binding = ConsignmentBankBinding(order_settings_page, api_business_baseline, workflow_data)
+    try:
+        yield binding
+    finally:
+        binding.close()
+
+
+@pytest.fixture(scope="module")
+def delivery_addresses_enabled(order_settings_page, api_business_baseline, regression_run_dir):
+    from tests.regression.test_orders.helpers.preparations.delivery_address_setting import temporary_delivery_addresses
+    with temporary_delivery_addresses(order_settings_page, api_business_baseline, regression_run_dir):
+        yield True
+
+
+@pytest.fixture(scope="module")
 def catalog_data(request):
     from tests.regression.helpers.retry.state import fixture_state
     return fixture_state(request, "catalog_data")

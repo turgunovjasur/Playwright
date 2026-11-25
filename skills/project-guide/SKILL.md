@@ -27,6 +27,8 @@ yoki test run qilish ruxsatini yaratmaydi. Faktlar ziddiyatida dalil kuchi:
 - Loyiha governance, precedence, branch, ruxsat va umumiy kontekst:
   `project-guide`; joriy arxitektura uchun
   [project-context.md](references/project-context.md).
+- Autotest qamrovini rejalash va keyingi biznes ssenariysini tanlash uchun
+  [Smartup QA yo‘l xaritasi](references/autotest-roadmap.md).
 - Smartup current truth va domain index: `smartup-guide`; aniq forma —
   `references/forms/<slug>.md`, eski kuzatuv — `references/history.md`.
 - Test yozish, test artifacti va unit-test scope'i: `write-test`.

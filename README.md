@@ -2,6 +2,8 @@
 
 Playwright + pytest asosida yozilgan smoke test suite. Allure hisoboti va trace yozish o'rnatilgan.
 
+Yangi autotestlar [Smartup QA bo‘limining yo‘l xaritasi](skills/project-guide/references/autotest-roadmap.md) asosida rejalashtiriladi. [Batafsil reja (PDF)](docs/smartup-qa-batafsil-roadmap.pdf) · [Word nusxasi](docs/smartup-qa-batafsil-roadmap.docx)
+
 ---
 
 ## Mundarija
@@ -589,7 +591,7 @@ Group runnerlar — har bir case alohida pytest/Allure test. User grouplarida gr
 
 ## Smoke va regression uchun umumiy infratuzilma
 
-**Joriy 14 guruhli Order suite:** `tests/regression/run.py`.
+**Joriy Order suite:** `tests/regression/run.py`.
 Runner, setup, biznes testi va helperlarni topish uchun
 [Regression yo‘lko‘rsatkichini](tests/regression/README.md) oching.
 Quyidagi `regression`, `regression-products`, `regression-orders` CLI targetlari

@@ -10,6 +10,7 @@ from tests.regression.helpers.retry.state import ACTIVE, RetryBlocked, digest
 # These table/column contracts are already used by the preparation tests.
 CREATES = {
     "anor/mr/person/natural_person+add$save": ("anor/mrf/client_list:table", "client_id", "name", "first_name"),
+    "anor/mr/product/service+add$save": ("anor/mr/product/service_list:table", "product_id", "code", "code"),
     "anor/mr/product/inventory+add$save": ("anor/mr/product/inventory_list:table", "product_id", "name", "name"),
     "anor/mcg/action+add$save": ("anor/mcg/action_list:table", "action_id", "name", "name"),
     "anor/mkr/price_type+add:save": ("anor/mkr/price_type_list:table", "price_type_id", "name", "name"),
@@ -24,6 +25,9 @@ DOCUMENT_CREATES = {
 }
 UI_IDENTITIES = {
     **DOCUMENT_CREATES,
+    "anor/mrf/subfilial+add:save": "code",
+    "anor/mkf/contract+add$save": "code",
+    "trade/tcs/offset/order_payment$post": "note",
     "anor/mdeal/return/return+add$save": "delivery_number",
     "anor/mcg/order_product_limit/order_product_limit+add$save": "name",
     "anor/mkw/warehouse+add$save": "name",
@@ -34,8 +38,16 @@ READ_ACTIONS.update({"items", "rooms", "inventory_products", "payment_type", "pe
                      "currencies", "humidity_type", "natural_persons", "temperature_type", "warehouse_types",
                      "announcements", "notifications", "plugin_session", "extensions", "ui_pages",
                      "load_grid_data", "load_user_large_setting", "save_user_large_setting", "gen_delivery_date"})
-READ_SPECIAL = {"anor/mdeal/order/order+add$get_last_purchase_prices",
-                "anor/mdeal/order/order+edit$get_last_purchase_prices", "biruni/m$telegram_channel_info"}
+READ_SPECIAL = {"anor/mr/product/inventory+add:measures", "anor/mr/product/service+add:measures",
+                "anor/mr/person/legal_person+edit:name_is_valid",
+                "anor/mdeal/order/order+add$get_last_purchase_prices",
+                "anor/mdeal/order/order+edit$get_last_purchase_prices", "biruni/m$telegram_channel_info",
+                # Excel preview parses the workbook into editor rows before Order Save.
+                "anor/mdeal/order/order_import:import", "anor/mdeal/order/order_import:price_types",
+                "trade/tcs/offset/order_payment:bank_accounts",
+                "anor/mkf/contract+add:subfilials",
+                "anor/mdeal/order/offset/offset_history_list:offset",
+                "anor/mdeal/order/offset/offset_history_list:transactions"}
 
 
 def endpoint_path(value):
@@ -45,6 +57,8 @@ def endpoint_path(value):
 
 def read_only(endpoint, method="POST"):
     endpoint = endpoint_path(endpoint)
+    if method == "GET" and endpoint == "trade/tdeal/order/order_list:export":
+        return True
     if endpoint in AUTH or endpoint in READ_SPECIAL:
         return True
     if "$" in endpoint:
@@ -97,6 +111,7 @@ def api_send(original, api, endpoint, *, payload=None, form=None, timeout=None):
         journal.save()
     if natural:
         fields = {
+            "anor/mr/product/service+add$save": ("name", "code", "state"),
             "anor/mr/product/inventory+add$save": ("name", "code", "state"),
             "anor/mr/person/natural_person+add$save": ("first_name", "code", "state"),
             "anor/mcg/action+add$save": ("name", "code", "state", "calc_kind", "start_date", "end_date", "bonus_warehouse_id", "forced", "condition_operator", "conditions", "room_ids", "price_type_id", "payment_type_id", "bonus_limits"),
@@ -284,6 +299,12 @@ def bind_browser(context, journal):
                 journal.event("response_unverified", endpoint=endpoint)
     context.route("**/b/**", guard)
     context.on("response", response_received)
+
+    def release():
+        context.unroute("**/b/**", guard)
+        context.remove_listener("response", response_received)
+
+    return release
 
 
 def ui_row(page, table, columns, field, value, *, document_kind=None):

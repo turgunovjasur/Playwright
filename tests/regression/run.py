@@ -79,7 +79,7 @@ def generate_run_report(directory, results, environment):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Order guruhlari: statuslar → aksiya → to‘lov → majburiy shartlar → ombor → bonus limiti → qaytarish → ko‘p order to‘lovi → qo‘lda skidka → TMZ limiti → ikki ombor → majburiy+ixtiyoriy aksiya → avtomatik hisob-kitob → orderdan oldingi avans; parametr talab qilinmaydi")
+    parser = argparse.ArgumentParser(description="Barcha Order guruhlarini registr tartibida ishga tushiradi.")
     parser.add_argument("--resume-run", help="Tugagan original run ID: oldingi PASS tayyorlovlardan davom etish")
     parser.add_argument("--group", choices=["product_limit", "bonus_limit"], help="Davom ettiriladigan guruh")
     parser.add_argument("--order-id", help="OL-09 davom ettiradigan saqlangan order IDsi")

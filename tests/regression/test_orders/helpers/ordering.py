@@ -8,23 +8,15 @@ from tests.regression.helpers.environment import environment_failure
 from tests.regression.test_orders.helpers.reporting import SPECS
 
 ROOT = Path(__file__).resolve().parents[4]
-GROUP_RUNNERS = (
-    "tests/regression/test_orders/runners/test_statuses_runner.py",
-    "tests/regression/test_orders/runners/test_promotions_runner.py",
-    "tests/regression/test_orders/runners/test_payments_runner.py",
-    "tests/regression/test_orders/runners/test_mandatory_runner.py",
-    "tests/regression/test_orders/runners/test_stock_runner.py",
-    "tests/regression/test_orders/runners/test_bonus_limit_runner.py",
-    "tests/regression/test_orders/runners/test_returns_runner.py",
-    "tests/regression/test_orders/runners/test_multi_payments_runner.py",
-    "tests/regression/test_orders/runners/test_manual_discounts_runner.py",
-    "tests/regression/test_orders/runners/test_product_limit_runner.py",
-    "tests/regression/test_orders/runners/test_two_warehouses_runner.py",
-    "tests/regression/test_orders/runners/test_mixed_promotions_runner.py",
-    "tests/regression/test_orders/runners/test_auto_offset_runner.py",
-    "tests/regression/test_orders/runners/test_prepayment_first_runner.py",
+GROUP_NAMES = (
+    "statuses", "promotions", "payments", "mandatory", "stock", "bonus_limit",
+    "returns", "multi_payments", "manual_discounts", "product_limit", "two_warehouses",
+    "mixed_promotions", "auto_offset", "prepayment_first", "catalog_price_history",
+    "excel_import_promotion", "consignment_due_dates", "archive_restore",
+    "bulk_missing_price", "fractional_quantity", "discount_apply_all", "delivery_address", "line_history", "service_status", "goods_service_discount", "order_xml",
+    "bonus_recalculation",
 )
-GROUP_NAMES = ("statuses", "promotions", "payments", "mandatory", "stock", "bonus_limit", "returns", "multi_payments", "manual_discounts", "product_limit", "two_warehouses", "mixed_promotions", "auto_offset", "prepayment_first")
+GROUP_RUNNERS = tuple(f"tests/regression/test_orders/runners/test_{group}_runner.py" for group in GROUP_NAMES)
 VERIFICATION_RUNNERS = {"recovery": "tests/regression/test_orders/verification/test_recovery_runner.py"}
 
 

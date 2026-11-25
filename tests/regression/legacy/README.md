@@ -1,6 +1,6 @@
 # Eski regression suite
 
-Bu alohida eski setup/products/Order suite. Joriy 14 guruhli Order suite uchun
+Bu alohida eski setup/products/Order suite. Joriy Order suite uchun
 [../run.py](../run.py) va [yo‘lko‘rsatkich](../README.md)ni oching.
 
 | Qism | Runner | Testlar/helperlar |
@@ -12,7 +12,7 @@ Bu alohida eski setup/products/Order suite. Joriy 14 guruhli Order suite uchun
 
 `scripts/run_tests.py regression`, `regression-setup`, `regression-products`
 va `regression-orders` targetlari shu eski suite ma’nosini saqlaydi.
-Ular yangi 125 testli suite bilan almashtirilmagan.
+Ular joriy Order suite bilan almashtirilmagan.
 
 ## Oldingi suite tavsifi
 

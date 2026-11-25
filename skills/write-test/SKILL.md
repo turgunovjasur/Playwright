@@ -13,6 +13,8 @@ test execution va run summary `run-smoke` ownerligida qoladi.
 
 ## Avval o'qish
 
+Yangi autotest qamrovini tanlashda [Smartup QA yo‘l xaritasi](../project-guide/references/autotest-roadmap.md)dan tegishli chorak va biznes natijasini ol.
+
 1. Smartup forma/UI vazifasida `skills/smartup-guide/SKILL.md` va aniq
    `references/forms/<slug>.md` dossierini o'qi.
 2. Batafsil loyiha qoidalari uchun

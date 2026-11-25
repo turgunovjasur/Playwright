@@ -7,6 +7,9 @@ import traceback
 from scripts.api_setup_bridge import validate_api_baseline
 from tests.regression.helpers.runtime import ROOT
 from tests.regression.helpers.retry.state import digest, write
+from tests.regression.helpers.preparation.catalog_price_history import (
+    CHANGE_CASE, PRICE_CHANGE_GROUPS, retry_price_contract,
+)
 from tests.regression.helpers.preparation.readiness import verify_contract, PreparationRepairRequired
 from tests.regression.test_orders.helpers.auth_recovery import RegressionSetupState
 
@@ -57,6 +60,13 @@ def scan_preparations(plan, directory):
             repair = False
             try:
                 for contract in plan["preparation_contracts"][owner].values():
+                    runner, _, test_name = owner.rpartition("::")
+                    group = Path(runner).stem.removeprefix("test_").removesuffix("_runner")
+                    if group in PRICE_CHANGE_GROUPS and test_name == "test_001_prices":
+                        contract = retry_price_contract(
+                            contract, plan["states"].get(group, {}),
+                            baseline["price_type_id_uzb"], plan["journals"].get(f"{runner}::{CHANGE_CASE}", {}),
+                        )
                     try:
                         verify_contract(api, baseline, contract)
                     except PreparationRepairRequired:

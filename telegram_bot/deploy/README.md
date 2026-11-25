@@ -45,12 +45,12 @@ database yoki boshqa project volume/networklariga ulanmaydi.
 
 Production scheduling authoritysi GitHub cron emas, shu
 `playwright-ci-bot` containeridir. Bot har kuni `Asia/Tashkent` vaqti bilan
-`02:00`da `daily-smoke.yml` workflowiga `suite=api-regression`, `server=smartup` dispatch
+`06:00`da `daily-smoke.yml` workflowiga `suite=api-regression`, `server=smartup` dispatch
 yuboradi.
 
 Botdagi `/run` kabi, avval API setup bajariladi. U muvaffaqiyatli tugagach
 Order regression boshlanadi. Active workflow mavjud bo‘lsa joriy slot skip qilinadi.
-Container `02:00` vaqtida ishlamagan bo‘lsa, o‘tkazib yuborilgan slot keyin
+Container `06:00` vaqtida ishlamagan bo‘lsa, o‘tkazib yuborilgan slot keyin
 qoplanmaydi.
 
 Scheduler faqat server `.env`ida yoqiladi:
@@ -60,7 +60,7 @@ HOURLY_SCHEDULE_ENABLED=1
 ```
 
 `HOURLY_SCHEDULE_ENABLED` nomi mavjud server sozlamalariga moslik uchun
-saqlangan; u endi kunlik jadvalni yoqadi. JSON'dagi `schedule.hour=2` va
+saqlangan; u endi kunlik jadvalni yoqadi. JSON'dagi `schedule.hour=6` va
 `schedule.minute=0` ishga tushish vaqtini belgilaydi.
 
 GitHub repository/workflow/ref, ruxsat etilgan serverlar va jadval tafsilotlari

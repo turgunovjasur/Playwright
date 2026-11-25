@@ -137,8 +137,9 @@ def save_order_by_reference(page, reference):
                 raise AssertionError(f"TTN {reference} qidiruvida saqlangan order {saved['deal_id']} topilmadi")
         expect(rows).to_have_count(1)
         row = base.grid(reference)
-        expect(base.grid_cell(row, column)).to_have_text(reference)
-        base.grid(reference, click=True)
+        reference_cell = base.grid_cell(row, column)
+        expect(reference_cell).to_have_text(reference)
+        reference_cell.get_by_text(reference, exact=True).click()
     with allure.step("Saqlangan order viewini ochish"):
         base.click(name="Просмотр", exact=True)
         base.expect_page(heading="Заказ / Просмотр", url="order_view")
@@ -192,7 +193,10 @@ def select_client_product(page, client, product, price_type):
     """Klientni tanlab, mahsulot bosqichida kerakli narxdagi qatorni ochadi."""
     base = AutoBasePage(page)
     with allure.step("Klientni tanlab orderga mahsulot qo‘shish"):
-        base.b_input(label="Клиент", value=client, clear=True)
+        # Initial room/staff selection refreshes the client picker.
+        base.b_input(label="Рабочая зона", expect_value=re.compile(r"\S"))
+        base.b_input(label="Штат", expect_value=re.compile(r"\S"))
+        base.b_input(label="Клиент", value=client, lookup_route="order+add:persons")
         base.click(name="Далее", exact=True)
         base.text("Название", "Кол-во")
         return select_order_product(page, product, price_type)

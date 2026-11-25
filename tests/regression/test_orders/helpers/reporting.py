@@ -87,6 +87,19 @@ GROUP_FEATURES = {
     "mixed_promotions": "SCN-012 · Majburiy va ixtiyoriy aksiyalar birga",
     "auto_offset": "SCN-013 · Kirimda order qarzini avtomatik yopish",
     "prepayment_first": "SCN-014 · Orderdan oldin olingan avans",
+    "catalog_price_history": "SCN-016 · Katalog narxi o‘zgarganda order summasi",
+    "excel_import_promotion": "SCN-017 · Excel importidan keyin bonus aksiyasi",
+    "consignment_due_dates": "SCN-018 · Konsignatsiya qarzini muddati bo‘yicha yopish",
+    "archive_restore": "SCN-019 · Arxivdan tiklash va bekor qilish",
+    "bulk_missing_price": "SCN-020 · Narxi yo‘q mahsulotda eski narx turini saqlash",
+    "discount_apply_all": "SCN-022 · Chegirmani barcha qatorlarga qo‘llash",
+    "delivery_address": "SCN-023 · Buyurtmaning yetkazish manzili",
+    "service_status": "SCN-025 · Xizmatli buyurtma statuslari",
+    "goods_service_discount": "SCN-026 · Tovar va xizmatga umumiy chegirma",
+    "bonus_recalculation": "SCN-028 · Narx turi almashganda bonusni qayta hisoblash",
+    "order_xml": "SCN-027 · Ikki buyurtmani XMLga eksport qilish",
+    "line_history": "SCN-024 · KG qatori o‘zgarishlari tarixi",
+    "fractional_quantity": "SCN-021 · Kasr miqdoridagi KG chegirmasi",
     "recovery": "SCN-015 · Retry va dublikatdan himoya",
 }
 SPECS.update({
@@ -345,6 +358,157 @@ for _group in GROUP_FEATURES:
         ("test_002_stock", "Ombor qoldig‘ini tayyorlash va tekshirish", "Own kirimlar posted; UI’dagi fizik qoldiq, rezerv va erkin qoldiq guruh talabiga mos."),
     ):
         SPECS[(_group, _test)] = (_title, "Tayyorlov", _title + ": mavjudini tekshirish yoki yetishmagan qismini tayyorlash.", _expected)
+SPECS.update({
+    ("catalog_price_history", "test_001_prices"): (
+        "Boshlang‘ich katalog narxini belgilash", "Tayyorlov",
+        "Guruh mahsulotiga 1 000 so‘mlik narx belgilash.",
+        "Katalogdan qayta o‘qilgan narx 1 000 so‘m."),
+    ("catalog_price_history", "test_00_prepare_client"): (
+        "Qoralamalar uchun alohida klient", "Tayyorlov",
+        "Guruh klientini yaratish va ish zonasiga biriktirish.", "Ikkala order bir klientga tegishli."),
+    ("catalog_price_history", "test_01_original_draft"): (
+        "Eski narxda qoralama saqlash", "Biznes testi",
+        "Ikki dona mahsulotni 1 000 so‘mdan saqlab, orderni qayta ochish.",
+        "Saqlangan qator va order jami 2 000 so‘m."),
+    ("catalog_price_history", "test_02_change_catalog_price"): (
+        "Katalog narxini 1 500 so‘mga o‘zgartirish", "Biznes testi",
+        "Birinchi order saqlanganidan keyin guruh mahsuloti narxini yangilash.",
+        "Aynan shu mahsulot va narx turida katalog narxi 1 500 so‘m."),
+    ("catalog_price_history", "test_03_new_draft"): (
+        "Yangi orderdagi narxni tekshirish", "Biznes testi",
+        "Shu klient va mahsulot bilan ikkinchi qoralamani saqlab, ko‘rish va tahrirlashga qayta ochish.",
+        "Order IDsi yangi, qator 2 × 1 500, jami 3 000 so‘m."),
+    ("catalog_price_history", "test_04_original_and_picker"): (
+        "Eski order va bo‘sh Подбор", "Biznes testi",
+        "Birinchi orderni ko‘rish va tahrirlashga ochib, Подбор oynasini tanlovsiz yopish.",
+        "Eski qator 2 × 1 000 va yakuniy summa 2 000 so‘m saqlanadi."),
+})
+
+SPECS.update({
+    ("excel_import_promotion", "test_001_prices"): (
+        "Import mahsulotiga boshlang‘ich narx belgilash", "Tayyorlov",
+        "Guruh mahsulotlariga 1 000 so‘mlik narx belgilash.", "Katalogdagi narx 1 000 so‘m."),
+    ("excel_import_promotion", "test_002_stock"): (
+        "Import va bonus uchun ombor qoldig‘i", "Tayyorlov",
+        "Sotuv mahsulotidan balansdan tashqari, bonus mahsulotidan balansdagi kirimni o‘tkazish.",
+        "Har ikki mahsulotdan 18 donadan mavjud, rezerv 0."),
+    ("excel_import_promotion", "test_00_prepare_client"): (
+        "Excel import uchun klient tayyorlash", "Tayyorlov",
+        "Guruh klientini ish zonasiga biriktirish.", "Faol klientning IDsi va xona bog‘lanishi tasdiqlangan."),
+    ("excel_import_promotion", "test_01_prepare_promotion"): (
+        "5 dona xaridga 1 dona bonus", "Tayyorlov",
+        "Guruhning sotuv va bonus mahsulotlari uchun aksiya tayyorlash.",
+        "Aksiya faol, miqdor chegarasi 5 dona va sovg‘a 1 dona."),
+    ("excel_import_promotion", "test_02_direct_entry_control"): (
+        "Nazorat qoralamasini bank o‘tkazmasi bilan saqlash", "Biznes testi",
+        "Guruh klienti uchun mahsulotni qo‘lda kiritib, chegirmalar va «Перечисление» bilan qoralama saqlash.",
+        "Qoralamaning o‘z IDsi va TTN raqami bor, qayta ochilganda jami 4 300 so‘m."),
+    ("excel_import_promotion", "test_03_promotion_after_excel_import"): (
+        "Excel importidan keyin saqlashdan oldin bonus tanlash", "Biznes testi",
+        "Saqlangan qoralamani tahrirlashga ochish, tovar qatorini olib tashlash, 3 donani Excel’dan import qilib 5 taga oshirish va chegirmalarni kiritish.",
+        "Qator 4 500 so‘m, bank o‘tkazmali order 4 300 so‘m. Tahrirni saqlashdan oldin guruh aksiyasi chiqadi va 1 dona bonus tanlanadi."),
+})
+
+SPECS.update({
+    ("consignment_due_dates", "test_000_prepare_consignment"): (
+        "Filialda konsignatsiyani yoqish", "Tayyorlov",
+        "Test filialining oldingi sozlamasini o‘qib, zarur bo‘lsa vaqtincha yoqish.",
+        "Konsignatsiya faol. Guruh yakunida dastlabki qiymati tiklanadi."),
+    ("consignment_due_dates", "test_001_prices"): (
+        "Konsignatsiya mahsulotining narxi", "Tayyorlov",
+        "Guruh mahsuloti uchun boshlang‘ich narxni belgilash.", "Katalogdagi narx 1 000 so‘m."),
+    ("consignment_due_dates", "test_00_prepare_client"): (
+        "Konsignatsiya uchun alohida klient", "Tayyorlov",
+        "Yangi klientni guruh xonasiga biriktirish.", "Faol klientning IDsi va bog‘lanishi tasdiqlangan."),
+    ("consignment_due_dates", "test_01_prepare_contract"): (
+        "Klientga tegishli loyiha va shartnoma", "Tayyorlov",
+        "Ish zonasiga loyiha va konsignatsiya klientiga UZS shartnoma tayyorlash.",
+        "Buyurtma uchun guruhning loyihasi va shu klientning faol shartnomasi mavjud."),
+    ("consignment_due_dates", "test_02_prepare_bank"): (
+        "Bank orqali to‘lash uchun test hisobi", "Tayyorlov",
+        "Filialning UZS test hisobini xona va bank o‘tkazmasi to‘lov turiga biriktirish.",
+        "To‘lov oynasi guruhning aynan shu hisobini tanlashga ruxsat beradi."),
+    ("consignment_due_dates", "test_001_consignment_dates"): (
+        "Ikki to‘lov muddatini saqlash va tahrirlash", "Biznes testi",
+        "2 000 so‘mlik qoralamada 1 000 + 1 000 jadvalini saqlash. 750 + 1 250 ni bekor qilish, so‘ng saqlab tekshirish va dastlabki bo‘linishni tiklash.",
+        "Saqlangan ikki sana va mos summalar View hamda Edit’da to‘g‘ri ko‘rinadi."),
+    ("consignment_due_dates", "test_002_consignment_settlement"): (
+        "Har bir muddatning qarzini alohida yopish", "Biznes testi",
+        "Orderni arxivlash va ikki sanaga tegishli 1 000 so‘mlik bank to‘lovlarini ketma-ket o‘tkazish.",
+        "Birinchi to‘lovdan keyin faqat keyingi muddat qoladi. Ikkinchisidan keyin qarz 0, tarixda ikkita alohida yozuv."),
+})
+
+SPECS.update({
+    ("fractional_quantity", "test_000_catalog"): (
+        "KG mahsulotini tayyorlash", "Tayyorlov",
+        "Guruh uchun alohida katalog va kg o‘lchov birligini tekshirish.", "Kilogrammli tovar o‘z kodi va IDsi bilan saqlangan."),
+    ("fractional_quantity", "test_001_prices"): (
+        "Guruh narxlarini tayyorlash", "Tayyorlov",
+        "KG mahsuloti va guruh uchun zarur narx turlarini tekshirish.", "KG narxi 1 000 so‘m, talab qilingan narxlar qayta o‘qilgan."),
+    ("fractional_quantity", "test_00_prepare_client"): (
+        "Alohida klientni tayyorlash", "Tayyorlov",
+        "Guruh klientini ish zonasiga biriktirish.", "Faol klient va xona bog‘lanishi tasdiqlangan."),
+    ("fractional_quantity", "test_01_discount_at_125"): (
+        "1,25 kg uchun chegirmali qoralamani saqlash", "Biznes testi",
+        "1,25 kg uchun chegirmali qoralamani saqlash", "1 250 − 125 = 1 125 so‘m."),
+    ("fractional_quantity", "test_02_discount_at_250"): (
+        "Shu qoralamada miqdorni 2,5 kg ga oshirish", "Biznes testi",
+        "Shu qoralamada miqdorni 2,5 kg ga oshirish", "2 500 − 250 = 2 250 so‘m. Edit’da −100 so‘m/kg saqlangan."),
+})
+
+SPECS.update({
+    ("bulk_missing_price", "test_000_catalog"): (
+        "KG va dona mahsulotlarini tayyorlash", "Tayyorlov",
+        "Ikkita alohida tovarning IDsi va o‘lchov birligini tekshirish.", "Birinchi mahsulot kg, ikkinchisi dona."),
+    ("bulk_missing_price", "test_001_prices"): (
+        "KG va dona uchun narx turlarini tayyorlash", "Tayyorlov",
+        "KG narxini 1 000 so‘m qilib belgilash, dona mahsulotning narx turi va xona bog‘lanishini tekshirish.",
+        "Dona mahsulotning eski va yangi narxi 1 500 so‘m, KG uchun yangi narx bo‘sh."),
+    ("bulk_missing_price", "test_00_prepare_client"): (
+        "Alohida klientni tayyorlash", "Tayyorlov",
+        "Guruh klientini ish zonasiga biriktirish.", "Faol klient va xona bog‘lanishi tasdiqlangan."),
+    ("bulk_missing_price", "test_01_mixed_draft"): (
+        "KG va dona qatorli qoralamani saqlash", "Biznes testi",
+        "KG va dona qatorli qoralamani saqlash", "2 250 + 1 500 = 3 750 so‘m, ikkita eski narx turi."),
+    ("bulk_missing_price", "test_02_change_price_types"): (
+        "Ikki eski narx turini yangi turga almashtirish", "Biznes testi",
+        "Ikki eski narx turini yangi turga almashtirish", "KG eski turda, dona yangi turda. Saqlangan jami 3 750 so‘m."),
+})
+
+SPECS.update({
+    ("archive_restore", "test_000_catalog"): (
+        "KG va dona mahsulotlarini tayyorlash", "Tayyorlov",
+        "Ikkita alohida tovarning IDsi va o‘lchov birligini tekshirish.", "Birinchi mahsulot kg, ikkinchisi dona."),
+    ("archive_restore", "test_001_prices"): (
+        "KG va dona uchun narx turlarini tayyorlash", "Tayyorlov",
+        "KG narxini 1 000 so‘m qilib belgilash, dona mahsulotning narx turi va xona bog‘lanishini tekshirish.",
+        "Dona mahsulotning alohida narx turi 1 500 so‘m."),
+    ("archive_restore", "test_00_prepare_client"): (
+        "Alohida klientni tayyorlash", "Tayyorlov",
+        "Guruh klientini ish zonasiga biriktirish.", "Faol klient va xona bog‘lanishi tasdiqlangan."),
+    ("archive_restore", "test_01_mixed_draft"): (
+        "Ikki mahsulotli 3 750 so‘mlik qoralamani saqlash", "Biznes testi",
+        "Ikki mahsulotli 3 750 so‘mlik qoralamani saqlash", "2,5 kg va 1 dona saqlangan."),
+    ("archive_restore", "test_02_reserve"): (
+        "Yangi order rezervini tekshirish", "Biznes testi",
+        "Yangi order rezervini tekshirish", "2,5 kg va 1 dona rezervda, fizik qoldiq o‘zgarmagan."),
+    ("archive_restore", "test_03_ship"): (
+        "Jo‘natilganda ikkala mahsulot chiqimini tekshirish", "Biznes testi",
+        "Jo‘natilganda ikkala mahsulot chiqimini tekshirish", "Fizik qoldiq 2,5 kg va 1 donaga kamayadi, rezerv 0."),
+    ("archive_restore", "test_04_archive"): (
+        "Arxivda order qarzini topish", "Biznes testi",
+        "Arxivda order qarzini topish", "Aynan shu klient va order uchun 3 750 so‘m qarz."),
+    ("archive_restore", "test_05_restore_delivered"): (
+        "Arxivdan yetkazilgan holatga tiklash", "Biznes testi",
+        "Arxivdan yetkazilgan holatga tiklash", "O‘sha order Доставлен holatida va jami 3 750 so‘m."),
+    ("archive_restore", "test_06_cancel"): (
+        "Bekor qilinganda qarz va qoldiqni tekshirish", "Biznes testi",
+        "Bekor qilinganda qarz va qoldiqni tekshirish", "Qarz ro‘yxati bo‘sh, ikkala mahsulot qoldig‘i tiklangan."),
+    ("archive_restore", "test_07_restore_draft"): (
+        "Qoralamaga qaytganda takroriy ombor harakatini tekshirish", "Biznes testi",
+        "Qoralamaga qaytganda takroriy ombor harakatini tekshirish", "O‘sha ID, qarz 0, fizik va erkin qoldiqlar boshlang‘ich qiymatda."),
+})
+
 for _test, _title in (
     ("test_03_before_save", "Save oldidan uzilish"),
     ("test_04_commit_before_id", "Server saqlagach ID yozilishidan oldin uzilish"),
@@ -389,11 +553,118 @@ SPECS.update({
 })
 
 
+SPECS.update({
+    ("service_status", "test_00_services"): ("Ikki xizmatni tayyorlash", "Tayyorlov", "Ikkita alohida faol xizmat yaratish.", "Har birining narxi 1 200 so‘m."),
+    ("service_status", "test_01_client"): ("Xizmatlar klientini tayyorlash", "Tayyorlov", "Klientni ish zonasiga biriktirish.", "Klient ID va nomi tekshirilgan."),
+    ("service_status", "test_02_control_stock"): ("Nazorat tovari qoldig‘i", "Tayyorlov", "Ombordan fizik, rezerv va erkin qoldiqni o‘qish.", "Boshlang‘ich miqdorlar saqlangan."),
+    ("service_status", "test_03_draft"): ("Faqat xizmatli qoralama", "Biznes testi", "1 va 2 dona xizmatli buyurtmani saqlash.", "Jami 3 600 so‘m, nazorat qoldig‘i o‘zgarmagan."),
+})
+for _step, _status in (("test_04_new", "Новый"), ("test_05_shipped", "Отгружен"), ("test_06_back_to_draft", "Черновик")):
+    SPECS["service_status", _step] = (
+        f"Xizmatli buyurtmani {_status} holatiga o‘tkazish", "Biznes testi",
+        "Saqlangan buyurtmani qayta ochib, xizmatlarni va omborni solishtirish.",
+        f"Status {_status}, ikkita xizmat, jami 3 600 so‘m, nazorat tovari qoldig‘i o‘zgarmagan.")
+
+
+SPECS.update({
+    ("goods_service_discount", "test_001_prices"): ("Tovar narxini belgilash", "Tayyorlov", "Alohida mahsulot narxini saqlash.", "Bir dona 1 500 so‘m."),
+    ("goods_service_discount", "test_00_prepare_client"): ("Aralash buyurtma klienti", "Tayyorlov", "Klientni ish zonasiga biriktirish.", "Klient ID va nomi mos."),
+    ("goods_service_discount", "test_00_services"): ("Xizmatni tayyorlash", "Tayyorlov", "Alohida faol xizmat yaratish.", "Narxi 1 200 so‘m."),
+    ("goods_service_discount", "test_00_margin"): (
+        "17% chegirmani tayyorlash", "Tayyorlov", "Chegirmani filial va ish zonasiga biriktirish.", "Faol −17% tanlash mumkin."),
+    ("goods_service_discount", "test_01_mixed_discount"): ("Tovar va xizmatga 17% chegirma", "Biznes testi", "3 000 so‘mlik tovar va 1 200 so‘mlik xizmatni saqlash.", "Jami 3 486 so‘m."),
+    ("goods_service_discount", "test_02_reopen"): ("Qoralamadagi tarkib va summani qayta tekshirish", "Biznes testi", "Ayni buyurtmaning View va Edit formasini ochish.", "Chegirma 714, foiz 17%, jami 3 486 so‘m."),
+})
+
+
+SPECS["bonus_recalculation", "test_01_prepare_promotion"] = SPECS["excel_import_promotion", "test_01_prepare_promotion"]
+SPECS["bonus_recalculation", "test_00_margin"] = SPECS["goods_service_discount", "test_00_margin"]
+SPECS.update({
+    ("bonus_recalculation", "test_001_prices"): (
+        "Boshlang‘ich narx", "Tayyorlov", "Sotuv va bonus mahsulotlariga narx belgilash.", "1 000 so‘m."),
+    ("bonus_recalculation", "test_00_target_price"): (
+        "Ikkinchi UZS narx turi", "Tayyorlov", "Sotuv tovariga boshqa narx turini qo‘shish.", "Eski narx 1 000, yangi narx 1 500 so‘m."),
+    ("bonus_recalculation", "test_00_prepare_client"): (
+        "Aksiya uchun alohida klient", "Tayyorlov", "Guruh klientini ish zonasiga biriktirish.", "Klient ID va nomi tasdiqlangan."),
+    ("bonus_recalculation", "test_04_picker_recalculation"): (
+        "Подборdan keyin bonus olib tashlanadi", "Biznes testi", "Tanlovsiz chiqib qoralamani saqlash va qayta ochish.",
+        "5 dona, jami 6 225 so‘m, bonus yo‘q."),
+    ("bonus_recalculation", "test_07_quantity_recalculation"): (
+        "Miqdor o‘zgargach bonus olib tashlanadi", "Biznes testi", "Подборga kirmasdan 5 donani 6 ga o‘zgartirib saqlash.",
+        "6 dona, jami 7 470 so‘m, bonus yo‘q."),
+})
+for _branch, _draft, _change in (
+    ("Подбор", "test_02_picker_draft", "test_03_picker_price_change"),
+    ("Miqdor", "test_05_quantity_draft", "test_06_quantity_price_change"),
+):
+    SPECS["bonus_recalculation", _draft] = (
+        f"{_branch} uchun bonusli qoralama", "Biznes testi", "5 dona, 17% chegirma va bepul bonusni saqlash.",
+        "4 150 so‘m va bitta bonus.")
+    SPECS["bonus_recalculation", _change] = (
+        f"{_branch} oldidan narx turini almashtirish", "Biznes testi", "Buyurtmalar ro‘yxatida yangi narx turini saqlash.",
+        "Buyurtma 6 225 so‘m, eski aksiyaning bepul bonusi saqlangan.")
+
+
+for _step in ("test_001_prices", "test_01_original_draft", "test_02_change_catalog_price", "test_03_new_draft"):
+    SPECS["order_xml", _step] = SPECS["catalog_price_history", _step]
+SPECS["order_xml", "test_00_prepare_client"] = (
+    "Eksport uchun alohida klient", "Tayyorlov", "Guruh klientini ish zonasiga biriktirish.", "Klient ID va nomi tasdiqlangan.")
+SPECS["order_xml", "test_04_export"] = (
+    "Ikkala buyurtmani XML faylida tekshirish", "Biznes testi", "Tanlangan qoralamalarni eksport qilish.",
+    "Faqat ikki ID, aynan shu klient va mahsulot, 2 dona, narxlar 1 000 va 1 500, summalar 2 000 va 3 000.")
+
+
+for _step in ("test_000_catalog", "test_001_prices", "test_00_prepare_client",
+              "test_01_discount_at_125", "test_02_discount_at_250"):
+    SPECS["line_history", _step] = SPECS["fractional_quantity", _step]
+SPECS["line_history", "test_03_line_history"] = (
+    "KG qatori tahririning tarixini tekshirish", "Biznes testi",
+    "Buyurtma tarixidan guruh mahsulotining yangilangan qatorini ochish.",
+    "Miqdor 1,25 → 2,5 kg, chegirma −125 → −250, jami 1 125 → 2 250 so‘m.")
+
+
+for _step in ("test_000_catalog", "test_001_prices", "test_00_prepare_client"):
+    SPECS["discount_apply_all", _step] = SPECS["archive_restore", _step]
+SPECS.update({
+    ("discount_apply_all", "test_00_prepare_margin"): (
+        "17% chegirmani filial va ish zonasiga biriktirish", "Tayyorlov",
+        "Katalogdagi foiz, filial va xona bog‘lanishlarini tekshirish.", "Faol −17% tanlash mumkin."),
+    ("discount_apply_all", "test_01_apply_all"): (
+        "Chegirmani tarqatishni rad etish va tasdiqlash", "Biznes testi",
+        "Faqat dona qatoriga 17% qo‘llab, Нет va Да yo‘llarini tekshirish.", "3 745 → 3 320 so‘m."),
+    ("discount_apply_all", "test_02_reopen_discount"): (
+        "Saqlangan buyurtmada ikkala qatorni tekshirish", "Biznes testi",
+        "View va Edit orqali foiz va qator summalarini o‘qish.", "1 245 + 2 075 = 3 320 so‘m."),
+})
+
+
+SPECS["delivery_address", "test_001_prices"] = SPECS["catalog_price_history", "test_001_prices"]
+SPECS.update({
+    ("delivery_address", "test_000_enable_addresses"): (
+        "Yetkazish manzillari sozlamasini tekshirish", "Tayyorlov",
+        "Zarur bo‘lsa sozlamani vaqtincha yoqish.", "Guruh oxirida avvalgi holat tiklanadi."),
+    ("delivery_address", "test_00_prepare_client"): (
+        "Ikkita yetkazish manzilli klientni tayyorlash", "Tayyorlov",
+        "A va B manzillarini mijoz kartasidan qayta o‘qish va mijozni ish zonasiga biriktirish.",
+        "Ikki alohida faol manzil mavjud, ikkalasi ham standart emas."),
+    ("delivery_address", "test_01_address_a"): (
+        "A manzilli buyurtmani saqlash", "Biznes testi",
+        "A manzilini tanlash va aynan shu orderni qayta ochish.", "Tanlov, mo‘ljal va manzil A ga mos."),
+    ("delivery_address", "test_02_address_b"): (
+        "Saqlangan buyurtmada B manziliga o‘tish", "Biznes testi",
+        "A o‘rniga B ni tanlab saqlash.", "Qayta ochilganda uchala maydon B ga mos."),
+    ("delivery_address", "test_03_clear_address"): (
+        "Yetkazish manzilini tozalash", "Biznes testi",
+        "B tanlovini tozalab saqlash.", "Qayta ochilganda tanlov, mo‘ljal va manzil bo‘sh."),
+})
+
+
 def _metadata(directory, scopes):
     case, phase, preparation = {}, {}, {}
     prep_names = {
         "Возврат narxi — ID va bog'lanishlar": "return_price",
         "Tayyor 10% skidka — ID va bog'lanishlar": "margin",
+        "Tayyor 17% skidka — ID va bog'lanishlar": "margin",
     }
     for scope in scopes:
         for node in _walk(scope):

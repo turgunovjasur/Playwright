@@ -17,20 +17,32 @@ BUDGETS = {"statuses": (2, 0), "promotions": (10, 1), "payments": (12, 1),
     "mandatory": (10, 1), "stock": (2, 0), "bonus_limit": (40, 2),
     "returns": (20, 2), "multi_payments": (5, 0), "manual_discounts": (10, 1),
     "two_warehouses": (5, 0), "mixed_promotions": (10, 1), "recovery": (4, 0),
-    "auto_offset": (2, 0), "prepayment_first": (2, 0)}
+    "auto_offset": (2, 0), "prepayment_first": (2, 0), "catalog_price_history": (4, 0),
+    "excel_import_promotion": (18, 18), "consignment_due_dates": (8, 0),
+    "discount_apply_all": (3, 1), "delivery_address": (1, 0), "line_history": (12, 0),
+    "fractional_quantity": (12, 0), "bulk_missing_price": (12, 12),
+    "archive_restore": (12, 12), "order_xml": (4, 0), "goods_service_discount": (2, 0),
+    "bonus_recalculation": (16, 2)}
 
 
-def run_prepare_catalog(baseline, data, directory, group):
+def run_prepare_catalog(baseline, data, directory, group, *, kg_goods=False):
     """1. Exact code lookup. 2. Create only missing own SKU. 3. Saved identity."""
     registry = Registry(baseline)
-    spec = PreparationSpec("catalog", group, {"bonus": BUDGETS[group][1] > 0})
+    parameters = {"bonus": BUDGETS[group][1] > 0}
+    if kg_goods:
+        parameters["goods_measure"] = "кг"
+    spec = PreparationSpec("catalog", group, parameters)
     suffix = digest({"root": registry.data["root_run"], "group": group})[:12]
     wanted = {"goods": {"name": f"Order {group} goods-{suffix}", "code": f"rg-{suffix}-a"}}
     if BUDGETS[group][1]:
-        wanted["bonus"] = {"name": f"Order {group} bonus-{suffix}", "code": f"rg-{suffix}-b"}
+        second_kind = "piece" if kg_goods else "bonus"
+        wanted["bonus"] = {"name": f"Order {group} {second_kind}-{suffix}", "code": f"rg-{suffix}-b"}
     state = RegressionSetupState(directory / "catalog-api-state.json", deepcopy(baseline))
     try:
         api = state.user()
+        if kg_goods:
+            kg_id = positive_id(api.one("anor/mr/product/inventory+add:measures", ["measure_id"],
+                                        filters=["short_name", "=", "кг"])["measure_id"])
         def probe(entry):
             found = {}
             for kind, target in wanted.items():
@@ -42,6 +54,10 @@ def run_prepare_catalog(baseline, data, directory, group):
                 identity = positive_id(row["product_id"])
                 model = api.model("anor/mr/product/inventory_view", product_id=identity)
                 require_fields(model, name=target["name"], code=target["code"], state="A")
+                if kg_goods:
+                    edit = api.model("anor/mr/product/inventory+edit", product_id=identity)
+                    expected_measure = kg_id if kind == "goods" else baseline["measure_id"]
+                    require_fields(edit["data"], measure_id=expected_measure)
                 found[kind] = {**target, "id": identity}
             registry.checkpoint(spec, **found)
             return PreparationResult("ready" if len(found) == len(wanted) else "partial" if found else "missing",
@@ -52,6 +68,8 @@ def run_prepare_catalog(baseline, data, directory, group):
                     continue
                 payload = state.payload("product" if kind == "goods" else "product_usa")
                 payload.update(**target)
+                if kg_goods and kind == "goods":
+                    payload["measure_id"] = kg_id
                 with allure.step(f"{group}: {kind} uchun alohida TMZ yaratish"):
                     result = api.call(CONTRACTS["product"]["endpoint"], payload)
                     registry.checkpoint(spec, **{kind: {**target, "id": positive_id(result["product_id"])}})
@@ -61,13 +79,13 @@ def run_prepare_catalog(baseline, data, directory, group):
         state.close()
 
 
-def run_prepare_prices(baseline, data, directory, group):
-    """1. Read current price. 2. Set only own SKU price. 3. Verify 7000."""
+def run_prepare_prices(baseline, data, directory, group, *, initial_price=7000):
+    """1. Read current price. 2. Set only own SKU price. 3. Verify the requested starting price."""
     registry = Registry(baseline)
     price_id = str(baseline["price_type_id_uzb"])
     products = {kind: data[kind] for kind in ("goods", "bonus") if kind in data}
     spec = PreparationSpec("prices", group,
-        {"products": {k: v["id"] for k, v in products.items()}, "price_type": price_id, "price": "7000"}, ("catalog",))
+        {"products": {k: v["id"] for k, v in products.items()}, "price_type": price_id, "price": str(initial_price)}, ("catalog",))
     state = RegressionSetupState(directory / "prices-api-state.json", deepcopy(baseline))
     try:
         api = state.user()
@@ -84,23 +102,23 @@ def run_prepare_prices(baseline, data, directory, group):
             return found
         def probe(entry):
             actual = values()
-            return PreparationResult("ready" if all(v == Decimal(7000) for v in actual.values()) else "partial",
-                detail="Own mahsulotlarning saqlangan narxi 7000 so‘m", evidence={k: str(v) for k, v in actual.items()})
+            return PreparationResult("ready" if all(v == Decimal(initial_price) for v in actual.values()) else "partial",
+                detail=f"Guruh mahsulotlarining kutilgan narxi {initial_price} so‘m", evidence={k: str(v) for k, v in actual.items()})
         def prepare(entry):
             for kind, actual in values().items():
-                if actual == Decimal(7000):
+                if actual == Decimal(initial_price):
                     continue
                 if actual is not None:
                     raise RetryBlocked("Own mahsulot narxi kutilmaganda o‘zgargan; ustidan yozilmadi")
                 api.call("anor/mr/product/product_set_price$save", {"product_id": products[kind]["id"],
-                    "prices": [{"price_type_id": price_id, "card_id": "-1", "price": "7000"}]})
+                    "prices": [{"price_type_id": price_id, "card_id": "-1", "price": str(initial_price)}]})
         ensure_preparation(spec, registry=registry, probe=probe, prepare=prepare)
         data["status"] = "prices_ready"
     finally:
         state.close()
 
 
-def run_prepare_stock(case, data, directory, group):
+def run_prepare_stock(case, data, directory, group, *, goods_on_balance="Y", second_sale_product=False):
     """1. Own fixed documents. 2. Resume posting. 3. Verify UI physical/free stock.
 
     Replaying this step never adds another document to compensate business usage.
@@ -111,8 +129,15 @@ def run_prepare_stock(case, data, directory, group):
     targets = [("goods", q, i) for i, q in enumerate((9, 11) if group == "returns" else (goods,))]
     if bonus:
         targets.append(("bonus", bonus, 0))
-    spec = PreparationSpec("stock", group, {"warehouse": str(case.baseline["warehouse_id"]),
-        "targets": [(k, data[k]["id"], q, i) for k, q, i in targets]}, ("prices",))
+    parameters = {"warehouse": str(case.baseline["warehouse_id"]),
+                  "targets": [(k, data[k]["id"], q, i) for k, q, i in targets]}
+    if goods_on_balance not in {"Y", "N"}:
+        raise ValueError("goods_on_balance qiymati Y yoki N bo‘lishi kerak")
+    if goods_on_balance == "N":
+        parameters["goods_on_balance"] = goods_on_balance
+    if second_sale_product:
+        parameters["second_sale_product"] = True
+    spec = PreparationSpec("stock", group, parameters, ("prices",))
     state = RegressionSetupState(directory / "stock-api-state.json", deepcopy(case.baseline))
     route = "anor/mkw/init_balance/init_inventory_balance_list"
     try:
@@ -146,8 +171,11 @@ def run_prepare_stock(case, data, directory, group):
             for document in docs:
                 row = lookup(document)
                 if not row:
-                    payload = state.payload("init_balance_uzb" if document["kind"] == "goods" else "init_balance_usa")
+                    is_sale_product = document["kind"] == "goods" or second_sale_product
+                    payload = state.payload("init_balance_uzb" if is_sale_product else "init_balance_usa")
                     payload["balance_number"] = document["number"]
+                    if is_sale_product:
+                        payload["items"][0]["on_balance"] = goods_on_balance
                     payload["items"][0].update(product_id=document["product_id"], quantity=document["quantity"], card_code=document["card_code"])
                     api.call(CONTRACTS["init_balance_uzb"]["endpoint"], payload)
                     row = lookup(document)
@@ -164,6 +192,8 @@ def run_prepare_stock(case, data, directory, group):
             if not quantity:
                 continue
             actual = read_stock(case, "Основной склад", product_id=data[kind]["id"])
+            if second_sale_product:
+                data.setdefault("opening_stock", {})[kind] = {key: str(value) for key, value in actual.items()}
             # This explicit setup step runs before the group's business mutations.
             case.check(f"{group}/{kind}: boshlang‘ich fizik, rezerv va erkin qoldiq",
                 {"physical": Decimal(quantity), "booked": Decimal(0), "available": Decimal(quantity)}, actual)

@@ -3,7 +3,7 @@ import re
 import allure
 import pytest
 from playwright.sync_api import expect
-from tests.regression.test_orders.helpers.flows.order import existing_order, select_order_product, open_new_order, save_order_by_reference, promotion_card, reopen_order_goods
+from tests.regression.test_orders.helpers.flows.order import existing_order, select_client_product, open_new_order, save_order_by_reference, promotion_card, reopen_order_goods
 from utils.base_pages.auto_base_page import AutoBasePage
 from tests.regression.helpers.preparation.stock_guard import require_available
 
@@ -22,9 +22,7 @@ def run_other_product_bonus(case):
         require_available(case, 10, bonus_quantity=1)
         open_new_order(page)
         with allure.step("1 - Setup klienti va mahsulotidan 10 dona"):
-            base.b_input(label="Клиент", value=case.client, clear=True)
-            base.click(name="Далее", exact=True)
-            select_order_product(page, case.product, case.price_type)
+            select_client_product(page, case.client, case.product, case.price_type)
             base.input(label="Кол-во", value="10", press_tab=True)
         with allure.step("2 - Faqat boshqa mahsulot bonusini yoqish"):
             base.tab(name=re.compile(r"^Акции"))

@@ -520,7 +520,18 @@ class AngularBasePage:
                     search.press("ArrowDown", timeout=timeout)
                 else:
                     search.click(timeout=timeout)
-                    search.fill(query, timeout=timeout)
+                    if query and route == "order+add:persons":
+                        # Room autofill can clear the input during its debounce.
+                        # Re-enter only a lost query that never left the browser.
+                        try:
+                            with self.page.expect_request(lambda req: req in started, timeout=min(3000, timeout)):
+                                search.fill(query, timeout=timeout)
+                        except PlaywrightTimeoutError:
+                            if not started and search.input_value(timeout=timeout) != query:
+                                search.click(timeout=timeout)
+                                search.fill(query, timeout=timeout)
+                    else:
+                        search.fill(query, timeout=timeout)
         finally:
             self.page.remove_listener("request", remember)
 
@@ -2005,10 +2016,12 @@ class AngularBasePage:
         fallback = row.filter(has_not=primary).locator("[role='cell'], [data-smt-col-key]")
         cell = row.locator(".smt-data-cell").or_(fallback).nth(index)
         expect(cell).to_be_visible(timeout=UI_TIMEOUT_MS)
-        # A2 rows below the viewport may defer rendering their inner text.
-        # A trial click scrolls without clicking and re-resolves a replaced row
-        # while async table refresh is finishing (scroll_into_view uses a handle).
-        cell.click(trial=True, timeout=UI_TIMEOUT_MS)
+        # Virtualized rows render on scroll. Reading a cell also works when
+        # the table's scroll container covers its pointer hit target.
+        cell.evaluate(
+            "element => element.scrollIntoView({block: 'nearest', inline: 'nearest'})",
+            timeout=UI_TIMEOUT_MS,
+        )
         if expect_value is _UNSET and not return_value:
             return cell
 

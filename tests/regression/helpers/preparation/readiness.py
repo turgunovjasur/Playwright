@@ -4,6 +4,9 @@ from decimal import Decimal
 import allure
 from tests.api.client import require_fields
 from tests.api.promotion import verify_promotion
+from tests.regression.helpers.preparation.catalog_price_history import (
+    PRICE_CHANGE_GROUPS, retry_price_contract,
+)
 from tests.regression.helpers.retry.reconcile import CREATES, exact_row
 from tests.regression.helpers.retry.state import RetryBlocked
 from tests.regression.test_orders.helpers.auth_recovery import RegressionSetupState
@@ -23,8 +26,13 @@ def verify_contract(api, baseline, contract):
                 raise RetryBlocked("Narx qatori yagona emas")
             actual = matches[0][5] if matches else None
             if actual in (None, ""):
+                if contract.get("price_in_transition"):
+                    raise RetryBlocked("Biznes testi o‘zgartirgan narx yo‘q; eski narx avtomatik tiklanmaydi")
                 raise PreparationRepairRequired("Own TMZning oldin tasdiqlangan narxi hozir yo‘q")
-            if Decimal(str(actual)) != Decimal(str(wanted["price"])):
+            allowed = {Decimal(str(wanted["price"]))}
+            if "pending_price" in contract:
+                allowed.add(Decimal(contract["pending_price"]))
+            if Decimal(str(actual)) not in allowed:
                 raise RetryBlocked("TMZ narxi boshqa qiymatga o‘zgargan; ustidan yozilmaydi")
         return
     if endpoint.startswith("anor/mrf/room_attachment$attach_"):
@@ -60,6 +68,8 @@ def verify_contract(api, baseline, contract):
                 raise RetryBlocked("Aksiyaning belgilangan bonus limiti o‘zgargan")
     elif "natural_person" in endpoint:
         require_fields(api.model("anor/mr/person/natural_person_view", person_id=identity), name=expected["first_name"], code=expected["code"], state="A")
+    elif "service+add" in endpoint:
+        require_fields(api.model("anor/mr/product/service_view", product_id=identity), **expected)
     elif "inventory+add" in endpoint:
         require_fields(api.model("anor/mr/product/inventory_view", product_id=identity), **expected)
     elif "price_type" in endpoint:
@@ -89,10 +99,14 @@ def verify_retry_preparations(case, node, directory):
             contracts.update(owners.get(prerequisite, {}))
             pending.extend(requirements[prerequisite])
     state = RegressionSetupState(directory / "readiness-state.json", deepcopy(case.baseline))
+    group = node.get_closest_marker("order_group").args[0]
+    price_state = getattr(node.config, "_retry_states", {}).get(group, {})
     try:
         api = state.user()
         with allure.step("Retry: faqat shu biznes testning zarur tayyorlovlarini tekshirish"):
             for contract in contracts.values():
+                if group in PRICE_CHANGE_GROUPS and node.name in {"test_03_new_draft", "test_04_original_and_picker", "test_04_export"}:
+                    contract = retry_price_contract(contract, price_state, case.baseline["price_type_id_uzb"], {})
                 verify_contract(api, case.baseline, contract)
     finally:
         state.close()

@@ -1,12 +1,12 @@
 # Regression: qayerdan boshlash kerak?
 
-**Joriy 14 ta Order guruhining asosiy runneri — [run.py](run.py).**
+**Joriy Order guruhlarining asosiy runneri — [run.py](run.py).**
 Guruhlar ro‘yxati va tartibi [ordering.py](test_orders/helpers/ordering.py)dagi
-`GROUP_RUNNERS` va `GROUP_NAMES`da. Suite 125 testcase’dan iborat.
+`GROUP_RUNNERS` va `GROUP_NAMES`da. Har bir guruhdagi testlar soni [runnerlar jadvalida](test_orders/runners/README.md) ko‘rsatilgan.
 
 ```text
 regression/
-├── run.py                        ← ASOSIY RUNNER: barcha 14 Order guruhi
+├── run.py                        ← ASOSIY RUNNER: barcha Order guruhlari
 ├── conftest.py                   ← umumiy pytest fixture va hooklar
 ├── test_orders/
 │   ├── runners/                  ← GURUH RUNNERLARI: tartib + dependency
@@ -16,7 +16,7 @@ regression/
 │   ├── verification/             ← mexanizmni tekshiruvchi alohida runner
 │   └── conftest.py               ← Order fixturelari va retry/dependency hooklari
 ├── helpers/                      ← umumiy runtime, retry, readiness, sessiya
-└── legacy/                       ← ESKI suite; joriy 125 taga kirmaydi
+└── legacy/                       ← ESKI suite; asosiy suite tarkibiga kirmaydi
 ```
 
 ## Men nimani ochaman?
@@ -56,7 +56,7 @@ Misol: [to‘lov runneri](test_orders/runners/test_payments_runner.py) →
 Buyruqlar repo ildizidan bajariladi. Bu qo‘llanma; faylni o‘qish testni boshlamaydi.
 
 ```sh
-# Joriy barcha 14 Order guruhi
+# Joriy barcha Order guruhlari
 ./.venv/bin/python tests/regression/run.py
 
 # Faqat SCN-003 — To‘lovlar

@@ -1,4 +1,4 @@
-"""Order uchun mustaqil 10% katalog skidkasi va uning ikki bog'lanishi.
+"""Order uchun mustaqil foizli katalog skidkasi va uning ikki bog'lanishi.
 
 UI dalili: order-full-20261026/1154–1161, 1180–1185.
 04.11.2026: bir kompaniyada percent=-10 takroran yaratish dup_val_on_index
@@ -29,15 +29,17 @@ pytestmark = [pytest.mark.regression, pytest.mark.order_positive,
               allure.story("Tayyor skidka ma'lumotlari")]
 
 
-def run_prepare_margin(page, baseline, data, directory):
+def run_prepare_margin(page, baseline, data, directory, *, percent="10"):
     """1. Filial va xonaning avvalgi skidka bog'lanishlarini qayd etish.
-    2. Mavjud faol −10% skidkani qayta ishlatish; yo'q bo'lsagina yaratish, ID/modelni tekshirish.
+    2. Mavjud faol foizli skidkani qayta ishlatish; yo'q bo'lsagina yaratish, ID/modelni tekshirish.
     3. Faqat yangi skidkani setup filialiga biriktirish.
     4. Xuddi shu skidkani setup xonasiga biriktirish.
     5. Har ikki ro'yxat eski bog'lanishlar + yangi ID ekanini tasdiqlash.
 
     Katalog, filial va xona mutatsiyalari UI orqali; mavjud skidkalar saqlanadi.
     """
+    if percent not in {"10", "17"}:
+        raise ValueError("Order guruhlari uchun kutilmagan chegirma foizi")
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
     run_id = uuid4("margin").hex[:12]
@@ -45,8 +47,8 @@ def run_prepare_margin(page, baseline, data, directory):
     room_name, filial_name = f"room-pw{code}", f"filial-pw{code}"
     margin = {
         "status": "process", "stage": "planned", "run_id": run_id,
-        "name": f"Order manual 10-pw{code}-{run_id}",
-        "code": f"c_md10_{code}_{run_id}", "percent": "10", "percent_type": "D",
+        "name": f"Order manual {percent}-pw{code}-{run_id}",
+        "code": f"c_md{percent}_{code}_{run_id}", "percent": percent, "percent_type": "D",
         "state": "A", "filial_id": str(baseline["filial_id"]),
         "room_id": str(baseline["room_id"]), "retention": "retained",
     }
@@ -73,18 +75,18 @@ def run_prepare_margin(page, baseline, data, directory):
             margin["filial_ids_before"] = sorted(filial_before)
             margin["room_ids_before"] = sorted(room_before)
             persist("membership_snapshot")
-        with allure.step("Mavjud faol −10% skidkani tekshirish; foiz kompaniyada yagona"):
+        with allure.step("Mavjud faol foizli skidkani tekshirish; foiz kompaniyada yagona"):
             head_api = state.admin(head_filial=True)
             matches = []
             for row in head_api.table("anor/mkr/margin_list:table", ["margin_id", "name"]):
                 model = head_api.model("anor/mkr/margin+edit", margin_id=positive_id(row["margin_id"]))
-                if model.get("percent_type") == "D" and Decimal(str(model["percent"])) == Decimal("10"):
+                if model.get("percent_type") == "D" and Decimal(str(model["percent"])) == Decimal(percent):
                     matches.append(model)
             if len(matches) > 1:
-                raise APIError("Katalogda bir nechta −10% skidka topildi; aniq targetni tanlab bo'lmaydi")
+                raise APIError("Katalogda bir xil foizli bir nechta skidka topildi; aniq targetni tanlab bo'lmaydi")
             if matches:
                 saved = matches[0]
-                require_fields(saved, state="A", percent_type="D", percent="10")
+                require_fields(saved, state="A", percent_type="D", percent=percent)
                 margin.update(id=positive_id(saved["margin_id"]), name=saved["name"],
                               code=saved["code"], preparation="reused_existing")
                 persist("existing_verified")
@@ -95,11 +97,10 @@ def run_prepare_margin(page, baseline, data, directory):
             base.switch_filial(name="Администрирование")
         if "id" not in margin:
             with allure.step("3 - Skidkalar katalogini ochish"):
-                base.navigate_to(tab="Справочники", name="Скидки/наценки")
-                base.expect_page(heading="Скидки/наценки", url="anor/mkr/margin_list")
+                base.open_route("anor/mkr/margin_list", heading="Скидки/наценки")
             existing = find_list_record(base, "margin_list", "name", margin["name"])
             if existing is None:
-                with allure.step("4 - Alohida aktiv 10% skidka yaratish"):
+                with allure.step("4 - Alohida aktiv foizli skidka yaratish"):
                     open_form_from_list(base.page, heading="Скидка/наценка (создание)", url=re.compile(r"margin(?:%2[Bb]|\+)add"))
                     base.input(label="Код", value=margin["code"])
                     base.input(label="Название", value=margin["name"])
@@ -119,7 +120,7 @@ def run_prepare_margin(page, baseline, data, directory):
                 persist(margin["preparation"])
                 require_fields(api.model("anor/mkr/margin+edit", margin_id=margin["id"]),
                                margin_id=margin["id"], name=margin["name"], code=margin["code"],
-                               state="A", percent_type="D", percent="10")
+                               state="A", percent_type="D", percent=percent)
                 base.grid_controller(search=margin["name"])
                 base.grid(margin["name"], margin["code"], "Скидка", "Активный")
                 persist("margin_verified")
@@ -167,11 +168,11 @@ def run_prepare_margin(page, baseline, data, directory):
                 base.confirm_biruni(f"Прикрепить {margin['name']}?")
                 base.wait_for_loader()
                 persist("room_attached")
-        with allure.step("12 - Xonada yangi −10% skidka va eski bog'lanishlar saqlanganini tekshirish"):
+        with allure.step("12 - Xonada tanlangan skidka va eski bog'lanishlar saqlanganini tekshirish"):
             base.tab(name="Прикрепленные")
             base.wait_for_loader()
             base.grid_controller(search=margin["name"])
-            base.grid(margin["name"], "-10", "Активный")
+            base.grid(margin["name"], f"-{percent}", "Активный")
             api = state.admin()
             room_after = {positive_id(row["margin_id"]) for row in api.table(
                 route + ":table_margin", ["margin_id"],
@@ -186,5 +187,5 @@ def run_prepare_margin(page, baseline, data, directory):
         raise
     finally:
         persist(margin["stage"])
-        allure.attach(json.dumps(margin, ensure_ascii=False), "Tayyor 10% skidka — ID va bog'lanishlar", allure.attachment_type.JSON)
+        allure.attach(json.dumps(margin, ensure_ascii=False), f"Tayyor {percent}% skidka — ID va bog'lanishlar", allure.attachment_type.JSON)
         state.close()

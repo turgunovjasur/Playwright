@@ -11,7 +11,7 @@ from uuid import uuid4
 
 import allure
 
-from tests.shared.browser import browser_context, browser_page
+from tests.shared.browser import order_attempt_page
 from tests.shared.reporting import (
     auth_diagnostic_for_item, browser_state, reporting_warning, safe_page_screenshot,
 )
@@ -152,15 +152,17 @@ def order_page_context(browser, item, *, storage_state=None):
     directory = case_directory(item)
     trace = directory / "trace.zip"
     try:
-        with browser_context(browser, trace, storage_state=storage_state) as context:
+        with order_attempt_page(browser, trace, storage_state) as page:
             from tests.regression.helpers.retry.state import ACTIVE
             from tests.regression.helpers.retry.reconcile import bind_browser
             journal = ACTIVE.get()
-            if journal:
-                bind_browser(context, journal)
-            with browser_page(context) as page:
+            release = bind_browser(page.context, journal) if journal else None
+            try:
                 item._regression_runtime_page = page
                 yield page
+            finally:
+                if release:
+                    release()
     except (KeyboardInterrupt, SystemExit):
         item._regression_interrupted = True
         raise

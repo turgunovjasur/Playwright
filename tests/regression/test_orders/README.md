@@ -4,7 +4,7 @@ Barcha guruhlar: [../run.py](../run.py). Bitta guruh: [runnerlar ro‘yxati](run
 
 | Papka/fayl | Vazifasi |
 |---|---|
-| `runners/` | 14 guruhning pytest testlari, tartibi va dependencylari |
+| `runners/` | Guruhlarning pytest testlari, tartibi va dependencylari |
 | `setup_cases/` | Ma’lumot tayyorlovchi testcase qadamlari |
 | `business_cases/` | Biznes qadamlari va assertionlar, mavzular bo‘yicha |
 | `helpers/flows/` | Takror ishlatiladigan UI amallari |
@@ -14,7 +14,7 @@ Barcha guruhlar: [../run.py](../run.py). Bitta guruh: [runnerlar ro‘yxati](run
 | `helpers/group_auth.py`, `helpers/auth_recovery.py` | Login va sessiyani tiklash |
 | `helpers/models.py` | Test konteksti va ma’lumot modeli |
 | `conftest.py` | Fixture va pytest hooklar |
-| `verification/` | Nazoratli uzilishlar runneri; asosiy 125 testga kirmaydi |
+| `verification/` | Nazoratli uzilishlar runneri; asosiy suite tarkibiga kirmaydi |
 
 Test kimga bog‘liqligi runnerdagi `@pytest.mark.order_requires(...)`da yozilgan.
 Kerakli prerequisite o‘tmasa test sabab bilan bajarilmaydi. Mustaqil setup
