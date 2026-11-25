@@ -1,4 +1,5 @@
 """Uch A2 biznes testcase uchun order list/create/save/reopen gatewaylari."""
+from contextlib import contextmanager
 import re
 from urllib.parse import unquote, urlsplit
 import allure
@@ -200,6 +201,23 @@ def select_client_product(page, client, product, price_type):
         base.click(name="Далее", exact=True)
         base.text("Название", "Кол-во")
         return select_order_product(page, product, price_type)
+
+
+@contextmanager
+def product_loaded(page, product_id, price_type_id):
+    """Wait for this selection's price and stock before editing its quantity."""
+    def matches(response):
+        if not unquote(urlsplit(response.url).path).endswith("/order/order+add:get_product_data"):
+            return False
+        data = response.request.post_data_json
+        return (str(data["product_id"]) == str(product_id)
+                and str(data["price_type_id"]) == str(price_type_id))
+
+    with page.expect_response(matches) as loaded:
+        yield
+    if not loaded.value.ok:
+        raise AssertionError(f"Mahsulot ma’lumotlarini yuklash HTTP {loaded.value.status}")
+    loaded.value.finished()
 
 
 def select_order_product(page, product, price_type, *, warehouse="Основной склад", index=0):

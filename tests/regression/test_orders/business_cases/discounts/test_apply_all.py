@@ -6,7 +6,7 @@ from playwright.sync_api import expect
 
 from tests.regression.test_orders.helpers.flows.mixed_units import check_line, open_saved, save_draft
 from tests.regression.test_orders.helpers.flows.order import (
-    existing_order, open_new_order, reopen_order_goods, select_client_product, select_order_product,
+    existing_order, open_new_order, product_loaded, reopen_order_goods, select_client_product, select_order_product,
 )
 from utils.base_pages.auto_base_page import AutoBasePage
 
@@ -19,9 +19,11 @@ def run_apply_all(case, catalog):
     if not order_id:
         open_new_order(page)
         with allure.step("1 dona va 2,5 kg qo‘shib, faqat dona qatoriga 17% chegirma tanlash"):
-            piece = select_client_product(page, case.client, case.bonus_product, piece_type)
+            with product_loaded(page, catalog["bonus"]["id"], catalog["mixed_prices"]["piece"]["id"]):
+                piece = select_client_product(page, case.client, case.bonus_product, piece_type)
             base.input(locator=piece.locator("[data-smt-col-key=quantity] input"), value="1", press_tab=True)
-            kg = select_order_product(page, case.product, case.price_type, index=1)
+            with product_loaded(page, catalog["goods"]["id"], case.baseline["price_type_id_uzb"]):
+                kg = select_order_product(page, case.product, case.price_type, index=1)
             base.input(locator=kg.locator("[data-smt-col-key=quantity] input"), value="2.5", press_tab=True)
             base.ui_select(label="Скидка/наценка", value="-17")
             percent = "[data-smt-col-key=margin] input"

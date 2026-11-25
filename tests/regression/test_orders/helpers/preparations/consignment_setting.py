@@ -41,7 +41,7 @@ def _open_preference(page, filial_id):
     response = loaded.value
     request = response.request
     headers = {key: value for key, value in request.all_headers().items()
-               if key in {"filial_id", "user_id", "company_id", "project_code", "lang_code"}}
+               if key in {"filial_id", "user_id", "company_id", "project_code", "lang_code", "formurl"}}
     if response.status != 200 or headers.get("filial_id") != str(filial_id):
         raise AssertionError("Order sozlamasi test filialida ochilmadi")
     model = response.json()[2]
@@ -67,11 +67,22 @@ def _change(page, model, url, headers, enabled):
         finally:
             response.dispose()
 
+    current = read_current()
+    saved_fields = set()
+    conflicts = []
+
     def save(route):
         data = route.request.post_data_json
-        if (data.get(FLAG) != expected or route.request.headers.get("filial_id") != headers["filial_id"]
-                or read_current() != model):
-            route.abort()
+        if (data.get(FLAG) != expected or route.request.all_headers().get("filial_id") != headers["filial_id"]):
+            route.fulfill(status=409, body="Unexpected consignment flag or branch")
+            return
+        # The model also contains read-only option lists, e.g. available roles.
+        # Check every preference the form is about to write.
+        saved_fields.update(data)
+        conflicts.extend(sorted(key for key in saved_fields
+                                if key not in model or key not in current or current[key] != model[key]))
+        if conflicts:
+            route.fulfill(status=409, body="Order settings changed")
             return
         # A2 serializes an untouched blank minimum advance as zero on any Save.
         percent = "deal_booked_payment_min_percent"
@@ -83,12 +94,17 @@ def _change(page, model, url, headers, enabled):
     try:
         with page.expect_response(lambda r: SAVE.search(r.url) is not None) as saved:
             AutoBasePage(page).click(name="Сохранить", exact=True)
+        if conflicts:
+            raise AssertionError("Saqlashdan oldin filial sozlamalari o‘zgardi: " + ", ".join(conflicts))
         if saved.value.status != 200:
-            raise AssertionError("Konsignatsiya sozlamasini saqlashda xato")
+            raise AssertionError(f"Konsignatsiya sozlamasini saqlash HTTP {saved.value.status}")
     finally:
         page.unroute(SAVE, save)
-    if read_current() != {**model, FLAG: expected}:
-        raise AssertionError("Konsignatsiya yoki boshqa Order sozlamasi kutilganiga mos emas")
+    after = read_current()
+    expected_model = {**model, FLAG: expected}
+    changed = sorted(key for key in saved_fields if key not in after or after[key] != expected_model[key])
+    if FLAG not in saved_fields or changed:
+        raise AssertionError("Saqlangandan keyin filial sozlamalari mos emas: " + ", ".join(changed or [FLAG]))
 
 
 @contextmanager

@@ -7,7 +7,7 @@ from playwright.sync_api import expect
 from tests.regression.test_orders.business_cases.discounts.test_manual_discount import _line_amount
 from tests.regression.test_orders.helpers.discounts import parse_amount
 from tests.regression.test_orders.helpers.flows.order import (
-    existing_order, open_new_order, open_order_summary, save_order_by_reference,
+    existing_order, open_new_order, open_order_summary, product_loaded, save_order_by_reference,
     select_client_product, select_order_product,
 )
 from tests.regression.test_orders.helpers.flows.settlement import _columns
@@ -65,10 +65,12 @@ def run_mixed_draft(case, catalog):
     piece_type = catalog["mixed_prices"]["piece"]["name"]
     oid = existing_order(case)
     if not oid:
-        row = start_goods(case)
+        with product_loaded(case.page, catalog["goods"]["id"], case.baseline["price_type_id_uzb"]):
+            row = start_goods(case)
         base.input(label="Кол-во", value="2.5", press_tab=True)
         _line_amount(case, row, -100)
-        piece = select_order_product(case.page, case.bonus_product, piece_type, index=1)
+        with product_loaded(case.page, catalog["bonus"]["id"], catalog["mixed_prices"]["piece"]["id"]):
+            piece = select_order_product(case.page, case.bonus_product, piece_type, index=1)
         base.input(locator=piece.locator("[data-smt-col-key=quantity] input"), value="1", press_tab=True)
         oid = save_draft(case, 3750)
     case.remember_order(oid)

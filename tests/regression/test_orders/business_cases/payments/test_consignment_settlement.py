@@ -1,4 +1,5 @@
 """SCN-018. Kelajakdagi ikkita qarz, alohida to‘lovlar va order jurnali."""
+from contextlib import contextmanager
 from urllib.parse import parse_qs, urlsplit
 
 import allure
@@ -15,6 +16,20 @@ from utils.date_utils import format_date, resolve_date
 DEBTS = "anor/mdeal/order/offset/offset_detail_list"
 CURRENCY = "Узбекский сум"
 TRANSFER = "Перечисление"
+
+
+@contextmanager
+def _debt_table(page):
+    def matches(response):
+        return (urlsplit(response.url).path.endswith("/" + DEBTS + ":table")
+                and response.request.method == "POST"
+                and "column" in response.request.post_data_json.get("p", {}))
+
+    with page.expect_response(matches) as loaded:
+        yield loaded
+    if loaded.value.status != 200:
+        raise AssertionError(f"Qarzlar ro‘yxatini yuklash HTTP {loaded.value.status}")
+    loaded.value.finished()
 
 
 def _apply_order_filter(case, order_id, *, remove_cutoff):
@@ -44,19 +59,12 @@ def _apply_order_filter(case, order_id, *, remove_cutoff):
         }""", order_id)
         case.check("ID kiritish tugadi", True, stable)
 
-    def table_data(response):
-        return (urlsplit(response.url).path.endswith("/" + DEBTS + ":table")
-                and response.request.method == "POST"
-                and "column" in response.request.post_data_json.get("p", {}))
-
-    with page.expect_response(table_data) as applied:
+    with _debt_table(page) as applied:
         if edited:
             number.press("Enter")
         else:
             dialog.get_by_role("button", name="Применить", exact=True).click()
     response = applied.value
-    case.check("Qarzlar ro‘yxati yangilandi", 200, response.status)
-    response.finished()
     applied_filter = response.request.post_data_json["p"]["filter"]
     terms = applied_filter[1] if applied_filter[0] == "and" else [applied_filter]
     case.check("Serverga berilgan aniq order IDsi", [["deal_id", "=", order_id]],
@@ -138,7 +146,8 @@ def _post_payment(case, order_id, day, remaining_dates):
             allow_absent_ui_write("trade/tcs/offset/order_payment$post", identity={"note": note})
         base.click(name="Провести", exact=True)
         value("consignment_post:" + day, True)
-        base.confirm_biruni("Провести платеж?")
+        with _debt_table(page):
+            base.confirm_biruni("Провести платеж?")
         base.expect_page(heading="Детали задолженности", url="offset_detail_list")
 
 
@@ -223,7 +232,9 @@ def run_consignment_settlement(case):
         for index in range(stages.index(status), len(stages) - 1):
             change_order_status(page, order_id, current=stages[index], target=stages[index + 1])
     with allure.step("2 - Order IDsi va to‘lov muddatining yuqori chegarasini tekshirish"):
-        base.open_route(DEBTS, heading="Детали задолженности")
+        # Opening filters before the initial grid response leaves the dialog empty.
+        with _debt_table(page):
+            base.open_route(DEBTS, heading="Детали задолженности")
         if not reuse("consignment_cutoff_proved"):
             _apply_order_filter(case, order_id, remove_cutoff=False)
             expected = {day: 1000 for day in dates if resolve_date(day) <= resolve_date()}

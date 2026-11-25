@@ -119,7 +119,7 @@ def run_recalculation(case, *, trigger):
                 heading = page.get_by_role("heading", name="Заказ (подбор)", exact=True)
                 expect(heading).to_be_visible()
             with allure.step("Tanlovni o‘zgartirmasdan «Подбор»dan chiqish"):
-                picker = page.locator("main:visible").filter(has=heading)
+                picker = page.locator("app-type-d-drawer-host:visible").filter(has=heading)
                 base.click(name="Закрыть", exact=True, root=picker)
                 expect(heading).to_be_hidden()
         else:

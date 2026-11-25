@@ -1,13 +1,12 @@
 """KG qatori: abgular 1537–1542, saqlangan sotuv miqdori va summali chegirma."""
 from decimal import Decimal
-from urllib.parse import unquote, urlsplit
 
 from tests.regression.helpers.retry.reconcile import allow_absent_ui_write, is_retry
 from tests.regression.test_orders.business_cases.discounts.test_manual_discount import _line_amount
 from tests.regression.test_orders.helpers.discounts import parse_amount
 from tests.regression.test_orders.helpers.flows.mixed_units import check_line, open_saved, save_draft, start_goods
 from tests.regression.test_orders.helpers.flows.order import (
-    existing_order, open_order_summary, reopen_order_goods, save_edited_order,
+    existing_order, open_order_summary, product_loaded, reopen_order_goods, save_edited_order,
 )
 from utils.base_pages.auto_base_page import AutoBasePage
 
@@ -15,19 +14,8 @@ from utils.base_pages.auto_base_page import AutoBasePage
 def run_fractional_draft(case):
     order_id = existing_order(case)
     if not order_id:
-        # Selecting a SKU renders its row before its asynchronous price and stock load.
-        def selected_product(response):
-            if not unquote(urlsplit(response.url).path).endswith("/order/order+add:get_product_data"):
-                return False
-            data = response.request.post_data_json
-            return (str(data["product_id"]) == str(case.baseline["product_id"])
-                    and str(data["price_type_id"]) == str(case.baseline["price_type_id_uzb"]))
-
-        with case.page.expect_response(selected_product) as loaded:
+        with product_loaded(case.page, case.baseline["product_id"], case.baseline["price_type_id_uzb"]):
             row = start_goods(case)
-        if not loaded.value.ok:
-            raise AssertionError(f"KG mahsulotini yuklash HTTP {loaded.value.status}")
-        loaded.value.finished()
         AutoBasePage(case.page).input(locator=row.locator("[data-smt-col-key=quantity] input"),
                                       value="1.25", press_tab=True)
         _line_amount(case, row, -100)
