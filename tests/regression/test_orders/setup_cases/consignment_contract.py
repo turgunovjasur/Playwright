@@ -7,7 +7,7 @@ from tests.api.client import positive_id, require_fields
 from tests.regression.helpers.retry.reconcile import allow_absent_ui_write, confirm_entity, one_row, query_payload
 from tests.regression.helpers.retry.state import ACTIVE, RetryBlocked
 from utils.base_pages import A2_DOCUMENT_TIMEOUT_MS
-from utils.base_pages.auto_base_page import AutoBasePage
+from tests.regression.test_orders.helpers.navigation import OrderPage
 
 
 def _open_list(case, route, heading):
@@ -16,7 +16,7 @@ def _open_list(case, route, heading):
         endpoint = "/b/" + route + "_list:table"
         with page.expect_response(lambda r: unquote(urlsplit(r.url).path).endswith(endpoint),
                                   timeout=A2_DOCUMENT_TIMEOUT_MS) as loaded:
-            AutoBasePage(page).open_route(route + "_list", heading=heading, timeout=A2_DOCUMENT_TIMEOUT_MS)
+            OrderPage(page).open_route(route + "_list", heading=heading, timeout=A2_DOCUMENT_TIMEOUT_MS)
         request = loaded.value.request
         headers = {k: v for k, v in request.all_headers().items()
                    if k in {"filial_id", "company_id", "user_id", "project_code", "lang_code", "x-requested-with"}}
@@ -38,7 +38,7 @@ def _read(page, session, endpoint, payload):
 
 
 def _saved_entity(case, *, route, heading, id_key, key, code, fill_form, fields, rooms=None):
-    page, base = case.page, AutoBasePage(case.page)
+    page, base = case.page, OrderPage(case.page)
     name = fields["name"]
     is_contract = id_key == "contract_id"
     session = _open_list(case, route, heading)

@@ -10,15 +10,15 @@ import allure
 import pytest
 from playwright.sync_api import expect
 
-from tests.regression.test_orders.helpers.flows.order import (existing_order, saved_quantities,
+from tests.regression.test_orders.helpers.flows.order import (select_order_client, existing_order, saved_quantities,
     open_new_order, select_order_product, save_order_by_reference,
     save_edited_order, reopen_order_goods,
 )
 from tests.regression.test_orders.helpers.flows.order_status import cancel_order
-from tests.regression.test_orders.helpers.flows.settlement import _columns
+from tests.regression.test_orders.helpers.flows.settlement import search_order_by_id
 from tests.regression.test_orders.helpers.flows.stock import read_stock
-from tests.regression.test_orders.setup_cases.test_product_limit import persist
-from utils.base_pages.auto_base_page import AutoBasePage
+from tests.regression.test_orders.setup_cases.product_limit import persist
+from tests.regression.test_orders.helpers.navigation import OrderPage
 from tests.regression.helpers.retry.reconcile import is_retry
 from tests.regression.helpers.retry.state import RetryBlocked
 from tests.regression.helpers.preparation.stock_guard import require_available
@@ -42,7 +42,7 @@ def _stock(case, expected_reserved):
 
 
 def _saved(case, order, quantity, *, status="Новый"):
-    base, page = AutoBasePage(case.page), case.page
+    base, page = OrderPage(case.page), case.page
     amount = Decimal(quantity) * Decimal(case.workflow["price"]["unit_price"])
     for label, value in (("ИД заказа", order["id"]), ("Клиент", case.client),
                          ("Статус", status), ("Номер ТТН", order["reference"]),
@@ -64,7 +64,7 @@ def _saved(case, order, quantity, *, status="Новый"):
 
 def run_create_limit_order(case, directory, *, key, quantity, reserved_before, reserved_after):
     """1. Own SKU rezervi. 2. Same room/date order. 3. Save/view/reopen. 4. Aggregate rezerv."""
-    data, base = case.workflow, AutoBasePage(case.page)
+    data, base = case.workflow, OrderPage(case.page)
     if data.get("status") != "passed" or Decimal(data["limit"]["quantity"]) != 10:
         raise AssertionError("Oldin same room + own SKU uchun saqlangan kunlik limit10 kerak")
     if key in data["orders"]:
@@ -80,9 +80,7 @@ def run_create_limit_order(case, directory, *, key, quantity, reserved_before, r
         require_available(case, quantity, bonus_quantity=0)
         open_new_order(case.page)
         with allure.step(f"2 - Bir xil xona va limit sanasida {quantity} dona order"):
-            base.b_input(label="Рабочая зона", expect_value=case.room)
-            base.b_input(label="Штат", expect_value=case.staff)
-            base.b_input(label="Клиент", value=case.client, clear=True)
+            select_order_client(case.page, case.client, room=case.room, staff=case.staff)
             # Daily quota uchun order va jo‘natish kuni tayyorlov bilan bir xil.
             # 569-limit-order-main27oct.txt: Дата заказа date+time, jo‘natish date-only.
             base.input(label="Дата заказа", value=f"{data['date']} 10:00", press_tab=True)
@@ -139,7 +137,7 @@ def run_cancel_first_limit_order(case, directory):
 
 def run_reuse_released_product_limit(case, directory):
     """1. Ikkinchi order IDsi. 2. Miqdor 4→10. 3. Save/view/reopen. 4. Rezerv 10."""
-    data, page, base = case.workflow, case.page, AutoBasePage(case.page)
+    data, page, base = case.workflow, case.page, OrderPage(case.page)
     first, second = data["orders"]["first"], data["orders"]["second"]
     if first["stage"] != "cancel_verified" or second["stage"] != "verified":
         raise AssertionError("Avval birinchi 6 dona order bekor qilinishi kerak")
@@ -147,8 +145,7 @@ def run_reuse_released_product_limit(case, directory):
     with allure.step("1 - Ikkinchi orderni aniq ID bilan topish"):
         base.navigate_to(tab="Продажа", name="Заказы")
         base.expect_page(heading="Заказы", url="order_list")
-        col = _columns(page, {"id": "ИД заказа"}, search_name="ИД заказа")["id"]
-        base.grid_controller(search=second["id"])
+        col = search_order_by_id(page, second["id"])["id"]
         row = base.grid(second["id"], click=True)
         expect(base.grid_cell(row, col)).to_have_text(second["id"])
     with allure.step("2 - Saqlangan ikkinchi order viewini ochish"):
@@ -190,9 +187,9 @@ def verify_resume_state(case):
     """No mutations: validate the saved daily quota, both orders and reserve."""
     from datetime import datetime
     from zoneinfo import ZoneInfo
-    from tests.regression.test_orders.setup_cases.test_product_limit import verify_saved_limit
+    from tests.regression.test_orders.setup_cases.product_limit import verify_saved_limit
 
-    data, page, base = case.workflow, case.page, AutoBasePage(case.page)
+    data, page, base = case.workflow, case.page, OrderPage(case.page)
     with allure.step("Resume: sana, oldingi orderlar va boshlang‘ich holat mosligini tekshirish"):
         if data["date"] != datetime.now(ZoneInfo("Asia/Tashkent")).strftime("%d.%m.%Y"):
             raise AssertionError("Kunlik TMZ limiti boshqa sanaga tegishli; avtomatik davom ettirish to‘xtatildi")

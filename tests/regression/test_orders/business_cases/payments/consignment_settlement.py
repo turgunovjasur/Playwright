@@ -10,7 +10,7 @@ from tests.regression.helpers.retry.reconcile import allow_absent_ui_write, is_r
 from tests.regression.helpers.retry.state import ACTIVE, RetryBlocked
 from tests.regression.test_orders.helpers.discounts import parse_amount
 from tests.regression.test_orders.helpers.flows.settlement import _columns, change_order_status
-from utils.base_pages.auto_base_page import AutoBasePage
+from tests.regression.test_orders.helpers.navigation import OrderPage
 from utils.date_utils import format_date, resolve_date
 
 DEBTS = "anor/mdeal/order/offset/offset_detail_list"
@@ -33,7 +33,7 @@ def _debt_table(page):
 
 
 def _apply_order_filter(case, order_id, *, remove_cutoff):
-    page, base = case.page, AutoBasePage(case.page)
+    page, base = case.page, OrderPage(case.page)
     base.grid_controller(open_filter=True)
     dialog = page.get_by_role("dialog")
     number = dialog.get_by_placeholder("Введите число...", exact=True)
@@ -91,7 +91,7 @@ def _apply_order_filter(case, order_id, *, remove_cutoff):
 
 
 def _debts(case, order_id):
-    page, base = case.page, AutoBasePage(case.page)
+    page, base = case.page, OrderPage(case.page)
     grid = page.locator("main:visible smt-table:visible")
     rows = grid.locator(".smt-data-row")
     fields = {"order": "ИД заказа", "client": "Клиент", "day": "Срок оплаты", "currency": "Валюта",
@@ -113,7 +113,7 @@ def _debts(case, order_id):
 
 
 def _post_payment(case, order_id, day, remaining_dates):
-    page, base = case.page, AutoBasePage(case.page)
+    page, base = case.page, OrderPage(case.page)
     row = page.locator("main:visible smt-table:visible .smt-data-row").filter(
         has=page.get_by_text(day, exact=True)).filter(has=page.get_by_text(order_id, exact=True))
     with allure.step(f"{day} muddatning yagona qarz qatorini tanlab to‘lovni ochish"):
@@ -178,7 +178,7 @@ def _check_journal(case, report, order_id, offset, dates):
 
 
 def _history(case, order_id, dates):
-    page, base = case.page, AutoBasePage(case.page)
+    page, base = case.page, OrderPage(case.page)
     with allure.step("Hisob-kitoblar tarixida aynan shu klient va order to‘lovlarini ochish"):
         base.page_link("История взаиморасчетов")
         base.expect_page(heading="История взаиморасчетов", url="offset_history_list")
@@ -217,7 +217,7 @@ def run_consignment_settlement(case):
     """1. Orderni ketma-ket arxivlash. 2. Filtr va qarz muddatlarini solishtirish.
     3. Har muddatni alohida to‘lash. 4. Nol qarz, tarix va ikki jurnalni tekshirish.
     """
-    page, base = case.page, AutoBasePage(case.page)
+    page, base = case.page, OrderPage(case.page)
     order = case.workflow["consignment_order"]
     order_id, dates = order["id"], case.workflow["consignment_dates"]
     with allure.step("1 - Saqlangan order statusini tekshirib arxivlash"):

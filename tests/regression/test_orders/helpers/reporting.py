@@ -10,13 +10,15 @@ import ast
 from functools import lru_cache
 from collections import Counter, defaultdict
 from copy import deepcopy
-from html import escape
+from html import escape, unescape
 import json
 import shutil
 import re
 from pathlib import Path
 from urllib.parse import urlencode, urlsplit
 
+from tests.regression.test_orders.groups import GROUP_FEATURES
+from tests.regression.helpers.failure_source import failure_locations
 from utils.report_safety import safe_payload, safe_text
 
 VERSION = "order-qa-report-v2"
@@ -72,36 +74,6 @@ SPECS.update({
         "Har status saqlanadi. 2 dona rezerv bir marta olinadi; jo‘natishda fizik qoldiq 2 dona kamayadi. Arxivda aynan shu order qarzi 14 000 so‘m."),
 })
 
-GROUP_FEATURES = {
-    "statuses": "SCN-001 · Order statuslari",
-    "promotions": "SCN-002 · Order aksiyalari va chegirmalari",
-    "payments": "SCN-003 · Order to‘lovlari",
-    "mandatory": "SCN-004 · Majburiy aksiyalar",
-    "stock": "SCN-005 · Order ombor rezervi",
-    "bonus_limit": "SCN-006 · Ikki klient uchun umumiy bonus limiti",
-    "returns": "SCN-007 · Bonus va chegirmali orderni qaytarish",
-    "multi_payments": "SCN-008 · Bir klientning bir nechta orderini to‘lash",
-    "manual_discounts": "SCN-009 · Tayyor va qo‘lda chegirma",
-    "product_limit": "SCN-010 · Ikki order uchun kunlik TMZ limiti",
-    "two_warehouses": "SCN-011 · Bitta orderda ikki ombor",
-    "mixed_promotions": "SCN-012 · Majburiy va ixtiyoriy aksiyalar birga",
-    "auto_offset": "SCN-013 · Kirimda order qarzini avtomatik yopish",
-    "prepayment_first": "SCN-014 · Orderdan oldin olingan avans",
-    "catalog_price_history": "SCN-016 · Katalog narxi o‘zgarganda order summasi",
-    "excel_import_promotion": "SCN-017 · Excel importidan keyin bonus aksiyasi",
-    "consignment_due_dates": "SCN-018 · Konsignatsiya qarzini muddati bo‘yicha yopish",
-    "archive_restore": "SCN-019 · Arxivdan tiklash va bekor qilish",
-    "bulk_missing_price": "SCN-020 · Narxi yo‘q mahsulotda eski narx turini saqlash",
-    "discount_apply_all": "SCN-022 · Chegirmani barcha qatorlarga qo‘llash",
-    "delivery_address": "SCN-023 · Buyurtmaning yetkazish manzili",
-    "service_status": "SCN-025 · Xizmatli buyurtma statuslari",
-    "goods_service_discount": "SCN-026 · Tovar va xizmatga umumiy chegirma",
-    "bonus_recalculation": "SCN-028 · Narx turi almashganda bonusni qayta hisoblash",
-    "order_xml": "SCN-027 · Ikki buyurtmani XMLga eksport qilish",
-    "line_history": "SCN-024 · KG qatori o‘zgarishlari tarixi",
-    "fractional_quantity": "SCN-021 · Kasr miqdoridagi KG chegirmasi",
-    "recovery": "SCN-015 · Retry va dublikatdan himoya",
-}
 SPECS.update({
     ('returns', 'test_00_prepare_client'): ('Qaytarish uchun alohida klient', 'Tayyorlov', 'Qaytarish testlari uchun yangi klient yaratish va ish zonasiga biriktirish.', 'Klient faol, ish zonasiga biriktirilgan va boshqa klientlarning bog‘lanishlari saqlangan.'),
     ('returns', 'test_01_prepare_promotions'): ('Qaytarish uchun bonus aksiyasini tayyorlash', 'Tayyorlov', '10 dona mahsulot xaridiga boshqa mahsulotdan 1 dona bepul bonus aksiyasini tayyorlash.', 'Bonus saqlangan. 10% chegirma keyingi alohida tayyorlovda yaratiladi.'),
@@ -580,6 +552,9 @@ SPECS.update({
 SPECS["bonus_recalculation", "test_01_prepare_promotion"] = SPECS["excel_import_promotion", "test_01_prepare_promotion"]
 SPECS["bonus_recalculation", "test_00_margin"] = SPECS["goods_service_discount", "test_00_margin"]
 SPECS.update({
+    ("bonus_recalculation", "test_002_stock"): (
+        "Ombor qoldig‘ini tayyorlash va tekshirish", "Tayyorlov", "Guruh mahsulotlarining kirimini o‘tkazish.",
+        "API orqali ikkala mahsulotning fizik, band va erkin qoldig‘i tasdiqlangan."),
     ("bonus_recalculation", "test_001_prices"): (
         "Boshlang‘ich narx", "Tayyorlov", "Sotuv va bonus mahsulotlariga narx belgilash.", "1 000 so‘m."),
     ("bonus_recalculation", "test_00_target_price"): (
@@ -1025,14 +1000,15 @@ def _actual(result, case, phase):
                     STATUS_NAMES.get(status, "Natija noma’lum")) if part)
 
 
-def _failed_step(result):
-    # Prefer the innermost recorded failure, rather than its enclosing business flow.
-    failed = [node for node in _walk(result) if node is not result
-              and node.get("status") in {"failed", "broken"} and node.get("name")]
-    return failed[-1].get("name") if failed else None
+def _failed_step(scope):
+    """Keep the enclosing business action together with its failed inner step."""
+    for step in scope.get("steps", []):
+        if step.get("status") in {"broken", "failed"}:
+            return " → ".join(filter(None, (step.get("name"), _failed_step(step))))
+    return ""
 
 
-def _qa_summary(result, spec, case, phase, attempts, impact, preparation):
+def _qa_summary(result, spec, case, phase, attempts, impact, preparation, related):
     name = result["fullName"]
     status = phase.get("status") if phase.get("status") in {"interrupted", "not_run"} else result.get("status")
     failed = status in {"failed", "broken", "interrupted"}
@@ -1042,13 +1018,45 @@ def _qa_summary(result, spec, case, phase, attempts, impact, preparation):
     actual = "Test bajarilishi to‘xtatildi; yakuniy muvaffaqiyat tasdiqlanmagan." if status == "interrupted" else _actual(result, case, phase)
     if status == "not_run":
         actual = "Ushbu test boshlanmagan; amaldagi natija yo‘q."
-    lines = [("Holat", STATUS_NAMES.get(status, "noma’lum")), ("Turi", spec[1]),
-             ("Nima tekshiriladi", spec[2]), ("Kutilgan", expected), ("Amalda", actual)]
+    phases = phase.get("phases", {})
+    failed_phase = next((key for key in ("setup", "call", "teardown")
+                         if phases.get(key, {}).get("outcome") == "failed"), None)
+    phase_data = phases.get(failed_phase, {})
+    lines = [("Holat", STATUS_NAMES.get(status, "noma’lum"))]
+    if failed:
+        scope = result
+        if failed_phase in {"setup", "teardown"}:
+            fixture_key = "befores" if failed_phase == "setup" else "afters"
+            scope = {"steps": [step for fixture in related.values() for step in fixture.get(fixture_key, [])
+                               if step.get("status") in {"broken", "failed"}]}
+        stage = _failed_step(scope) or {"setup": "Tayyorlanish", "teardown": "Yakunlash"}.get(failed_phase)
+        lines.append(("Xato qayd etilgan qadam", stage or (failures[-1]["label"] if failures else spec[0])))
+        if not failures and status != "interrupted":
+            message = safe_text(phase_data.get("message") or result.get("statusDetails", {}).get("message", ""))
+            wanted = re.search(r"(?im)^\s*(?:Expected(?: (?:value|string))?[ \t]*:[ \t]*|(?:AssertionError:[ \t]*)?Locator expected to )([^\n]+)", message)
+            observed = re.search(r"(?im)^\s*(?:Actual|Received)(?: (?:value|string))?[ \t]*:[ \t]*([^\n]+)", message)
+            if wanted:
+                expected = wanted[1].strip()
+                value_match = re.fullmatch(r"have (?:value|text) (.+)", expected, re.I)
+                if value_match:
+                    expected = value_match[1]
+            if observed:
+                actual = observed[1].strip()
+                if actual == "None" and "element(s) not found" in message:
+                    actual = "Element topilmadi"
+            elif message.strip():
+                actual = message.strip().splitlines()[0][:500]
+    lines.extend([("Kutilgan", expected), ("Amalda", actual)])
+    if failed:
+        locations, source_links = failure_locations(result, phase_data)
+        lines.extend(locations)
+        links = result.setdefault("links", [])
+        links.extend(link for link in source_links if link not in links)
+    lines.extend([("Turi", spec[1]), ("Nima tekshiriladi", spec[2])])
     lines.append(("Bevosita bog‘liq testlar", _dependency_summary(result)))
     if phase.get("blocked_by"):
         lines.append(("Testni bloklagan sabab / test", phase["blocked_by"]))
     lines.append(("Allure qadamlari", "Execution bo‘limida; to‘liq ro‘yxat «Allure qadamlari» ilovasida. Faqat qayd etilgan qadamlar ko‘rsatiladi."))
-    phases = phase.get("phases", {})
     timing = []
     for key, label in (("setup", "Tayyorlanish"), ("call", "Test bajarilishi"), ("teardown", "Yakunlash")):
         duration = phases.get(key, {}).get("duration_seconds")
@@ -1073,11 +1081,6 @@ def _qa_summary(result, spec, case, phase, attempts, impact, preparation):
     if identities:
         lines.append(("Test yozuvlari IDlari", " · ".join(identities)))
     if failed:
-        failed_phase = next((key for key, data in phases.items() if data.get("outcome") == "failed"), None)
-        stage = _failed_step(result) or {"setup": "Tayyorlanish", "call": "Test bajarilishi",
-                                       "teardown": "Yakunlash / dalillarni saqlash"}.get(failed_phase)
-        if stage:
-            lines.append(("Xato qayd etilgan qadam", stage))
         if phases.get("call", {}).get("outcome") == "passed":
             remaining = "Asosiy test qismi o‘tgan; yakunlash to‘liq muvaffaqiyatli tugamagan."
         elif failed_phase == "setup":
@@ -1200,7 +1203,7 @@ def enrich_results(directory, *, started_at_ms=None, context=None):
         result["name"] = order_report_title(group, test, rerun=rerun)
         result.pop("descriptionHtml", None)
         detail = _markdown(_description(result, spec, case, phase, preparation, len(journal)))
-        result["description"] = _qa_summary(result, spec, case, phase, attempts, impact, preparation)
+        result["description"] = _qa_summary(result, spec, case, phase, attempts, impact, preparation, related)
         recorded_steps = _recorded_steps(result, related)
         # Containers may be shared by several attempts: keep their evidence available
         # until every test has collected its own technical details.
@@ -1220,7 +1223,7 @@ def enrich_results(directory, *, started_at_ms=None, context=None):
         })
         # Native plain-text fallback also works where Description's blob iframe does not render.
         summary_file = f"{result['uuid']}-qa-summary.txt"
-        (directory / summary_file).write_text(result["description"].replace("**", "") + "\n", encoding="utf-8")
+        (directory / summary_file).write_text(unescape(result["description"].replace("**", "")) + "\n", encoding="utf-8")
         result.setdefault("attachments", []).insert(0, {
             "name": "Qisqa QA natijasi", "source": summary_file, "type": "text/plain",
         })

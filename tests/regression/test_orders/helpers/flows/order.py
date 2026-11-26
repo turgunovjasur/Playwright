@@ -6,7 +6,7 @@ import allure
 from playwright.sync_api import expect
 from tests.shared.navigation import open_form_from_list
 from tests.shared.list_search import find_list_record
-from utils.base_pages.auto_base_page import AutoBasePage
+from tests.regression.test_orders.helpers.navigation import OrderPage
 from utils.base_pages.angular_base_page import _lookup_query_finished
 
 
@@ -19,7 +19,7 @@ def promotion_card(page, name):
 
 
 def open_new_order(page):
-    base = AutoBasePage(page)
+    base = OrderPage(page)
     with allure.step("Order ro'yxatini ochish"):
         base.navigate_to(tab="Продажа", name="Заказы")
         base.expect_page(heading="Заказы", url="/a2/trade/tdeal/order/order_list")
@@ -36,7 +36,7 @@ def existing_order(case):
     """
     from tests.regression.helpers.retry.reconcile import is_retry, ui_row, confirm_entity
     from tests.regression.helpers.retry.state import ACTIVE
-    page, base = case.page, AutoBasePage(case.page)
+    page, base = case.page, OrderPage(case.page)
     with allure.step("Yaratishdan oldin TTN bo‘yicha orderni qidirish"):
         base.navigate_to(tab="Продажа", name="Заказы")
         base.expect_page(heading="Заказы", url="order_list")
@@ -70,7 +70,7 @@ def existing_order(case):
 def saved_quantities(page, product, price_type, warehouses):
     """Read current saved quantities to distinguish pre-edit and post-edit states."""
     from decimal import Decimal
-    base = AutoBasePage(page)
+    base = OrderPage(page)
     grid = page.locator("smt-table:visible").last
     headers = [" ".join(v.split()) for v in grid.locator(".smt-grid-header [data-smt-col-key]").all_text_contents()]
     if headers.count("Количество продажи") != 1:
@@ -86,7 +86,7 @@ def saved_quantities(page, product, price_type, warehouses):
 
 
 def save_order_by_reference(page, reference):
-    base = AutoBasePage(page)
+    base = OrderPage(page)
     from tests.regression.helpers.retry.reconcile import is_retry, ui_row, allow_absent_ui_write, confirm_entity
     if is_retry():
         with allure.step("Retry: avvalgi TTN bilan saqlangan orderni serverdan qidirish"):
@@ -155,7 +155,7 @@ def save_edited_order(page, order_id, reference):
     Create flow ro'yxatga qaytadi; bu yo'l esa saqlangan target ID va TTNni
     bevosita qaytgan viewdan tekshiradi. Kutilmagan route fallback qilinmaydi.
     """
-    base = AutoBasePage(page)
+    base = OrderPage(page)
     with allure.step("Tahrirlangan orderni saqlash va o‘sha order viewiga qaytish"):
         base.expect_page(heading="Заказ (изменение)", url=re.compile(r"order(?:%2[Bb]|\+)edit"))
         base.click(name="Сохранить", exact=True)
@@ -167,7 +167,7 @@ def save_edited_order(page, order_id, reference):
 
 def open_order_summary(page, *, expected_total=None):
     """Yakunlashga o'tib, Order formasidagi yagona jami maydonini kutadi."""
-    base = AutoBasePage(page)
+    base = OrderPage(page)
     with allure.step("Order yakunlash bosqichini ochish"):
         base.click(name="Далее", exact=True)
         forms = page.locator("main form:visible")
@@ -181,7 +181,7 @@ def open_order_summary(page, *, expected_total=None):
 
 
 def reopen_order_goods(page):
-    base = AutoBasePage(page)
+    base = OrderPage(page)
     with allure.step("Saqlangan orderni tahrirga qayta ochish"):
         base.click(name="Редактировать", exact=True)
         base.expect_page(heading="Заказ (изменение)", url=re.compile(r"order(?:%2[Bb]|\+)edit"))
@@ -190,14 +190,20 @@ def reopen_order_goods(page):
         base.text("Название", "Кол-во")
 
 
+def select_order_client(page, client, *, room=re.compile(r"\S"), staff=re.compile(r"\S")):
+    """Yangi buyurtmada xona va shtat yuklangach, mijozni nomi bo‘yicha tanlash."""
+    base = OrderPage(page)
+    with allure.step("Ish zonasi va shtatni tekshirib, mijozni nomi bilan qidirish"):
+        base.b_input(label="Рабочая зона", expect_value=room)
+        base.b_input(label="Штат", expect_value=staff)
+        base.b_input(label="Клиент", value=client, lookup_route="order+add:persons")
+
+
 def select_client_product(page, client, product, price_type):
     """Klientni tanlab, mahsulot bosqichida kerakli narxdagi qatorni ochadi."""
-    base = AutoBasePage(page)
+    base = OrderPage(page)
     with allure.step("Klientni tanlab orderga mahsulot qo‘shish"):
-        # Initial room/staff selection refreshes the client picker.
-        base.b_input(label="Рабочая зона", expect_value=re.compile(r"\S"))
-        base.b_input(label="Штат", expect_value=re.compile(r"\S"))
-        base.b_input(label="Клиент", value=client, lookup_route="order+add:persons")
+        select_order_client(page, client)
         base.click(name="Далее", exact=True)
         base.text("Название", "Кол-во")
         return select_order_product(page, product, price_type)
@@ -222,7 +228,7 @@ def product_loaded(page, product_id, price_type_id):
 
 def select_order_product(page, product, price_type, *, warehouse="Основной склад", index=0):
     """Mahsulotni ombor va narx varianti bilan tanlash; pagination b_input ichida."""
-    base = AutoBasePage(page)
+    base = OrderPage(page)
     if index == 0:
         base.b_input(label="Название", value=product,
                      option_contains=(price_type, warehouse), exact=True)

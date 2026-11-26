@@ -4,7 +4,9 @@ import re
 import allure
 from playwright.sync_api import expect
 
+from tests.regression.helpers.retry.checkpoints import reuse, verified
 from tests.regression.helpers.retry.reconcile import allow_absent_ui_write, is_retry
+from tests.regression.helpers.retry.state import RetryBlocked
 from tests.regression.test_orders.helpers.flows.mixed_units import (
     check_line, open_saved, save_draft, select_saved_order, start_goods,
 )
@@ -72,7 +74,11 @@ def run_list_price_change(case, key):
     base = open_saved(case, order)
     base.tab(name="Товар")
     paid = base.grid(case.product, root=page.locator("smt-table:visible").last)
-    if not (is_retry() and paid.get_by_text(target, exact=True).is_visible()):
+    cancelled = f"price_change_cancel_verified:{order['id']}:{target}"
+    if is_retry() and paid.get_by_text(target, exact=True).is_visible():
+        if not reuse(cancelled):
+            raise RetryBlocked("Narx allaqachon almashgan, lekin «Нет»dan keyingi summa va bonus tekshirilgani qayd etilmagan")
+    else:
         with allure.step("Narxni almashtirishni rad etganda eski summa va bonus saqlanadi"):
             _choose_target_price(case, order, target)
             base.confirm_biruni("Изменить типы цен?", button_name="Нет")
@@ -82,6 +88,7 @@ def run_list_price_change(case, key):
             base.form_view(label="Сумма заказа", expect_value="4150", remove_spaces=True)
             check_line(case, case.product, case.price_type, quantity=5, price=1000, discount=-850, net=4150)
             _saved_bonus(case)
+            verified(cancelled)
         with allure.step("Barcha TMZ uchun yangi narx turini tasdiqlash"):
             _choose_target_price(case, order, target)
             if is_retry():
@@ -109,7 +116,11 @@ def run_recalculation(case, *, trigger):
     bonus_tab = page.get_by_role("tab", name="Акция", exact=True)
     base.tab(name="Товар")
     base.grid(case.product, target, root=page.locator("smt-table:visible").last)
-    if not (is_retry() and bonus_tab.count() == 0):
+    applied = f"bonus_trigger_verified:{order['id']}:{trigger}"
+    if is_retry() and bonus_tab.count() == 0:
+        if not reuse(applied):
+            raise RetryBlocked("Bonus allaqachon yo‘q, lekin ushbu buyurtmada qayta hisoblash amali bajarilgani qayd etilmagan")
+    else:
         _saved_bonus(case)
         reopen_order_goods(page)
         base.input(label="Кол-во", expect_value="5")
@@ -128,6 +139,7 @@ def run_recalculation(case, *, trigger):
         with allure.step("Saqlashdan oldin «Акции» tabidagi bonus soni yo‘qolganini tekshirish"):
             expect(page.get_by_role("tab", name="Акции", exact=True)).to_be_visible()
         open_order_summary(page, expected_total=total)
+        verified(applied)
         if is_retry():
             allow_absent_ui_write("anor/mdeal/order/order+edit$save", identity={"deal_id": order["id"]})
         save_edited_order(page, order["id"], order["reference"])

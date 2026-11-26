@@ -137,7 +137,7 @@ B-group tarixiy case’i ikki sana bo‘yicha ajratilgan summalarni tekshirgan. 
 Tags: order, product, balance, booking, setup
 Status: code-confirmed
 Verified: 2026-11-16
-Source: `tests/regression/test_orders/business_cases/stock/test_cancel_reserve.py::run_cancel_reserve`; `tests/smoke/test_setup/test_23_init_balance.py::run_init_balance`
+Source: `tests/regression/test_orders/business_cases/stock/cancel_reserve.py::run_cancel_reserve`; `tests/smoke/test_setup/test_23_init_balance.py::run_init_balance`
 
 - Diagnostikada shu mahsulot va ombor uchun mavjud hamda bronlangan miqdorni
   tekshir. Stock regression case yangi order miqdorini baseline bilan

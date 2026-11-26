@@ -1,7 +1,7 @@
 # Guruh runnerlari
 
 Barcha guruhlarni [../../run.py](../../run.py) yig‘ib ishga tushiradi.
-Runnerdagi `test_*` ustida dependency; haqiqiy qadamlar setup/business case fayllarida.
+Bitta guruhni SCN kodi bilan tanlash mumkin, masalan `./.venv/bin/python tests/regression/run.py --group SCN-001`. [SCN-001 runneri](test_statuses_runner.py) ichida tayyorlov, har bir testning bog‘liqligi va buyurtmaning brauzerdagi status qadamlari bor.
 
 | Guruh kodi | Runner | Test soni |
 |---|---|---:|

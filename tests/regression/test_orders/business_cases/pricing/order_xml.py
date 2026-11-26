@@ -4,8 +4,8 @@ from xml.etree import ElementTree
 
 import allure
 
-from tests.regression.test_orders.business_cases.pricing.test_catalog_price_history import run_create_price_draft
-from utils.base_pages.auto_base_page import AutoBasePage
+from tests.regression.test_orders.helpers.flows.price_draft import create_price_draft
+from tests.regression.test_orders.helpers.navigation import OrderPage
 
 
 def run_xml_draft(case, catalog, *, key, price):
@@ -13,12 +13,12 @@ def run_xml_draft(case, catalog, *, key, price):
     prefix = "X" + catalog["goods"]["code"].removeprefix("rg-").removesuffix("-a")
     case.reference = f"{prefix}-{price}"
     case.workflow["xml_prefix"] = prefix
-    run_create_price_draft(case, key=key, price=price, payment_type="Перечисление")
+    create_price_draft(case, key=key, price=price, payment_type="Перечисление")
 
 
 def run_export(case, directory):
     """1. Ikki qatorni tanlash. 2. XML yuklash. 3. Har hujjat va qatorni solishtirish."""
-    base = AutoBasePage(case.page)
+    base = OrderPage(case.page)
     drafts = {case.workflow[key]["id"]: (case.workflow[key]["reference"], price)
               for key, price in (("original_draft", 1000), ("new_draft", 1500))}
     with allure.step("Buyurtmalar ro‘yxatini ochish"):

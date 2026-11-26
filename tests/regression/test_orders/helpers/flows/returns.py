@@ -10,20 +10,19 @@ from decimal import Decimal
 import allure
 from playwright.sync_api import expect
 
-from tests.regression.test_orders.helpers.flows.settlement import _columns, _number
-from utils.base_pages.auto_base_page import AutoBasePage
+from tests.regression.test_orders.helpers.flows.settlement import _columns, _number, search_order_by_id
+from tests.regression.test_orders.helpers.navigation import OrderPage
 
 
 NET_LABEL = "Итоговая сумма возврата с учетом общей скидки/наценки к заказу"
 
 
 def open_return_from_order(page, *, order_id, client, warehouse):
-    base = AutoBasePage(page)
+    base = OrderPage(page)
     with allure.step("Arxivdan qaytariladigan orderni aniq ID bilan topish"):
         base.navigate_to(tab="Продажа", name="Архив заказов")
         base.expect_page(heading="Архив заказов", url="order_history_list")
-        columns = _columns(page, {"id": "ИД заказа", "client": "Клиент"}, search_name="ИД заказа")
-        base.grid_controller(search=order_id)
+        columns = search_order_by_id(page, order_id, fields={"client": "Клиент"})
         row = base.grid(order_id, client, click=True)
         expect(base.grid_cell(row, columns["id"])).to_have_text(order_id)
         expect(base.grid_cell(row, columns["client"])).to_have_text(client)
@@ -60,7 +59,7 @@ def _return_lot_row(page, grid, product, identity):
 
 def fill_return_items(page, *, product, bonus_product, goods_quantity, bonus_quantity):
     """Allocate requested total across exact source lots, then verify each selected row."""
-    base = AutoBasePage(page)
+    base = OrderPage(page)
     allocations = []
     with allure.step("Qaytarishdagi mahsulotlar bosqichini ochish"):
         base.click(name="Далее →", exact=True)
@@ -126,7 +125,7 @@ def fill_return_items(page, *, product, bonus_product, goods_quantity, bonus_qua
 
 
 def finish_return(page, *, reason, reference, net_amount):
-    base = AutoBasePage(page)
+    base = OrderPage(page)
     with allure.step("Qaytarishning qo'shimcha ma'lumotlarini ochish"):
         base.click(name="Далее →", exact=True)
         base.b_input(label="Тип оплаты", value="Наличные деньги", clear=True)
@@ -141,26 +140,24 @@ def finish_return(page, *, reason, reference, net_amount):
 
 
 def find_return(page, *, reference, source_id):
-    base = AutoBasePage(page)
+    base = OrderPage(page)
     with allure.step("Order IDsi orqali qidirib, aynan kerakli TTNli qaytarishni topish"):
         base.navigate_to(tab="Продажа", name="Возвраты")
         base.expect_page(heading="Возвраты", url="return_list")
-        columns = _columns(page, {
+        columns = search_order_by_id(page, source_id, id_field="order_deal_id", fields={
             "reference": "Номер товарно-транспортной накладной",
-            "source_id": "ИД заказа",
-        }, search_name="ИД заказа")
-        base.grid_controller(search=source_id)
+        })
         # Bir orderdan bir nechta qaytarish bo'lishi mumkin; target TTN yagona.
         matches = page.locator("smt-data-table:visible .smt-data-row").filter(has_text=reference)
         expect(matches).to_have_count(1)
         row = base.grid(reference, click=True)
         expect(base.grid_cell(row, columns["reference"])).to_have_text(reference)
-        expect(base.grid_cell(row, columns["source_id"])).to_have_text(source_id)
+        expect(base.grid_cell(row, columns["id"])).to_have_text(source_id)
         return row
 
 
 def open_return_view(page, *, reference, source_id, client, status, net_amount, return_id=None):
-    base = AutoBasePage(page)
+    base = OrderPage(page)
     row = find_return(page, reference=reference, source_id=source_id)
     with allure.step("Qaytarish ro'yxatidagi net summa va saqlangan IDni tekshirish"):
         columns = _columns(page, {"total": "ИТОГО"})
@@ -176,7 +173,7 @@ def open_return_view(page, *, reference, source_id, client, status, net_amount, 
 
 
 def save_return_draft(page):
-    base = AutoBasePage(page)
+    base = OrderPage(page)
     from tests.regression.helpers.retry.reconcile import is_retry, ui_row, allow_absent_ui_write, confirm_entity
     from tests.regression.helpers.retry.state import ACTIVE, RetryBlocked
     record = ACTIVE.get().case.returns[-1]
@@ -204,7 +201,7 @@ def save_return_draft(page):
 
 
 def archive_return(page, *, reference, source_id):
-    base = AutoBasePage(page)
+    base = OrderPage(page)
     row = find_return(page, reference=reference, source_id=source_id)
     with allure.step("Own qaytarishni arxivga o'tkazish"):
         # 328/335/338 A2 snapshot: row popup accessible nomi «Статус».

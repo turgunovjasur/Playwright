@@ -101,7 +101,7 @@ def order_settings_page(session_browser, api_business_baseline, order_group_logi
     def open_page():
         with settings_browser.new_context(storage_state=order_group_login.snapshot()) as context:
             page = context.new_page()
-            order_group_login.authorize(page, api_business_baseline, logs)
+            order_group_login.prepare_page(page, api_business_baseline, logs)
             yield page
     with order_settings_lock(api_business_baseline, delivery_addresses=delivery):
         # Finance settings must stay outside the business trace and visible window.
@@ -118,7 +118,7 @@ def consignment_enabled(order_settings_page, api_business_baseline):
 
 @pytest.fixture(scope="module")
 def consignment_bank_binding(order_settings_page, api_business_baseline, workflow_data):
-    from tests.regression.test_orders.setup_cases.test_consignment_bank import ConsignmentBankBinding
+    from tests.regression.test_orders.setup_cases.consignment_bank import ConsignmentBankBinding
     binding = ConsignmentBankBinding(order_settings_page, api_business_baseline, workflow_data)
     try:
         yield binding
@@ -224,7 +224,7 @@ def _context(page, baseline, promotions, directory, node, *, client=None):
         with order_session_recovery(
             page, baseline, directory, on_authenticated=lambda: login.refresh_cookies(page)
         ) as recovery:
-            login.authorize(page, baseline, directory)
+            login.prepare_page(page, baseline, directory)
             if "prepare" not in node.name and node.name not in {"test_000_catalog", "test_001_prices", "test_002_stock"}:
                 from tests.regression.helpers.preparation.readiness import verify_retry_preparations
                 verify_retry_preparations(case, node, directory)
@@ -443,7 +443,7 @@ def product_limit_order(order_user_page, business_baseline, api_business_baselin
         case.checkpoint()
         if plan:
             from tests.regression.helpers.resume import attach_resume
-            from tests.regression.test_orders.business_cases.stock.test_product_limit import verify_resume_state
+            from tests.regression.test_orders.business_cases.stock.product_limit import verify_resume_state
             attach_resume(plan)
             if not plan.preflight_done:
                 verify_resume_state(case)

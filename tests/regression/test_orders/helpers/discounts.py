@@ -16,6 +16,28 @@ def parse_amount(value):
     return Decimal(re.sub(r"\s+", "", value).replace(",", "."))
 
 
+def set_line_discount_amount(case, row, amount):
+    """Foiz rejimidan qo'lda summaga; barcha amallar mavjud base API bilan."""
+    base = AutoBasePage(case.page)
+    margin = row.locator('[data-smt-col-key="margin"]')
+    toggle = margin.get_by_role("button", name="Скидка/наценка", exact=True)
+    # Fresh addning standart rejimini tasdiqlash; tasodifan teskari toggle yo'q.
+    expect(toggle.locator('svg-icon[aria-label="percent-01-icon"]')).to_be_visible()
+    base.click(name="Скидка/наценка", exact=True, root=margin)
+    base.input(label="Скидка/наценка", value=str(amount), press_tab=True)
+    case.check("Bir dona uchun kiritilgan summali chegirma", Decimal(amount), parse_amount(base.input(label="Скидка/наценка", return_value=True)))
+
+
+def set_order_discount_amount(case, amount):
+    base = AutoBasePage(case.page)
+    toggle = case.page.get_by_role("button", name="Скидка/наценка", exact=True)
+    expect(toggle).to_have_count(1)
+    expect(toggle.locator('svg-icon[aria-label="percent-01-icon"]')).to_be_visible()
+    base.click(name="Скидка/наценка", exact=True)
+    base.input(label="Скидка/наценка к заказу", value=str(amount), press_tab=True)
+    case.check("Butun orderga kiritilgan summali chegirma", Decimal(amount), parse_amount(base.input(label="Скидка/наценка к заказу", return_value=True)))
+
+
 def open_discount_goods(case, quantity):
     """Uch case uchun bir xil create → klient → mahsulot choreography."""
     base = AutoBasePage(case.page)
@@ -39,7 +61,9 @@ def save_discount_draft(case, total, *, payment_type="Наличные день�
         case.check("Saqlashdan oldingi jami (so'm)", Decimal(total), parse_amount(actual_total))
         base.input(label="Номер товарно-транспортной накладной", value=case.reference)
         base.ui_select(label="Статус", value="Черновик")
-    case.remember_order(save_order_by_reference(case.page, case.reference))
+    order_id = save_order_by_reference(case.page, case.reference)
+    case.remember_order(order_id)
+    return order_id
 
 
 def check_saved_amounts(case, quantity, line_discount, line_total, order_discount, total, bonus=False):

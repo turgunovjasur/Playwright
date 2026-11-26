@@ -5,7 +5,7 @@ from urllib.parse import urlsplit
 from playwright.sync_api import expect
 
 from tests.regression.test_orders.helpers.auth_recovery import RegressionSetupState
-from utils.base_pages.auto_base_page import AutoBasePage
+from tests.regression.test_orders.helpers.navigation import OrderPage
 
 ROUTE = "trade/tdeal/order/order_list"
 FLAG = "allow_person_delivery_addresses"
@@ -17,7 +17,7 @@ def temporary_delivery_addresses(open_page, baseline, directory):
     endpoint = ROUTE + ":load_order_settings"
 
     def change(page, api, before, value):
-        base = AutoBasePage(page)
+        base = OrderPage(page)
         base.open_route(ROUTE, heading="Заказы")
         base.click(name="Настройки заказа", exact=True)
         dialog = page.get_by_role("dialog").filter(has=page.get_by_role("heading", name="Настройки заказа"))

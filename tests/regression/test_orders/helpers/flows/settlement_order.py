@@ -3,7 +3,7 @@ from decimal import Decimal
 import allure
 from utils.base_pages.auto_base_page import AutoBasePage
 from tests.regression.helpers.preparation.stock_guard import require_available
-from tests.regression.test_orders.helpers.flows.order import existing_order, open_new_order, select_order_product, save_order_by_reference
+from tests.regression.test_orders.helpers.flows.order import select_order_client, existing_order, open_new_order, select_order_product, save_order_by_reference
 from tests.regression.test_orders.helpers.flows.settlement import read_settlement, read_debts, change_order_status
 
 
@@ -24,9 +24,7 @@ def create_and_archive(case, *, key, quantity, amount):
         require_available(case, quantity, bonus_quantity=0)
         open_new_order(page)
         with allure.step(f"Order: {quantity} dona × 7 000 = {amount} so'm"):
-            base.b_input(label="Рабочая зона", expect_value=case.room)
-            base.b_input(label="Штат", expect_value=case.staff)
-            base.b_input(label="Клиент", value=case.client, clear=True)
+            select_order_client(case.page, case.client, room=case.room, staff=case.staff)
             base.click(name="Далее", exact=True)
             select_order_product(page, case.product, case.price_type)
             base.input(label="Кол-во", value=str(quantity), press_tab=True)

@@ -11,7 +11,7 @@ from pathlib import Path
 from tests.regression.helpers.retry.state import stable_uuid as uuid4
 from tests.shared.navigation import open_form_from_list
 from tests.shared.list_search import find_list_record
-from utils.base_pages.auto_base_page import AutoBasePage
+from tests.regression.test_orders.helpers.navigation import OrderPage
 
 import allure
 
@@ -40,7 +40,7 @@ def _persist(directory, metadata):
 def run_prepare_two_warehouses(case, directory):
     """1. UI yangi Minor ombor. 2. Xonani tanlash. 3. Saved ID va additive membership."""
     baseline, data = case.baseline, case.workflow
-    base = AutoBasePage(case.page)
+    base = OrderPage(case.page)
     suffix = uuid4("second_warehouse").hex[:10]
     name = f"Order second warehouse-pw{case.code}-{suffix}"
     code = f"ow-{suffix}"

@@ -1,4 +1,4 @@
-"""SCN-005: order yaratilishidan oldingi avans aynan shu orderga ajratiladi."""
+"""Order yaratilishidan oldingi avans aynan shu orderga ajratiladi."""
 from decimal import Decimal
 
 import allure

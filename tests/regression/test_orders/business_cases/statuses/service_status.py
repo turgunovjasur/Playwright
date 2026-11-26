@@ -4,7 +4,7 @@ from decimal import Decimal
 import allure
 
 from tests.regression.test_orders.helpers.flows.mixed_units import open_saved, save_draft
-from tests.regression.test_orders.helpers.flows.order import existing_order, open_new_order
+from tests.regression.test_orders.helpers.flows.order import select_order_client, existing_order, open_new_order
 from tests.regression.test_orders.helpers.flows.order_services import add_order_services, check_saved_services
 from tests.regression.test_orders.helpers.flows.settlement import change_order_status
 from tests.regression.test_orders.helpers.flows.stock import read_stock
@@ -34,9 +34,7 @@ def run_service_draft(case):
         open_new_order(case.page)
         base = AutoBasePage(case.page)
         with allure.step("Guruh klientini tanlab mahsulotlar bosqichiga o‘tish"):
-            base.b_input(label="Рабочая зона", expect_value=case.room)
-            base.b_input(label="Штат", expect_value=case.staff)
-            base.b_input(label="Клиент", value=case.client, lookup_route="order+add:persons")
+            select_order_client(case.page, case.client, room=case.room, staff=case.staff)
             base.click(name="Далее", exact=True)
         add_order_services(case.page, case.price_type, service_lines(case))
         oid = save_draft(case, 3600)

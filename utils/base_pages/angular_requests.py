@@ -87,6 +87,13 @@ class AngularPageRequests:
         # Protocol events are dispatched during the DOM read as well.
         return rendered and request is self.latest_table and not self.pending
 
+    def wait_for_pending_lookup(self, route, timeout):
+        # Completing an earlier default-value lookup can reset an edited field.
+        def loading():
+            return any(unquote(urlsplit(req.url).path).endswith(route) for req in self.pending)
+
+        self._wait_while(loading, timeout, "A2 lookup")
+
     def wait_for_initial_table(self, timeout):
         url = urlsplit(self.page.url)
         path = unquote(url.path).replace("/a2/", "/b/", 1)
@@ -128,15 +135,18 @@ class AngularPageRequests:
         self._wait_for_requests(self.confirmed_requests, timeout, "A2 tasdiqlash so‘rovi")
 
     def _wait_for_requests(self, pending, timeout, description):
+        self._wait_while(lambda: bool(pending), timeout, description)
+
+    def _wait_while(self, loading, timeout, description):
         deadline = monotonic() + timeout / 1000 if timeout else None
-        while pending:
+        while loading():
             remaining = (deadline - monotonic()) * 1000 if deadline is not None else None
             if remaining is not None and remaining <= 0:
                 raise AssertionError(f"{description} belgilangan vaqtda tugamadi")
             try:
                 # A cancelled request emits requestfailed instead of
                 # requestfinished. Recheck the set in that case as well.
-                self.page.wait_for_event("requestfinished", predicate=lambda _: not pending,
+                self.page.wait_for_event("requestfinished", predicate=lambda _: not loading(),
                                          timeout=250 if remaining is None else min(remaining, 250))
             except PlaywrightTimeoutError:
                 check_observed_error(self.page)

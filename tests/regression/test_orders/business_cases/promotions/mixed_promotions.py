@@ -6,7 +6,7 @@ import allure
 import pytest
 from playwright.sync_api import expect
 
-from tests.regression.test_orders.helpers.flows.order import (existing_order,
+from tests.regression.test_orders.helpers.flows.order import (select_order_client, existing_order,
     open_new_order, open_order_summary, promotion_card, reopen_order_goods, save_edited_order,
     save_order_by_reference, select_order_product,
 )
@@ -78,9 +78,7 @@ def run_toggle_discount(case):
         require_available(case, 10, bonus_quantity=1)
         open_new_order(page)
         with allure.step("1 - Setup klienti va alohida narxda 10 dona mahsulot"):
-            base.b_input(label="Рабочая зона", expect_value=case.room)
-            base.b_input(label="Штат", expect_value=case.staff)
-            base.b_input(label="Клиент", value=case.client, clear=True)
+            select_order_client(case.page, case.client, room=case.room, staff=case.staff)
             base.click(name="Далее", exact=True)
             base.text("Название", "Кол-во")
             select_order_product(page, case.product, case.price_type)
@@ -140,9 +138,7 @@ def run_quantity_boundary(case):
         require_available(case, 9, bonus_quantity=0)
         open_new_order(page)
         with allure.step("1 - Aksiya chegarasidan bir dona kam: 9 dona"):
-            base.b_input(label="Рабочая зона", expect_value=case.room)
-            base.b_input(label="Штат", expect_value=case.staff)
-            base.b_input(label="Клиент", value=case.client, clear=True)
+            select_order_client(case.page, case.client, room=case.room, staff=case.staff)
             base.click(name="Далее", exact=True)
             base.text("Название", "Кол-во")
             select_order_product(page, case.product, case.price_type)

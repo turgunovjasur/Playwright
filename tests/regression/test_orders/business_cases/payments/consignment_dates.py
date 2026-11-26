@@ -9,7 +9,7 @@ from tests.regression.helpers.retry.checkpoints import reuse, verified
 from tests.regression.helpers.retry.reconcile import allow_absent_ui_write, is_retry
 from tests.regression.test_orders.helpers.discounts import parse_amount
 from tests.regression.test_orders.helpers.flows.order import (
-    existing_order, open_new_order, open_order_summary, reopen_order_goods,
+    select_order_client, existing_order, open_new_order, open_order_summary, reopen_order_goods,
     save_edited_order, save_order_by_reference, select_order_product,
 )
 from utils.base_pages.auto_base_page import AutoBasePage
@@ -79,9 +79,7 @@ def _create_order(case, dates):
     require_available(case, 2)
     open_new_order(page)
     with allure.step("Xona, klient, loyiha va shartnomani tanlash"):
-        base.b_input(label="Рабочая зона", expect_value=case.room)
-        base.b_input(label="Штат", expect_value=case.staff)
-        base.b_input(label="Клиент", value=case.client, clear=True)
+        select_order_client(case.page, case.client, room=case.room, staff=case.staff)
         base.b_input(label="Проект", value=case.workflow["consignment_project"], clear=True)
         base.b_input(label="Договор", value=case.workflow["consignment_contract"], clear=True)
         base.click(name="Далее", exact=True)

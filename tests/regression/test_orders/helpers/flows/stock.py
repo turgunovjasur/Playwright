@@ -5,7 +5,7 @@ import allure
 from playwright.sync_api import expect
 from tests.regression.test_orders.helpers.flows.settlement import _columns
 from utils.base_pages import A2_DOCUMENT_TIMEOUT_MS
-from utils.base_pages.auto_base_page import AutoBasePage
+from tests.regression.test_orders.helpers.navigation import OrderPage
 
 
 def read_stock(case, warehouse, *, product_id=None):
@@ -36,7 +36,7 @@ def _read_stock(case, warehouse, *, product_id, observed):
     Pagination to'liq ochilmasa sonlarni qisman snapshot sifatida qaytarmaydi.
     Bitta consumer uchun local domain readback; umumiy UI primitive emas.
     """
-    page, base = case.page, AutoBasePage(case.page)
+    page, base = case.page, OrderPage(case.page)
     product_id = str(product_id or case.baseline["product_id"])
     if not product_id.isdigit():
         raise ValueError("Stock readback uchun baseline product_id raqam bo'lishi kerak")

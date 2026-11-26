@@ -18,7 +18,7 @@ from tests.regression.test_orders.helpers.flows.settlement import allocate_to_or
 from tests.regression.test_orders.helpers.flows.stock import read_stock
 from tests.shared.navigation import open_form_from_list
 from tests.shared.list_search import find_list_record
-from utils.base_pages.auto_base_page import AutoBasePage
+from tests.regression.test_orders.helpers.navigation import OrderPage
 from tests.regression.helpers.retry.checkpoints import value as retry_value, reuse, verified
 from tests.regression.helpers.retry.state import RetryBlocked
 
@@ -44,7 +44,7 @@ def _settlement(case, *, debt=0, prepayment=0):
 
 
 def _saved_return_items(case, goods_quantity, bonus_quantity, net_amount, allocations):
-    page, base = case.page, AutoBasePage(case.page)
+    page, base = case.page, OrderPage(case.page)
     grid = page.locator("smt-table:visible").last
     expect(grid.locator(".smt-data-row")).to_have_count(len(allocations))
     total_quantity, total_amount = Decimal(0), Decimal(0)
@@ -83,7 +83,7 @@ def run_prepare_reason(case):
     2. Faqat shu runner uchun aktiv sabab yaratish.
     3. Own nom va kod bilan saqlangan qatorni tasdiqlash.
     """
-    page, base = case.page, AutoBasePage(case.page)
+    page, base = case.page, OrderPage(case.page)
     reason = {"name": f"QA_RETURN_{case.reference}", "code": f"RET_{case.reference}"}
     with allure.step("1 - Qaytarish ro'yxatini ochish"):
         base.navigate_to(tab="Продажа", name="Возвраты")
@@ -118,7 +118,7 @@ def run_create_promoted_order(case):
     2. A10 × 7 000, 10% chegirma, B1 bepul bonus bilan Draft yaratish.
     3. Saqlangan 63 000 summa va bepul bonusni tekshirish.
     """
-    page, base = case.page, AutoBasePage(case.page)
+    page, base = case.page, OrderPage(case.page)
     order_id = existing_order(case)
     if not order_id:
         with allure.step("1 - Alohida test klienti va mahsulotlarning boshlang'ich holati"):
@@ -233,14 +233,13 @@ def _return(case, *, key, goods, bonus, credit, previous_credit, goods_remaining
     # Qaytarish TTN maydoni UI maxlength=10; ikkala hujjat uchun alohida kod.
     reference = source["reference"][-8:] + ("R1" if key == "partial_return" else "R2")
     from tests.regression.helpers.retry.reconcile import ui_row, confirm_entity
-    base = AutoBasePage(case.page)
+    base = OrderPage(case.page)
     with allure.step("Qaytarishni order IDsi orqali qidirish va TTN bo‘yicha tekshirish"):
         base.navigate_to(tab="Продажа", name="Возвраты")
         base.expect_page(heading="Возвраты", url="return_list")
-        _columns(case.page, {"reference": "Номер товарно-транспортной накладной", "source_id": "ИД заказа"},
-                 search_name="ИД заказа")
+        _columns(case.page, {"reference": "Номер товарно-транспортной накладной", "source_id": "ИД заказа"})
         saved = find_list_record(base, "return_list", "order_deal_id", source["id"],
-                                 also_match={"delivery_number": reference})
+                                 also_match={"delivery_number": reference}, setting_label="ИД заказа")
         # Order search is scoped to one source. Check the TTN across orders before a new Save.
         confirmed = ui_row(case.page, "anor/mdeal/return/return_list:table",
                            ["deal_id", "delivery_number", "order_deal_id"], "delivery_number", reference)

@@ -1,4 +1,5 @@
 """Explicit per-group catalog, price and stock steps; API baseline is immutable."""
+from contextlib import contextmanager
 from copy import deepcopy
 from decimal import Decimal
 import allure
@@ -118,18 +119,19 @@ def run_prepare_prices(baseline, data, directory, group, *, initial_price=7000):
         state.close()
 
 
-def run_prepare_stock(case, data, directory, group, *, goods_on_balance="Y", second_sale_product=False):
-    """1. Own fixed documents. 2. Resume posting. 3. Verify UI physical/free stock.
+@contextmanager
+def _posted_stock(baseline, data, directory, group, *, goods_on_balance, second_sale_product=False):
+    """1. Own fixed documents. 2. Resume posting. 3. Yield the API for readback.
 
     Replaying this step never adds another document to compensate business usage.
     Returns deliberately have two source lots (9 + 11), exercising 7 + 1 later.
     """
-    registry = Registry(case.baseline)
+    registry = Registry(baseline)
     goods, bonus = BUDGETS[group]
     targets = [("goods", q, i) for i, q in enumerate((9, 11) if group == "returns" else (goods,))]
     if bonus:
         targets.append(("bonus", bonus, 0))
-    parameters = {"warehouse": str(case.baseline["warehouse_id"]),
+    parameters = {"warehouse": str(baseline["warehouse_id"]),
                   "targets": [(k, data[k]["id"], q, i) for k, q, i in targets]}
     if goods_on_balance not in {"Y", "N"}:
         raise ValueError("goods_on_balance qiymati Y yoki N bo‘lishi kerak")
@@ -138,7 +140,7 @@ def run_prepare_stock(case, data, directory, group, *, goods_on_balance="Y", sec
     if second_sale_product:
         parameters["second_sale_product"] = True
     spec = PreparationSpec("stock", group, parameters, ("prices",))
-    state = RegressionSetupState(directory / "stock-api-state.json", deepcopy(case.baseline))
+    state = RegressionSetupState(directory / "stock-api-state.json", deepcopy(baseline))
     route = "anor/mkw/init_balance/init_inventory_balance_list"
     try:
         api = state.user()
@@ -188,6 +190,15 @@ def run_prepare_stock(case, data, directory, group, *, goods_on_balance="Y", sec
                     raise RetryBlocked("Kirim posted holati noma’lum")
         result = ensure_preparation(spec, registry=registry, probe=probe, prepare=prepare)
         data["documents"] = result.entities
+        yield api
+    finally:
+        state.close()
+
+
+def run_prepare_stock(case, data, directory, group, *, goods_on_balance="Y", second_sale_product=False):
+    with _posted_stock(case.baseline, data, directory, group, goods_on_balance=goods_on_balance,
+                       second_sale_product=second_sale_product):
+        goods, bonus = BUDGETS[group]
         for kind, quantity in (("goods", goods), ("bonus", bonus)):
             if not quantity:
                 continue
@@ -198,5 +209,23 @@ def run_prepare_stock(case, data, directory, group, *, goods_on_balance="Y", sec
             case.check(f"{group}/{kind}: boshlang‘ich fizik, rezerv va erkin qoldiq",
                 {"physical": Decimal(quantity), "booked": Decimal(0), "available": Decimal(quantity)}, actual)
         data["status"] = "passed"
-    finally:
-        state.close()
+
+
+def run_prepare_promotion_stock(baseline, data, directory, group):
+    """Check the posted stock for both unique SKUs before the promotion flow."""
+    warehouse = "Основной склад"
+    with _posted_stock(baseline, data, directory, group, goods_on_balance="N") as api:
+        for kind, quantity in zip(("goods", "bonus"), BUDGETS[group]):
+            with allure.step(f"{kind}: ombordagi fizik, band va erkin qoldiqni API orqali tekshirish"):
+                rows = api.table("anor/mr/product/inventory_view:balances",
+                                 ["warehouse_name", "balance_quant", "quant_booked", "quant_free"],
+                                 filters=["warehouse_name", "=", warehouse], data={"product_id": data[kind]["id"]})
+                actual = dict.fromkeys(("balance_quant", "quant_booked", "quant_free"), Decimal(0))
+                for row in rows:
+                    require_fields(row, warehouse_name=warehouse)
+                    for key in actual:
+                        actual[key] += Decimal(str(row[key] or 0))
+                expected = {"balance_quant": Decimal(quantity), "quant_booked": Decimal(0), "quant_free": Decimal(quantity)}
+                if actual != expected:
+                    raise AssertionError(f"{kind}: kutilgan qoldiq {expected}; serverdagi qoldiq {actual}")
+        data["status"] = "passed"

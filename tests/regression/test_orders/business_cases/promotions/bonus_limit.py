@@ -10,11 +10,11 @@ from urllib.parse import urlsplit, unquote
 import allure
 import pytest
 from playwright.sync_api import expect
-from tests.regression.test_orders.helpers.flows.order import existing_order, open_new_order, select_order_product, save_order_by_reference, reopen_order_goods, promotion_card
+from tests.regression.test_orders.helpers.flows.order import select_order_client, existing_order, open_new_order, select_order_product, save_order_by_reference, reopen_order_goods, promotion_card
 from tests.regression.test_orders.helpers.flows.stock import read_stock
 from tests.regression.test_orders.helpers.flows.order_status import cancel_order
 from utils.base_pages import UI_TIMEOUT_MS
-from utils.base_pages.auto_base_page import AutoBasePage
+from tests.regression.test_orders.helpers.navigation import OrderPage
 from tests.regression.helpers.retry.checkpoints import reuse, verified
 from tests.regression.helpers.preparation.stock_guard import require_available
 
@@ -36,7 +36,7 @@ def _remember(case, directory):
 
 def _counter(case, expected):
     """Faqat aynan shu aksiya va bonus SKU counterini UI’dan tekshirish."""
-    page, base = case.page, AutoBasePage(case.page)
+    page, base = case.page, OrderPage(case.page)
     action_id = str(case.promotions["bonus"]["action_id"])
     if not action_id.isdigit():
         raise ValueError("Aksiya IDsi raqam bo‘lishi kerak")
@@ -66,7 +66,7 @@ def _counter(case, expected):
 
 def _saved_order(case, quantity, status, bonus_expected):
     """Saqlangan ID, klient, joriy miqdor, pul va haqiqiy bonus tarkibi."""
-    page, base = case.page, AutoBasePage(case.page)
+    page, base = case.page, OrderPage(case.page)
     amount = Decimal(quantity) * Decimal("7000")
     for label, value in (("ИД заказа", case.orders[-1]), ("Клиент", case.client), ("Статус", status), ("Тип оплаты", "Наличные деньги")):
         base.form_view(label=label, expect_value=value)
@@ -94,7 +94,7 @@ def run_quota_order(case, directory, *, key, quantity, used_before, used_after, 
     """1. Oldingi counter. 2. Own klient orderi. 3. Taklif va Save.
     4. View/Edit persistence. 5. Shu aksiya counteri. Expectedlar runnerda ochiq.
     """
-    page, base = case.page, AutoBasePage(case.page)
+    page, base = case.page, OrderPage(case.page)
     case.price_type = case.promotions["prices"]["quota"]["name"]
     case.checkpoint()
     with allure.step("1 - Oddiy orderlar ro‘yxatidan boshlash"):
@@ -112,9 +112,7 @@ def run_quota_order(case, directory, *, key, quantity, used_before, used_after, 
         require_available(case, quantity, bonus_quantity=1 if bonus_expected else 0)
         open_new_order(page)
         with allure.step(f"2 - {case.client}: {quantity} dona mahsulot"):
-            base.b_input(label="Рабочая зона", expect_value=case.room)
-            base.b_input(label="Штат", expect_value=case.staff)
-            base.b_input(label="Клиент", value=case.client, clear=True)
+            select_order_client(case.page, case.client, room=case.room, staff=case.staff)
             base.click(name="Далее", exact=True)
             select_order_product(page, case.product, case.price_type)
             base.input(label="Кол-во", value=str(quantity), press_tab=True)
@@ -196,7 +194,7 @@ def run_release_limit(case, directory):
     case.reference = original["reference"]
     case.remember_order(original["id"])
     with allure.step("1 - Order listdan boshlash"):
-        base = AutoBasePage(case.page)
+        base = OrderPage(case.page)
         base.navigate_to(tab="Продажа", name="Заказы")
         base.expect_page(heading="Заказы", url="order_list")
     if not reuse("bonus_before_cancel"):

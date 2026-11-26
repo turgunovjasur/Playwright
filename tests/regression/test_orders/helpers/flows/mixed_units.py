@@ -4,20 +4,21 @@ from decimal import Decimal
 import allure
 from playwright.sync_api import expect
 
-from tests.regression.test_orders.business_cases.discounts.test_manual_discount import _line_amount
-from tests.regression.test_orders.helpers.discounts import parse_amount
+from tests.api.client import positive_id
+from tests.regression.test_orders.helpers.discounts import parse_amount, set_line_discount_amount
 from tests.regression.test_orders.helpers.flows.order import (
     existing_order, open_new_order, open_order_summary, product_loaded, save_order_by_reference,
     select_client_product, select_order_product,
 )
-from tests.regression.test_orders.helpers.flows.settlement import _columns
+from tests.regression.test_orders.helpers.flows.settlement import search_order_by_id
 from tests.smoke.test_life_cycle.flow_order.order_regression import ORDER_LISTS
-from utils.base_pages.auto_base_page import AutoBasePage
+from tests.regression.test_orders.helpers.navigation import OrderPage
 
 
 def open_saved(case, order, *, status="Черновик"):
-    base = AutoBasePage(case.page)
-    base.open_route("trade/tdeal/order/order_view?deal_id=" + order["id"], heading="Заказ / Просмотр")
+    base = OrderPage(case.page)
+    route = f"trade/tdeal/order/order_view?deal_id={positive_id(order['id'])}"
+    base.open_route(route, heading="Заказ / Просмотр")
     for label, value in (("ИД заказа", order["id"]), ("Номер ТТН", order["reference"]),
                          ("Клиент", case.client), ("Статус", status)):
         base.form_view(label=label, expect_value=value)
@@ -25,7 +26,7 @@ def open_saved(case, order, *, status="Черновик"):
 
 
 def check_line(case, product, price_type, *, quantity, price, discount, net):
-    base = AutoBasePage(case.page)
+    base = OrderPage(case.page)
     grid = case.page.locator("smt-table:visible").filter(has=case.page.get_by_text(product, exact=True))
     expect(grid).to_have_count(1)
     row = base.grid(product, price_type, "Основной склад", root=grid)
@@ -44,7 +45,7 @@ def start_goods(case):
 
 
 def save_draft(case, total):
-    base = AutoBasePage(case.page)
+    base = OrderPage(case.page)
     open_order_summary(case.page, expected_total=str(total))
     base.b_input(label="Тип оплаты", value="Перечисление")
     base.input(label="Номер товарно-транспортной накладной", value=case.reference)
@@ -53,7 +54,7 @@ def save_draft(case, total):
 
 
 def check_mixed_rows(case, piece_type):
-    base = AutoBasePage(case.page)
+    base = OrderPage(case.page)
     base.form_view(label="Сумма заказа", expect_value="3750", remove_spaces=True)
     check_line(case, case.product, case.price_type, quantity="2.5", price=1000, discount=-250, net=2250)
     check_line(case, case.bonus_product, piece_type, quantity=1, price=1500, discount=0, net=1500)
@@ -61,14 +62,14 @@ def check_mixed_rows(case, piece_type):
 
 @allure.step("Ikki mahsulotli qoralamani saqlash va qatorlarini qayta o‘qish")
 def run_mixed_draft(case, catalog):
-    base = AutoBasePage(case.page)
+    base = OrderPage(case.page)
     piece_type = catalog["mixed_prices"]["piece"]["name"]
     oid = existing_order(case)
     if not oid:
         with product_loaded(case.page, catalog["goods"]["id"], case.baseline["price_type_id_uzb"]):
             row = start_goods(case)
         base.input(label="Кол-во", value="2.5", press_tab=True)
-        _line_amount(case, row, -100)
+        set_line_discount_amount(case, row, -100)
         with product_loaded(case.page, catalog["bonus"]["id"], catalog["mixed_prices"]["piece"]["id"]):
             piece = select_order_product(case.page, case.bonus_product, piece_type, index=1)
         base.input(locator=piece.locator("[data-smt-col-key=quantity] input"), value="1", press_tab=True)
@@ -83,10 +84,9 @@ def run_mixed_draft(case, catalog):
 
 @allure.step("Orderni {list_name} ro‘yxatida aniq ID bo‘yicha tanlash")
 def select_saved_order(case, order, list_name):
-    page, base = case.page, AutoBasePage(case.page)
+    page, base = case.page, OrderPage(case.page)
     base.navigate_to(tab="Продажа", name=list_name)
     base.expect_page(heading=list_name, url=dict(ORDER_LISTS.values())[list_name])
-    col = _columns(page, {"id": "ИД заказа"}, search_name="ИД заказа")["id"]
-    base.grid_controller(search=order["id"])
+    col = search_order_by_id(page, order["id"])["id"]
     row = base.grid(order["id"], case.client, click=True)
     expect(base.grid_cell(row, col)).to_have_text(order["id"])

@@ -19,7 +19,7 @@ from scripts.report_lifecycle import generate_test_summary, _open_report
 from scripts.allure_report_cli import AllureCliNotInstalled, generate_report as generate_allure_report
 from tests.regression.helpers.runtime import finalize_run, new_run_id, prepare_run
 
-from tests.regression.test_orders.helpers.ordering import GROUP_RUNNERS, GROUP_NAMES
+from tests.regression.test_orders.groups import GROUP_FEATURES, GROUP_NAMES, GROUP_RUNNERS
 from tests.regression.test_orders.helpers.reporting import prepare_presentation
 
 def run_pytest(command, environment):
@@ -81,21 +81,34 @@ def generate_run_report(directory, results, environment):
 def main():
     parser = argparse.ArgumentParser(description="Barcha Order guruhlarini registr tartibida ishga tushiradi.")
     parser.add_argument("--resume-run", help="Tugagan original run ID: oldingi PASS tayyorlovlardan davom etish")
-    parser.add_argument("--group", choices=["product_limit", "bonus_limit"], help="Davom ettiriladigan guruh")
+    selection = parser.add_mutually_exclusive_group()
+    selection.add_argument("--group", metavar="SCN", help="Bitta guruh kodi yoki nomi, masalan SCN-001 yoki statuses")
+    selection.add_argument("--list-groups", action="store_true", help="Guruh kodlari, biznes nomlari va runner fayllari")
     parser.add_argument("--order-id", help="OL-09 davom ettiradigan saqlangan order IDsi")
     parser.add_argument("--order-retries", type=int, choices=(0, 1), default=1,
                         help="Barcha Order regression testlari uchun darhol retry soni: 0 yoki 1")
     parser.add_argument("--maxfail", type=int, default=0,
                         help="Yakuniy xatolar limiti; 0 — mustaqil testlarni davom ettirish")
     args = parser.parse_args()
+    if args.list_groups:
+        if args.resume_run or args.order_id:
+            parser.error("--list-groups bilan resume parametrlari berilmaydi")
+        for group, runner in zip(GROUP_NAMES, GROUP_RUNNERS):
+            print(f"{GROUP_FEATURES[group]}  {runner}")
+        return 0
+    if args.group is not None:
+        codes = {GROUP_FEATURES[group].split(" · ", 1)[0]: group for group in GROUP_NAMES}
+        args.group = codes.get(args.group.upper(), args.group)
+        if args.group not in GROUP_NAMES:
+            parser.error("Noma’lum Order guruhi. Ro‘yxat uchun --list-groups ishlating.")
+    if args.resume_run and args.group not in {"product_limit", "bonus_limit"}:
+        parser.error("--resume-run uchun product_limit yoki bonus_limit guruhini tanlang")
     if args.maxfail < 0:
         parser.error("--maxfail manfiy bo‘lishi mumkin emas")
-    if bool(args.order_id) != (args.group == "bonus_limit"):
-        parser.error("bonus_limit resume uchun --order-id kerak")
-    if bool(args.resume_run) != bool(args.group):
-        parser.error("--resume-run va --group birga beriladi")
+    if bool(args.order_id) != bool(args.resume_run and args.group == "bonus_limit"):
+        parser.error("--order-id faqat bonus_limit resume uchun majburiy")
     load_dotenv(ROOT / ".env", override=True)
-    runners = (GROUP_RUNNERS[GROUP_NAMES.index(args.group)],) if args.resume_run else GROUP_RUNNERS
+    runners = (GROUP_RUNNERS[GROUP_NAMES.index(args.group)],) if args.group else GROUP_RUNNERS
     command = [sys.executable, "-m", "pytest", *runners,
                f"--maxfail={args.maxfail}", f"--order-retries={args.order_retries}"]
     started=time.time()
@@ -131,7 +144,9 @@ def main():
         results = prepare_presentation(results, directory / "allure-presentation-results")
     except (OSError, ValueError, KeyError, TypeError) as error:
         print(f"[ALLURE] Order taqdimoti tayyorlanmadi: {type(error).__name__}; asl natijalar ishlatiladi")
-    description = f"Order regression resume: {args.group}; manba {args.resume_run}" if args.resume_run else "Order regression: statuslar → aksiya → to‘lov → majburiy shartlar → ombor → bonus limiti → qaytarish → ko‘p order to‘lovi → qo‘lda skidka → TMZ limiti → ikki ombor → majburiy+ixtiyoriy aksiya → avtomatik hisob-kitob → orderdan oldingi avans"
+    description = GROUP_FEATURES[args.group] if args.group else "Order regressiyasi — barcha guruhlar"
+    if args.resume_run:
+        description += f" (davomi, manba {args.resume_run})"
     generate_test_summary(ROOT, environment, test_exit=result, command_text=description,
                           started_at=started, results_dir=results, output_dir=directory)
     if environment.get("DEFER_ALLURE_REPORT") != "1":

@@ -5,11 +5,14 @@ moslashilmaydi. Majburiy bonus switchi qo'lda yoqilmaydi.
 """
 from decimal import Decimal
 import re
+from urllib.parse import unquote, urlsplit
 import allure
 import pytest
 from playwright.sync_api import expect
 
-from tests.regression.test_orders.helpers.flows.order import existing_order, select_order_product, open_new_order, save_order_by_reference, save_edited_order, reopen_order_goods
+from tests.regression.test_orders.helpers.flows.order import select_order_client, existing_order, select_order_product, open_new_order, save_order_by_reference, save_edited_order, reopen_order_goods, saved_quantities
+from tests.regression.helpers.retry.checkpoints import reuse, verified
+from tests.regression.helpers.retry.reconcile import allow_absent_ui_write, is_retry
 from utils.base_pages.auto_base_page import AutoBasePage
 from tests.regression.helpers.preparation.stock_guard import require_available
 
@@ -66,9 +69,7 @@ def run_pair(case, price_kind, payment_kind, expected_action):
         require_available(case, 10, bonus_quantity=1 if action is not None else 0)
         open_new_order(case.page)
         with allure.step('1 - Klient va mahsulotlar bosqichi'):
-            base.b_input(label='Рабочая зона', expect_value=case.room)
-            base.b_input(label='Штат', expect_value=case.staff)
-            base.b_input(label='Клиент', value=case.client, clear=True)
+            select_order_client(case.page, case.client, room=case.room, staff=case.staff)
             base.click(name='Далее', exact=True)
             base.text('Название', 'Кол-во')
         with allure.step(f'2 - 10 dona; narx turi {price["name"]}; dona narxi 7 000'):
@@ -141,23 +142,52 @@ def run_threshold(case):
 
     A20 uchun B2 taxmin qilinmaydi; ko'paytirish alohida konfiguratsiya talab qiladi.
     """
-    run_pair(case, 'bank', 'bank', 'bank')
     base, data = AutoBasePage(case.page), case.promotions
-    original_id = case.orders[-1]
-    with allure.step('7 - Tovar bosqichiga qaytish'):
+    initial = 'threshold_initial_verified:' + case.reference
+    if reuse(initial):
+        original_id = existing_order(case)
+        if not original_id:
+            raise AssertionError('Avval tekshirilgan buyurtma TTN bo‘yicha topilmadi')
+        case.remember_order(original_id)
+        (current,) = saved_quantities(case.page, case.product, data['prices']['bank']['name'], ['Основной склад'])
+    else:
+        run_pair(case, 'bank', 'bank', 'bank')
+        original_id = case.orders[-1]
+        verified(initial)
         base.click(name='Назад', exact=True)
         base.text('Название', 'Кол-во')
+        current = None  # Mahsulotlar tahriri ochiq.
     for quantity, action in ((9, None), (10, data['actions']['bank'])):
-        with allure.step(f'Miqdorni {quantity} qilish va jami {quantity * 7000} ni tekshirish'):
-            base.input(label='Кол-во', value=str(quantity), press_tab=True)
-            base.click(name='Далее', exact=True)
-            base.input(label='ИТОГО', expect_value=str(quantity * 7000))
-        saved_id = save_edited_order(case.page, original_id, case.reference)
-        case.check(f'{quantity} dona holatida order ID', original_id, saved_id)
+        checked = f'threshold_verified:{original_id}:{quantity}'
+        if current == 10 and quantity == 9 and reuse(checked):
+            continue
+        if current != quantity:
+            if current is not None:
+                reopen_order_goods(case.page)
+            def recalculated(response):
+                if not unquote(urlsplit(response.url).path).endswith('/order/order+edit:find_extra_data'):
+                    return False
+                request = response.request.post_data_json
+                return str(request['deal_id']) == original_id and request['quants'] == [str(quantity)]
+
+            with allure.step(f'Miqdorni {quantity} qilish va aynan shu miqdorning aksiyasi hisoblanishini kutish'):
+                with case.page.expect_response(recalculated) as offers:
+                    base.input(label='Кол-во', value=str(quantity), press_tab=True)
+                    base.click(name='Далее', exact=True)
+                case.check('Aksiyani hisoblash javobi', 200, offers.value.status)
+                offers.value.finished()
+                base.wait_for_loader()
+                base.input(label='ИТОГО', expect_value=str(quantity * 7000))
+            if is_retry():
+                allow_absent_ui_write('anor/mdeal/order/order+edit$save', identity={'deal_id': original_id})
+            saved_id = save_edited_order(case.page, original_id, case.reference)
+            case.check(f'{quantity} dona holatida order ID', original_id, saved_id)
         with allure.step(f'{quantity} dona saqlanganda bonus va jami'):
             _saved_result(case, quantity, data['payments']['bank']['name'], action)
+        verified(checked)
         reopen_order_goods(case.page)
         base.input(label='Кол-во', expect_value=str(quantity))
+        current = None
 
 
 def run_price_change(case):

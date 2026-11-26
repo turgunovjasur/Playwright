@@ -11,7 +11,7 @@ import allure
 from playwright.sync_api import expect
 
 from utils.base_pages import A2_DOCUMENT_TIMEOUT_MS
-from utils.base_pages.auto_base_page import AutoBasePage
+from tests.regression.test_orders.helpers.navigation import OrderPage
 
 
 MODEL = "/trade/pref/deal_setting:model"
@@ -34,7 +34,7 @@ def order_settings_lock(baseline, *, delivery_addresses=False):
 
 
 def _open_preference(page, filial_id):
-    base = AutoBasePage(page)
+    base = OrderPage(page)
     with page.expect_response(lambda r: r.url.split("?")[0].endswith(MODEL)) as loaded:
         base.open_route("trade/pref/system_setting", timeout=A2_DOCUMENT_TIMEOUT_MS)
         base.tab(name="Заказ")
@@ -56,7 +56,7 @@ def _change(page, model, url, headers, enabled):
         return
     toggle = page.get_by_role("checkbox", name="Разрешить консигнацию", exact=True)
     expect(toggle).to_have_attribute("aria-checked", "false" if enabled else "true")
-    AutoBasePage(page).checkbox(locator=toggle, checked=enabled)
+    OrderPage(page).checkbox(locator=toggle, checked=enabled)
 
     def read_current():
         response = page.request.post(url, headers=headers, data={}, max_retries=0)
@@ -93,7 +93,7 @@ def _change(page, model, url, headers, enabled):
     page.route(SAVE, save)
     try:
         with page.expect_response(lambda r: SAVE.search(r.url) is not None) as saved:
-            AutoBasePage(page).click(name="Сохранить", exact=True)
+            OrderPage(page).click(name="Сохранить", exact=True)
         if conflicts:
             raise AssertionError("Saqlashdan oldin filial sozlamalari o‘zgardi: " + ", ".join(conflicts))
         if saved.value.status != 200:

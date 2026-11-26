@@ -2,8 +2,7 @@
 from decimal import Decimal
 
 from tests.regression.helpers.retry.reconcile import allow_absent_ui_write, is_retry
-from tests.regression.test_orders.business_cases.discounts.test_manual_discount import _line_amount
-from tests.regression.test_orders.helpers.discounts import parse_amount
+from tests.regression.test_orders.helpers.discounts import parse_amount, set_line_discount_amount
 from tests.regression.test_orders.helpers.flows.mixed_units import check_line, open_saved, save_draft, start_goods
 from tests.regression.test_orders.helpers.flows.order import (
     existing_order, open_order_summary, product_loaded, reopen_order_goods, save_edited_order,
@@ -18,7 +17,7 @@ def run_fractional_draft(case):
             row = start_goods(case)
         AutoBasePage(case.page).input(locator=row.locator("[data-smt-col-key=quantity] input"),
                                       value="1.25", press_tab=True)
-        _line_amount(case, row, -100)
+        set_line_discount_amount(case, row, -100)
         order_id = save_draft(case, 1125)
     case.remember_order(order_id)
     order = {"id": order_id, "reference": case.reference}

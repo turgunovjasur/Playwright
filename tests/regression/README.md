@@ -1,7 +1,7 @@
 # Regression: qayerdan boshlash kerak?
 
 **Joriy Order guruhlarining asosiy runneri — [run.py](run.py).**
-Guruhlar ro‘yxati va tartibi [ordering.py](test_orders/helpers/ordering.py)dagi
+Guruhlar ro‘yxati va tartibi [groups.py](test_orders/groups.py)dagi
 `GROUP_RUNNERS` va `GROUP_NAMES`da. Har bir guruhdagi testlar soni [runnerlar jadvalida](test_orders/runners/README.md) ko‘rsatilgan.
 
 ```text
@@ -31,14 +31,14 @@ regression/
 | Takror ishlatiladigan UI amallarini topish | [helpers/flows/](test_orders/helpers/flows/) |
 | Login/context/fixturelarni tushunish | [Order conftest.py](test_orders/conftest.py), [group_auth.py](test_orders/helpers/group_auth.py) |
 | Retry qarorini ko‘rish | [immediate.py](helpers/retry/immediate.py) |
-| Dependency yoki guruhlar tartibini boshqarish | [ordering.py](test_orders/helpers/ordering.py) |
+| Guruhlar kodi va tartibi, qadamlar bog‘liqligi | [Guruhlar](test_orders/groups.py) · [Bog‘liqlik tekshiruvi](test_orders/helpers/ordering.py) |
 | Allure ko‘rinishini boshqarish | [reporting.py](test_orders/helpers/reporting.py), [run_overview.py](test_orders/helpers/run_overview.py) |
 | Oldingi regression suite | [legacy/](legacy/README.md) |
 
 ## Runner, test va helper farqi
 
 **Runner** testlar tartibini belgilaydi. Uning `test_*` funksiyasi dependency va
-report nomiga ega, tegishli `run_*`ni chaqiradi.
+hisobot nomiga ega. SCN-001 ning beshta testi va buyurtma statuslari bo‘yicha biznes qadamlari [bitta faylda](test_orders/runners/test_statuses_runner.py).
 
 **Testcase** — setup yoki biznes tekshiruvining qadamlari va kutilgan natijasi.
 Ular `setup_cases/` va `business_cases/` ichida. Bu yerdagi `run_*` funksiyalarni
@@ -48,7 +48,7 @@ runner chaqiradi; ishga tushiriladigan `test_*` funksiyalar `runners/` ichida.
 kerak emas. `conftest.py`ni pytest o‘zi yuklaydi.
 
 Misol: [to‘lov runneri](test_orders/runners/test_payments_runner.py) →
-[to‘lov testcase’i](test_orders/business_cases/payments/test_partial_full_payment.py) →
+[to‘lov testcase’i](test_orders/business_cases/payments/partial_full_payment.py) →
 [hisob-kitob amallari](test_orders/helpers/flows/settlement.py).
 
 ## Ishga tushirish yo‘llari
@@ -59,8 +59,11 @@ Buyruqlar repo ildizidan bajariladi. Bu qo‘llanma; faylni o‘qish testni bosh
 # Joriy barcha Order guruhlari
 ./.venv/bin/python tests/regression/run.py
 
-# Faqat SCN-003 — To‘lovlar
-./.venv/bin/python -m pytest tests/regression/test_orders/runners/test_payments_runner.py
+# Guruh kodlari, biznes nomlari va fayl yo‘llarini ko‘rish
+./.venv/bin/python tests/regression/run.py --list-groups
+
+# Faqat SCN-001 — Order statuslari
+./.venv/bin/python tests/regression/run.py --group SCN-001
 ```
 
 Butun `tests/regression/` papkasini birga Run qilmang: ichida joriy suite, eski
@@ -68,6 +71,12 @@ suite va verification bor. Ular bitta target emas. API baseline avval tayyor
 bo‘lishi kerak; `run.py` uni yashirincha yaratmaydi.
 
 ## Ushbu branchdagi retry chegarasi
+
+Yiqilgan testni Allure’da oching. Tavsif boshida xato chiqqan qadam, kutilgan va kuzatilgan natija,
+runner funksiyasi hamda dalilda mavjud fayl va qator ko‘rsatiladi. Shu ma’lumotlar
+«Qisqa QA natijasi» ilovasida ham bor. IDE’da `fayl.py:qator` orqali kodni ochish mumkin.
+GitHub Actions’da yozilgan yangi xatolarda kod havolasi run commitidagi qatorni ochadi.
+Eski natijada qator raqami faqat o‘sha urinishning traceback’idan olinadi.
 
 Allure’da testni ochganda `Bog‘liq test` maydonlari uning bevosita dependencylarini
 test kodi va nomi bilan ko‘rsatadi. Bog‘liqlik bo‘lmasa bu alohida yoziladi.

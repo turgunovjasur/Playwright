@@ -13,6 +13,7 @@ from playwright.sync_api import expect
 
 from tests.regression.test_orders.helpers.discounts import (
     check_saved_amounts, open_discount_goods, parse_amount, save_discount_draft,
+    set_line_discount_amount, set_order_discount_amount,
 )
 from tests.regression.test_orders.helpers.flows.order import (
     existing_order, open_order_summary, promotion_card, reopen_order_goods,
@@ -20,28 +21,6 @@ from tests.regression.test_orders.helpers.flows.order import (
 from utils.base_pages.auto_base_page import AutoBasePage
 
 pytestmark = [pytest.mark.regression, pytest.mark.order_positive, allure.epic("Regression"), allure.feature("Qo'lda chegirma"), allure.story("Summali chegirma")]
-
-
-def _line_amount(case, row, amount):
-    """Foiz rejimidan qo'lda summaga; barcha amallar mavjud base API bilan."""
-    base = AutoBasePage(case.page)
-    margin = row.locator('[data-smt-col-key="margin"]')
-    toggle = margin.get_by_role("button", name="Скидка/наценка", exact=True)
-    # Fresh addning standart rejimini tasdiqlash; tasodifan teskari toggle yo'q.
-    expect(toggle.locator('svg-icon[aria-label="percent-01-icon"]')).to_be_visible()
-    base.click(name="Скидка/наценка", exact=True, root=margin)
-    base.input(label="Скидка/наценка", value=str(amount), press_tab=True)
-    case.check("Bir dona uchun kiritilgan summali chegirma", Decimal(amount), parse_amount(base.input(label="Скидка/наценка", return_value=True)))
-
-
-def _header_amount(case, amount):
-    base = AutoBasePage(case.page)
-    toggle = case.page.get_by_role("button", name="Скидка/наценка", exact=True)
-    expect(toggle).to_have_count(1)
-    expect(toggle.locator('svg-icon[aria-label="percent-01-icon"]')).to_be_visible()
-    base.click(name="Скидка/наценка", exact=True)
-    base.input(label="Скидка/наценка к заказу", value=str(amount), press_tab=True)
-    case.check("Butun orderga kiritilgan summali chegirma", Decimal(amount), parse_amount(base.input(label="Скидка/наценка к заказу", return_value=True)))
 
 
 def run_line_amount(case):
@@ -56,7 +35,7 @@ def run_line_amount(case):
     else:
         row = open_discount_goods(case, 2)
         with allure.step("1 - Har dona uchun 100 so'm chegirma; 2 dona uchun jami 200"):
-            _line_amount(case, row, -100)
+            set_line_discount_amount(case, row, -100)
         with allure.step("2 - Order yakunlash bosqichida jami 13 800"):
             open_order_summary(case.page, expected_total="13800")
         save_discount_draft(case, 13800)
@@ -86,7 +65,7 @@ def run_order_amount(case):
         with allure.step("1 - Chegirmasiz 14 000 so'm bilan yakunlash bosqichini ochish"):
             open_order_summary(case.page, expected_total="14000")
         with allure.step("2 - Butun orderga bir martalik 200 so'm chegirma"):
-            _header_amount(case, -200)
+            set_order_discount_amount(case, -200)
             base.input(label="ИТОГО", expect_value="13800")
         save_discount_draft(case, 13800)
     with allure.step('3 - Saqlangan mahsulot summasi 14 000, umumiy order chegirmasi −200, jami 13 800 so‘m'):
@@ -114,7 +93,7 @@ def run_amounts_with_bonus(case):
     else:
         row = open_discount_goods(case, 10)
         with allure.step("1 - 10 donaning har biriga −100: mahsulotlar jami 69 000"):
-            _line_amount(case, row, -100)
+            set_line_discount_amount(case, row, -100)
         with allure.step('2 - Aksiyalarni ochib faqat test uchun tayyorlangan bepul bonusni yoqish'):
             base.tab(name=re.compile(r"^Акции"))
             bonus = promotion_card(page, case.promotions["bonus"]["name"])
@@ -123,7 +102,7 @@ def run_amounts_with_bonus(case):
         with allure.step('3 - Bonus bilan yakunlash: orderga umumiy chegirma berishdan oldin jami 69 000 so‘m'):
             open_order_summary(case.page, expected_total="69000")
         with allure.step("4 - Butun orderga qo'shimcha −200: yakuniy jami 68 800"):
-            _header_amount(case, -200)
+            set_order_discount_amount(case, -200)
             base.input(label="ИТОГО", expect_value="68800")
         save_discount_draft(case, 68800)
     with allure.step('5 - Saqlangan qator chegirmasi −1 000, umumiy order chegirmasi −200, jami 68 800 so‘m va 1 dona bepul bonus'):

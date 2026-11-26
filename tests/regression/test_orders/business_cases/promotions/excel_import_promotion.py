@@ -8,12 +8,12 @@ from openpyxl import Workbook
 from playwright.sync_api import expect
 
 from tests.regression.helpers.retry.reconcile import allow_absent_ui_write, is_retry
-from tests.regression.test_orders.business_cases.discounts.test_manual_discount import _header_amount, _line_amount
+from tests.regression.test_orders.helpers.discounts import set_line_discount_amount, set_order_discount_amount
 from tests.regression.test_orders.helpers.flows.order import (
-    existing_order, open_new_order, open_order_summary, promotion_card, reopen_order_goods,
+    select_order_client, existing_order, open_new_order, open_order_summary, promotion_card, reopen_order_goods,
     save_order_by_reference, select_order_product,
 )
-from utils.base_pages.auto_base_page import AutoBasePage
+from tests.regression.test_orders.helpers.navigation import OrderPage
 
 
 # Ordered headings in the Order goods importer's mapping table.
@@ -29,16 +29,16 @@ WORKBOOK_MAPPING = {
 
 
 def _open_goods(case):
-    base = AutoBasePage(case.page)
+    base = OrderPage(case.page)
     open_new_order(case.page)
     with allure.step("1 - Guruh klientini tanlab ТМЦ bosqichini ochish"):
-        base.b_input(label="Клиент", value=case.client, clear=True)
+        select_order_client(case.page, case.client, room=case.room, staff=case.staff)
         base.click(name="Далее", exact=True)
         base.text("Название", "Кол-во")
 
 
 def _eligible_bonus(case):
-    base = AutoBasePage(case.page)
+    base = OrderPage(case.page)
     base.tab(name=re.compile(r"^Акции"))
     card = promotion_card(case.page, case.promotions["bonus"]["name"])
     base.grid(case.bonus_product, "1", root=card)
@@ -48,7 +48,7 @@ def _eligible_bonus(case):
 
 
 def _check_saved_draft(case, order_id, reference):
-    base = AutoBasePage(case.page)
+    base = OrderPage(case.page)
     for label, expected in (
         ("ИД заказа", order_id), ("Номер ТТН", reference), ("Статус", "Черновик"),
         ("Клиент", case.client), ("Тип оплаты", "Перечисление"),
@@ -69,19 +69,19 @@ def _check_saved_draft(case, order_id, reference):
 
 def run_direct_entry_control(case):
     """Qo‘lda kiritilgan 5 donalik, 4 300 so‘mlik o‘tkazma qoralamasini saqlash."""
-    base = AutoBasePage(case.page)
+    base = OrderPage(case.page)
     order_id = existing_order(case)
     if not order_id:
         _open_goods(case)
         with allure.step("Qo‘lda kiritilgan 5 × 1000 – 5 × 100 = 4500 so‘mlik mahsulot"):
             row = select_order_product(case.page, case.product, case.price_type)
             base.input(label="Кол-во", value="5", press_tab=True)
-            _line_amount(case, row, -100)
+            set_line_discount_amount(case, row, -100)
             open_order_summary(case.page, expected_total="4500")
         with allure.step("O‘tkazma, yana 200 so‘m chegirma va noyob TTN bilan qoralamani saqlash"):
             base.b_input(label="Тип оплаты", value="Перечисление", clear=True)
             base.ui_select(label="Статус", value="Черновик")
-            _header_amount(case, -200)
+            set_order_discount_amount(case, -200)
             base.input(label="ИТОГО", expect_value="4300")
             base.input(label="Номер товарно-транспортной накладной", value=case.reference)
             order_id = save_order_by_reference(case.page, case.reference)
@@ -144,7 +144,7 @@ def run_promotion_after_excel_import(case, *, product_code):
     4. 5 × 1000 − 5 × 100 − 200 = 4300 va aynan bir dona bonusni tekshiring.
     """
     page = case.page
-    base = AutoBasePage(page)
+    base = OrderPage(page)
     draft = case.workflow["import_draft"]
     view_route = "trade/tdeal/order/order_view?deal_id=" + draft["id"]
     with allure.step("1 - Saqlangan qoralamada bonus borligini tekshirib yagona mahsulot qatorini o‘chirish"):
@@ -219,7 +219,7 @@ def run_promotion_after_excel_import(case, *, product_code):
         base.input(label="Кол-во", expect_value="3")
     with allure.step("7 - 3 donani 5 ga o‘zgartirish va har donaga −100 chegirma kiritish"):
         base.input(label="Кол-во", value="5", press_tab=True)
-        _line_amount(case, row, -100)
+        set_line_discount_amount(case, row, -100)
         expect(row.get_by_text(re.compile(r"^\s*4\s*500\s*$"))).to_be_visible()
         open_order_summary(page)
     with allure.step("8 - O‘tkazma va avvalgi −200 so‘mlik order chegirmasidan so‘ng jami 4 300"):
@@ -227,7 +227,7 @@ def run_promotion_after_excel_import(case, *, product_code):
         base.ui_select(label="Статус", value="Черновик")
         toggle = page.get_by_role("button", name="Скидка/наценка", exact=True)
         if toggle.locator('svg-icon[aria-label="percent-01-icon"]').is_visible():
-            _header_amount(case, -200)
+            set_order_discount_amount(case, -200)
         else:
             expect(toggle.locator('svg-icon[aria-label="bank-note-01-icon"]')).to_be_visible()
             base.input(label="Скидка/наценка к заказу", value="-200", press_tab=True)

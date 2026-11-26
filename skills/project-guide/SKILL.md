@@ -82,6 +82,16 @@ Smartup reference ownershipi:
 - Escalation kerak bo'lsa xavfsiz, qayta ishlatiladigan `prefix_rule` taklif qil.
 - Uzun inline Python o'rniga workspace scriptidan foydalan.
 
+### Takrorlanadigan xatoni umumiy joyida tuzatish
+
+Status: user-reported
+Verified: 2026-11-26
+Source: user — har o‘zgarishdan oldin sabab va ta’sirni tekshirish, umumiy tuzatishni barcha mos testlarga qo‘llash buyrug‘i
+
+- O‘zgarishdan oldin xatoni log yoki trace bilan tekshir, bajarilgan kodni kuzat va shu amalning boshqa chaqiruvlarini top. Bir xil nomli maydonlar turli formalarda boshqa so‘rov yoki xatti-harakatga ega bo‘lishi mumkin.
+- Bir nechta test bir xil amalga tayansa, uni boshqaradigan umumiy komponent yoki domen flowida tuzat va shu kontraktga mos barcha chaqiruvlarni undan o‘tkaz. Qiymatlarni testdan uzat. Har bir ssenariyning biznes tekshiruvlari va o‘ziga xos shartlarini saqla.
+- Tuzatishdan keyin eski chaqiruvlar qolganini tekshir. Natijada qaysi consumerlar qamrab olingani va qaysilari real runda tekshirilganini ko‘rsat.
+
 ### AutoBasePage va base-page API tasdig'i
 
 Status: user-reported

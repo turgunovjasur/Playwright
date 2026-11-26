@@ -9,7 +9,7 @@ from playwright.sync_api import expect
 from tests.api.client import positive_id
 from tests.regression.helpers.retry.reconcile import allow_absent_ui_write, is_retry
 from tests.regression.helpers.retry.state import stable_uuid
-from utils.base_pages.auto_base_page import AutoBasePage
+from tests.regression.test_orders.helpers.navigation import OrderPage
 
 
 ROOM = "anor/mrf/room_attachment"
@@ -72,7 +72,7 @@ def _rows(page, baseline, endpoint, headers, data, columns, filters=()):
 
 def _open_room(case):
     page = case.page
-    base = AutoBasePage(page)
+    base = OrderPage(page)
     base.open_route(f'{ROOM}?room_id={case.baseline["room_id"]}', heading=f"Рабочая зона (прикрепление): {case.room}")
     with page.expect_response(lambda r: _matches(r, ROOM_ACCOUNTS)) as pending:
         base.tab(name="Расчетные счета", section=True)
@@ -88,7 +88,7 @@ def _room_accounts(case, headers, attached):
 
 def run_prepare_consignment_bank(case):
     """Create or recover the own UZS account on the branch and attach it to this room."""
-    page, base = case.page, AutoBasePage(case.page)
+    page, base = case.page, OrderPage(case.page)
     key = stable_uuid("consignment_bank").hex[:10]
     bank = case.workflow.setdefault("consignment_bank", {
         "name": "QA consign account " + key, "number": "20208000" + f"{int(key, 16) % 10**12:012d}",
@@ -232,7 +232,7 @@ class ConsignmentBankBinding:
             if bank["filial_id"] != str(self.baseline["filial_id"]):
                 raise AssertionError("Moliya mappingi uchun filial mos emas")
         with self.open_page() as page:
-            base = AutoBasePage(page)
+            base = OrderPage(page)
             base.navigate_to(tab="Главное", name="Настройки системы")
             base.expect_page(url="trade/pref/system_setting")
             with page.expect_response(lambda r: _matches(r, FINANCE + ":model")) as pending:

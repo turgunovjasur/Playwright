@@ -14,10 +14,9 @@ def _has_filter(node, field, pattern):
     return any(_has_filter(child, field, pattern) for child in node if isinstance(child, list))
 
 
-def find_list_record(base, table, field, value, *, search_field=None, also_match=None):
-    """Search by field and require exact matches on any additional identity columns."""
+def search_list_by_field(base, table, field, value, *, search_field=None, setting_label=None):
+    """Submit a UI search and verify which fields the grid actually sent."""
     value = str(value)
-    expected = {**(also_match or {}), field: value}
     if not value.strip():
         raise ValueError("Ro‘yxat qidiruvi uchun qiymat bo‘sh")
     escaped = value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
@@ -32,15 +31,36 @@ def find_list_record(base, table, field, value, *, search_field=None, also_match
         params = (request.post_data_json or {}).get("p", {})
         return _has_filter(params.get("filter"), None, pattern)
 
-    with allure.step(f"Ro‘yxatdagi Search orqali qidirish · {value}"):
+    def submit():
         with base.page.expect_response(searched, timeout=UI_TIMEOUT_MS) as pending:
             base.grid_controller(search=value)
         response = pending.value
         if not response.ok:
             raise AssertionError(f"{table} qidiruvi HTTP {response.status} qaytardi")
+        response.finished()
+        return response
+
+    def includes_field(response):
+        filters = response.request.post_data_json["p"]["filter"]
+        return any(_has_filter(filters, key, pattern) for key in (field, search_field) if key)
+
+    response = submit()
+    if setting_label and not includes_field(response):
+        base.grid_setting(menu_name="Настройка таблицы", field_name=setting_label, search_name=setting_label)
+        response = submit()
+    if not includes_field(response):
+        raise AssertionError(f"{table}: {field} qidiruv sozlamasida yoqilmagan")
+    return response
+
+
+def find_list_record(base, table, field, value, *, search_field=None, also_match=None, setting_label=None):
+    """Search by field and require exact matches on any additional identity columns."""
+    value = str(value)
+    expected = {**(also_match or {}), field: value}
+    with allure.step(f"Ro‘yxatdagi Search orqali qidirish · {value}"):
+        response = search_list_by_field(base, table, field, value, search_field=search_field,
+                                        setting_label=setting_label)
         params = response.request.post_data_json["p"]
-        if not any(_has_filter(params["filter"], key, pattern) for key in (field, search_field) if key):
-            raise AssertionError(f"{table}: {field} qidiruv sozlamasida yoqilmagan")
         result = response.json()
         columns = params.get("column", [])
         rows = result.get("data") if isinstance(result, dict) else None

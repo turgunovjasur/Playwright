@@ -7,7 +7,7 @@ import allure
 import pytest
 from playwright.sync_api import expect
 
-from tests.regression.test_orders.helpers.flows.order import existing_order, select_order_product, open_new_order, save_order_by_reference
+from tests.regression.test_orders.helpers.flows.order import select_order_client, existing_order, select_order_product, open_new_order, save_order_by_reference
 from tests.regression.test_orders.helpers.flows.settlement import (
     allocate_to_order, change_order_status, post_cashin, read_debts, read_settlement,
 )
@@ -51,9 +51,7 @@ def run_partial_full_payment(case):
         require_available(case, 2, bonus_quantity=0)
         open_new_order(page)
         with allure.step("2 - Setup klienti uchun 2 dona mahsulot va 14 000 so'm order"):
-            base.b_input(label="Рабочая зона", expect_value=case.room)
-            base.b_input(label="Штат", expect_value=case.staff)
-            base.b_input(label="Клиент", value=case.client, clear=True)
+            select_order_client(case.page, case.client, room=case.room, staff=case.staff)
             base.click(name="Далее", exact=True)
             select_order_product(page, case.product, case.price_type)
             base.input(label="Кол-во", value="2", press_tab=True)

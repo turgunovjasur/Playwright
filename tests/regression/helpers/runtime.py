@@ -12,6 +12,7 @@ from uuid import uuid4
 import allure
 
 from tests.shared.browser import order_attempt_page
+from tests.regression.helpers.failure_source import capture_failure_source
 from tests.shared.reporting import (
     auth_diagnostic_for_item, browser_state, reporting_warning, safe_page_screenshot,
 )
@@ -191,6 +192,8 @@ def record_phase(item, report, call):
         if journal and getattr(journal, "blocked_reason", None):
             phase["message"] = journal.blocked_reason + "; " + phase["message"]
     if report.failed:
+        if call.excinfo:
+            phase["source"] = capture_failure_source(item, call.excinfo.traceback)
         exception = safe_text(str(report.longrepr))
         path = directory / f"{report.when}-exception.txt"
         path.write_text(exception, encoding="utf-8")

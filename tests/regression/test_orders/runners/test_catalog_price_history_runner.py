@@ -2,12 +2,14 @@
 import allure
 import pytest
 
-from tests.regression.test_orders.business_cases.pricing.test_catalog_price_history import (
-    run_change_catalog_price, run_create_price_draft, run_original_and_picker,
+from tests.regression.test_orders.helpers.flows.price_draft import create_price_draft
+
+from tests.regression.test_orders.business_cases.pricing.catalog_price_history import (
+    run_change_catalog_price, run_original_and_picker,
 )
 from tests.regression.test_orders.helpers.preparations.clients import prepare_order_client
 from tests.regression.test_orders.helpers.reporting import GROUP_FEATURES, order_report_case
-from tests.regression.test_orders.setup_cases.test_catalog_stock import (
+from tests.regression.test_orders.setup_cases.catalog_stock import (
     run_prepare_catalog, run_prepare_prices, run_prepare_stock,
 )
 
@@ -47,7 +49,7 @@ def test_00_prepare_client(business_baseline, workflow_data, regression_case_dir
 @order_report_case
 @pytest.mark.order_requires("test_002_stock", "test_00_prepare_client")
 def test_01_original_draft(workflow_order):
-    run_create_price_draft(workflow_order, key="original_draft", price=1000)
+    create_price_draft(workflow_order, key="original_draft", price=1000)
 
 
 @order_report_case
@@ -59,7 +61,7 @@ def test_02_change_catalog_price(business_baseline, catalog_data, workflow_data,
 @order_report_case
 @pytest.mark.order_requires("test_02_change_catalog_price")
 def test_03_new_draft(workflow_order):
-    run_create_price_draft(workflow_order, key="new_draft", price=1500)
+    create_price_draft(workflow_order, key="new_draft", price=1500)
 
 
 @order_report_case

@@ -1,13 +1,13 @@
 """Own orderni exact ID bilan bekor qilish va saved statusini tekshirish."""
 import allure
 from playwright.sync_api import expect
-from tests.regression.test_orders.helpers.flows.settlement import _columns
-from utils.base_pages.auto_base_page import AutoBasePage
+from tests.regression.test_orders.helpers.flows.settlement import search_order_by_id
+from tests.regression.test_orders.helpers.navigation import OrderPage
 
 
 def cancel_order(page, *, order_id, client, amount):
     """List → exact order → cancel reason → cancelled list → same View."""
-    base = AutoBasePage(page)
+    base = OrderPage(page)
     from tests.regression.helpers.retry.reconcile import is_retry, allow_absent_ui_write
     if is_retry():
         with allure.step("Retry: oldingi bekor qilish saqlanganini tekshirish"):
@@ -21,8 +21,7 @@ def cancel_order(page, *, order_id, client, amount):
     with allure.step("6 - Bekor qilish uchun aynan own orderni ID bilan topish"):
         base.navigate_to(tab="Продажа", name="Заказы")
         base.expect_page(heading="Заказы", url="order_list")
-        id_col = _columns(page, {"id": "ИД заказа"}, search_name="ИД заказа")["id"]
-        base.grid_controller(search=order_id)
+        id_col = search_order_by_id(page, order_id)["id"]
         row = base.grid(order_id)
         expect(base.grid_cell(row, id_col)).to_have_text(order_id)
     with allure.step("7 - Orderni bekor qilish sababini tanlash oynasini ochish"):
@@ -36,14 +35,13 @@ def cancel_order(page, *, order_id, client, amount):
         base.click(name="Изменить", exact=True, root=dialog)
         expect(dialog).not_to_be_visible()
         base.expect_page(heading="Заказы", url="order_list")
-        base.grid_controller(search=order_id)
+        search_order_by_id(page, order_id)
         base.grid(state="empty")
     with allure.step("9 - Bekor qilingan orderlar ro'yxatidan aynan shu IDni topish"):
         base.navigate_to(tab="Продажа", name="Отмененные заказы")
         # Route 1420-two-wh-cancel-list-retained.txt birinchi satrida tasdiqlangan.
         base.expect_page(heading="Отмененные заказы", url="order_cancelled_list")
-        id_col = _columns(page, {"id": "ИД заказа"}, search_name="ИД заказа")["id"]
-        base.grid_controller(search=order_id)
+        id_col = search_order_by_id(page, order_id)["id"]
         row = base.grid(order_id, click=True)
         expect(base.grid_cell(row, id_col)).to_have_text(order_id)
     with allure.step("10 - Bekor qilingan order viewida ID, klient, summa va status"):

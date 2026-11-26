@@ -9,7 +9,7 @@ from tests.regression.test_orders.helpers.flows.mixed_units import open_saved, s
 from tests.regression.test_orders.helpers.flows.order_status import cancel_order
 from tests.regression.test_orders.helpers.flows.settlement import change_order_status, read_debts, read_settlement
 from tests.regression.test_orders.helpers.flows.stock import read_stock
-from utils.base_pages.auto_base_page import AutoBasePage
+from tests.regression.test_orders.helpers.navigation import OrderPage
 
 
 def check_stock(case, catalog, *, sold, reserved):
@@ -46,7 +46,7 @@ def run_archive(case):
 
 def run_restore(case, *, current, target, list_name, endpoint):
     order = case.workflow["mixed_order"]
-    page, base = case.page, AutoBasePage(case.page)
+    page, base = case.page, OrderPage(case.page)
     base.open_route("trade/tdeal/order/order_view?deal_id=" + order["id"], heading="Заказ / Просмотр")
     base.form_view(label="ИД заказа", expect_value=order["id"])
     base.form_view(label="Номер ТТН", expect_value=order["reference"])
@@ -65,7 +65,7 @@ def run_restore(case, *, current, target, list_name, endpoint):
 def check_no_debt(case):
     balances = read_settlement(case.page, case.client)
     case.check("Klientning qolgan qarzi", Decimal(0), balances["debt"])
-    base = AutoBasePage(case.page)
+    base = OrderPage(case.page)
     base.open_route(case.workflow["debt_detail_route"], heading="Детали задолженности")
     base.grid(state="empty")
     expect(case.page.locator("main:visible .smt-data-row")).to_have_count(0)

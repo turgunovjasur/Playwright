@@ -1,4 +1,4 @@
-"""SCN-002: kirimni o'tkazishning o'zi aynan bitta order qarzini yopadi."""
+"""Kirimni o'tkazishning o'zi aynan bitta order qarzini yopadi."""
 from decimal import Decimal
 
 import allure

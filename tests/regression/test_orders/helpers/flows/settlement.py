@@ -14,7 +14,6 @@ Legacy locator fallback yoki API biznes amali yo'q.
 import re
 from decimal import Decimal
 from urllib.parse import parse_qs, urlparse, unquote
-from weakref import WeakKeyDictionary
 
 import allure
 from playwright.sync_api import Error as PlaywrightError
@@ -22,12 +21,11 @@ from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import expect
 
 from tests.shared.navigation import open_form_from_list
-from tests.shared.list_search import find_list_record
-from utils.base_pages.auto_base_page import AutoBasePage
+from tests.shared.list_search import find_list_record, search_list_by_field
+from tests.regression.test_orders.helpers.navigation import OrderPage
 from utils.base_pages.angular_base_page import _lookup_query_finished
 
 CURRENCY = "Узбекский сум"
-_SEARCH_CONFIGURED = WeakKeyDictionary()
 
 
 def _number(value):
@@ -44,9 +42,9 @@ def _columns(page, fields, *, search_name=None):
 
     A2 header DOMi AngularBasePage.grid_setting bilan bir xil. Indekslar
     cache qilinmaydi: sozlamadan keyin barcha indekslar qayta o'qiladi.
-    Search maydoni har page/route uchun bir marta mavjud API orqali yoqiladi.
+    So‘ralgan qidiruv maydoni joriy jadvalda yoqiladi.
     """
-    base = AutoBasePage(page)
+    base = OrderPage(page)
     grid = page.locator("smt-data-table:visible").first
     expect(grid).to_be_visible()
     base.wait_for_loader()
@@ -55,14 +53,11 @@ def _columns(page, fields, *, search_name=None):
     def labels():
         return [" ".join(label.split()) for label in headers.all_text_contents()]
 
-    configured = _SEARCH_CONFIGURED.setdefault(page, set())
-    search_key = (urlparse(page.url).path, search_name)
-    if search_name is not None and search_key not in configured:
-        base.grid_setting(menu_name="Настройка таблицы", field_name=search_name, search_name=search_name)
-        configured.add(search_key)
     for label in fields.values():
-        if label not in labels():
+        if label != search_name and label not in labels():
             base.grid_setting(menu_name="Настройка таблицы", field_name=label)
+    if search_name is not None:
+        base.grid_setting(menu_name="Настройка таблицы", field_name=search_name, search_name=search_name)
     current = labels()
     result = {}
     for key, label in fields.items():
@@ -72,9 +67,20 @@ def _columns(page, fields, *, search_name=None):
     return result
 
 
+def search_order_by_id(page, order_id, *, fields=None, id_field="deal_id"):
+    """Search the current order grid, including its exact ID field in the server filter."""
+    labels = {"id": "ИД заказа", **(fields or {})}
+    _columns(page, labels)
+    base = OrderPage(page)
+    table = urlparse(page.url).path.rsplit("/", 1)[-1]
+    search_list_by_field(base, table, id_field, order_id, setting_label="ИД заказа")
+    # Enabling search may save a new layout. Read current column positions.
+    return _columns(page, labels)
+
+
 def read_settlement(page, client):
     """Aynan klient/UZS agregatlarini o'qiydi; boshqa valyutani nol demaydi."""
-    base = AutoBasePage(page)
+    base = OrderPage(page)
     fields = {"client": "Клиент", "currency": "Валюта", "debt": "Задолженность",
               "prepayment": "Предоплата", "open_order": "Заказ",
               "booked_prepayment": "Забронированная предоплата", "balance": "Баланс"}
@@ -122,7 +128,7 @@ def read_settlement(page, client):
 
 def open_debt_details(page, client):
     """Hozirgi settlement listdan exact klient/UZS qarz detallariga o'tish."""
-    base = AutoBasePage(page)
+    base = OrderPage(page)
     with allure.step("Klientning UZS qarz detallarini ochish"):
         row = base.grid(re.compile(rf"(?=.*{re.escape(client)})(?=.*{re.escape(CURRENCY)}).*", re.DOTALL), click=True)
         base.click(name="Детали", exact=True)
@@ -137,7 +143,7 @@ test to'xtaydi. Nol agregat bo'lsa detailga o'tish shart emas.
 """
     if settlement["debt"] == 0:
         return {}
-    base = AutoBasePage(page)
+    base = OrderPage(page)
     open_debt_details(page, client)
     with allure.step("Klientning barcha mavjud order qarzlarini ID va summa bilan qayd etish"):
         cols = _columns(page, {"id": "ИД заказа", "debt": "Сумма задолженности",
@@ -192,7 +198,7 @@ def _open_saved_order(page, base, view_url, order_id):
 
 def change_order_status(page, order_id, *, current, target):
     """Exact ID/current status → UI action → freshly opened saved target status."""
-    base = AutoBasePage(page)
+    base = OrderPage(page)
     from tests.regression.helpers.retry.reconcile import is_retry, allow_absent_ui_write
     if is_retry():
         with allure.step("Retry: orderning amaldagi statusini o‘qish"):
@@ -207,8 +213,7 @@ def change_order_status(page, order_id, *, current, target):
     with allure.step(f"Order {order_id} uchun ro'yxatni ochish"):
         base.navigate_to(tab="Продажа", name="Заказы")
         base.expect_page(heading="Заказы", url="order_list")
-        columns = _columns(page, {"id": "ИД заказа", "status": "Статус"}, search_name="ИД заказа")
-        base.grid_controller(search=order_id)
+        columns = search_order_by_id(page, order_id, fields={"status": "Статус"})
         row = base.grid(order_id)
         expect(base.grid_cell(row, columns["id"])).to_have_text(order_id)
         expect(base.grid_cell(row, columns["status"])).to_have_text(current)
@@ -238,7 +243,7 @@ def change_order_status(page, order_id, *, current, target):
 
 def post_cashin(page, *, client, number, amount, order_id=None, auto_offset=False):
     """Unique cashin UI orqali o'tkazilib ID/view qiymatlari qayta o'qiladi."""
-    base = AutoBasePage(page)
+    base = OrderPage(page)
     amount_text = _amount(amount)
     with allure.step("Klient to'lovlari ro'yxatini ochish"):
         base.navigate_to(tab="Финансы", name="Оплаты от клиентов")
@@ -316,7 +321,7 @@ def allocate_to_order(page, *, client, order_id, amount, remaining_debt):
 Bu forma cashin tanlatmaydi. Consumer boshlang'ich prepayment=0 va yangi
 cashinning yagona mablag' ekanini oldin isbotlashi shart.
 """
-    base = AutoBasePage(page)
+    base = OrderPage(page)
     from tests.regression.helpers.retry.state import ACTIVE, digest, RetryBlocked
     from tests.regression.helpers.retry.reconcile import is_retry, allow_absent_ui_write
     journal = ACTIVE.get()
@@ -375,7 +380,7 @@ cashinning yagona mablag' ekanini oldin isbotlashi shart.
 def verify_order_offset(case, *, order_id, amount):
     """Bitta hisob-kitobli yangi klientning real tarix qatorini orderga bog'laydi."""
     page = case.page
-    base = AutoBasePage(page)
+    base = OrderPage(page)
     with allure.step("Klient hisob-kitoblari tarixini ochish"):
         base.open_route("anor/mdeal/order/offset/offset_history_list", heading="История взаиморасчетов")
     with allure.step("Yagona tarix qatoridagi order IDsi, klient, valyuta va summani tekshirish"):

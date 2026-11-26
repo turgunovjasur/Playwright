@@ -19,6 +19,7 @@ CREATES = {
 }
 READ_ACTIONS = {"model", "table", "query", "find", "find_extra_data", "run", "session"}
 AUTH = {"biruni/s$log_in", "biruni/m:session"}
+SURVEY_MODEL = "trade/tr/plugin:survey_model"
 DOCUMENT_CREATES = {
     "anor/mdeal/order/order+add$save": "delivery_number",
     "trade/tcs/cashin+add$save_post": "cashin_number",
@@ -55,8 +56,12 @@ def endpoint_path(value):
     return path.split("/b/", 1)[-1].lstrip("/")
 
 
-def read_only(endpoint, method="POST"):
+def read_only(endpoint, method="POST", *, payload=None):
     endpoint = endpoint_path(endpoint)
+    if endpoint == SURVEY_MODEL:
+        # The shell loads roles and the billing URL with an empty JSON object.
+        # Sending a survey answer has a separate endpoint.
+        return method == "POST" and payload == {}
     if method == "GET" and endpoint == "trade/tdeal/order/order_list:export":
         return True
     if endpoint in AUTH or endpoint in READ_SPECIAL:
@@ -101,7 +106,7 @@ def exact_row(api, table, identity, field, value):
 
 def api_send(original, api, endpoint, *, payload=None, form=None, timeout=None):
     journal = ACTIVE.get()
-    if journal is None or read_only(endpoint):
+    if journal is None or read_only(endpoint, payload=payload if form is None else None):
         return original(api, endpoint, payload=payload, form=form, timeout=timeout)
     natural = CREATES.get(endpoint)
     fingerprint = {natural[3]: (payload or {}).get(natural[3])} if natural else payload
@@ -247,6 +252,15 @@ def _sent_ui_write(operations, endpoint, identity):
                for op in operations.values())
 
 
+def _browser_read_only(endpoint, request):
+    if endpoint == SURVEY_MODEL:
+        try:
+            return read_only(endpoint, request.method, payload=json.loads(request.post_data or ""))
+        except (TypeError, ValueError):
+            return False
+    return read_only(endpoint, request.method)
+
+
 def bind_browser(context, journal):
     """Unknown UI writes cannot be replayed. Read requests and fresh writes pass.
 
@@ -258,7 +272,7 @@ def bind_browser(context, journal):
         journal.ui_root = request.url.split("/b/", 1)[0]
         journal.ui_headers = {key: value for key, value in request.all_headers().items()
                               if key.lower() in {"company_id", "filial_id", "user_id", "project_code", "lang_code", "x-requested-with"}}
-        if read_only(endpoint, request.method):
+        if _browser_read_only(endpoint, request):
             route.continue_()
             return
         key = "ui:" + endpoint + ":" + digest(request.post_data or "")
@@ -287,7 +301,7 @@ def bind_browser(context, journal):
     def response_received(response):
         request = response.request
         endpoint = endpoint_path(request.url)
-        if read_only(endpoint, request.method):
+        if _browser_read_only(endpoint, request):
             return
         key = "ui:" + endpoint + ":" + digest(request.post_data or "")
         if key in journal.data["operations"]:

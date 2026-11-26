@@ -14,9 +14,9 @@ from tests.regression.helpers.preparation.ensure import ensure_preparation
 from tests.regression.helpers.retry.state import ACTIVE, digest, RetryBlocked
 from tests.regression.helpers.retry.reconcile import exact_row, confirm_entity, is_retry
 from tests.regression.test_orders.helpers.auth_recovery import RegressionSetupState
-from tests.regression.test_orders.setup_cases.test_catalog_stock import run_prepare_catalog, run_prepare_prices, run_prepare_stock
-from tests.regression.test_orders.helpers.flows.order import open_new_order, select_order_product, save_order_by_reference
-from utils.base_pages.auto_base_page import AutoBasePage
+from tests.regression.test_orders.setup_cases.catalog_stock import run_prepare_catalog, run_prepare_prices, run_prepare_stock
+from tests.regression.test_orders.helpers.flows.order import select_order_client, open_new_order, select_order_product, save_order_by_reference
+from tests.regression.test_orders.helpers.navigation import OrderPage
 
 pytestmark = [pytest.mark.regression, pytest.mark.order_positive, pytest.mark.order_group("recovery"),
               allure.epic("Regression"), allure.feature("Retry mexanizmi — boshqariladigan uzilishlar")]
@@ -128,7 +128,7 @@ def test_07_shared_reuse(business_baseline, regression_case_dir):
 def test_08_order_saved(ordinary_order):
     """Real UI Save, injected failure, exact TTN reconciliation and saved values."""
     case = ordinary_order
-    page, base = case.page, AutoBasePage(case.page)
+    page, base = case.page, OrderPage(case.page)
     journal = ACTIVE.get()
     key = "entity:order:" + case.reference
     previous = journal.source.get("operations", {}).get(key)
@@ -139,7 +139,7 @@ def test_08_order_saved(ordinary_order):
     else:
         open_new_order(page)
         with allure.step("2 dona × 7000 so‘mlik oddiy Draft"):
-            base.b_input(label="Клиент", value=case.client, clear=True)
+            select_order_client(case.page, case.client, room=case.room, staff=case.staff)
             base.click(name="Далее", exact=True)
             select_order_product(page, case.product, case.price_type)
             base.input(label="Кол-во", value="2", press_tab=True)
@@ -167,14 +167,14 @@ def test_08_order_saved(ordinary_order):
 @allure.title("Recovery tayyorlovi: to‘lov uchun alohida klient")
 @pytest.mark.order_requires('test_001_prices')
 def test_09_prepare_payment_client(business_baseline, payment_clients, regression_case_dir):
-    from tests.regression.test_orders.setup_cases.test_payment_clients import run_ordinary_payment_client
+    from tests.regression.test_orders.setup_cases.payment_clients import run_ordinary_payment_client
     run_ordinary_payment_client(business_baseline, payment_clients, regression_case_dir)
 
 
 @allure.title("Recovery tayyorlovi: ikkinchi installment testi uchun alohida klient")
 @pytest.mark.order_requires('test_001_prices')
 def test_09b_prepare_second_client(business_baseline, payment_clients, regression_case_dir):
-    from tests.regression.test_orders.setup_cases.test_payment_clients import run_promoted_payment_client
+    from tests.regression.test_orders.setup_cases.payment_clients import run_promoted_payment_client
     run_promoted_payment_client(business_baseline, payment_clients, regression_case_dir)
 
 
@@ -189,7 +189,7 @@ def second_recovery_payment(order_user_page, business_baseline, payment_clients,
 @allure.title("Cashin saqlangach uzilish → bitta kirimdan qisman va to‘liq qarz yopish")
 @pytest.mark.order_requires('test_002_stock', 'test_09_prepare_payment_client')
 def test_10_cashin_saved(ordinary_payment_order, workflow_data, monkeypatch):
-    from tests.regression.test_orders.business_cases.payments import test_partial_full_payment as flow
+    from tests.regression.test_orders.business_cases.payments import partial_full_payment as flow
     original = flow.verify_step
     def interrupt_after_cashin(name):
         original(name)
@@ -255,7 +255,7 @@ def test_13_ambiguous_lookup():
 @allure.title("Birinchi offsetdan keyin uzilish → faqat qolgan installment davom etadi")
 @pytest.mark.order_requires('test_002_stock', 'test_09b_prepare_second_client')
 def test_14_between_installments(second_recovery_payment, monkeypatch):
-    from tests.regression.test_orders.business_cases.payments import test_partial_full_payment as flow
+    from tests.regression.test_orders.business_cases.payments import partial_full_payment as flow
     original = flow.verify_step
     def interrupt_after_first_offset(name):
         original(name)

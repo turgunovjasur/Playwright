@@ -5,7 +5,8 @@ from contextlib import contextmanager
 from time import monotonic, sleep
 from urllib.parse import urlsplit
 
-from playwright.sync_api import Error as PlaywrightError
+import allure
+from playwright.sync_api import Error as PlaywrightError, TimeoutError as PlaywrightTimeoutError
 
 
 APPLICATION_ERROR_OBSERVATION_MS = 4_800
@@ -55,3 +56,18 @@ def observe_module_load_errors(page, source_url):
         yield failures
     finally:
         page.remove_listener("console", capture)
+
+
+def load_a2_document(page, destination, timeout):
+    """Open one A2 document and retry a blank or broken module load once."""
+    with observe_module_load_errors(page, destination) as failures:
+        page.goto(destination, wait_until="domcontentloaded", timeout=timeout)
+        try:
+            page.locator("main").first.wait_for(
+                state="attached", timeout=min(timeout or 20_000, 20_000))
+        except PlaywrightTimeoutError:
+            blank = page.evaluate("""() => document.readyState === 'complete'
+                && !document.querySelector('main') && !document.body?.innerText.trim()""")
+            if page.url == destination and (failures or blank):
+                with allure.step("Forma yuklanmadi — ayni sahifani bir marta qayta ochish"):
+                    page.reload(wait_until="domcontentloaded", timeout=timeout)

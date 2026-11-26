@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 import allure
 from playwright.sync_api import expect
 from tests.shared.list_search import find_list_record
-from utils.base_pages.auto_base_page import AutoBasePage
+from tests.regression.test_orders.helpers.navigation import OrderPage
 
 from tests.api.client import APIError, positive_id, require_fields
 from tests.api.state import CONTRACTS
@@ -134,7 +134,7 @@ def run_prepare_stock(case, directory):
 
 def run_prepare_limit(case, directory):
     """1. Xona+kunlik limit10. 2. Own SKU. 3. UI Save va qayta ochish."""
-    data, page, base = case.workflow, case.page, AutoBasePage(case.page)
+    data, page, base = case.workflow, case.page, OrderPage(case.page)
     if not resource_ready(data, "product"):
         raise APIError("Avval TMZ limiti mahsuloti tayyorlanishi kerak")
     resource_status(data, "limit", "process")
@@ -195,7 +195,7 @@ def run_prepare_limit(case, directory):
 
 def verify_saved_limit(case):
     """Read-only saved limit oracle, used by setup and resumed-run preflight."""
-    data, page, base = case.workflow, case.page, AutoBasePage(case.page)
+    data, page, base = case.workflow, case.page, OrderPage(case.page)
     route = "anor/mcg/order_product_limit/order_product_limit"
     identity, name = data["limit"]["id"], data["limit"]["name"]
     with allure.step("7 - Aynan saved limitni qayta ochish"):

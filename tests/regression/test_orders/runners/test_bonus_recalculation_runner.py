@@ -2,17 +2,17 @@
 import allure
 import pytest
 
-from tests.regression.test_orders.business_cases.promotions.test_bonus_recalculation import (
+from tests.regression.test_orders.business_cases.promotions.bonus_recalculation import (
     run_bonus_draft, run_list_price_change, run_recalculation,
 )
 from tests.regression.test_orders.helpers.preparations.clients import prepare_order_client
 from tests.regression.test_orders.helpers.reporting import GROUP_FEATURES, order_report_case
-from tests.regression.test_orders.setup_cases.test_bonus_target_price import run_prepare_target_price
-from tests.regression.test_orders.setup_cases.test_catalog_stock import (
-    run_prepare_catalog, run_prepare_prices, run_prepare_stock,
+from tests.regression.test_orders.setup_cases.bonus_target_price import run_prepare_target_price
+from tests.regression.test_orders.setup_cases.catalog_stock import (
+    run_prepare_catalog, run_prepare_prices, run_prepare_promotion_stock,
 )
-from tests.regression.test_orders.setup_cases.test_excel_import_promotion import run_prepare_import_promotion
-from tests.regression.test_orders.setup_cases.test_margin import run_prepare_margin
+from tests.regression.test_orders.setup_cases.excel_import_promotion import run_prepare_import_promotion
+from tests.regression.test_orders.setup_cases.margin import run_prepare_margin
 
 GROUP = "bonus_recalculation"
 pytestmark = [
@@ -35,8 +35,8 @@ def test_001_prices(business_baseline, catalog_data, regression_case_dir):
 
 @order_report_case
 @pytest.mark.order_requires("test_001_prices")
-def test_002_stock(catalog_order, catalog_data, regression_case_dir):
-    run_prepare_stock(catalog_order, catalog_data, regression_case_dir, GROUP, goods_on_balance="N")
+def test_002_stock(business_baseline, catalog_data, regression_case_dir):
+    run_prepare_promotion_stock(business_baseline, catalog_data, regression_case_dir, GROUP)
 
 
 @order_report_case

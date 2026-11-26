@@ -11,7 +11,7 @@ from utils.base_pages import A2_LOADER_APPEARANCE_MS, UI_TIMEOUT_MS
 from utils.date_utils import format_date, resolve_date
 from utils.helper_utils import first_non_admin_filial, label_pattern
 from utils.base_pages.page_diagnostics import expectation_gate, report_page_expectation
-from utils.base_pages.page_errors import expect_no_application_error, observe_module_load_errors
+from utils.base_pages.page_errors import expect_no_application_error, load_a2_document
 from utils.base_pages.angular_requests import AngularPageRequests
 from utils.base_pages.angular_page_errors import ERROR_MARKER, angular_action, check_observed_error, watch_errors
 from utils.base_pages.page_values import expect_text_or_readonly_value
@@ -332,17 +332,7 @@ class AngularBasePage:
         app_path = current.path.split('/a2/', 1)[0]
         destination = urlunsplit((current.scheme, current.netloc,
                                   f'{app_path}/a2/{route_path}', target.query, ''))
-        with observe_module_load_errors(self.page, destination) as failures:
-            self.page.goto(destination, wait_until="domcontentloaded", timeout=timeout)
-            try:
-                self.page.locator("main").first.wait_for(
-                    state="attached", timeout=min(timeout or 20_000, 20_000))
-            except PlaywrightTimeoutError:
-                blank = self.page.evaluate("""() => document.readyState === 'complete'
-                    && !document.querySelector('main') && !document.body?.innerText.trim()""")
-                if self.page.url == destination and (failures or blank):
-                    with allure.step("Forma yuklanmadi — ayni sahifani bir marta qayta ochish"):
-                        self.page.reload(wait_until="domcontentloaded", timeout=timeout)
+        load_a2_document(self.page, destination, timeout)
         from utils.base_pages.auto_base_page import AutoBasePage
         expected_route = f'/{route_path}' + (f'?{target.query}' if target.query else '')
         AutoBasePage(self.page).expect_page(heading=heading,
@@ -491,15 +481,17 @@ class AngularBasePage:
             expect(dropdown).to_be_visible(timeout=timeout)
             return search
 
+        route = lookup_route or select.get_attribute("smtqueryname", timeout=timeout)
+        if route:
+            self.page._smartup_page_requests.wait_for_pending_lookup(route, timeout)
         reopen = search.input_value(timeout=timeout) == query
         if reopen and not query and dropdown.is_visible() and select.locator(":focus-within").count():
             search.press("Escape", timeout=timeout)
             expect(dropdown).to_be_hidden(timeout=timeout)
 
-        route = lookup_route or select.get_attribute("smtqueryname", timeout=timeout)
-        # Track starts as well as completions: a request already in flight
-        # for the same query must not satisfy this action.
+        # Match only a first-page read started by this action.
         started = set()
+        cancelled = set()
 
         def remember(request):
             if not _lookup_query_finished(request, query, key):
@@ -509,7 +501,12 @@ class AngularBasePage:
             if request.post_data_json["p"].get("offset", 0) == 0:
                 started.add(request)
 
+        def failed(request):
+            if request in started and request.failure == "net::ERR_ABORTED":
+                cancelled.add(request)
+
         self.page.on("request", remember)
+        self.page.on("requestfailed", failed)
         try:
             with self.page.expect_event(
                 "requestfinished", predicate=lambda request: request in started, timeout=timeout,
@@ -520,20 +517,30 @@ class AngularBasePage:
                     search.press("ArrowDown", timeout=timeout)
                 else:
                     search.click(timeout=timeout)
-                    if query and route == "order+add:persons":
-                        # Room autofill can clear the input during its debounce.
-                        # Re-enter only a lost query that never left the browser.
-                        try:
-                            with self.page.expect_request(lambda req: req in started, timeout=min(3000, timeout)):
-                                search.fill(query, timeout=timeout)
-                        except PlaywrightTimeoutError:
-                            if not started and search.input_value(timeout=timeout) != query:
+                    search.fill(query, timeout=timeout)
+                    if query and route:
+                        # A dependent control can still clear a just-entered
+                        # value before dispatch, or abort the in-flight lookup.
+                        # Restore that lost edit once, without retrying the test.
+                        deadline = monotonic() + timeout / 1000 if timeout else None
+                        while not finished.is_done():
+                            if started == cancelled and search.input_value(timeout=timeout) != query:
                                 search.click(timeout=timeout)
                                 search.fill(query, timeout=timeout)
-                    else:
-                        search.fill(query, timeout=timeout)
+                                break
+                            remaining = (deadline - monotonic()) * 1000 if deadline else 250
+                            if remaining <= 0:
+                                break
+                            try:
+                                self.page.wait_for_event(
+                                    "requestfinished", predicate=lambda req: req in started,
+                                    timeout=min(250, remaining),
+                                )
+                            except PlaywrightTimeoutError:
+                                continue
         finally:
             self.page.remove_listener("request", remember)
+            self.page.remove_listener("requestfailed", failed)
 
         response = finished.value.response()
         if response is None or not response.ok:
@@ -1688,9 +1695,13 @@ class AngularBasePage:
             ready = self.page.locator("html").filter(has=role_heading.or_(text_heading))
             if check_unblocked:
                 ready = ready.filter(has_not=self._visible_loaders(self.page))
-            if check_no_error:
-                ready = ready.or_(self.page.locator(ERROR_MARKER))
-            expect(ready.first, "A2 sahifa sarlavhasi va loader holati").to_be_attached(timeout=timeout)
+            marker = self.page.locator(ERROR_MARKER)
+            outcome = ready.or_(marker) if check_no_error else ready
+            expect(outcome.first, "A2 sahifa sarlavhasi va loader holati").to_be_attached(timeout=timeout)
+            if check_no_error and marker.count():
+                check_observed_error(self.page)
+                # A recovered model alert cannot satisfy the heading assertion.
+                expect(ready.first).to_be_attached(timeout=timeout)
         elif check_unblocked:
             # A URL can change before Angular mounts its form or starts loading.
             expectation_gate(self.page, "loader")

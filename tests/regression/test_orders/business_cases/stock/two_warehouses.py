@@ -10,14 +10,14 @@ import allure
 import pytest
 from playwright.sync_api import expect
 
-from tests.regression.test_orders.helpers.flows.order import (existing_order, saved_quantities,
+from tests.regression.test_orders.helpers.flows.order import (select_order_client, existing_order, saved_quantities,
     open_new_order, reopen_order_goods, save_edited_order,
     save_order_by_reference, select_order_product,
 )
 from tests.regression.test_orders.helpers.flows.order_status import cancel_order
-from tests.regression.test_orders.helpers.flows.settlement import _columns, change_order_status
+from tests.regression.test_orders.helpers.flows.settlement import change_order_status, search_order_by_id
 from tests.regression.test_orders.helpers.flows.stock import read_stock
-from utils.base_pages.auto_base_page import AutoBasePage
+from tests.regression.test_orders.helpers.navigation import OrderPage
 from tests.regression.helpers.retry.reconcile import is_retry
 from tests.regression.helpers.retry.state import RetryBlocked
 from tests.regression.helpers.retry.checkpoints import reuse, verified, value as retry_value
@@ -60,7 +60,7 @@ def _quantity_input(case, row):
 
 def _saved_lines(case, quantities, status):
     """Har qatorning ombor identitysi, miqdori va mustaqil summasini tekshiradi."""
-    base = AutoBasePage(case.page)
+    base = OrderPage(case.page)
     metadata = _metadata(case)
     order = metadata["order"]
     base.form_view(label="ИД заказа", expect_value=order["id"])
@@ -102,12 +102,11 @@ def _stock_delta(case, quantities, stage):
 
 def _open_view(case):
     order = _metadata(case)["order"]
-    base = AutoBasePage(case.page)
+    base = OrderPage(case.page)
     with allure.step("Own ikki omborli orderni exact ID bo'yicha ro'yxatdan topish"):
         base.navigate_to(tab="Продажа", name="Заказы")
         base.expect_page(heading="Заказы", url="order_list")
-        column = _columns(case.page, {"id": "ИД заказа"}, search_name="ИД заказа")["id"]
-        base.grid_controller(search=order["id"])
+        column = search_order_by_id(case.page, order["id"])["id"]
         row = base.grid(order["id"], click=True)
         expect(base.grid_cell(row, column)).to_have_text(order["id"])
     with allure.step("Aynan shu ikki omborli order viewini ochish"):
@@ -124,7 +123,7 @@ def run_create_two_warehouses(case):
     5. Draft ikkala omborning fizik/rezerv/available qiymatini o'zgartirmaydi.
     """
     metadata = _metadata(case)
-    page, base = case.page, AutoBasePage(case.page)
+    page, base = case.page, OrderPage(case.page)
     with allure.step("1 - Orderlar ro'yxatini ochish"):
         base.navigate_to(tab="Продажа", name="Заказы")
         base.expect_page(heading="Заказы", url="order_list")
@@ -147,9 +146,7 @@ def run_create_two_warehouses(case):
     if not identity:
         open_new_order(page)
         with allure.step("3 - Own klient bilan mahsulotlar bosqichiga o'tish"):
-            base.b_input(label="Рабочая зона", expect_value=case.room)
-            base.b_input(label="Штат", expect_value=case.staff)
-            base.b_input(label="Клиент", value=case.client, clear=True)
+            select_order_client(case.page, case.client, room=case.room, staff=case.staff)
             base.click(name="Далее", exact=True)
             base.text("Название", "Кол-во")
         with allure.step("4 - Bitta SKU uchun ikki ombor variantini alohida tanlash"):
@@ -201,7 +198,7 @@ def run_reallocate_two_warehouses(case):
     3. Save/view/reopen; rezervlar 3/2 bo'ladi, jismoniy qoldiq o'zgarmaydi.
     """
     metadata = _metadata(case)
-    base = AutoBasePage(case.page)
+    base = OrderPage(case.page)
     _open_view(case)
     actual = saved_quantities(case.page, case.product, case.price_type, [w["name"] for w in metadata["warehouses"]])
     order = metadata["order"]
