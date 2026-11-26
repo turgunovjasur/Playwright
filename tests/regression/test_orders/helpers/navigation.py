@@ -30,6 +30,10 @@ class OrderPage(AutoBasePage):
         return self._current_base().open_route(route, heading=heading, timeout=timeout)
 
     def navigate_to(self, tab="Главное", name="Организации", timeout=UI_TIMEOUT_MS):
-        if self._enter_session(MENU_ROUTES.get((tab, name))):
-            return
-        return self._current_base().navigate_to(tab=tab, name=name, timeout=timeout)
+        route = MENU_ROUTES.get((tab, name))
+        if self._enter_session(route):
+            return  # GroupLogin already verified the exact destination URL.
+        menu = AutoBasePage(self.page)
+        menu.navigate_to(tab=tab, name=name, timeout=timeout)
+        if route is not None:
+            menu.expect_page(url=route, timeout=timeout)

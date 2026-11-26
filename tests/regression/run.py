@@ -15,6 +15,7 @@ import time
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT))
 from dotenv import load_dotenv
+from scripts.validate_page_navigation import main as validate_page_navigation
 from scripts.report_lifecycle import generate_test_summary, _open_report
 from scripts.allure_report_cli import AllureCliNotInstalled, generate_report as generate_allure_report
 from tests.regression.helpers.runtime import finalize_run, new_run_id, prepare_run
@@ -107,6 +108,8 @@ def main():
         parser.error("--maxfail manfiy bo‘lishi mumkin emas")
     if bool(args.order_id) != bool(args.resume_run and args.group == "bonus_limit"):
         parser.error("--order-id faqat bonus_limit resume uchun majburiy")
+    if validate_page_navigation([]):
+        return 2
     load_dotenv(ROOT / ".env", override=True)
     runners = (GROUP_RUNNERS[GROUP_NAMES.index(args.group)],) if args.group else GROUP_RUNNERS
     command = [sys.executable, "-m", "pytest", *runners,

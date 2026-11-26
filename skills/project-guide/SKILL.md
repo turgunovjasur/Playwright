@@ -82,6 +82,15 @@ Smartup reference ownershipi:
 - Escalation kerak bo'lsa xavfsiz, qayta ishlatiladigan `prefix_rule` taklif qil.
 - Uzun inline Python o'rniga workspace scriptidan foydalan.
 
+### Pushdan oldingi CI tekshiruvi
+
+Status: user-reported
+Verified: 2026-11-26
+Source: user; GitHub Actions run `45797860054`, `.github/workflows/run-smartup-suite.yml`
+
+- Pushdan oldin yuboriladigan commit uchun workflow talab qiladigan lokal statik tekshiruvlarni bajar. Smartup suite uchun `python scripts/validate_page_navigation.py`ni repo ildizidan to‘liq ishga tushir. Tekshiruv xato bersa, tuzat va shu buyruqni qayta bajar.
+- Natijada lokal testlar, statik tekshiruvlar va GitHub’dagi CI holatini alohida ko‘rsat. Pushdan keyin shu commit uchun avtomatik boshlangan majburiy tekshiruv natijasini tekshir.
+
 ### Takrorlanadigan xatoni umumiy joyida tuzatish
 
 Status: user-reported
